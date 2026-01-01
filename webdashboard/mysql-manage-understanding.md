@@ -1,5 +1,5 @@
 Give Compands here for mysql management.
-https://cornflowerblue-chinchilla-284008.hostingersite.com/ai_mysql_manager.php
+https://calltrack.mylistings.in/ai_mysql_manager.php
 
 The code of this file is given below.
 "<?php
@@ -8,7 +8,7 @@ The code of this file is given below.
    ===================================== */
 
 /* ===== CONFIG ===== */
-$SECRET_TOKEN = "CHANGE_THIS_SECRET_TOKEN"; // MUST CHANGE
+$SECRET_TOKEN = "567898765678"; // MUST CHANGE
 
 $DB_HOST = "localhost";
 $DB_USER = "u542940820_easycalls";

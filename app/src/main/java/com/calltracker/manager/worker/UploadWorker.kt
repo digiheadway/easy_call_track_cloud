@@ -36,6 +36,7 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         val userId = settingsRepository.getUserId()
         val phone1 = settingsRepository.getCallerPhoneSim1()
         val phone2 = settingsRepository.getCallerPhoneSim2()
+        val simSelection = settingsRepository.getSimSelection() // "Both", "Sim1", "Sim2"
 
         if (orgId.isEmpty() || userId.isEmpty() || (phone1.isEmpty() && phone2.isEmpty())) {
             Log.w(TAG, "Required settings missing: orgId='$orgId', userId='$userId', phones='$phone1 / $phone2'. Skipping sync pass.")
@@ -46,8 +47,20 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         callDataRepository.syncFromSystemCallLog()
         
         // Get unsynced calls from Room
-        val unsyncedCalls = callDataRepository.getUnsyncedCalls()
-        Log.d(TAG, "Found ${unsyncedCalls.size} unsynced calls to process")
+        val allUnsyncedCalls = callDataRepository.getUnsyncedCalls()
+        
+        // Filter calls based on SIM selection
+        val unsyncedCalls = allUnsyncedCalls.filter { call ->
+            val phoneForCall = getPhoneForCall(call, phone1, phone2)
+            when (simSelection) {
+                "Sim1" -> phoneForCall == phone1
+                "Sim2" -> phoneForCall == phone2
+                else -> true // "Both" - sync all calls
+            }
+        }
+        
+        Log.d(TAG, "SIM Selection: $simSelection")
+        Log.d(TAG, "Found ${allUnsyncedCalls.size} unsynced calls, filtered to ${unsyncedCalls.size} based on SIM selection")
 
         var successCount = 0
         for (call in unsyncedCalls) {
@@ -64,8 +77,12 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
 
         Log.d(TAG, "Sync pass completed. Synced $successCount calls.")
         
+        if (unsyncedCalls.isNotEmpty() || successCount > 0) {
+            settingsRepository.setLastSyncTime(System.currentTimeMillis())
+        }
+        
         val outputData = workDataOf(
-            "unsynced_calls" to unsyncedCalls.size,
+            "total_calls" to allUnsyncedCalls.size,
             "synced_now" to successCount
         )
         
@@ -82,11 +99,17 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
 
         // 1. Start Call
         Log.d(TAG, "Starting call on server: ${call.compositeId}")
+        val deviceId = android.provider.Settings.Secure.getString(
+            applicationContext.contentResolver,
+            android.provider.Settings.Secure.ANDROID_ID
+        ) ?: "unknown_device"
+        
         val startResp = NetworkClient.api.startCall(
             action = "start_call",
             uniqueId = call.compositeId,
             orgId = orgId,
             userId = userId,
+            deviceId = deviceId,
             devicePhone = devicePhone,
             callerName = call.contactName,
             caller = call.phoneNumber,

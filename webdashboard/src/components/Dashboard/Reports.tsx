@@ -1,17 +1,65 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './Pages.css';
+import api from '../../api/client';
 
 interface ReportsProps {
     organizationId: string;
 }
 
-export default function Reports({ organizationId: _organizationId }: ReportsProps) {
+export default function Reports({ organizationId }: ReportsProps) {
     const [reportType, setReportType] = useState('overview');
     const [dateRange, setDateRange] = useState('week');
+    const [loading, setLoading] = useState(true);
+    const [data, setData] = useState<any>(null);
+
+    useEffect(() => {
+        loadReport();
+    }, [organizationId, reportType, dateRange]);
+
+    const loadReport = async () => {
+        try {
+            setLoading(true);
+            let response;
+            switch (reportType) {
+                case 'overview':
+                    response = await api.getOverviewReport(dateRange);
+                    break;
+                case 'employee':
+                    response = await api.getEmployeePerformance(dateRange);
+                    break;
+                case 'calls':
+                    response = await api.getCallAnalytics(dateRange);
+                    break;
+                default:
+                    response = await api.getOverviewReport(dateRange);
+            }
+
+            if (response.status) {
+                setData(response.data);
+            }
+        } catch (error) {
+            console.error('Failed to load report:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleExport = (format: string) => {
-        alert(`Exporting report as ${format.toUpperCase()}...`);
+        alert(`Exporting ${reportType} report as ${format.toUpperCase()}...`);
     };
+
+    if (loading && !data) {
+        return (
+            <div className="page-container flex items-center justify-center py-20">
+                <div className="text-xl text-muted">Generating report...</div>
+            </div>
+        );
+    }
+
+    const metrics = reportType === 'overview' ? data?.metrics : null;
+    const trends = reportType === 'overview' ? data?.trends : [];
+    const employees = reportType === 'employee' ? data : [];
+    const analytics = reportType === 'calls' ? data : null;
 
     return (
         <div className="page-container">
@@ -22,7 +70,6 @@ export default function Reports({ organizationId: _organizationId }: ReportsProp
                         <option value="overview">Overview Report</option>
                         <option value="employee">Employee Performance</option>
                         <option value="calls">Call Analytics</option>
-                        <option value="recordings">Recording Statistics</option>
                     </select>
                     <select className="form-select" value={dateRange} onChange={(e) => setDateRange(e.target.value)}>
                         <option value="today">Today</option>
@@ -42,134 +89,84 @@ export default function Reports({ organizationId: _organizationId }: ReportsProp
                 </div>
             </div>
 
-            {/* Key Metrics */}
-            <div className="metrics-grid">
-                <div className="metric-card card">
-                    <div className="metric-header">
-                        <span className="metric-label">Total Calls</span>
-                        <span className="metric-change positive">+12.5%</span>
-                    </div>
-                    <div className="metric-value">2,459</div>
-                    <div className="metric-footer">
-                        <div className="mini-chart">
-                            <svg width="100%" height="40" viewBox="0 0 200 40">
-                                <path
-                                    d="M 0 35 L 25 30 L 50 32 L 75 22 L 100 25 L 125 18 L 150 20 L 175 12 L 200 15"
-                                    fill="none"
-                                    stroke="var(--success)"
-                                    strokeWidth="2"
-                                />
-                            </svg>
+            {/* Content for Overview */}
+            {reportType === 'overview' && metrics && (
+                <>
+                    <div className="metrics-grid">
+                        <div className="metric-card card">
+                            <div className="metric-header">
+                                <span className="metric-label">Total Calls</span>
+                                <span className="metric-change positive">{metrics.success_rate}% Success</span>
+                            </div>
+                            <div className="metric-value">{(metrics.total_calls || 0).toLocaleString()}</div>
+                        </div>
+
+                        <div className="metric-card card">
+                            <div className="metric-header">
+                                <span className="metric-label">Call Duration</span>
+                                <span className="metric-change">Average</span>
+                            </div>
+                            <div className="metric-value">{metrics.avg_duration_formatted}</div>
+                        </div>
+
+                        <div className="metric-card card">
+                            <div className="metric-header">
+                                <span className="metric-label">Inbound Calls</span>
+                                <span className="metric-change">{metrics.inbound_calls && metrics.total_calls ? Math.round((metrics.inbound_calls / metrics.total_calls) * 100) : 0}% of Total</span>
+                            </div>
+                            <div className="metric-value">{(metrics.inbound_calls || 0).toLocaleString()}</div>
+                        </div>
+
+                        <div className="metric-card card">
+                            <div className="metric-header">
+                                <span className="metric-label">Recordings</span>
+                                <span className="metric-change">Stored Clips</span>
+                            </div>
+                            <div className="metric-value">{(metrics.recordings_count || 0).toLocaleString()}</div>
                         </div>
                     </div>
-                </div>
 
-                <div className="metric-card card">
-                    <div className="metric-header">
-                        <span className="metric-label">Call Duration</span>
-                        <span className="metric-change negative">-3.2%</span>
-                    </div>
-                    <div className="metric-value">4:32</div>
-                    <div className="metric-footer">
-                        <div className="mini-chart">
-                            <svg width="100%" height="40" viewBox="0 0 200 40">
-                                <path
-                                    d="M 0 15 L 25 18 L 50 16 L 75 22 L 100 20 L 125 25 L 150 23 L 175 28 L 200 30"
-                                    fill="none"
-                                    stroke="var(--error)"
-                                    strokeWidth="2"
-                                />
-                            </svg>
+                    <div className="reports-grid">
+                        <div className="card chart-card">
+                            <div className="card-header">
+                                <h3 className="card-title">Call Volume (Recent Trends)</h3>
+                            </div>
+                            <div className="chart-container">
+                                {trends && trends.length > 0 ? (
+                                    <div className="flex items-end justify-between h-full gap-2 p-4">
+                                        {trends.map((t: any, i: number) => (
+                                            <div key={i} className="flex flex-col items-center flex-1 gap-2">
+                                                <div
+                                                    className="w-full bg-[var(--primary)] rounded-t-sm opacity-80"
+                                                    style={{ height: `${Math.max(10, (t.call_count / Math.max(...trends.map((x: any) => x.call_count))) * 200)}px` }}
+                                                ></div>
+                                                <span className="text-xs text-muted truncate">{new Date(t.date).toLocaleDateString(undefined, { weekday: 'short' })}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-center h-full text-muted">No trend data available</div>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
+                </>
+            )}
 
-                <div className="metric-card card">
-                    <div className="metric-header">
-                        <span className="metric-label">Success Rate</span>
-                        <span className="metric-change positive">+5.8%</span>
-                    </div>
-                    <div className="metric-value">87.3%</div>
-                    <div className="metric-footer">
-                        <div className="progress-bar">
-                            <div className="progress-fill" style={{ width: '87.3%' }}></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="metric-card card">
-                    <div className="metric-header">
-                        <span className="metric-label">Recordings</span>
-                        <span className="metric-change positive">+18.3%</span>
-                    </div>
-                    <div className="metric-value">1,842</div>
-                    <div className="metric-footer">
-                        <div className="mini-chart">
-                            <svg width="100%" height="40" viewBox="0 0 200 40">
-                                <path
-                                    d="M 0 30 L 25 28 L 50 25 L 75 20 L 100 22 L 125 15 L 150 12 L 175 10 L 200 8"
-                                    fill="none"
-                                    stroke="var(--primary)"
-                                    strokeWidth="2"
-                                />
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Charts */}
-            <div className="reports-grid">
-                {/* Call Volume Chart */}
-                <div className="card chart-card">
-                    <div className="card-header">
-                        <h3 className="card-title">Call Volume by Day</h3>
-                    </div>
-                    <div className="chart-container">
-                        <svg width="100%" height="300" viewBox="0 0 700 300">
-                            <defs>
-                                <linearGradient id="barGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                    <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.8" />
-                                    <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.3" />
-                                </linearGradient>
-                            </defs>
-                            {/* Bars */}
-                            <rect x="50" y="100" width="80" height="150" fill="url(#barGradient)" rx="4" />
-                            <rect x="150" y="80" width="80" height="170" fill="url(#barGradient)" rx="4" />
-                            <rect x="250" y="120" width="80" height="130" fill="url(#barGradient)" rx="4" />
-                            <rect x="350" y="60" width="80" height="190" fill="url(#barGradient)" rx="4" />
-                            <rect x="450" y="90" width="80" height="160" fill="url(#barGradient)" rx="4" />
-                            <rect x="550" y="110" width="80" height="140" fill="url(#barGradient)" rx="4" />
-                            {/* Labels */}
-                            <text x="90" y="280" fill="var(--text-muted)" fontSize="12" textAnchor="middle">Mon</text>
-                            <text x="190" y="280" fill="var(--text-muted)" fontSize="12" textAnchor="middle">Tue</text>
-                            <text x="290" y="280" fill="var(--text-muted)" fontSize="12" textAnchor="middle">Wed</text>
-                            <text x="390" y="280" fill="var(--text-muted)" fontSize="12" textAnchor="middle">Thu</text>
-                            <text x="490" y="280" fill="var(--text-muted)" fontSize="12" textAnchor="middle">Fri</text>
-                            <text x="590" y="280" fill="var(--text-muted)" fontSize="12" textAnchor="middle">Sat</text>
-                        </svg>
-                    </div>
-                </div>
-
-                {/* Employee Performance */}
+            {/* Content for Employee Performance */}
+            {reportType === 'employee' && employees && (
                 <div className="card">
                     <div className="card-header">
-                        <h3 className="card-title">Top Performers</h3>
+                        <h3 className="card-title">Employee Ranking</h3>
                     </div>
                     <div className="performance-list">
-                        {[
-                            { name: 'John Smith', calls: 145, avatar: 'J', score: 95 },
-                            { name: 'Sarah Johnson', calls: 132, avatar: 'S', score: 92 },
-                            { name: 'David Lee', calls: 128, avatar: 'D', score: 89 },
-                            { name: 'Emma Davis', calls: 121, avatar: 'E', score: 87 },
-                            { name: 'James Brown', calls: 115, avatar: 'J', score: 85 },
-                        ].map((performer, index) => (
+                        {employees.length > 0 ? employees.map((performer: any, index: number) => (
                             <div key={index} className="performance-item">
                                 <div className="rank-badge">{index + 1}</div>
-                                <div className="performer-avatar">{performer.avatar}</div>
+                                <div className="performer-avatar">{performer.name.charAt(0)}</div>
                                 <div className="performer-info">
                                     <div className="performer-name">{performer.name}</div>
-                                    <div className="performer-stats">{performer.calls} calls</div>
+                                    <div className="performer-stats">{performer.total_calls} calls • {performer.avg_duration_formatted} avg</div>
                                 </div>
                                 <div className="performer-score">
                                     <div className="score-circle">
@@ -190,39 +187,54 @@ export default function Reports({ organizationId: _organizationId }: ReportsProp
                                     </div>
                                 </div>
                             </div>
-                        ))}
+                        )) : (
+                            <div className="p-10 text-center text-muted">No employee data found for this period</div>
+                        )}
                     </div>
                 </div>
-            </div>
+            )}
 
-            {/* Department Breakdown */}
-            <div className="card">
-                <div className="card-header">
-                    <h3 className="card-title">Department Breakdown</h3>
-                </div>
-                <div className="department-grid">
-                    {[
-                        { name: 'Sales', calls: 845, percentage: 34, color: 'var(--primary)' },
-                        { name: 'Support', calls: 687, percentage: 28, color: 'var(--success)' },
-                        { name: 'Marketing', calls: 523, percentage: 21, color: 'var(--info)' },
-                        { name: 'Operations', calls: 404, percentage: 17, color: 'var(--secondary)' },
-                    ].map((dept, index) => (
-                        <div key={index} className="department-item">
-                            <div className="department-header">
-                                <span className="department-name">{dept.name}</span>
-                                <span className="department-percentage">{dept.percentage}%</span>
-                            </div>
-                            <div className="department-bar">
-                                <div
-                                    className="department-fill"
-                                    style={{ width: `${dept.percentage}%`, background: dept.color }}
-                                ></div>
-                            </div>
-                            <div className="department-calls">{dept.calls} calls</div>
+
+
+            {/* Content for Call Analytics */}
+            {reportType === 'calls' && analytics && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="card">
+                        <div className="card-header">
+                            <h3 className="card-title">Hourly Distribution</h3>
                         </div>
-                    ))}
+                        <div className="p-4 h-64 flex items-end justify-between gap-1">
+                            {analytics.hourly?.map((h: any, i: number) => (
+                                <div key={i} className="flex-1 bg-[var(--primary)] opacity-70" title={`${h.hour}:00 - ${h.call_count} calls`} style={{ height: `${(h.call_count / Math.max(...analytics.hourly.map((x: any) => x.call_count))) * 100}%` }}></div>
+                            ))}
+                        </div>
+                        <div className="text-center text-xs text-muted mb-4">Hour of Day (0-23)</div>
+                    </div>
+                    <div className="card">
+                        <div className="card-header">
+                            <h3 className="card-title">Call Direction</h3>
+                        </div>
+                        <div className="p-8 flex items-center justify-center">
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="flex gap-10">
+                                    <div className="text-center">
+                                        <div className="text-success text-2xl font-bold">{analytics.direction?.inbound || 0}</div>
+                                        <div className="text-muted text-sm">Inbound</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-info text-2xl font-bold">{analytics.direction?.outbound || 0}</div>
+                                        <div className="text-muted text-sm">Outbound</div>
+                                    </div>
+                                </div>
+                                <div className="w-64 h-4 bg-[var(--bg-tertiary)] rounded-full overflow-hidden flex">
+                                    <div className="bg-success" style={{ width: `${(analytics.direction?.inbound / (analytics.direction?.inbound + analytics.direction?.outbound)) * 100 || 50}%` }}></div>
+                                    <div className="bg-info" style={{ width: `${(analytics.direction?.outbound / (analytics.direction?.inbound + analytics.direction?.outbound)) * 100 || 50}%` }}></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

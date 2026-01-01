@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.focus.FocusRequester
@@ -130,7 +131,8 @@ fun CallsScreen(
                     incomingCount = calls.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE },
                     outgoingCount = calls.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE },
                     missedCount = calls.count { it.callType == android.provider.CallLog.Calls.MISSED_TYPE },
-                    personNote = person?.personNote
+                    personNote = person?.personNote,
+                    label = person?.label
                 )
             }
     }
@@ -186,7 +188,10 @@ fun CallsScreen(
                 onContactsFilterChange = viewModel::setContactsFilter,
                 onAttendedFilterChange = viewModel::setAttendedFilter,
                 dateRange = uiState.dateRange,
-                onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) }
+                onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) },
+                labelFilter = uiState.labelFilter,
+                onLabelFilterChange = viewModel::setLabelFilter,
+                availableLabels = remember(uiState.persons) { uiState.persons.mapNotNull { it.label }.filter { it.isNotEmpty() }.distinct().sorted() }
             )
         }
         
@@ -196,6 +201,26 @@ fun CallsScreen(
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
+            } else if (uiState.simSelection == "Off") {
+                EmptyState(
+                    icon = Icons.Default.Block,
+                    title = "Call Tracking is Off",
+                    description = "Enable call tracking in Settings to start monitoring your calls."
+                )
+            } else if (uiState.filteredLogs.isEmpty()) {
+                val isFiltered = uiState.searchQuery.isNotEmpty() || 
+                                uiState.callTypeFilter != CallTypeFilter.ALL ||
+                                uiState.connectedFilter != ConnectedFilter.ALL ||
+                                uiState.notesFilter != NotesFilter.ALL ||
+                                uiState.contactsFilter != ContactsFilter.ALL ||
+                                uiState.attendedFilter != AttendedFilter.ALL ||
+                                uiState.labelFilter.isNotEmpty()
+                
+                EmptyState(
+                    icon = if (isFiltered) Icons.Default.SearchOff else Icons.Default.History,
+                    title = if (isFiltered) "No results found" else "No calls yet",
+                    description = if (isFiltered) "Try adjusting your filters or search query." else "Your call history will appear here once tracking starts."
+                )
             } else {
                 CallLogList(
                     logs = uiState.filteredLogs,
@@ -281,7 +306,8 @@ data class PersonGroup(
     val incomingCount: Int,
     val outgoingCount: Int,
     val missedCount: Int,
-    val personNote: String? = null
+    val personNote: String? = null,
+    val label: String? = null
 )
 
 @Composable
@@ -337,7 +363,8 @@ fun PersonsScreen(
                     incomingCount = calls.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE },
                     outgoingCount = calls.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE },
                     missedCount = calls.count { it.callType == android.provider.CallLog.Calls.MISSED_TYPE },
-                    personNote = person?.personNote
+                    personNote = person?.personNote,
+                    label = person?.label
                 )
             }
     }
@@ -401,7 +428,10 @@ fun PersonsScreen(
                 onContactsFilterChange = viewModel::setContactsFilter,
                 onAttendedFilterChange = viewModel::setAttendedFilter,
                 dateRange = uiState.dateRange,
-                onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) }
+                onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) },
+                labelFilter = uiState.labelFilter,
+                onLabelFilterChange = viewModel::setLabelFilter,
+                availableLabels = remember(uiState.persons) { uiState.persons.mapNotNull { it.label }.filter { it.isNotEmpty() }.distinct().sorted() }
             )
         }
         
@@ -411,6 +441,26 @@ fun PersonsScreen(
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
+            } else if (uiState.simSelection == "Off") {
+                EmptyState(
+                    icon = Icons.Default.Block,
+                    title = "Call Tracking is Off",
+                    description = "Enable call tracking in Settings to start monitoring your calls."
+                )
+            } else if (displayedPersonGroups.isEmpty()) {
+                val isFiltered = uiState.searchQuery.isNotEmpty() || 
+                                uiState.callTypeFilter != CallTypeFilter.ALL ||
+                                uiState.connectedFilter != ConnectedFilter.ALL ||
+                                uiState.notesFilter != NotesFilter.ALL ||
+                                uiState.contactsFilter != ContactsFilter.ALL ||
+                                uiState.attendedFilter != AttendedFilter.ALL ||
+                                uiState.labelFilter.isNotEmpty()
+
+                EmptyState(
+                    icon = if (isFiltered) Icons.Default.SearchOff else Icons.Default.Group,
+                    title = if (isFiltered) "No results found" else "No contacts yet",
+                    description = if (isFiltered) "Try adjusting your filters or search query." else "People you interact with will appear here."
+                )
             } else {
                 PersonsList(
                     persons = displayedPersonGroups,
@@ -494,6 +544,7 @@ fun PersonsList(
     // Note Dialog States
     var personNoteTarget by remember { mutableStateOf<PersonGroup?>(null) }
     var callNoteTarget by remember { mutableStateOf<CallDataEntity?>(null) }
+    var labelTarget by remember { mutableStateOf<PersonGroup?>(null) }
 
     if (personNoteTarget != null) {
         NoteDialog(
@@ -519,6 +570,20 @@ fun PersonsList(
             onSave = { note -> 
                 callNoteTarget?.let { viewModel.saveCallNote(it.compositeId, note) }
                 callNoteTarget = null 
+            }
+        )
+    }
+
+    if (labelTarget != null) {
+        NoteDialog(
+            title = "Person Label",
+            initialNote = labelTarget?.label ?: "",
+            label = "Label (e.g., VIP, Lead, Spam)",
+            buttonText = "Save Label",
+            onDismiss = { labelTarget = null },
+            onSave = { label ->
+                labelTarget?.let { viewModel.savePersonLabel(it.number, label) }
+                labelTarget = null
             }
         )
     }
@@ -634,7 +699,8 @@ fun PersonsList(
                         android.widget.Toast.makeText(context, "Failed to open CRM", android.widget.Toast.LENGTH_SHORT).show()
                     }
                 },
-                onViewMoreClick = { onViewMoreClick(person) }
+                onViewMoreClick = { onViewMoreClick(person) },
+                onLabelClick = { labelTarget = person }
             )
         }
     }
@@ -657,7 +723,8 @@ fun PersonCard(
     onCallNoteClick: (CallDataEntity) -> Unit,
     onAddContactClick: () -> Unit,
     onAddToCrmClick: () -> Unit,
-    onViewMoreClick: () -> Unit
+    onViewMoreClick: () -> Unit,
+    onLabelClick: () -> Unit
 ) {
     ElevatedCard(
         modifier = Modifier
@@ -774,6 +841,11 @@ fun PersonCard(
                         }
                     }
 
+                    if (!person.label.isNullOrEmpty()) {
+                        Spacer(Modifier.height(4.dp))
+                        LabelChip(label = person.label, onClick = onLabelClick)
+                    }
+
                     Spacer(Modifier.height(4.dp))
                     
                     // Breakdown row at bottom + Time
@@ -815,6 +887,7 @@ fun PersonCard(
                     ActionIconButton(icon = Icons.Default.EditNote, label = "Person Note", onClick = onPersonNoteClick)
                     ActionIconButton(icon = Icons.Default.PersonAddAlt, label = "Contact", onClick = onAddContactClick)
                     ActionIconButton(icon = Icons.Default.AppRegistration, label = "CRM", onClick = onAddToCrmClick)
+                    ActionIconButton(icon = Icons.Default.Label, label = "Label", onClick = onLabelClick)
                 }
                 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -887,6 +960,23 @@ fun CallTypeSmallBadge(icon: ImageVector, count: Int, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         Icon(icon, null, modifier = Modifier.size(10.dp), tint = color)
         Text(count.toString(), style = MaterialTheme.typography.labelSmall, color = color)
+    }
+}
+
+@Composable
+fun LabelChip(label: String, onClick: (() -> Unit)? = null) {
+    Surface(
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        shape = RoundedCornerShape(4.dp),
+        modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
+    ) {
+        Text(
+            text = label.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onTertiaryContainer,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+        )
     }
 }
 
@@ -982,152 +1072,178 @@ fun ReportsScreen(
                 onContactsFilterChange = viewModel::setContactsFilter,
                 onAttendedFilterChange = viewModel::setAttendedFilter,
                 dateRange = uiState.dateRange,
-                onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) }
+                onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) },
+                labelFilter = uiState.labelFilter,
+                onLabelFilterChange = viewModel::setLabelFilter
             )
         }
         
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Overview Card
-            item {
-                ElevatedCard(
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
+        Box(modifier = Modifier.weight(1f)) {
+            if (uiState.simSelection == "Off") {
+                EmptyState(
+                    icon = Icons.Default.Block,
+                    title = "Call Tracking is Off",
+                    description = "Enable call tracking in Settings to see your call reports."
+                )
+            } else if (uiState.filteredLogs.isEmpty()) {
+                val isFiltered = uiState.searchQuery.isNotEmpty() || 
+                                uiState.callTypeFilter != CallTypeFilter.ALL ||
+                                uiState.connectedFilter != ConnectedFilter.ALL ||
+                                uiState.notesFilter != NotesFilter.ALL ||
+                                uiState.contactsFilter != ContactsFilter.ALL ||
+                                uiState.attendedFilter != AttendedFilter.ALL ||
+                                uiState.labelFilter.isNotEmpty()
+                
+                EmptyState(
+                    icon = if (isFiltered) Icons.Default.SearchOff else Icons.Default.BarChart,
+                    title = if (isFiltered) "No results found" else "No data for reports",
+                    description = if (isFiltered) "Try adjusting your filters or search query." else "Reports will be generated once you have some call activity."
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Overview",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
+                    // Overview Card
+                    item {
+                        ElevatedCard(
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            StatItem(
-                                value = stats["totalCalls"].toString(),
-                                label = "Total Calls",
-                                icon = Icons.Default.Call,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            StatItem(
-                                value = stats["uniqueContacts"].toString(),
-                                label = "Contacts",
-                                icon = Icons.Default.People,
-                                color = MaterialTheme.colorScheme.secondary
-                            )
-                            StatItem(
-                                value = formatDurationShort(stats["totalDuration"]?.toLong() ?: 0L),
-                                label = "Talk Time",
-                                icon = Icons.Default.Timer,
-                                color = MaterialTheme.colorScheme.tertiary
-                            )
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Overview",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(Modifier.height(16.dp))
+                                
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceEvenly
+                                ) {
+                                    StatItem(
+                                        value = stats["totalCalls"].toString(),
+                                        label = "Total Calls",
+                                        icon = Icons.Default.Call,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    StatItem(
+                                        value = stats["uniqueContacts"].toString(),
+                                        label = "Contacts",
+                                        icon = Icons.Default.People,
+                                        color = MaterialTheme.colorScheme.secondary
+                                    )
+                                    StatItem(
+                                        value = formatDurationShort(stats["totalDuration"]?.toLong() ?: 0L),
+                                        label = "Talk Time",
+                                        icon = Icons.Default.Timer,
+                                        color = MaterialTheme.colorScheme.tertiary
+                                    )
+                                }
+                            }
                         }
                     }
-                }
-            }
-            
-            // Call Types Breakdown
-            item {
-                ElevatedCard(
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Call Types",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        
-                        StatRow(
-                            label = "Incoming",
-                            value = stats["incomingCalls"].toString(),
-                            icon = Icons.AutoMirrored.Filled.CallReceived,
-                            color = Color(0xFF4CAF50)
-                        )
-                        StatRow(
-                            label = "Outgoing",
-                            value = stats["outgoingCalls"].toString(),
-                            icon = Icons.AutoMirrored.Filled.CallMade,
-                            color = Color(0xFF2196F3)
-                        )
-                        StatRow(
-                            label = "Missed",
-                            value = stats["missedCalls"].toString(),
-                            icon = Icons.AutoMirrored.Filled.CallMissed,
-                            color = Color(0xFFF44336)
-                        )
-                    }
-                }
-            }
-            
-            // Connection Stats
-            item {
-                ElevatedCard(
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Connection Stats",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        
-                        val connectedCalls = stats["connectedCalls"] ?: 0
-                        val totalCalls = stats["totalCalls"] ?: 1
-                        val connectionRate = if (totalCalls > 0) (connectedCalls * 100 / totalCalls) else 0
-                        
-                        StatRow(
-                            label = "Connected Calls",
-                            value = "$connectedCalls",
-                            icon = Icons.Default.CheckCircle,
-                            color = Color(0xFF4CAF50)
-                        )
-                        StatRow(
-                            label = "With Notes",
-                            value = stats["withNotes"].toString(),
-                            icon = Icons.AutoMirrored.Filled.StickyNote2,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                        
-                        Spacer(Modifier.height(12.dp))
-                        
-                        // Connection rate progress
-                        Column {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
+                    
+                    // Call Types Breakdown
+                    item {
+                        ElevatedCard(
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
-                                    "Connection Rate",
-                                    style = MaterialTheme.typography.labelMedium
+                                    text = "Call Types",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
                                 )
-                                Text(
-                                    "$connectionRate%",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
+                                Spacer(Modifier.height(16.dp))
+                                
+                                StatRow(
+                                    label = "Incoming",
+                                    value = stats["incomingCalls"].toString(),
+                                    icon = Icons.AutoMirrored.Filled.CallReceived,
+                                    color = Color(0xFF4CAF50)
+                                )
+                                StatRow(
+                                    label = "Outgoing",
+                                    value = stats["outgoingCalls"].toString(),
+                                    icon = Icons.AutoMirrored.Filled.CallMade,
+                                    color = Color(0xFF2196F3)
+                                )
+                                StatRow(
+                                    label = "Missed",
+                                    value = stats["missedCalls"].toString(),
+                                    icon = Icons.AutoMirrored.Filled.CallMissed,
+                                    color = Color(0xFFF44336)
                                 )
                             }
-                            Spacer(Modifier.height(8.dp))
-                            LinearProgressIndicator(
-                                progress = { connectionRate / 100f },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(8.dp)
-                                    .clip(RoundedCornerShape(4.dp)),
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                            )
+                        }
+                    }
+                    
+                    // Connection Stats
+                    item {
+                        ElevatedCard(
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Connection Stats",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(Modifier.height(16.dp))
+                                
+                                val connectedCalls = stats["connectedCalls"] ?: 0
+                                val totalCalls = stats["totalCalls"] ?: 1
+                                val connectionRate = if (totalCalls > 0) (connectedCalls * 100 / totalCalls) else 0
+                                
+                                StatRow(
+                                    label = "Connected Calls",
+                                    value = "$connectedCalls",
+                                    icon = Icons.Default.CheckCircle,
+                                    color = Color(0xFF4CAF50)
+                                )
+                                StatRow(
+                                    label = "With Notes",
+                                    value = stats["withNotes"].toString(),
+                                    icon = Icons.AutoMirrored.Filled.StickyNote2,
+                                    color = MaterialTheme.colorScheme.secondary
+                                )
+                                
+                                Spacer(Modifier.height(12.dp))
+                                
+                                // Connection rate progress
+                                Column {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            "Connection Rate",
+                                            style = MaterialTheme.typography.labelMedium
+                                        )
+                                        Text(
+                                            "$connectionRate%",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    Spacer(Modifier.height(8.dp))
+                                    LinearProgressIndicator(
+                                        progress = { connectionRate / 100f },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(8.dp)
+                                            .clip(RoundedCornerShape(4.dp)),
+                                        color = MaterialTheme.colorScheme.primary,
+                                        trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -1280,7 +1396,10 @@ fun FilterChipsRow(
     onContactsFilterChange: (ContactsFilter) -> Unit,
     onAttendedFilterChange: (AttendedFilter) -> Unit,
     dateRange: DateRange,
-    onDateRangeChange: (DateRange, Long?, Long?) -> Unit
+    onDateRangeChange: (DateRange, Long?, Long?) -> Unit,
+    labelFilter: String,
+    onLabelFilterChange: (String) -> Unit,
+    availableLabels: List<String> = emptyList()
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
     
@@ -1334,6 +1453,20 @@ fun FilterChipsRow(
                     FilterOption("All Time", Icons.Default.AllInclusive, dateRange == DateRange.ALL) { onDateRangeChange(DateRange.ALL, null, null) }
                 )
             )
+
+            // Label Filter
+            if (availableLabels.isNotEmpty() || labelFilter.isNotEmpty()) {
+                FilterDropdownChip(
+                    label = if (labelFilter.isEmpty()) "Label" else labelFilter,
+                    icon = Icons.Default.Label,
+                    isActive = labelFilter.isNotEmpty(),
+                    options = listOf(
+                        FilterOption("All", Icons.Default.LabelOff, labelFilter.isEmpty()) { onLabelFilterChange("") }
+                    ) + availableLabels.map { label ->
+                        FilterOption(label, Icons.Default.Label, labelFilter == label) { onLabelFilterChange(label) }
+                    }
+                )
+            }
 
             // Call Type Filter
             FilterDropdownChip(
@@ -1875,6 +2008,7 @@ fun CallLogList(
     // Note Dialog States
     var callNoteTarget by remember { mutableStateOf<CallDataEntity?>(null) }
     var personNoteTarget by remember { mutableStateOf<CallDataEntity?>(null) }
+    var labelTarget by remember { mutableStateOf<CallDataEntity?>(null) }
 
     if (callNoteTarget != null) {
         NoteDialog(
@@ -1900,6 +2034,20 @@ fun CallLogList(
             onSave = { note -> 
                 personNoteTarget?.let { onSavePersonNote(it.phoneNumber, note) }
                 personNoteTarget = null 
+            }
+        )
+    }
+
+    if (labelTarget != null) {
+        NoteDialog(
+            title = "Person Label",
+            initialNote = personGroupsMap[labelTarget?.phoneNumber]?.label ?: "",
+            label = "Label (e.g., VIP, Lead, Spam)",
+            buttonText = "Save Label",
+            onDismiss = { labelTarget = null },
+            onSave = { label ->
+                labelTarget?.let { viewModel.savePersonLabel(it.phoneNumber, label) }
+                labelTarget = null
             }
         )
     }
@@ -2063,7 +2211,8 @@ fun CallLogList(
                         personGroupsMap[log.phoneNumber]?.let { onViewMoreClick(it) }
                     },
                     audioPlayer = audioPlayer,
-                    personGroup = personGroupsMap[log.phoneNumber]
+                    personGroup = personGroupsMap[log.phoneNumber],
+                    onLabelClick = { labelTarget = log }
                 )
             }
         }
@@ -2168,7 +2317,8 @@ fun CallLogItem(
     onAddToCrmClick: () -> Unit,
     onViewMoreClick: () -> Unit,
     audioPlayer: AudioPlayer,
-    personGroup: PersonGroup?
+    personGroup: PersonGroup?,
+    onLabelClick: () -> Unit
 ) {
     val isPlaying by audioPlayer.isPlaying.collectAsState()
     val progress by audioPlayer.progress.collectAsState()
@@ -2298,6 +2448,11 @@ fun CallLogItem(
                                     color = MaterialTheme.colorScheme.primary
                                 )
                             }
+                        }
+                        
+                        // Label Chip
+                        if (!personGroup?.label.isNullOrEmpty()) {
+                            LabelChip(label = personGroup!!.label!!, onClick = onLabelClick)
                         }
                     }
                 }
@@ -2445,6 +2600,13 @@ fun CallLogItem(
                         icon = Icons.Default.AppRegistration,
                         label = "CRM",
                         onClick = onAddToCrmClick
+                    )
+                    
+                    // Label
+                    ActionIconButton(
+                        icon = Icons.Default.Label,
+                        label = "Label",
+                        onClick = onLabelClick
                     )
                 }
                 
@@ -2684,6 +2846,7 @@ fun StatusIndicator(status: CallLogStatus) {
         CallLogStatus.UPLOADING -> MaterialTheme.colorScheme.primary.copy(alpha = 0.6f) to Icons.Default.CloudUpload
         CallLogStatus.COMPLETED -> Color(0xFF4CAF50).copy(alpha = 0.6f) to Icons.Default.CheckCircle
         CallLogStatus.FAILED -> MaterialTheme.colorScheme.error.copy(alpha = 0.6f) to Icons.Default.Error
+        CallLogStatus.NOTE_UPDATE_PENDING -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f) to Icons.AutoMirrored.Filled.StickyNote2
     }
 
     Icon(
@@ -2758,3 +2921,60 @@ fun cleanNumber(number: String): String {
     // Final pass to remove any remaining + (if it wasn't part of +91)
     return cleaned.filter { it.isDigit() }
 }
+
+@Composable
+fun EmptyState(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    modifier: Modifier = Modifier,
+    action: (@Composable () -> Unit)? = null
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Surface(
+            modifier = Modifier.size(100.dp),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Text(
+            text = description,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        
+        if (action != null) {
+            Spacer(modifier = Modifier.height(32.dp))
+            action()
+        }
+    }
+}
+

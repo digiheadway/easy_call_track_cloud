@@ -5,7 +5,8 @@ enum class CallLogStatus {
     COMPRESSING,
     UPLOADING,
     COMPLETED,
-    FAILED;
+    FAILED,
+    NOTE_UPDATE_PENDING;
 
     companion object {
         fun fromString(value: String): CallLogStatus {

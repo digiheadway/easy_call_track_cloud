@@ -2,7 +2,7 @@ import { useState } from 'react';
 import './Auth.css';
 
 interface LoginProps {
-    onLogin: (email: string, password: string) => void;
+    onLogin: (email: string, password: string) => Promise<void>;
     onSwitchToSignup: () => void;
 }
 
@@ -10,43 +10,42 @@ export default function Login({ onLogin, onSwitchToSignup }: LoginProps) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        setError(null);
 
-        // Simulate API call
-        setTimeout(() => {
-            onLogin(email, password);
+        try {
+            await onLogin(email, password);
+        } catch (err: any) {
+            setError(err.message || 'Failed to login');
             setLoading(false);
-        }, 1000);
+        }
     };
 
     return (
         <div className="auth-container">
-            <div className="auth-background">
-                <div className="gradient-orb orb-1"></div>
-                <div className="gradient-orb orb-2"></div>
-                <div className="gradient-orb orb-3"></div>
-            </div>
+            <div className="auth-background"></div>
 
             <div className="auth-card glass fade-in">
                 <div className="auth-header">
                     <div className="brand-icon">
                         <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                            <circle cx="24" cy="24" r="20" fill="url(#gradient)" />
-                            <path d="M24 14C18.48 14 14 18.48 14 24C14 29.52 18.48 34 24 34C29.52 34 34 29.52 34 24C34 18.48 29.52 14 24 14ZM24 30C20.69 30 18 27.31 18 24C18 20.69 20.69 18 24 18C27.31 18 30 20.69 30 24C30 27.31 27.31 30 24 30Z" fill="white" />
-                            <defs>
-                                <linearGradient id="gradient" x1="4" y1="4" x2="44" y2="44">
-                                    <stop offset="0%" stopColor="#6366f1" />
-                                    <stop offset="100%" stopColor="#8b5cf6" />
-                                </linearGradient>
-                            </defs>
+                            <circle cx="24" cy="24" r="20" fill="var(--primary)" fillOpacity="0.2" />
+                            <path d="M24 14C18.48 14 14 18.48 14 24C14 29.52 18.48 34 24 34C29.52 34 34 29.52 34 24C34 18.48 29.52 14 24 14ZM24 30C20.69 30 18 27.31 18 24C18 20.69 20.69 18 24 18C27.31 18 30 20.69 30 24C30 27.31 27.31 30 24 30Z" fill="var(--primary)" />
                         </svg>
                     </div>
-                    <h1 className="auth-title gradient-text">Welcome Back</h1>
+                    <h1 className="auth-title">Welcome Back</h1>
                     <p className="auth-subtitle">Sign in to access CallCloud Admin</p>
                 </div>
+
+                {error && (
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-lg mb-6 text-sm">
+                        {error}
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="auth-form">
                     <div className="form-group">

@@ -41,7 +41,7 @@ interface PersonDataDao {
     @Update
     suspend fun update(entity: PersonDataEntity)
     
-    @Query("UPDATE person_data SET personNote = :note, updatedAt = :timestamp WHERE phoneNumber = :phoneNumber")
+    @Query("UPDATE person_data SET personNote = :note, updatedAt = :timestamp, needsSync = 1 WHERE phoneNumber = :phoneNumber")
     suspend fun updatePersonNote(phoneNumber: String, note: String?, timestamp: Long = System.currentTimeMillis())
     
     @Query("UPDATE person_data SET contactName = :name, photoUri = :photoUri, updatedAt = :timestamp WHERE phoneNumber = :phoneNumber")
@@ -49,6 +49,24 @@ interface PersonDataDao {
     
     @Query("UPDATE person_data SET isExcluded = :isExcluded, updatedAt = :timestamp WHERE phoneNumber = :phoneNumber")
     suspend fun updateExclusion(phoneNumber: String, isExcluded: Boolean, timestamp: Long = System.currentTimeMillis())
+
+    @Query("UPDATE person_data SET label = :label, updatedAt = :timestamp, needsSync = 1 WHERE phoneNumber = :phoneNumber")
+    suspend fun updateLabel(phoneNumber: String, label: String?, timestamp: Long = System.currentTimeMillis())
+    
+    @Query("SELECT * FROM person_data WHERE needsSync = 1")
+    suspend fun getPendingSyncPersons(): List<PersonDataEntity>
+
+    @Query("SELECT * FROM person_data WHERE needsSync = 1")
+    fun getPendingSyncPersonsFlow(): Flow<List<PersonDataEntity>>
+
+    @Query("UPDATE person_data SET needsSync = :needsSync WHERE phoneNumber = :phoneNumber")
+    suspend fun updateSyncStatus(phoneNumber: String, needsSync: Boolean)
+
+    @Query("UPDATE person_data SET personNote = :note, needsSync = 0 WHERE phoneNumber = :phoneNumber")
+    suspend fun updatePersonNoteFromRemote(phoneNumber: String, note: String?)
+
+    @Query("UPDATE person_data SET label = :label, needsSync = 0 WHERE phoneNumber = :phoneNumber")
+    suspend fun updateLabelFromRemote(phoneNumber: String, label: String?)
     
     // ============================================
     // DELETE

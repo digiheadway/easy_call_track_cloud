@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme // Added
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -19,6 +20,8 @@ import com.calltracker.manager.ui.theme.CallCloudTheme
 
 import com.calltracker.manager.ui.utils.AudioPlayer
 import com.calltracker.manager.worker.UploadWorker
+import com.calltracker.manager.ui.onboarding.OnboardingScreen
+import com.calltracker.manager.data.SettingsRepository
 
 // Navigation tabs
 enum class AppTab(
@@ -35,9 +38,11 @@ enum class AppTab(
 class MainActivity : ComponentActivity() {
 
     private lateinit var audioPlayer: AudioPlayer
+    private lateinit var viewModel: MainViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        viewModel = androidx.lifecycle.ViewModelProvider(this)[MainViewModel::class.java]
         audioPlayer = AudioPlayer(context = this)
         
         // Start background upload worker
@@ -45,8 +50,42 @@ class MainActivity : ComponentActivity() {
         
         enableEdgeToEdge()
         setContent {
-            CallCloudTheme {
-                MainScreen(audioPlayer = audioPlayer)
+            val settingsRepository = remember { SettingsRepository(this) }
+            var showOnboarding by remember { 
+                mutableStateOf(!settingsRepository.isOnboardingCompleted()) 
+            }
+            
+            val themeMode by viewModel.themeMode.collectAsState()
+            val darkTheme = when(themeMode) {
+                "Light" -> false
+                "Dark" -> true
+                else -> androidx.compose.foundation.isSystemInDarkTheme()
+            }
+            
+            // Allow edge-to-edge content
+            val view = androidx.compose.ui.platform.LocalView.current
+            if (!view.isInEditMode) {
+                SideEffect {
+                    val window = (view.context as android.app.Activity).window
+                    androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+                    
+                    val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)
+                    controller.isAppearanceLightStatusBars = !darkTheme
+                    controller.isAppearanceLightNavigationBars = !darkTheme
+                }
+            }
+
+            CallCloudTheme(darkTheme = darkTheme) {
+                if (showOnboarding) {
+                    OnboardingScreen(
+                        onComplete = {
+                            settingsRepository.setOnboardingCompleted(true)
+                            showOnboarding = false
+                        }
+                    )
+                } else {
+                    MainScreen(audioPlayer = audioPlayer)
+                }
             }
         }
     }
@@ -60,6 +99,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        viewModel.refreshTheme()
         // Request notification permission on Android 13+
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != 

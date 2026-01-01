@@ -8,6 +8,8 @@ import com.calltracker.manager.data.db.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import com.calltracker.manager.network.PersonUpdateDto
+import com.calltracker.manager.network.CallUpdateDto
 
 /**
  * Unified repository for all call and person data.
@@ -68,8 +70,18 @@ class CallDataRepository(private val context: Context) {
     /**
      * Update call note
      */
+    /**
+     * Update call note and trigger sync if needed
+     */
     suspend fun updateCallNote(compositeId: String, note: String?) = withContext(Dispatchers.IO) {
         callDataDao.updateCallNote(compositeId, note)
+        
+        // If call was already synced, mark it for note update
+        val call = callDataDao.getByCompositeId(compositeId)
+        if (call != null && call.syncStatus == CallLogStatus.COMPLETED) {
+            callDataDao.updateSyncStatus(compositeId, CallLogStatus.NOTE_UPDATE_PENDING)
+            Log.d(TAG, "Marked call $compositeId as NOTE_UPDATE_PENDING")
+        }
     }
     
     /**
@@ -137,26 +149,84 @@ class CallDataRepository(private val context: Context) {
         val normalized = normalizePhoneNumber(phoneNumber)
         personDataDao.getByPhoneNumber(normalized)?.personNote
     }
+
+    suspend fun getPendingSyncPersons(): List<PersonDataEntity> = withContext(Dispatchers.IO) {
+        personDataDao.getPendingSyncPersons()
+    }
+
+    fun getPendingSyncPersonsFlow(): Flow<List<PersonDataEntity>> = personDataDao.getPendingSyncPersonsFlow()
+
+    suspend fun updatePersonSyncStatus(phoneNumber: String, needsSync: Boolean) = withContext(Dispatchers.IO) {
+        personDataDao.updateSyncStatus(phoneNumber, needsSync)
+    }
     
     // ============================================
     // PERSON DATA - WRITE OPERATIONS
     // ============================================
     
     /**
-     * Update person note
+     * Update person note and mark latest call as needing update
      */
     suspend fun updatePersonNote(phoneNumber: String, note: String?) = withContext(Dispatchers.IO) {
         val normalized = normalizePhoneNumber(phoneNumber)
+        
+        // 1. Update Person Table (Dao handles needsSync=1)
         val existing = personDataDao.getByPhoneNumber(normalized)
         if (existing != null) {
             personDataDao.updatePersonNote(normalized, note)
         } else {
+            personDataDao.insert(PersonDataEntity(
+                phoneNumber = normalized,
+                personNote = note,
+                needsSync = true
+            ))
+        }
+    }
+
+    /**
+     * Update person label
+     */
+    suspend fun updatePersonLabel(phoneNumber: String, label: String?) = withContext(Dispatchers.IO) {
+        val normalized = normalizePhoneNumber(phoneNumber)
+        val existing = personDataDao.getByPhoneNumber(normalized)
+        if (existing != null) {
+            personDataDao.updateLabel(normalized, label)
+        } else {
             // Create person entry if doesn't exist
             personDataDao.insert(PersonDataEntity(
                 phoneNumber = normalized,
-                personNote = note
+                label = label,
+                needsSync = true
             ))
         }
+    }
+    
+    /**
+     * Save updates fetched from remote
+     */
+    suspend fun saveRemoteUpdates(personUpdates: List<PersonUpdateDto>, callUpdates: List<CallUpdateDto>) = withContext(Dispatchers.IO) {
+         Log.d(TAG, "Saving ${personUpdates.size} person updates and ${callUpdates.size} call updates")
+         
+         personUpdates.forEach { update ->
+                val normalized = normalizePhoneNumber(update.phone)
+                Log.d(TAG, "Processing update for ${update.phone} -> Normalized: $normalized. Label: ${update.label}")
+                
+                val existing = personDataDao.getByPhoneNumber(normalized)
+                if (existing != null) {
+                    if (update.personNote != null) personDataDao.updatePersonNoteFromRemote(normalized, update.personNote)
+                    if (update.label != null) personDataDao.updateLabelFromRemote(normalized, update.label)
+                } else {
+                    Log.d(TAG, "Inserting new person entry for $normalized")
+                    personDataDao.insert(PersonDataEntity(
+                        phoneNumber = normalized,
+                        personNote = update.personNote,
+                        label = update.label
+                    ))
+                }
+         }
+         callUpdates.forEach { update ->
+             callDataDao.updateCallNote(update.uniqueId, update.note)
+         }
     }
     
     /**
@@ -190,14 +260,21 @@ class CallDataRepository(private val context: Context) {
         
         val filterDate = settingsRepository.getTrackStartDate()
         val deviceId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+        val simSelection = settingsRepository.getSimSelection()
+        
+        // Skip if tracking is Off
+        if (simSelection == "Off") {
+            Log.d(TAG, "Call tracking is OFF, skipping sync")
+            return@withContext
+        }
         
         // Get existing IDs once
         val existingIds = callDataDao.getAllCompositeIds().toSet()
         Log.d(TAG, "Existing calls in Room: ${existingIds.size}")
         
-        // Fetch from system call log
-        val systemCalls = fetchSystemCallLog(filterDate, deviceId)
-        Log.d(TAG, "System call log returned: ${systemCalls.size} calls")
+        // Fetch from system call log with SIM filter  
+        val systemCalls = fetchSystemCallLog(filterDate, deviceId, simSelection)
+        Log.d(TAG, "System call log returned: ${systemCalls.size} calls (SIM: $simSelection)")
         
         val newCalls = mutableListOf<CallDataEntity>()
         val callsToUpdateRecording = mutableListOf<Pair<String, String>>()
@@ -278,6 +355,7 @@ class CallDataRepository(private val context: Context) {
                 contactName = lastCall.contactName ?: existing?.contactName,
                 photoUri = lastCall.photoUri ?: existing?.photoUri,
                 personNote = existing?.personNote,  // Preserve existing note
+                label = existing?.label, // Preserve existing label
                 lastCallType = lastCall.callType,
                 lastCallDuration = lastCall.duration,
                 lastCallDate = lastCall.callDate,
@@ -290,7 +368,8 @@ class CallDataRepository(private val context: Context) {
                 totalDuration = totalDuration,
                 createdAt = existing?.createdAt ?: System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis(),
-                isExcluded = existing?.isExcluded ?: false
+                isExcluded = existing?.isExcluded ?: false,
+                needsSync = existing?.needsSync ?: false
             )
             
             personsToUpdate.add(personEntity)
@@ -303,10 +382,14 @@ class CallDataRepository(private val context: Context) {
     }
     
     /**
-     * Fetch calls from Android system call log
+     * Fetch calls from Android system call log, filtered by SIM selection
      */
-    private fun fetchSystemCallLog(startDate: Long, deviceId: String): List<CallDataEntity> {
+    private fun fetchSystemCallLog(startDate: Long, deviceId: String, simSelection: String): List<CallDataEntity> {
         val calls = mutableListOf<CallDataEntity>()
+        
+        // Get SIM IDs from settings to match subscription IDs
+        val sim1SubId = settingsRepository.getSim1SubscriptionId()
+        val sim2SubId = settingsRepository.getSim2SubscriptionId()
         
         val projection = arrayOf(
             CallLog.Calls._ID,
@@ -344,13 +427,26 @@ class CallDataRepository(private val context: Context) {
                 
                 while (it.moveToNext()) {
                     val systemId = it.getString(idIdx) ?: continue
-                    val number = it.getString(numberIdx) ?: "Unknown"
+                    val rawNumber = it.getString(numberIdx) ?: "Unknown"
+                    val number = normalizePhoneNumber(rawNumber)
                     val name = it.getString(nameIdx)
                     val type = it.getInt(typeIdx)
                     val date = it.getLong(dateIdx)
                     val duration = it.getLong(durationIdx)
                     val photoUri = it.getString(photoIdx)
                     val subId = if (subIdIdx != -1) it.getInt(subIdIdx) else null
+                    
+                    // Filter by SIM selection
+                    val shouldInclude = when (simSelection) {
+                        "Sim1" -> subId == sim1SubId
+                        "Sim2" -> subId == sim2SubId
+                        "Both" -> true  // Include all
+                        else -> false  // "Off" - exclude all
+                    }
+                    
+                    if (!shouldInclude) {
+                        continue  // Skip this call
+                    }
                     
                     val compositeId = generateCompositeId(type, deviceId, number, date)
                     
@@ -387,8 +483,28 @@ class CallDataRepository(private val context: Context) {
     /**
      * Normalize phone number for consistent person lookup
      */
-    private fun normalizePhoneNumber(number: String): String {
-        return number.filter { it.isDigit() || it == '+' }
+    fun normalizePhoneNumber(number: String): String {
+        val strip = number.filter { it.isDigit() || it == '+' }
+        
+        try {
+            val tm = context.getSystemService(Context.TELEPHONY_SERVICE) as? android.telephony.TelephonyManager
+            var countryIso = tm?.networkCountryIso
+            
+            if (countryIso.isNullOrEmpty()) {
+                countryIso = java.util.Locale.getDefault().country
+            }
+            
+            if (!countryIso.isNullOrEmpty()) {
+                val formatted = android.telephony.PhoneNumberUtils.formatNumberToE164(strip, countryIso.uppercase())
+                if (formatted != null) {
+                    return formatted
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to normalize number $number: ${e.message}")
+        }
+        
+        return strip
     }
     
     // ============================================

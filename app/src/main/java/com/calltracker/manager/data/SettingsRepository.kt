@@ -14,9 +14,31 @@ class SettingsRepository(private val context: Context) {
     private val KEY_CALLER_PHONE_SIM1 = "caller_phone_sim1"
     private val KEY_CALLER_PHONE_SIM2 = "caller_phone_sim2"
     private val KEY_WHATSAPP_PREFERENCE = "whatsapp_preference"
+    private val KEY_LAST_SYNC_TIME = "last_sync_time"
+    private val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
+    private val KEY_SIM1_SUB_ID = "sim1_sub_id"
+    private val KEY_SIM2_SUB_ID = "sim2_sub_id"
 
     private val prefs by lazy {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    }
+
+    fun getSim1SubscriptionId(): Int? {
+        val id = prefs.getInt(KEY_SIM1_SUB_ID, -1)
+        return if (id != -1) id else null
+    }
+
+    fun setSim1SubscriptionId(id: Int) {
+        prefs.edit().putInt(KEY_SIM1_SUB_ID, id).apply()
+    }
+
+    fun getSim2SubscriptionId(): Int? {
+        val id = prefs.getInt(KEY_SIM2_SUB_ID, -1)
+        return if (id != -1) id else null
+    }
+
+    fun setSim2SubscriptionId(id: Int) {
+        prefs.edit().putInt(KEY_SIM2_SUB_ID, id).apply()
     }
 
     // WhatsApp Preference: Package Name or "Always Ask"
@@ -92,6 +114,32 @@ class SettingsRepository(private val context: Context) {
 
     fun setCallerPhoneSim2(phone: String) {
         prefs.edit().putString(KEY_CALLER_PHONE_SIM2, phone).apply()
+    }
+
+    private val KEY_THEME_MODE = "theme_mode" // "System", "Light", "Dark"
+
+    fun getThemeMode(): String {
+        return prefs.getString(KEY_THEME_MODE, "System") ?: "System"
+    }
+
+    fun setThemeMode(mode: String) {
+        prefs.edit().putString(KEY_THEME_MODE, mode).apply()
+    }
+
+    fun getLastSyncTime(): Long {
+        return prefs.getLong(KEY_LAST_SYNC_TIME, 0L)
+    }
+
+    fun setLastSyncTime(time: Long) {
+        prefs.edit().putLong(KEY_LAST_SYNC_TIME, time).apply()
+    }
+
+    fun isOnboardingCompleted(): Boolean {
+        return prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
+    }
+
+    fun setOnboardingCompleted(completed: Boolean) {
+        prefs.edit().putBoolean(KEY_ONBOARDING_COMPLETED, completed).apply()
     }
 
     fun clearAllSettings() {

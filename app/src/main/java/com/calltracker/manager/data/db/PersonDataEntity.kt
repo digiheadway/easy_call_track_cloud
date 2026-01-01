@@ -16,6 +16,7 @@ data class PersonDataEntity(
     val contactName: String? = null,
     val photoUri: String? = null,
     val personNote: String? = null,
+    val label: String? = null,
     
     // Last call summary
     val lastCallType: Int? = null,
@@ -36,5 +37,8 @@ data class PersonDataEntity(
     
     // Metadata
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    
+    // Sync status
+    val needsSync: Boolean = false
 )

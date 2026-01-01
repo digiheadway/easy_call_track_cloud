@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import android.widget.Toast
+import android.util.Log
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.calltracker.manager.worker.UploadWorker
@@ -44,8 +45,14 @@ data class SettingsUiState(
     val availableSims: List<SimInfo> = emptyList(),
     val excludedPersons: List<com.calltracker.manager.data.db.PersonDataEntity> = emptyList(),
     val lastSyncStats: String? = null,
+    val lastSyncTime: Long = 0L,
     val whatsappPreference: String = "Always Ask",
-    val availableWhatsappApps: List<AppInfo> = emptyList()
+    val availableWhatsappApps: List<AppInfo> = emptyList(),
+    val isVerifying: Boolean = false,
+    val verificationStatus: String? = null, // null, "verified", "failed"
+    val verifiedOrgName: String? = null,
+    val verifiedEmployeeName: String? = null,
+    val themeMode: String = "System" // "System", "Light", "Dark"
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -100,9 +107,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 pairingCode = pairingCode,
                 callerPhoneSim1 = settingsRepository.getCallerPhoneSim1(),
                 callerPhoneSim2 = settingsRepository.getCallerPhoneSim2(),
-                whatsappPreference = settingsRepository.getWhatsappPreference()
+                whatsappPreference = settingsRepository.getWhatsappPreference(),
+                themeMode = settingsRepository.getThemeMode(),
+                lastSyncTime = settingsRepository.getLastSyncTime()
             )
         }
+    }
+    
+    fun updateThemeMode(mode: String) {
+        settingsRepository.setThemeMode(mode)
+        _uiState.update { it.copy(themeMode = mode) }
     }
 
     private fun checkPermissions() {
@@ -286,37 +300,130 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun updatePairingCode(code: String) {
-        // Parse pairing code: format is ORGID-USERID (e.g., GOOGLE-356)
-        val upperCode = code.uppercase()
-        
-        if (upperCode.contains("-")) {
-            val parts = upperCode.split("-", limit = 2)
-            val orgId = parts[0].trim()
-            val userId = parts.getOrElse(1) { "" }.trim()
-            
-            android.util.Log.d("SettingsViewModel", "Parsing pairing code: '$upperCode' -> orgId='$orgId', userId='$userId'")
-            
-            settingsRepository.setOrganisationId(orgId)
-            settingsRepository.setUserId(userId)
-        } else {
-            // No hyphen yet - store the partial input as orgId for now
-            android.util.Log.d("SettingsViewModel", "Pairing code incomplete (no hyphen): '$upperCode'")
-            settingsRepository.setOrganisationId(upperCode.trim())
-            settingsRepository.setUserId("")
-        }
-        
-        _uiState.update { it.copy(pairingCode = upperCode) }
+        // Just update the UI state, don't save to repository yet.
+        // Saving will happen after verification in saveAccountInfo.
+        _uiState.update { it.copy(pairingCode = code.uppercase().trim()) }
     }
 
     fun updateCallerPhoneSim1(phone: String) {
+        // Save to repository for Track Calls settings
+        // These are independent of the Join Org verification flow
         settingsRepository.setCallerPhoneSim1(phone)
         _uiState.update { it.copy(callerPhoneSim1 = phone) }
     }
 
     fun updateCallerPhoneSim2(phone: String) {
+        // Save to repository for Track Calls settings
+        // These are independent of the Join Org verification flow
         settingsRepository.setCallerPhoneSim2(phone)
         _uiState.update { it.copy(callerPhoneSim2 = phone) }
     }
+
+    fun resetVerificationState() {
+        _uiState.update {
+            it.copy(
+                verificationStatus = null,
+                verifiedOrgName = null,
+                verifiedEmployeeName = null
+            )
+        }
+    }
+
+    fun verifyPairingCodeOnly(pairingCode: String) {
+        val ctx = getApplication<Application>()
+        val trimmedCode = pairingCode.trim().uppercase()
+        
+        // Reset previous verification
+        resetVerificationState()
+        
+        // Client-side validation
+        if (!trimmedCode.contains("-")) {
+            _uiState.update { it.copy(verificationStatus = "failed") }
+            Toast.makeText(ctx, "Invalid format. Use: ORGID-USERID", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val parts = trimmedCode.split("-", limit = 2)
+        if (parts.size != 2) {
+            _uiState.update { it.copy(verificationStatus = "failed") }
+            Toast.makeText(ctx, "Invalid format. Use: ORGID-USERID", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        val orgId = parts[0].trim()
+        val userId = parts[1].trim()
+
+        if (orgId.isEmpty() || userId.isEmpty()) {
+            _uiState.update { it.copy(verificationStatus = "failed") }
+            Toast.makeText(ctx, "Both ORGID and USERID are required", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Validate ORGID format (letters/numbers only)
+        if (!orgId.matches(Regex("^[A-Z0-9]+$"))) {
+            _uiState.update { it.copy(verificationStatus = "failed") }
+            Toast.makeText(ctx, "ORGID must contain only letters and numbers", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Validate USERID format (numbers only)
+        if (!userId.matches(Regex("^[0-9]+$"))) {
+            _uiState.update { it.copy(verificationStatus = "failed") }
+            Toast.makeText(ctx, "USERID must be a number", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // All client-side validations passed - now verify with backend
+        val deviceId = android.provider.Settings.Secure.getString(
+            ctx.contentResolver,
+            android.provider.Settings.Secure.ANDROID_ID
+        ) ?: "unknown_device"
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isVerifying = true) }
+            try {
+                Log.d("SettingsViewModel", "Verifying pairing code (check only): $orgId-$userId")
+                
+                val response = com.calltracker.manager.network.NetworkClient.api.verifyPairingCode(
+                    action = "verify_pairing_code",
+                    orgId = orgId,
+                    userId = userId,
+                    deviceId = deviceId
+                )
+
+                if (response.isSuccessful && response.body()?.get("success") == true) {
+                    val employeeName = response.body()?.get("employee_name")?.toString() ?: "Unknown"
+                    
+                    // For now, use ORGID as org name (could be fetched from backend in future)
+                    _uiState.update { 
+                        it.copy(
+                            verificationStatus = "verified",
+                            verifiedOrgName = orgId,
+                            verifiedEmployeeName = employeeName,
+                            pairingCode = trimmedCode
+                        )
+                    }
+                    
+                    Log.d("SettingsViewModel", "Verification successful: $employeeName from $orgId")
+                } else {
+                    val error = response.body()?.get("error")?.toString() 
+                        ?: response.body()?.get("message")?.toString()
+                        ?: "Invalid pairing code"
+                    
+                    _uiState.update { it.copy(verificationStatus = "failed") }
+                    Toast.makeText(ctx, error, Toast.LENGTH_LONG).show()
+                    Log.e("SettingsViewModel", "Verification failed: $error")
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(verificationStatus = "failed") }
+                Toast.makeText(ctx, "Network error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                Log.e("SettingsViewModel", "Verification error", e)
+            } finally {
+                _uiState.update { it.copy(isVerifying = false) }
+            }
+        }
+    }
+
 
     fun syncCallManually() {
         val ctx = getApplication<Application>()
@@ -325,8 +432,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val callerPhone1 = settingsRepository.getCallerPhoneSim1()
         val callerPhone2 = settingsRepository.getCallerPhoneSim2()
 
-        if (orgId.isEmpty() || userId.isEmpty() || (callerPhone1.isEmpty() && callerPhone2.isEmpty())) {
-            Toast.makeText(ctx, "Please set Pairing Code and at least one Caller Phone", Toast.LENGTH_LONG).show()
+        // Check pairing code first
+        if (orgId.isEmpty() || userId.isEmpty()) {
+            Toast.makeText(ctx, "❌ Pairing Code not set\nPlease join an organisation first", Toast.LENGTH_LONG).show()
+            return
+        }
+        
+        // Then check phone numbers
+        if (callerPhone1.isEmpty() && callerPhone2.isEmpty()) {
+            Toast.makeText(ctx, "❌ Caller Phone not set\nPlease set at least one SIM phone number in Track Calls settings", Toast.LENGTH_LONG).show()
             return
         }
 
@@ -345,9 +459,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         androidx.work.WorkInfo.State.SUCCEEDED -> {
                             val total = workInfo.outputData.getInt("total_calls", 0)
                             val synced = workInfo.outputData.getInt("synced_now", 0)
+                            val now = System.currentTimeMillis()
+                            settingsRepository.setLastSyncTime(now)
                             _uiState.update { it.copy(
                                 isSyncing = false, 
-                                lastSyncStats = "Success! Found $total calls, uploaded $synced."
+                                lastSyncStats = "Success! Found $total calls, uploaded $synced.",
+                                lastSyncTime = now
                             )}
                         }
                         androidx.work.WorkInfo.State.FAILED -> {
@@ -414,27 +531,175 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun saveAccountInfo() {
+    fun saveAccountInfo(onSuccess: () -> Unit = {}) {
         val ctx = getApplication<Application>()
-        val pairingCode = _uiState.value.pairingCode
-        val phone1 = _uiState.value.callerPhoneSim1
-        val phone2 = _uiState.value.callerPhoneSim2
+        val pairingCode = _uiState.value.pairingCode.trim()
+        val phone1 = _uiState.value.callerPhoneSim1.trim()
+        val phone2 = _uiState.value.callerPhoneSim2.trim()
         
-        if (pairingCode.isEmpty() || (phone1.isEmpty() && phone2.isEmpty())) {
-            Toast.makeText(ctx, "Please fill in Pairing Code and at least one Caller Phone", Toast.LENGTH_SHORT).show()
+        // Validate required fields
+        if (pairingCode.isEmpty()) {
+            Toast.makeText(ctx, "Please enter a Pairing Code", Toast.LENGTH_SHORT).show()
             return
         }
         
+        if (phone1.isEmpty() && phone2.isEmpty()) {
+            Toast.makeText(ctx, "Please enter at least one phone number", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        // Validate pairing code format (must be ORGID-USERID)
         if (!pairingCode.contains("-")) {
-            Toast.makeText(ctx, "Invalid Pairing Code format. Use ORGID-USERID", Toast.LENGTH_SHORT).show()
+            Toast.makeText(ctx, "Invalid format. Use: ORGID-USERID (e.g., GOOGLE-123)", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val parts = pairingCode.split("-", limit = 2)
+        if (parts.size != 2) {
+            Toast.makeText(ctx, "Invalid format. Use: ORGID-USERID (e.g., GOOGLE-123)", Toast.LENGTH_LONG).show()
             return
         }
         
-        Toast.makeText(ctx, "Account information saved", Toast.LENGTH_SHORT).show()
+        val orgId = parts[0].trim()
+        val userId = parts[1].trim()
+
+        // Validate both parts are not empty
+        if (orgId.isEmpty() || userId.isEmpty()) {
+            Toast.makeText(ctx, "Invalid format. Both ORGID and USERID are required", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        // Validate ORGID format (letters/numbers only, no special chars)
+        if (!orgId.matches(Regex("^[A-Z0-9]+$"))) {
+            Toast.makeText(ctx, "ORGID must contain only letters and numbers", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        // Validate USERID format (numbers only)
+        if (!userId.matches(Regex("^[0-9]+$"))) {
+            Toast.makeText(ctx, "USERID must be a number", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val deviceId = android.provider.Settings.Secure.getString(
+            ctx.contentResolver,
+            android.provider.Settings.Secure.ANDROID_ID
+        ) ?: "unknown_device"
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isVerifying = true) }
+            try {
+                Log.d("SettingsViewModel", "Verifying pairing code: $orgId-$userId with device: $deviceId")
+                
+                val response = com.calltracker.manager.network.NetworkClient.api.verifyPairingCode(
+                    action = "verify_pairing_code",
+                    orgId = orgId,
+                    userId = userId,
+                    deviceId = deviceId
+                )
+
+                Log.d("SettingsViewModel", "Verification response: ${response.code()}, body: ${response.body()}")
+
+                if (response.isSuccessful && response.body()?.get("success") == true) {
+                    // SUCCESS! Now save everything to repository
+                    settingsRepository.setOrganisationId(orgId)
+                    settingsRepository.setUserId(userId)
+                    settingsRepository.setCallerPhoneSim1(phone1)
+                    settingsRepository.setCallerPhoneSim2(phone2)
+                    
+                    // Update UI state with saved values
+                    _uiState.update { 
+                        it.copy(
+                            pairingCode = "$orgId-$userId",
+                            callerPhoneSim1 = phone1,
+                            callerPhoneSim2 = phone2
+                        )
+                    }
+                    
+                    val employeeName = response.body()?.get("employee_name")?.toString() ?: "User"
+                    val message = response.body()?.get("message")?.toString() ?: "Pairing successful"
+                    
+                    Toast.makeText(ctx, "✓ $message\nWelcome, $employeeName!", Toast.LENGTH_LONG).show()
+                    Log.d("SettingsViewModel", "Pairing successful for employee: $employeeName")
+                    
+                    onSuccess()
+                } else {
+                    // FAILED - Don't save anything
+                    val error = response.body()?.get("error")?.toString() 
+                        ?: response.body()?.get("message")?.toString()
+                        ?: response.errorBody()?.string()
+                        ?: "Verification failed. Please check your pairing code."
+                    
+                    Log.e("SettingsViewModel", "Verification failed: $error")
+                    Toast.makeText(ctx, "✗ $error", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                Log.e("SettingsViewModel", "Verification error", e)
+                Toast.makeText(ctx, "✗ Network error: ${e.localizedMessage}\nPlease check your internet connection.", Toast.LENGTH_LONG).show()
+            } finally {
+                _uiState.update { it.copy(isVerifying = false) }
+            }
+        }
     }
+
+    fun connectVerifiedOrganisation(onSuccess: () -> Unit = {}) {
+        val ctx = getApplication<Application>()
+        val pairingCode = _uiState.value.pairingCode.trim()
+        
+        // Ensure it's already verified
+        if (_uiState.value.verificationStatus != "verified") {
+            Toast.makeText(ctx, "Please verify pairing code first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        // Parse the pairing code
+        val parts = pairingCode.split("-", limit = 2)
+        if (parts.size != 2) {
+            Toast.makeText(ctx, "Invalid pairing code format", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        val orgId = parts[0].trim()
+        val userId = parts[1].trim()
+        
+        // Save to repository
+        settingsRepository.setOrganisationId(orgId)
+        settingsRepository.setUserId(userId)
+        
+        // Update UI state
+        _uiState.update {
+            it.copy(pairingCode = "$orgId-$userId")
+        }
+        
+        Toast.makeText(ctx, "✓ Connected to ${_uiState.value.verifiedOrgName}!", Toast.LENGTH_LONG).show()
+        Log.d("SettingsViewModel", "Connected to organization: $orgId as user: $userId")
+        
+        onSuccess()
+    }
+
     fun exportLogs() {
         viewModelScope.launch {
             com.calltracker.manager.util.LogExporter.exportAndShareLogs(getApplication())
         }
+    }
+    
+    fun leaveOrganisation() {
+        settingsRepository.setOrganisationId("")
+        settingsRepository.setUserId("")
+        _uiState.update { it.copy(pairingCode = "") }
+        Toast.makeText(getApplication(), "Left organisation successfully", Toast.LENGTH_SHORT).show()
+    }
+    
+    fun resetOnboarding() {
+        settingsRepository.setOnboardingCompleted(false)
+        val ctx = getApplication<Application>()
+        Toast.makeText(ctx, "Restarting app to show onboarding...", Toast.LENGTH_SHORT).show()
+        
+        // Restart the app
+        val intent = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)
+        intent?.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        intent?.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        ctx.startActivity(intent)
+        android.os.Process.killProcess(android.os.Process.myPid())
     }
 }

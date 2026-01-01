@@ -1,9 +1,11 @@
 interface SettingsProps {
     user: {
+        id: number;
         name: string;
         email: string;
         organizationName: string;
-        organizationId: string;
+        org_id: string; // Updated from organizationId
+        role: string;
     };
     onLogout: () => void;
 }
@@ -32,7 +34,7 @@ export default function Settings({ user, onLogout: _onLogout }: SettingsProps) {
                                 <input
                                     type="text"
                                     className="form-input"
-                                    value={user.organizationId}
+                                    value={user.org_id}
                                     disabled
                                 />
                                 <span className="badge badge-primary">Verified</span>

@@ -1,74 +1,114 @@
+import { useState, useEffect } from 'react';
 import './Pages.css';
+import api from '../../api/client';
 
 interface OverviewProps {
     organizationId: string;
 }
 
 export default function Overview({ organizationId }: OverviewProps) {
-    // Mock data - in real app, this would come from API
-    const stats = [
-        {
-            label: 'Total Calls',
-            value: '2,459',
-            change: '+12.5%',
-            trend: 'up',
-            icon: (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                </svg>
-            ),
-            color: 'primary'
-        },
-        {
-            label: 'Active Employees',
-            value: '48',
-            change: '+3',
-            trend: 'up',
-            icon: (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-            ),
-            color: 'success'
-        },
-        {
-            label: 'Avg Call Duration',
-            value: '4:32',
-            change: '-8.2%',
-            trend: 'down',
-            icon: (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 16 14" />
-                </svg>
-            ),
-            color: 'info'
-        },
-        {
-            label: 'Recordings',
-            value: '1,842',
-            change: '+18.3%',
-            trend: 'up',
-            icon: (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" />
-                    <polygon points="10 8 16 12 10 16 10 8" />
-                </svg>
-            ),
-            color: 'secondary'
-        },
-    ];
+    const [stats, setStats] = useState<any[]>([]);
+    const [recentActivities, setRecentActivities] = useState<any[]>([]);
+    const [trends, setTrends] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const recentActivities = [
-        { employee: 'John Smith', action: 'Made a call to', contact: '+1 234 567 8900', time: '2 min ago', type: 'call' },
-        { employee: 'Sarah Johnson', action: 'Added new employee', contact: 'Mike Wilson', time: '15 min ago', type: 'employee' },
-        { employee: 'David Lee', action: 'Uploaded recording for', contact: 'Client Meeting', time: '1 hour ago', type: 'recording' },
-        { employee: 'Emma Davis', action: 'Generated report', contact: 'Weekly Summary', time: '2 hours ago', type: 'report' },
-        { employee: 'James Brown', action: 'Made a call to', contact: '+1 987 654 3210', time: '3 hours ago', type: 'call' },
-    ];
+    useEffect(() => {
+        loadData();
+    }, [organizationId]);
+
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const response = await api.getOverviewReport('week');
+            if (response.status && response.data) {
+                const metrics = response.data.metrics;
+                const apiTrends = response.data.trends || [];
+                setTrends(apiTrends);
+
+                setStats([
+                    {
+                        label: 'Total Calls',
+                        value: (metrics.total_calls || 0).toLocaleString(),
+                        change: metrics.success_rate + '% Success',
+                        trend: 'up',
+                        icon: (
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                            </svg>
+                        ),
+                        color: 'primary'
+                    },
+                    {
+                        label: 'Active Employees',
+                        value: (metrics.active_employees || 0).toLocaleString(),
+                        change: 'Online Now',
+                        trend: 'up',
+                        icon: (
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                            </svg>
+                        ),
+                        color: 'success'
+                    },
+                    {
+                        label: 'Avg Call Duration',
+                        value: metrics.avg_duration_formatted || '0:00',
+                        change: 'Per Interaction',
+                        trend: 'up',
+                        icon: (
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <polyline points="12 6 12 12 16 14" />
+                            </svg>
+                        ),
+                        color: 'info'
+                    },
+                    {
+                        label: 'Recordings',
+                        value: (metrics.recordings_count || 0).toLocaleString(),
+                        change: 'Stored in Cloud',
+                        trend: 'up',
+                        icon: (
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <polygon points="10 8 16 12 10 16 10 8" />
+                            </svg>
+                        ),
+                        color: 'secondary'
+                    },
+                ]);
+            }
+
+            // Load some recent calls as activity
+            const callsResponse = await api.getCalls({ limit: 5 });
+            if (callsResponse.status && callsResponse.data) {
+                const calls = Array.isArray(callsResponse.data) ? callsResponse.data : callsResponse.data.calls || [];
+                setRecentActivities(calls.map((call: any) => ({
+                    employee: call.employee_name || 'System',
+                    action: call.type === 'Incoming' ? 'received a call from' : 'made a call to',
+                    contact: call.contact_name || call.phone_number,
+                    time: new Date(call.call_time).toLocaleString(),
+                    type: 'call'
+                })));
+            }
+
+        } catch (error) {
+            console.error('Failed to load dashboard data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="page-container flex items-center justify-center py-20">
+                <div className="text-xl text-muted">Loading dashboard data...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="page-container">
@@ -83,7 +123,7 @@ export default function Overview({ organizationId }: OverviewProps) {
                             <div className="stat-label">{stat.label}</div>
                             <div className="stat-value">{stat.value}</div>
                             <div className={`stat-change ${stat.trend}`}>
-                                {stat.trend === 'up' ? '↑' : '↓'} {stat.change}
+                                {stat.change}
                             </div>
                         </div>
                     </div>
@@ -95,33 +135,32 @@ export default function Overview({ organizationId }: OverviewProps) {
                 {/* Call Trends Chart */}
                 <div className="card">
                     <div className="card-header">
-                        <h3 className="card-title">Call Trends</h3>
-                        <select className="form-select" style={{ width: 'auto' }}>
-                            <option>Last 7 Days</option>
-                            <option>Last 30 Days</option>
-                            <option>Last 90 Days</option>
-                        </select>
+                        <h3 className="card-title">Call Trends (Last 7 Days)</h3>
                     </div>
                     <div className="chart-container">
                         <div className="chart-placeholder">
-                            <svg width="100%" height="300" viewBox="0 0 800 300">
-                                <defs>
-                                    <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                        <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.3" />
-                                        <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
-                                    </linearGradient>
-                                </defs>
-                                <path
-                                    d="M 0 250 L 100 200 L 200 220 L 300 150 L 400 180 L 500 120 L 600 160 L 700 100 L 800 140"
-                                    fill="none"
-                                    stroke="var(--primary)"
-                                    strokeWidth="3"
-                                />
-                                <path
-                                    d="M 0 250 L 100 200 L 200 220 L 300 150 L 400 180 L 500 120 L 600 160 L 700 100 L 800 140 L 800 300 L 0 300 Z"
-                                    fill="url(#chartGradient)"
-                                />
-                            </svg>
+                            {trends.length > 0 ? (
+                                <svg width="100%" height="300" viewBox="0 0 800 300">
+                                    <defs>
+                                        <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.3" />
+                                            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
+                                        </linearGradient>
+                                    </defs>
+                                    <path
+                                        d={`M ${trends.map((t, i) => `${(i * 800) / (trends.length - 1)} ${250 - (t.call_count * 10)}`).join(' L ')}`}
+                                        fill="none"
+                                        stroke="var(--primary)"
+                                        strokeWidth="3"
+                                    />
+                                    <path
+                                        d={`M 0 300 L ${trends.map((t, i) => `${(i * 800) / (trends.length - 1)} ${250 - (t.call_count * 10)}`).join(' L ')} L 800 300 Z`}
+                                        fill="url(#chartGradient)"
+                                    />
+                                </svg>
+                            ) : (
+                                <div className="flex items-center justify-center h-full text-muted">No trend data available</div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -130,36 +169,14 @@ export default function Overview({ organizationId }: OverviewProps) {
                 <div className="card">
                     <div className="card-header">
                         <h3 className="card-title">Recent Activity</h3>
-                        <button className="btn btn-ghost text-sm">View All</button>
                     </div>
                     <div className="activity-list">
-                        {recentActivities.map((activity, index) => (
+                        {recentActivities.length > 0 ? recentActivities.map((activity, index) => (
                             <div key={index} className="activity-item">
                                 <div className={`activity-icon ${activity.type}`}>
                                     {activity.type === 'call' && (
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                                        </svg>
-                                    )}
-                                    {activity.type === 'employee' && (
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                                            <circle cx="8.5" cy="7" r="4" />
-                                            <line x1="20" y1="8" x2="20" y2="14" />
-                                            <line x1="23" y1="11" x2="17" y2="11" />
-                                        </svg>
-                                    )}
-                                    {activity.type === 'recording' && (
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <circle cx="12" cy="12" r="10" />
-                                            <polygon points="10 8 16 12 10 16 10 8" />
-                                        </svg>
-                                    )}
-                                    {activity.type === 'report' && (
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <line x1="12" y1="20" x2="12" y2="10" />
-                                            <line x1="18" y1="20" x2="18" y2="4" />
-                                            <line x1="6" y1="20" x2="6" y2="16" />
                                         </svg>
                                     )}
                                 </div>
@@ -170,7 +187,9 @@ export default function Overview({ organizationId }: OverviewProps) {
                                     <div className="activity-time">{activity.time}</div>
                                 </div>
                             </div>
-                        ))}
+                        )) : (
+                            <div className="p-8 text-center text-muted">No recent activity</div>
+                        )}
                     </div>
                 </div>
             </div>

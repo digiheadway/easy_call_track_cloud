@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './Auth.css';
 
 interface SignupProps {
-    onSignup: (data: SignupData) => void;
+    onSignup: (data: SignupData) => Promise<void>;
     onSwitchToLogin: () => void;
 }
 
@@ -24,37 +24,48 @@ export default function Signup({ onSignup, onSwitchToLogin }: SignupProps) {
     });
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    // Generate unique 6-character organization ID
-    const generateOrgId = () => {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    useEffect(() => {
+        // Generate Org ID automatically on mount
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         let result = '';
-        for (let i = 0; i < 6; i++) {
-            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        const length = 6;
+        for (let i = 0; i < length; i++) {
+            result += characters.charAt(Math.floor(Math.random() * characters.length));
         }
-        setFormData({ ...formData, organizationId: result });
-    };
+        setFormData(prev => ({
+            ...prev,
+            organizationId: result,
+            organizationName: 'Default Organization',
+            adminName: 'Admin User'
+        }));
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError(null);
 
         if (formData.password !== confirmPassword) {
-            alert('Passwords do not match!');
-            return;
-        }
-
-        if (formData.organizationId.length !== 6) {
-            alert('Organization ID must be 6 characters!');
+            setError('Passwords do not match!');
             return;
         }
 
         setLoading(true);
 
-        // Simulate API call
-        setTimeout(() => {
-            onSignup(formData);
+        try {
+            // Update organization name based on email if we want it to be slightly more unique
+            const defaultOrgName = formData.email.split('@')[0] + "'s Org";
+            const finalData = {
+                ...formData,
+                organizationName: formData.organizationName === 'Default Organization' ? defaultOrgName : formData.organizationName,
+                adminName: formData.adminName === 'Admin User' ? formData.email.split('@')[0] : formData.adminName
+            };
+            await onSignup(finalData);
+        } catch (err: any) {
+            setError(err.message || 'Failed to create account');
             setLoading(false);
-        }, 1000);
+        }
     };
 
     const handleChange = (field: keyof SignupData, value: string) => {
@@ -63,79 +74,33 @@ export default function Signup({ onSignup, onSwitchToLogin }: SignupProps) {
 
     return (
         <div className="auth-container">
-            <div className="auth-background">
-                <div className="gradient-orb orb-1"></div>
-                <div className="gradient-orb orb-2"></div>
-                <div className="gradient-orb orb-3"></div>
-            </div>
+            <div className="auth-background"></div>
 
             <div className="auth-card glass fade-in">
                 <div className="auth-header">
                     <div className="brand-icon">
                         <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                            <circle cx="24" cy="24" r="20" fill="url(#gradient)" />
-                            <path d="M24 14C18.48 14 14 18.48 14 24C14 29.52 18.48 34 24 34C29.52 34 34 29.52 34 24C34 18.48 29.52 14 24 14ZM24 30C20.69 30 18 27.31 18 24C18 20.69 20.69 18 24 18C27.31 18 30 20.69 30 24C30 27.31 27.31 30 24 30Z" fill="white" />
-                            <defs>
-                                <linearGradient id="gradient" x1="4" y1="4" x2="44" y2="44">
-                                    <stop offset="0%" stopColor="#6366f1" />
-                                    <stop offset="100%" stopColor="#8b5cf6" />
-                                </linearGradient>
-                            </defs>
+                            <circle cx="24" cy="24" r="20" fill="var(--primary)" fillOpacity="0.2" />
+                            <path d="M24 14C18.48 14 14 18.48 14 24C14 29.52 18.48 34 24 34C29.52 34 34 29.52 34 24C34 18.48 29.52 14 24 14ZM24 30C20.69 30 18 27.31 18 24C18 20.69 20.69 18 24 18C27.31 18 30 20.69 30 24C30 27.31 27.31 30 24 30Z" fill="var(--primary)" />
                         </svg>
                     </div>
-                    <h1 className="auth-title gradient-text">Create Account</h1>
-                    <p className="auth-subtitle">Set up your CallCloud organization</p>
+                    <h1 className="auth-title">Create Account</h1>
+                    <p className="auth-subtitle">Join CallCloud today</p>
                 </div>
 
+                {error && (
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-lg mb-6 text-sm">
+                        {error}
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="auth-form">
-                    <div className="form-group">
-                        <label className="form-label">Organization Name</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            placeholder="Acme Corporation"
-                            value={formData.organizationName}
-                            onChange={(e) => handleChange('organizationName', e.target.value)}
-                            required
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Organization ID (6 characters)</label>
-                        <div className="input-group">
-                            <input
-                                type="text"
-                                className="form-input"
-                                placeholder="ABC123"
-                                value={formData.organizationId}
-                                onChange={(e) => handleChange('organizationId', e.target.value.toUpperCase().slice(0, 6))}
-                                maxLength={6}
-                                required
-                            />
-                            <button type="button" onClick={generateOrgId} className="btn btn-secondary">
-                                Generate
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Admin Name</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            placeholder="John Doe"
-                            value={formData.adminName}
-                            onChange={(e) => handleChange('adminName', e.target.value)}
-                            required
-                        />
-                    </div>
-
                     <div className="form-group">
                         <label className="form-label">Email Address</label>
                         <input
                             type="email"
                             className="form-input"
-                            placeholder="admin@acme.com"
+                            placeholder="admin@example.com"
                             value={formData.email}
                             onChange={(e) => handleChange('email', e.target.value)}
                             required

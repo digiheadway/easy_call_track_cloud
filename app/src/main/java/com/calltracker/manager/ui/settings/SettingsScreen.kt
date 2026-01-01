@@ -17,12 +17,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -42,6 +45,10 @@ fun SettingsScreen(
     var showExcludedModal by remember { mutableStateOf(false) }
     var showClearDataDialog by remember { mutableStateOf(false) }
     var showContactModal by remember { mutableStateOf(false) }
+    var showCreateOrgModal by remember { mutableStateOf(false) }
+    var showJoinOrgModal by remember { mutableStateOf(false) }
+    var showTrackSimModal by remember { mutableStateOf(false) }
+    var showResetConfirmDialog by remember { mutableStateOf(false) }
     var contactSubject by remember { mutableStateOf("") }
     var accountEditField by remember { mutableStateOf<String?>(null) } // "pairing", "phone1", "phone2", null for all
 
@@ -72,7 +79,37 @@ fun SettingsScreen(
             onOpenAccountInfo = { field -> 
                 accountEditField = field
                 showAccountInfoModal = true 
+            },
+            onCreateOrg = {
+                showCreateOrgModal = true
+            },
+            onJoinOrg = {
+                showJoinOrgModal = true
             }
+        )
+    }
+    
+    // Create Org Modal
+    if (showCreateOrgModal) {
+        CreateOrgModal(
+            onDismiss = { showCreateOrgModal = false }
+        )
+    }
+
+    // Track SIM Modal
+    if (showTrackSimModal) {
+        TrackSimModal(
+            uiState = uiState,
+            viewModel = viewModel,
+            onDismiss = { showTrackSimModal = false }
+        )
+    }
+
+    // Join Org Modal
+    if (showJoinOrgModal) {
+        JoinOrgModal(
+            viewModel = viewModel,
+            onDismiss = { showJoinOrgModal = false }
         )
     }
 
@@ -104,6 +141,24 @@ fun SettingsScreen(
             onAddNumbers = { viewModel.addExcludedNumbers(it) },
             onRemoveNumber = { viewModel.unexcludeNumber(it) },
             onDismiss = { showExcludedModal = false }
+        )
+    }
+
+    // Reset Sync Data Dialog
+    if (showResetConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetConfirmDialog = false },
+            title = { Text("Reset Sync Data Status") },
+            text = { Text("This will reset the sync status of all logs. They will be re-synced in the next cycle. Use this if you are missing data on the cloud.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.resetSyncStatus()
+                    showResetConfirmDialog = false
+                }) { Text("Confirm") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetConfirmDialog = false }) { Text("Cancel") }
+            }
         )
     }
 
@@ -166,6 +221,257 @@ fun SettingsScreen(
             // ===============================================
             // 0. SUPPORT CATEGORY
             // ===============================================
+            // ===============================================
+            // 0. SYNC TO CLOUD (Card)
+            // ===============================================
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.CloudSync,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = "Sync to Cloud",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            val statusText = if (uiState.pairingCode.isNotEmpty()) "Linked to : ${uiState.pairingCode}" else "linked to : Not linked yet"
+                            Text(
+                                text = statusText,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                    
+                    Spacer(Modifier.height(8.dp))
+                    val descriptionText = if (uiState.pairingCode.isNotEmpty()) "Syncing Calls, Notes, and Recordings" else "Sync calls, recordings, note to cloud to access from any device."
+                    Text(
+                        text = descriptionText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f)
+                    )
+                    
+                    Spacer(Modifier.height(16.dp))
+                    
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        Button(
+                            onClick = { 
+                                if (uiState.pairingCode.isNotEmpty()) {
+                                    viewModel.syncCallManually()
+                                } else {
+                                    showCloudSyncModal = true
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
+                        ) {
+                            if (uiState.pairingCode.isNotEmpty()) {
+                                if (uiState.isSyncing) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        strokeWidth = 2.dp
+                                    )
+                                    Spacer(Modifier.width(12.dp))
+                                    Text("Syncing...")
+                                } else {
+                                    Icon(Icons.Default.Sync, null, Modifier.size(18.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Sync Now")
+                                }
+                            } else {
+                                Text("Setup Cloud Sync")
+                            }
+                        }
+
+                        if (uiState.pairingCode.isNotEmpty()) {
+                            Spacer(Modifier.width(8.dp))
+                            var showCardMenu by remember { mutableStateOf(false) }
+                            Box {
+                                FilledTonalIconButton(
+                                    onClick = { showCardMenu = true },
+                                    modifier = Modifier.size(48.dp),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(Icons.Default.Settings, "Sync Settings")
+                                }
+                                DropdownMenu(
+                                    expanded = showCardMenu,
+                                    onDismissRequest = { showCardMenu = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("Reset Sync Data") },
+                                        onClick = { 
+                                            showCardMenu = false
+                                            showResetConfirmDialog = true
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.Restore, null) }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Leave Organisation") },
+                                        onClick = { 
+                                            showCardMenu = false
+                                            viewModel.leaveOrganisation()
+                                        },
+                                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, null) }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+
+                    // Sync Progress & Status
+                    if (uiState.pairingCode.isNotEmpty()) {
+                        if (uiState.isSyncing) {
+                            // Show progress bar when syncing
+                            Spacer(Modifier.height(12.dp))
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                LinearProgressIndicator(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(4.dp)
+                                        .clip(RoundedCornerShape(2.dp)),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                                )
+                                
+                                uiState.lastSyncStats?.let { stats ->
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        text = stats,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        } else {
+                            // Show static status when not syncing
+                            uiState.lastSyncStats?.let { stats ->
+                                Text(
+                                    text = stats,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 12.dp),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // External Last Sync Footer
+            if (uiState.pairingCode.isNotEmpty()) {
+                val lastSyncText = remember(uiState.lastSyncTime) {
+                    if (uiState.lastSyncTime == 0L) "never synced"
+                    else {
+                        val diff = System.currentTimeMillis() - uiState.lastSyncTime
+                        val minutes = diff / (1000 * 60)
+                        if (minutes < 60) {
+                            if (minutes <= 0) "synced just now"
+                            else "synced $minutes minute${if (minutes > 1) "s" else ""} ago"
+                        } else {
+                            val sdf = SimpleDateFormat("h:mm a, d MMM", Locale.getDefault())
+                            "synced at ${sdf.format(Date(uiState.lastSyncTime))}"
+                        }
+                    }
+                }
+                
+                Text(
+                    text = lastSyncText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // ===============================================
+            // 1. APPEARANCE (Theme)
+            // ===============================================
+            var showThemeDropdown by remember { mutableStateOf(false) }
+
+            SettingsSection(title = "Appearance") {
+                ListItem(
+                    headlineContent = { Text("App Theme") },
+                    supportingContent = { Text(uiState.themeMode) },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.DarkMode, MaterialTheme.colorScheme.primary) 
+                    },
+                    trailingContent = {
+                         Box {
+                            IconButton(onClick = { showThemeDropdown = true }) {
+                                Icon(Icons.Default.ExpandMore, contentDescription = "Select Theme")
+                            }
+                            DropdownMenu(
+                                expanded = showThemeDropdown,
+                                onDismissRequest = { showThemeDropdown = false }
+                            ) {
+                                listOf("System", "Light", "Dark").forEach { mode ->
+                                    DropdownMenuItem(
+                                        text = { Text(mode) },
+                                        onClick = { 
+                                            viewModel.updateThemeMode(mode)
+                                            showThemeDropdown = false 
+                                        },
+                                        leadingIcon = { 
+                                            Icon(
+                                                imageVector = when(mode) {
+                                                    "Light" -> Icons.Default.LightMode
+                                                    "Dark" -> Icons.Default.DarkMode
+                                                    else -> Icons.Default.SettingsSystemDaydream
+                                                }, 
+                                                null
+                                            ) 
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    modifier = Modifier.clickable { showThemeDropdown = true }
+                )
+            }
+            
+
+
+            Spacer(Modifier.height(16.dp))
+
+            // ===============================================
+            // 1. SUPPORT CATEGORY
+            // ===============================================
             SettingsSection(title = "Support") {
                 ListItem(
                     headlineContent = { Text("Report Bug") },
@@ -205,6 +511,19 @@ fun SettingsScreen(
                         viewModel.exportLogs()
                     }
                 )
+                
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                
+                ListItem(
+                    headlineContent = { Text("Reset Onboarding") },
+                    supportingContent = { Text("View the initial app setup tutorial again") },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.Replay, MaterialTheme.colorScheme.secondary) 
+                    },
+                    modifier = Modifier.clickable { 
+                        viewModel.resetOnboarding()
+                    }
+                )
             }
 
             Spacer(Modifier.height(16.dp))
@@ -235,57 +554,35 @@ fun SettingsScreen(
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
                 // ===============================================
-                // 2. TRACK CALLS OF (SIM Selection)
+                // 2. TRACK CALLS (Modal)
                 // ===============================================
-                var showSimDropdown by remember { mutableStateOf(false) }
-                
                 ListItem(
-                    headlineContent = { Text("Track Calls of") },
+                    headlineContent = { Text("Track Calls") },
                     supportingContent = { 
-                        val currentSim = if (uiState.simSelection == "Both") "Both SIMs" 
-                                        else uiState.simSelection.replace("Sim", "SIM ")
-                        Text(currentSim) 
+                        val currentSim = when(uiState.simSelection) {
+                            "Off" -> "Off"
+                            "Both" -> "Both SIMs"
+                            else -> uiState.simSelection.replace("Sim", "SIM ")
+                        }
+                        val phoneInfo = if (uiState.simSelection != "Off") {
+                            val details = mutableListOf<String>()
+                            if (uiState.simSelection == "Sim1" || uiState.simSelection == "Both") {
+                                details.add("S1: ${uiState.callerPhoneSim1.ifEmpty { "Not set" }}")
+                            }
+                            if (uiState.simSelection == "Sim2" || uiState.simSelection == "Both") {
+                                details.add("S2: ${uiState.callerPhoneSim2.ifEmpty { "Not set" }}")
+                            }
+                            " (" + details.joinToString(" | ") + ")"
+                        } else ""
+                        Text(currentSim + phoneInfo) 
                     },
                     leadingContent = { 
                         SettingsIcon(Icons.Default.SimCard, MaterialTheme.colorScheme.tertiary) 
                     },
                     trailingContent = {
-                        Box {
-                            IconButton(onClick = { showSimDropdown = true }) {
-                                Icon(Icons.Default.ExpandMore, contentDescription = "Select SIM")
-                            }
-                            DropdownMenu(
-                                expanded = showSimDropdown,
-                                onDismissRequest = { showSimDropdown = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("Both SIMs") },
-                                    onClick = { 
-                                        viewModel.updateSimSelection("Both")
-                                        showSimDropdown = false 
-                                    },
-                                    leadingIcon = { Icon(Icons.Default.DoneAll, null) }
-                                )
-                                uiState.availableSims.forEach { sim ->
-                                    val simLabel = "SIM ${sim.slotIndex + 1}"
-                                    val simValue = "Sim${sim.slotIndex + 1}"
-                                    DropdownMenuItem(
-                                        text = { 
-                                            Column {
-                                                Text(simLabel)
-                                                Text(sim.displayName, style = MaterialTheme.typography.bodySmall)
-                                            }
-                                        },
-                                        onClick = { 
-                                            viewModel.updateSimSelection(simValue)
-                                            showSimDropdown = false 
-                                        },
-                                        leadingIcon = { Icon(Icons.Default.SimCard, null) }
-                                    )
-                                }
-                            }
-                        }
-                    }
+                        Icon(Icons.Default.ChevronRight, contentDescription = null)
+                    },
+                    modifier = Modifier.clickable { showTrackSimModal = true }
                 )
             }
 
@@ -317,24 +614,7 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // ===============================================
-            // 4. CLOUD SYNC SETTINGS (Card -> Modal)
-            // ===============================================
-            SettingsSection(title = "Cloud") {
-                ListItem(
-                    headlineContent = { Text("Cloud Sync Settings") },
-                    supportingContent = { Text("Account info and syncing settings") },
-                    leadingContent = { 
-                        SettingsIcon(Icons.Default.CloudSync, MaterialTheme.colorScheme.primary) 
-                    },
-                    trailingContent = {
-                        Icon(Icons.Default.ChevronRight, contentDescription = null)
-                    },
-                    modifier = Modifier.clickable { showCloudSyncModal = true }
-                )
-            }
 
-            Spacer(Modifier.height(16.dp))
 
             // ===============================================
             // 5. LOCAL SETTINGS (WhatsApp + Recording Path)
@@ -496,10 +776,14 @@ fun CloudSyncModal(
     uiState: SettingsUiState,
     viewModel: SettingsViewModel,
     onDismiss: () -> Unit,
-    onOpenAccountInfo: (String?) -> Unit
+    onOpenAccountInfo: (String?) -> Unit,
+    onCreateOrg: () -> Unit,
+    onJoinOrg: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    
+    val context = LocalContext.current
+    var newPairingCode by remember { mutableStateOf("") }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState
@@ -523,7 +807,7 @@ fun CloudSyncModal(
                 )
                 Spacer(Modifier.width(12.dp))
                 Text(
-                    text = "Cloud Sync Settings",
+                    text = "Sync to Cloud",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -531,126 +815,71 @@ fun CloudSyncModal(
 
             Spacer(Modifier.height(24.dp))
 
-            // Sync Now Button (Secondary style, more compact)
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Button(
-                    onClick = { viewModel.syncCallManually() },
-                    enabled = !uiState.isSyncing,
-                    modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(16.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    if (uiState.isSyncing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp), 
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
+            if (uiState.pairingCode.isEmpty()) {
+                // STATE 1: NOT JOINED - ONBOARDING
+                
+                // Benefits List
+                val benefits = listOf(
+                    "Access on any device",
+                    "Cloud Backup",
+                    "Give access to team",
+                    "Better management"
+                )
+                
+                benefits.forEach { benefit ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically, 
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Check, 
+                            null, 
+                            tint = MaterialTheme.colorScheme.primary, 
+                            modifier = Modifier.size(20.dp)
                         )
-                        Spacer(Modifier.width(8.dp))
-                        Text("Syncing...", style = MaterialTheme.typography.labelLarge)
-                    } else {
-                        Icon(Icons.Default.Sync, null, Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Sync Now", style = MaterialTheme.typography.labelLarge)
+                        Spacer(Modifier.width(12.dp))
+                        Text(benefit, style = MaterialTheme.typography.bodyLarge)
                     }
                 }
                 
-                // Show last sync time if available
-                uiState.lastSyncStats?.let { stats ->
-                     Text(
-                        text = stats,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (stats.contains("Success")) 
-                            MaterialTheme.colorScheme.primary 
-                        else 
-                            MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(top = 8.dp),
-                        textAlign = TextAlign.Center
-                    )
+                Spacer(Modifier.height(32.dp))
+                
+                // Option 1: Create Organisation
+                Button(
+                    onClick = { 
+                        onDismiss()
+                        onCreateOrg() 
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(16.dp)
+                ) {
+                   Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                       Text("Create Organisation", style = MaterialTheme.typography.titleMedium)
+                       Text(
+                           "Starting at 149/per month only", 
+                           style = MaterialTheme.typography.labelSmall, 
+                           color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                        )
+                   }
                 }
+                
+                Spacer(Modifier.height(16.dp))
+                
+                // Option 2: Join Organisation
+                OutlinedButton(
+                    onClick = { 
+                        onDismiss()
+                        onJoinOrg() 
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(16.dp)
+                ) {
+                    Text("Join Organisation", style = MaterialTheme.typography.titleMedium)
+                }
+
             }
-
-            Spacer(Modifier.height(24.dp))
-            HorizontalDivider()
-            Spacer(Modifier.height(16.dp))
-
-            // Account Status / Details
-            Text(
-                text = "Account Details",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            
-            Spacer(Modifier.height(12.dp))
-
-            // Pairing Code Row
-            ListItem(
-                headlineContent = { Text("Pairing Code") },
-                supportingContent = { 
-                    Text(if (uiState.pairingCode.isEmpty()) "Not set" else uiState.pairingCode) 
-                },
-                leadingContent = { Icon(Icons.Default.Key, null, tint = MaterialTheme.colorScheme.secondary) },
-                trailingContent = {
-                    TextButton(onClick = { onOpenAccountInfo("pairing") }) {
-                        Text(if (uiState.pairingCode.isEmpty()) "Add" else "Edit")
-                    }
-                },
-                colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
-            )
-
-            // SIM 1 Phone Row
-            ListItem(
-                headlineContent = { Text("SIM 1 Phone") },
-                supportingContent = { 
-                    Text(if (uiState.callerPhoneSim1.isEmpty()) "Not set" else uiState.callerPhoneSim1) 
-                },
-                leadingContent = { Icon(Icons.Default.Phone, null, tint = MaterialTheme.colorScheme.secondary) },
-                trailingContent = {
-                    IconButton(onClick = { onOpenAccountInfo("phone1") }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(20.dp))
-                    }
-                },
-                colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
-            )
-
-            // SIM 2 Phone Row
-            ListItem(
-                headlineContent = { Text("SIM 2 Phone") },
-                supportingContent = { 
-                    Text(if (uiState.callerPhoneSim2.isEmpty()) "Not set" else uiState.callerPhoneSim2) 
-                },
-                leadingContent = { Icon(Icons.Default.PhoneAndroid, null, tint = MaterialTheme.colorScheme.secondary) },
-                trailingContent = {
-                    IconButton(onClick = { onOpenAccountInfo("phone2") }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(20.dp))
-                    }
-                },
-                colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            // Reset Status Button
-            OutlinedButton(
-                onClick = { viewModel.resetSyncStatus() },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                )
-            ) {
-                Icon(Icons.Default.Restore, null, Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Reset Sync Status")
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            // Results are now shown below the Sync button
-            Spacer(Modifier.height(16.dp))
 
             Spacer(Modifier.height(48.dp))
         }
@@ -694,6 +923,7 @@ fun AccountInfoModal(
                         "pairing" -> "Edit Pairing Code"
                         "phone1" -> "Edit SIM 1 Phone"
                         "phone2" -> "Edit SIM 2 Phone"
+                        "phones" -> "Edit Device Phones"
                         else -> "Account Information"
                     },
                     style = MaterialTheme.typography.headlineSmall,
@@ -724,7 +954,7 @@ fun AccountInfoModal(
                 if (editField == null) Spacer(Modifier.height(16.dp))
             }
 
-            if (editField == null || editField == "phone1") {
+            if (editField == null || editField == "phone1" || editField == "phones") {
                 OutlinedTextField(
                     value = uiState.callerPhoneSim1,
                     onValueChange = { viewModel.updateCallerPhoneSim1(it) },
@@ -737,10 +967,10 @@ fun AccountInfoModal(
                     )
                 )
 
-                if (editField == null) Spacer(Modifier.height(16.dp))
+                if (editField == null || editField == "phones") Spacer(Modifier.height(16.dp))
             }
 
-            if (editField == null || editField == "phone2") {
+            if (editField == null || editField == "phone2" || editField == "phones") {
                 OutlinedTextField(
                     value = uiState.callerPhoneSim2,
                     onValueChange = { viewModel.updateCallerPhoneSim2(it) },
@@ -758,15 +988,27 @@ fun AccountInfoModal(
 
             Button(
                 onClick = { 
-                    viewModel.saveAccountInfo()
-                    onDismiss()
+                    viewModel.saveAccountInfo(onSuccess = {
+                        onDismiss()
+                    })
                 },
                 modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(16.dp)
+                contentPadding = PaddingValues(16.dp),
+                enabled = !uiState.isVerifying
             ) {
-                Icon(Icons.Default.Save, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Save Information", style = MaterialTheme.typography.titleMedium)
+                if (uiState.isVerifying) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text("Verifying...", style = MaterialTheme.typography.titleMedium)
+                } else {
+                    Icon(Icons.Default.Save, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Save & Verify", style = MaterialTheme.typography.titleMedium)
+                }
             }
 
             Spacer(Modifier.height(48.dp))
@@ -1193,6 +1435,417 @@ fun ContactModal(
                 )
             }
 
+            Spacer(Modifier.height(48.dp))
+        }
+    }
+}
+
+// ===============================================
+// CREATE ORG MODAL
+// ===============================================
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CreateOrgModal(
+    onDismiss: () -> Unit
+) {
+     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+     val context = LocalContext.current
+     
+     ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
+         Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+              Text(
+                text = "To Create Organisation",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Bolt,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = "takes 10 minutes only",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            
+            Spacer(Modifier.height(24.dp))
+            
+            val steps = listOf(
+                "Step 1 - Signup on our Website",
+                "Step 2 - Add yourself as employee",
+                "Step 3 - Enter Pairing Code"
+            )
+            
+            steps.forEach { step -> 
+                 Text(
+                    text = step,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+            }
+            
+            Spacer(Modifier.height(24.dp))
+            
+            Button(
+                onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://calltrack.mylistings.in"))
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(16.dp)
+            ) {
+                Text("Go to Website Now")
+            }
+             Spacer(Modifier.height(48.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TrackSimModal(
+    uiState: SettingsUiState,
+    viewModel: SettingsViewModel,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var selectedSim by remember { mutableStateOf(uiState.simSelection) }
+    var sim1Phone by remember { mutableStateOf(uiState.callerPhoneSim1) }
+    var sim2Phone by remember { mutableStateOf(uiState.callerPhoneSim2) }
+    var showDropdown by remember { mutableStateOf(false) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(
+                text = "Call Tracking Settings",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+            
+            Spacer(Modifier.height(24.dp))
+            
+            // SIM Selection Dropdown
+            Text("Select SIM to Track", style = MaterialTheme.typography.labelMedium)
+            Spacer(Modifier.height(8.dp))
+            Box {
+                OutlinedCard(
+                    onClick = { showDropdown = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val label = when(selectedSim) {
+                            "Off" -> "Off"
+                            "Both" -> "Both SIMs"
+                            else -> selectedSim.replace("Sim", "SIM ")
+                        }
+                        Text(label, modifier = Modifier.weight(1f))
+                        Icon(Icons.Default.ArrowDropDown, null)
+                    }
+                }
+                
+                DropdownMenu(
+                    expanded = showDropdown,
+                    onDismissRequest = { showDropdown = false },
+                    modifier = Modifier.fillMaxWidth(0.85f)
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Off") },
+                        onClick = { selectedSim = "Off"; showDropdown = false },
+                        leadingIcon = { Icon(Icons.Default.Block, null) }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Both SIMs") },
+                        onClick = { selectedSim = "Both"; showDropdown = false },
+                        leadingIcon = { Icon(Icons.Default.DoneAll, null) }
+                    )
+                    uiState.availableSims.forEach { sim ->
+                        val simValue = "Sim${sim.slotIndex + 1}"
+                        DropdownMenuItem(
+                            text = { Text("SIM ${sim.slotIndex + 1} (${sim.displayName})") },
+                            onClick = { selectedSim = simValue; showDropdown = false },
+                            leadingIcon = { Icon(Icons.Default.SimCard, null) }
+                        )
+                    }
+                }
+            }
+            
+            Spacer(Modifier.height(24.dp))
+            
+            // Conditional Phone Inputs
+            if (selectedSim == "Sim1" || selectedSim == "Both") {
+                OutlinedTextField(
+                    value = sim1Phone,
+                    onValueChange = { sim1Phone = it },
+                    label = { Text("SIM 1 Phone Number") },
+                    placeholder = { Text("Enter SIM 1 Number") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    leadingIcon = { Icon(Icons.Default.Phone, null) }
+                )
+                Spacer(Modifier.height(16.dp))
+            }
+            
+            if (selectedSim == "Sim2" || selectedSim == "Both") {
+                OutlinedTextField(
+                    value = sim2Phone,
+                    onValueChange = { sim2Phone = it },
+                    label = { Text("SIM 2 Phone Number") },
+                    placeholder = { Text("Enter SIM 2 Number") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    leadingIcon = { Icon(Icons.Default.Phone, null) }
+                )
+                Spacer(Modifier.height(16.dp))
+            }
+            
+            Spacer(Modifier.height(8.dp))
+            
+            val isSaveEnabled = when(selectedSim) {
+                "Off" -> true
+                "Sim1" -> sim1Phone.isNotBlank()
+                "Sim2" -> sim2Phone.isNotBlank()
+                "Both" -> sim1Phone.isNotBlank() && sim2Phone.isNotBlank()
+                else -> false
+            }
+            
+            Button(
+                onClick = {
+                    viewModel.updateSimSelection(selectedSim)
+                    viewModel.updateCallerPhoneSim1(sim1Phone)
+                    viewModel.updateCallerPhoneSim2(sim2Phone)
+                    onDismiss()
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = isSaveEnabled,
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(16.dp)
+            ) {
+                Text("Save Tracking Settings")
+            }
+            
+            Spacer(Modifier.height(48.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun JoinOrgModal(
+    viewModel: SettingsViewModel,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var pairingCode by remember { mutableStateOf("") }
+    val uiState by viewModel.uiState.collectAsState()
+    
+    // Client-side format validation
+    val isFormatValid = remember(pairingCode) {
+        val trimmed = pairingCode.trim().uppercase()
+        if (!trimmed.contains("-")) return@remember false
+        val parts = trimmed.split("-", limit = 2)
+        if (parts.size != 2) return@remember false
+        val orgId = parts[0].trim()
+        val userId = parts[1].trim()
+        orgId.isNotEmpty() && userId.isNotEmpty() && 
+        orgId.matches(Regex("^[A-Z0-9]+$")) && 
+        userId.matches(Regex("^[0-9]+$"))
+    }
+    
+    val buttonText = when {
+        uiState.isVerifying -> "Verifying..."
+        uiState.verificationStatus == "verified" -> "Connect"
+        isFormatValid -> "Check Pairing Code"
+        else -> "Connect Organisation"
+    }
+    
+    val buttonEnabled = when {
+        uiState.isVerifying -> false
+        uiState.verificationStatus == "verified" -> true
+        else -> isFormatValid
+    }
+    
+    // Reset verification when modal closes
+    LaunchedEffect(Unit) {
+        viewModel.resetVerificationState()
+    }
+    
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(
+                text = "Join Organisation",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Enter the pairing code provided by your administrator to connect your device.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Spacer(Modifier.height(24.dp))
+            
+            OutlinedTextField(
+                value = pairingCode,
+                onValueChange = { 
+                    pairingCode = it.uppercase()
+                    viewModel.resetVerificationState()
+                },
+                label = { Text("Pairing Code") },
+                placeholder = { Text("e.g., ORGID-123") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                enabled = !uiState.isVerifying,
+                leadingIcon = { Icon(Icons.Default.Key, null) },
+                supportingText = {
+                    when {
+                        !isFormatValid && pairingCode.isNotEmpty() -> {
+                            Text(
+                                "Format: ORGID-USERID (e.g., GOOGLE-123)",
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                        isFormatValid && uiState.verificationStatus == null -> {
+                            Text(
+                                "Format looks good! Click to verify →",
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                },
+                isError = uiState.verificationStatus == "failed"
+            )
+            
+            // Show verification result
+            if (uiState.verificationStatus == "verified") {
+                Spacer(Modifier.height(16.dp))
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                "Verified Successfully",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    "Organisation",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    uiState.verifiedOrgName ?: "",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            Spacer(Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    "Employee",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    uiState.verifiedEmployeeName ?: "",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            
+            Spacer(Modifier.height(24.dp))
+            
+            Button(
+                onClick = {
+                    when {
+                        uiState.verificationStatus == "verified" -> {
+                            // Step 3: Connect (save)
+                            viewModel.connectVerifiedOrganisation(onSuccess = onDismiss)
+                        }
+                        else -> {
+                            // Step 2: Verify with backend
+                            viewModel.verifyPairingCodeOnly(pairingCode)
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = buttonEnabled,
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(16.dp)
+            ) {
+                if (uiState.isVerifying) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(Modifier.width(12.dp))
+                }
+                Text(buttonText)
+            }
+            
             Spacer(Modifier.height(48.dp))
         }
     }

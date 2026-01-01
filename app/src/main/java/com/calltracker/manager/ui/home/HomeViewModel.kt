@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Calendar
+import kotlinx.coroutines.flow.combine
 
 // Filter enums for chip dropdowns
 enum class CallTypeFilter { ALL, INCOMING, OUTGOING, MISSED, REJECTED }
@@ -57,6 +58,7 @@ data class HomeUiState(
     val notesFilter: NotesFilter = NotesFilter.ALL,
     val contactsFilter: ContactsFilter = ContactsFilter.ALL,
     val attendedFilter: AttendedFilter = AttendedFilter.ALL,
+    val labelFilter: String = "",
 
     val dateRange: DateRange = DateRange.LAST_3_DAYS,
     val customStartDate: Long? = null,
@@ -64,15 +66,20 @@ data class HomeUiState(
 
     val simSelection: String = "Both",
     val trackStartDate: Long = 0,
-    val whatsappPreference: String = "Always Ask"
+    val whatsappPreference: String = "Always Ask",
+    
+    // Sync Status
+    val pendingSyncCount: Int = 0,
+    val isNetworkAvailable: Boolean = true,
+    val isSyncSetup: Boolean = false
 )
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val callDataRepository = CallDataRepository(application)
-
     private val recordingRepository = RecordingRepository(application)
     private val settingsRepository = SettingsRepository(application)
+    private val networkObserver = com.calltracker.manager.util.NetworkConnectivityObserver(application)
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -95,6 +102,38 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.update { it.copy(persons = persons) }
                 applyPersonFilters()
             }
+        }
+        
+
+
+        // Observe Pending Syncs (Calls + Persons)
+        viewModelScope.launch {
+            combine(
+                callDataRepository.getPendingCallsFlow(),
+                callDataRepository.getPendingSyncPersonsFlow()
+            ) { pendingCalls, pendingPersons ->
+                pendingCalls.size + pendingPersons.size
+            }.collect { totalPending ->
+                _uiState.update { it.copy(pendingSyncCount = totalPending) }
+            }
+        }
+        
+        // Observe Network Status
+        viewModelScope.launch {
+            networkObserver.observe().collect { isAvailable ->
+                _uiState.update { it.copy(isNetworkAvailable = isAvailable) }
+                // If network becomes available and we have pending syncs, trigger sync
+                if (isAvailable && _uiState.value.pendingSyncCount > 0 && _uiState.value.isSyncSetup) {
+                     syncFromSystem() // This also triggers upload worker in a way if we were to enqueue it, but syncFromSystem just does local sync.
+                     // We should trigger the worker really.
+                     com.calltracker.manager.worker.UploadWorker.enqueue(application)
+                }
+            }
+        }
+        
+        // Ensure worker is scheduled (if setup)
+        if (settingsRepository.getOrganisationId().isNotEmpty()) {
+            com.calltracker.manager.worker.UploadWorker.enqueue(application)
         }
         
         // Sync with system call log in background
@@ -247,10 +286,18 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         applyFilters()
     }
 
+    fun setLabelFilter(label: String) {
+        _uiState.update { it.copy(labelFilter = label) }
+        applyFilters()
+        applyPersonFilters() // Labels affect both lists
+    }
+
     fun setDateRange(range: DateRange, start: Long? = null, end: Long? = null) {
         _uiState.update { it.copy(dateRange = range, customStartDate = start, customEndDate = end) }
         applyFilters()
     }
+
+    fun normalizePhoneNumber(number: String) = callDataRepository.normalizePhoneNumber(number)
 
     private fun applyFilters() {
         val current = _uiState.value
@@ -259,7 +306,19 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             // SIM Filter
             val targetSubId = if (current.simSelection == "Both") null else getSubIdForSim(current.simSelection)
             
+            // Map for quick person lookup
+            val personsMap = current.persons.associateBy { it.phoneNumber }
+            
             val filtered = current.callLogs.filter { call ->
+                // Label Filter
+                val labelMatch = if (current.labelFilter.isEmpty()) true else {
+                    val person = personsMap[call.phoneNumber] ?: personsMap[normalizePhoneNumber(call.phoneNumber)]
+                    person?.label == current.labelFilter
+                }
+                
+                if (!labelMatch) return@filter false
+
+                // Call Type Filter
                 // Call Type Filter
                 val typeMatch = when (current.callTypeFilter) {
                     CallTypeFilter.ALL -> true
@@ -350,12 +409,20 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val query = current.searchQuery.lowercase()
         
         val filtered = if (query.isEmpty()) {
-            current.persons
+            if (current.labelFilter.isNotEmpty()) {
+                current.persons.filter { it.label == current.labelFilter }
+            } else {
+                current.persons
+            }
         } else {
             current.persons.filter { person ->
-                (person.phoneNumber.contains(query) ||
+                val matchesQuery = (person.phoneNumber.contains(query) ||
                 (person.contactName?.lowercase()?.contains(query) == true) ||
                 (person.personNote?.lowercase()?.contains(query) == true))
+                
+                val matchesLabel = if (current.labelFilter.isNotEmpty()) person.label == current.labelFilter else true
+                
+                matchesQuery && matchesLabel
             }
         }
         
@@ -375,6 +442,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun savePersonNote(phoneNumber: String, note: String) {
         viewModelScope.launch {
             callDataRepository.updatePersonNote(phoneNumber, note.ifEmpty { null })
+        }
+    }
+    
+    fun savePersonLabel(phoneNumber: String, label: String) {
+        viewModelScope.launch {
+            callDataRepository.updatePersonLabel(phoneNumber, label.ifEmpty { null })
         }
     }
 
@@ -409,14 +482,18 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val simSelection = settingsRepository.getSimSelection()
         val trackStartDate = settingsRepository.getTrackStartDate()
         val whatsappPreference = settingsRepository.getWhatsappPreference()
+        val orgId = settingsRepository.getOrganisationId()
+        val isSyncSetup = orgId.isNotEmpty()
         
         if (simSelection != _uiState.value.simSelection || 
             trackStartDate != _uiState.value.trackStartDate ||
-            whatsappPreference != _uiState.value.whatsappPreference) {
+            whatsappPreference != _uiState.value.whatsappPreference ||
+            isSyncSetup != _uiState.value.isSyncSetup) {
             _uiState.update { it.copy(
                 simSelection = simSelection, 
                 trackStartDate = trackStartDate,
-                whatsappPreference = whatsappPreference
+                whatsappPreference = whatsappPreference,
+                isSyncSetup = isSyncSetup
             ) }
             applyFilters()
         }

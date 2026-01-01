@@ -8,12 +8,23 @@ import retrofit2.http.*
 interface CallCloudApi {
 
     @FormUrlEncoded
-    @POST("callcloud/index.php")
+    @POST("sync_app.php")
+    suspend fun verifyPairingCode(
+        @Field("action") action: String,
+        @Field("org_id") orgId: String,
+        @Field("user_id") userId: String,
+        @Field("device_id") deviceId: String
+    ): Response<Map<String, Any>>
+
+    @FormUrlEncoded
+    @POST("sync_app.php")
+
     suspend fun startCall(
         @Field("action") action: String,
         @Field("unique_id") uniqueId: String,
         @Field("org_id") orgId: String,
         @Field("user_id") userId: String,
+        @Field("device_id") deviceId: String,
         @Field("device_phone") devicePhone: String,
         @Field("caller_name") callerName: String?,
         @Field("caller") caller: String,
@@ -22,7 +33,8 @@ interface CallCloudApi {
     ): Response<Map<String, Any>>
 
     @Multipart
-    @POST("callcloud/index.php")
+    @POST("sync_app.php")
+
     suspend fun uploadChunk(
         @Part("action") action: RequestBody,
         @Part("unique_id") uniqueId: RequestBody,
@@ -31,7 +43,8 @@ interface CallCloudApi {
     ): Response<Map<String, Any>>
 
     @FormUrlEncoded
-    @POST("callcloud/index.php")
+    @POST("sync_app.php")
+
     suspend fun finalizeUpload(
         @Field("action") action: String,
         @Field("unique_id") uniqueId: String,
@@ -39,7 +52,8 @@ interface CallCloudApi {
     ): Response<Map<String, Any>>
 
     @FormUrlEncoded
-    @POST("callcloud/index.php")
+    @POST("sync_app.php")
+
     suspend fun updateNote(
         @Field("action") action: String,
         @Field("unique_id") uniqueId: String,
