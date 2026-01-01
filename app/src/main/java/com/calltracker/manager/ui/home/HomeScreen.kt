@@ -51,7 +51,11 @@ import com.calltracker.manager.data.db.PersonDataEntity
 import com.calltracker.manager.data.db.CallLogStatus
 import com.calltracker.manager.ui.utils.AudioPlayer
 import com.calltracker.manager.ui.utils.PlaybackMetadata
+import com.calltracker.manager.ui.settings.SettingsViewModel
+import com.calltracker.manager.ui.settings.TrackSimModal
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -62,10 +66,22 @@ import java.util.*
 @Composable
 fun CallsScreen(
     audioPlayer: AudioPlayer,
-    viewModel: HomeViewModel = viewModel()
+    viewModel: HomeViewModel = viewModel(),
+    settingsViewModel: SettingsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val settingsState by settingsViewModel.uiState.collectAsState()
     val context = LocalContext.current
+    
+    var showTrackSimModal by remember { mutableStateOf(false) }
+
+    if (showTrackSimModal) {
+        TrackSimModal(
+            uiState = settingsState,
+            viewModel = settingsViewModel,
+            onDismiss = { showTrackSimModal = false }
+        )
+    }
 
     // Permissions
     val permissions = listOf(
@@ -80,6 +96,20 @@ fun CallsScreen(
         ActivityResultContracts.RequestMultiplePermissions()
     ) {
         viewModel.syncFromSystem()
+    }
+
+    // Audio Picker
+    var attachTarget by remember { mutableStateOf<CallDataEntity?>(null) }
+    val audioPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri != null && attachTarget != null) {
+            val path = copyUriToInternalStorage(context, uri)
+            if (path != null) {
+                viewModel.updateRecordingPathForLog(attachTarget!!.compositeId, path)
+            }
+        }
+        attachTarget = null
     }
 
     com.calltracker.manager.ui.settings.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
@@ -145,7 +175,11 @@ fun CallsScreen(
             recordings = uiState.recordings,
             audioPlayer = audioPlayer,
             viewModel = viewModel,
-            onDismiss = { selectedPersonForDetails = null }
+            onDismiss = { selectedPersonForDetails = null },
+            onAttachRecording = { 
+                attachTarget = it
+                audioPickerLauncher.launch(arrayOf("audio/*"))
+            }
         )
     }
 
@@ -156,6 +190,13 @@ fun CallsScreen(
             onFilterClick = viewModel::toggleFiltersVisibility,
             isSearchActive = uiState.isSearchVisible,
             isFilterActive = uiState.isFiltersVisible
+        )
+        
+        // Sync Status Strip
+        SyncStatusStrip(
+            pendingCount = uiState.pendingSyncCount,
+            isNetworkAvailable = uiState.isNetworkAvailable,
+            onSyncNow = viewModel::syncNow
         )
         
         // Expandable Search Row
@@ -203,9 +244,19 @@ fun CallsScreen(
                 }
             } else if (uiState.simSelection == "Off") {
                 EmptyState(
-                    icon = Icons.Default.Block,
-                    title = "Call Tracking is Off",
-                    description = "Enable call tracking in Settings to start monitoring your calls."
+                    icon = Icons.Default.SimCard,
+                    title = "Select Sim Card to Track",
+                    description = "Capture your call logs by selecting which SIM cards to monitor.",
+                    action = {
+                        Button(
+                            onClick = { showTrackSimModal = true },
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.Done, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Select SIM Now")
+                        }
+                    }
                 )
             } else if (uiState.filteredLogs.isEmpty()) {
                 val isFiltered = uiState.searchQuery.isNotEmpty() || 
@@ -233,7 +284,11 @@ fun CallsScreen(
                     audioPlayer = audioPlayer,
                     whatsappPreference = uiState.whatsappPreference,
                     context = context,
-                    onViewMoreClick = { selectedPersonForDetails = it }
+                    onViewMoreClick = { selectedPersonForDetails = it },
+                    onAttachRecording = { 
+                        attachTarget = it
+                        audioPickerLauncher.launch(arrayOf("audio/*"))
+                    }
                 )
             }
         }
@@ -313,10 +368,22 @@ data class PersonGroup(
 @Composable
 fun PersonsScreen(
     audioPlayer: AudioPlayer,
-    viewModel: HomeViewModel = viewModel()
+    viewModel: HomeViewModel = viewModel(),
+    settingsViewModel: SettingsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val settingsState by settingsViewModel.uiState.collectAsState()
     val context = LocalContext.current
+    
+    var showTrackSimModal by remember { mutableStateOf(false) }
+
+    if (showTrackSimModal) {
+        TrackSimModal(
+            uiState = settingsState,
+            viewModel = settingsViewModel,
+            onDismiss = { showTrackSimModal = false }
+        )
+    }
 
     // Permissions
     val permissions = listOf(
@@ -331,6 +398,20 @@ fun PersonsScreen(
         ActivityResultContracts.RequestMultiplePermissions()
     ) {
         viewModel.syncFromSystem()
+    }
+
+    // Audio Picker
+    var attachTarget by remember { mutableStateOf<CallDataEntity?>(null) }
+    val audioPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri != null && attachTarget != null) {
+            val path = copyUriToInternalStorage(context, uri)
+            if (path != null) {
+                viewModel.updateRecordingPathForLog(attachTarget!!.compositeId, path)
+            }
+        }
+        attachTarget = null
     }
 
     com.calltracker.manager.ui.settings.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
@@ -385,7 +466,11 @@ fun PersonsScreen(
             recordings = uiState.recordings,
             audioPlayer = audioPlayer,
             viewModel = viewModel,
-            onDismiss = { selectedPersonForDetails = null }
+            onDismiss = { selectedPersonForDetails = null },
+            onAttachRecording = { 
+                attachTarget = it
+                audioPickerLauncher.launch(arrayOf("audio/*"))
+            }
         )
     }
 
@@ -396,6 +481,13 @@ fun PersonsScreen(
             onFilterClick = viewModel::toggleFiltersVisibility,
             isSearchActive = uiState.isSearchVisible,
             isFilterActive = uiState.isFiltersVisible
+        )
+        
+        // Sync Status Strip
+        SyncStatusStrip(
+            pendingCount = uiState.pendingSyncCount,
+            isNetworkAvailable = uiState.isNetworkAvailable,
+            onSyncNow = viewModel::syncNow
         )
         
         // Expandable Search Row
@@ -443,9 +535,19 @@ fun PersonsScreen(
                 }
             } else if (uiState.simSelection == "Off") {
                 EmptyState(
-                    icon = Icons.Default.Block,
-                    title = "Call Tracking is Off",
-                    description = "Enable call tracking in Settings to start monitoring your calls."
+                    icon = Icons.Default.SimCard,
+                    title = "Select Sim Card to Track",
+                    description = "Capture your call logs by selecting which SIM cards to monitor.",
+                    action = {
+                        Button(
+                            onClick = { showTrackSimModal = true },
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.Done, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Select SIM Now")
+                        }
+                    }
                 )
             } else if (displayedPersonGroups.isEmpty()) {
                 val isFiltered = uiState.searchQuery.isNotEmpty() || 
@@ -470,7 +572,11 @@ fun PersonsScreen(
                     viewModel = viewModel,
                     whatsappPreference = uiState.whatsappPreference,
                     onExclude = { viewModel.excludeNumber(it) },
-                    onViewMoreClick = { selectedPersonForDetails = it }
+                    onViewMoreClick = { selectedPersonForDetails = it },
+                    onAttachRecording = { 
+                        attachTarget = it
+                        audioPickerLauncher.launch(arrayOf("audio/*"))
+                    }
                 )
             }
         }
@@ -536,7 +642,8 @@ fun PersonsList(
     viewModel: HomeViewModel,
     whatsappPreference: String,
     onExclude: (String) -> Unit,
-    onViewMoreClick: (PersonGroup) -> Unit
+    onViewMoreClick: (PersonGroup) -> Unit,
+    onAttachRecording: (CallDataEntity) -> Unit
 ) {
     var expandedNumber by remember { mutableStateOf<String?>(null) }
     var excludeTarget by remember { mutableStateOf<PersonGroup?>(null) }
@@ -700,7 +807,8 @@ fun PersonsList(
                     }
                 },
                 onViewMoreClick = { onViewMoreClick(person) },
-                onLabelClick = { labelTarget = person }
+                onLabelClick = { labelTarget = person },
+                onAttachRecording = onAttachRecording
             )
         }
     }
@@ -724,7 +832,8 @@ fun PersonCard(
     onAddContactClick: () -> Unit,
     onAddToCrmClick: () -> Unit,
     onViewMoreClick: () -> Unit,
-    onLabelClick: () -> Unit
+    onLabelClick: () -> Unit,
+    onAttachRecording: (CallDataEntity) -> Unit
 ) {
     ElevatedCard(
         modifier = Modifier
@@ -919,7 +1028,8 @@ fun PersonCard(
                             call = call,
                             recordings = recordings,
                             audioPlayer = audioPlayer,
-                            onNoteClick = onCallNoteClick
+                            onNoteClick = onCallNoteClick,
+                            onAttachRecording = onAttachRecording
                         )
                     }
                     
@@ -1081,9 +1191,17 @@ fun ReportsScreen(
         Box(modifier = Modifier.weight(1f)) {
             if (uiState.simSelection == "Off") {
                 EmptyState(
-                    icon = Icons.Default.Block,
-                    title = "Call Tracking is Off",
-                    description = "Enable call tracking in Settings to see your call reports."
+                    icon = Icons.Default.SimCard,
+                    title = "Select Sim Card to Track",
+                    description = "Capture your call logs by selecting which SIM cards to monitor.",
+                    action = {
+                        Button(
+                            onClick = { viewModel.toggleFiltersVisibility() }, // Or some other action, but here button is usually implicit
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Go to Settings")
+                        }
+                    }
                 )
             } else if (uiState.filteredLogs.isEmpty()) {
                 val isFiltered = uiState.searchQuery.isNotEmpty() || 
@@ -1591,7 +1709,8 @@ fun PersonInteractionBottomSheet(
     recordings: Map<String, String>,
     audioPlayer: AudioPlayer,
     viewModel: HomeViewModel,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onAttachRecording: (CallDataEntity) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     
@@ -1703,7 +1822,8 @@ fun PersonInteractionBottomSheet(
                         call = log,
                         recordings = recordings,
                         audioPlayer = audioPlayer,
-                        onNoteClick = { callNoteTarget = it }
+                        onNoteClick = { callNoteTarget = it },
+                        onAttachRecording = onAttachRecording
                     )
                 }
             }
@@ -1716,7 +1836,8 @@ fun InteractionRow(
     call: CallDataEntity,
     recordings: Map<String, String>,
     audioPlayer: AudioPlayer,
-    onNoteClick: (CallDataEntity) -> Unit
+    onNoteClick: (CallDataEntity) -> Unit,
+    onAttachRecording: (CallDataEntity) -> Unit
 ) {
     val isPlaying by audioPlayer.isPlaying.collectAsState()
     val progress by audioPlayer.progress.collectAsState()
@@ -1843,6 +1964,18 @@ fun InteractionRow(
                             contentDescription = "Play/Pause",
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(28.dp)
+                        )
+                    }
+                } else if (call.duration > 0) {
+                    IconButton(
+                        onClick = { onAttachRecording(call) },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AttachFile,
+                            contentDescription = "Attach Recording",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
@@ -2003,7 +2136,8 @@ fun CallLogList(
     audioPlayer: AudioPlayer,
     whatsappPreference: String,
     context: Context,
-    onViewMoreClick: (PersonGroup) -> Unit
+    onViewMoreClick: (PersonGroup) -> Unit,
+    onAttachRecording: (CallDataEntity) -> Unit
 ) {
     // Note Dialog States
     var callNoteTarget by remember { mutableStateOf<CallDataEntity?>(null) }
@@ -2212,7 +2346,8 @@ fun CallLogList(
                     },
                     audioPlayer = audioPlayer,
                     personGroup = personGroupsMap[log.phoneNumber],
-                    onLabelClick = { labelTarget = log }
+                    onLabelClick = { labelTarget = log },
+                    onAttachRecording = onAttachRecording
                 )
             }
         }
@@ -2318,7 +2453,8 @@ fun CallLogItem(
     onViewMoreClick: () -> Unit,
     audioPlayer: AudioPlayer,
     personGroup: PersonGroup?,
-    onLabelClick: () -> Unit
+    onLabelClick: () -> Unit,
+    onAttachRecording: (CallDataEntity) -> Unit
 ) {
     val isPlaying by audioPlayer.isPlaying.collectAsState()
     val progress by audioPlayer.progress.collectAsState()
@@ -2694,6 +2830,30 @@ fun CallLogItem(
                             }
                         }
                     }
+                } else if (log.duration > 0) {
+                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                     Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onAttachRecording(log) }
+                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                     ) {
+                        Icon(
+                            imageVector = Icons.Default.AttachFile,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "Attach Recording",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                     }
                 }
 
                 // View all interactions button
@@ -2978,3 +3138,75 @@ fun EmptyState(
     }
 }
 
+@Composable
+fun SyncStatusStrip(
+    pendingCount: Int,
+    isNetworkAvailable: Boolean,
+    onSyncNow: () -> Unit
+) {
+    AnimatedVisibility(
+        visible = pendingCount > 0,
+        enter = expandVertically(),
+        exit = shrinkVertically()
+    ) {
+        Surface(
+            color = if (isNetworkAvailable) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f) else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.9f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = isNetworkAvailable) { onSyncNow() }
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = if (isNetworkAvailable) Icons.Default.CloudSync else Icons.Default.CloudOff,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = if (isNetworkAvailable) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = if (isNetworkAvailable) 
+                            "$pendingCount changes pending upload" 
+                            else "No internet: $pendingCount changes pending",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (isNetworkAvailable) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+                
+                if (isNetworkAvailable) {
+                    Text(
+                        text = "Sync Now",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+    }
+}
+
+fun copyUriToInternalStorage(context: Context, uri: Uri): String? {
+    return try {
+        val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+        val fileName = "attached_recording_${System.currentTimeMillis()}.m4a" 
+        val file = File(context.filesDir, "attached_recordings")
+        if (!file.exists()) file.mkdirs()
+        val destFile = File(file, fileName)
+        val outputStream = FileOutputStream(destFile)
+        inputStream.use { input ->
+            outputStream.use { output ->
+                input.copyTo(output)
+            }
+        }
+        destFile.absolutePath
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}

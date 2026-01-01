@@ -18,6 +18,8 @@ class SettingsRepository(private val context: Context) {
     private val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
     private val KEY_SIM1_SUB_ID = "sim1_sub_id"
     private val KEY_SIM2_SUB_ID = "sim2_sub_id"
+    private val KEY_SIM1_CALIBRATION_HINT = "sim1_calibration_hint"
+    private val KEY_SIM2_CALIBRATION_HINT = "sim2_calibration_hint"
 
     private val prefs by lazy {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -52,7 +54,7 @@ class SettingsRepository(private val context: Context) {
 
     // Sim Selection: "Both", "Anyone"
     fun getSimSelection(): String {
-        return prefs.getString(KEY_SIM_SELECTION, "Both") ?: "Both"
+        return prefs.getString(KEY_SIM_SELECTION, "Off") ?: "Off"
     }
 
     fun setSimSelection(selection: String) {
@@ -139,7 +141,23 @@ class SettingsRepository(private val context: Context) {
     }
 
     fun setOnboardingCompleted(completed: Boolean) {
-        prefs.edit().putBoolean(KEY_ONBOARDING_COMPLETED, completed).apply()
+        prefs.edit().putBoolean(KEY_ONBOARDING_COMPLETED, completed).commit()
+    }
+
+    fun getSim1CalibrationHint(): String? {
+        return prefs.getString(KEY_SIM1_CALIBRATION_HINT, null)
+    }
+
+    fun setSim1CalibrationHint(hint: String?) {
+        prefs.edit().putString(KEY_SIM1_CALIBRATION_HINT, hint).apply()
+    }
+
+    fun getSim2CalibrationHint(): String? {
+        return prefs.getString(KEY_SIM2_CALIBRATION_HINT, null)
+    }
+
+    fun setSim2CalibrationHint(hint: String?) {
+        prefs.edit().putString(KEY_SIM2_CALIBRATION_HINT, hint).apply()
     }
 
     fun clearAllSettings() {

@@ -4,6 +4,7 @@ import com.google.gson.annotations.SerializedName
 
 data class PersonUpdateDto(
     @SerializedName("phone") val phone: String,
+    @SerializedName("name") val name: String?,
     @SerializedName("person_note") val personNote: String?,
     @SerializedName("label") val label: String?
 )

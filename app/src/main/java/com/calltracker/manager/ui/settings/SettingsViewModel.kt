@@ -1,6 +1,7 @@
 package com.calltracker.manager.ui.settings
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.calltracker.manager.data.CallDataRepository
@@ -25,7 +26,8 @@ data class PermissionState(
 data class SimInfo(
     val slotIndex: Int,
     val displayName: String,
-    val carrierName: String
+    val carrierName: String,
+    val subscriptionId: Int
 )
 
 data class AppInfo(
@@ -52,7 +54,11 @@ data class SettingsUiState(
     val verificationStatus: String? = null, // null, "verified", "failed"
     val verifiedOrgName: String? = null,
     val verifiedEmployeeName: String? = null,
-    val themeMode: String = "System" // "System", "Light", "Dark"
+    val themeMode: String = "System", // "System", "Light", "Dark"
+    val sim1SubId: Int? = null,
+    val sim2SubId: Int? = null,
+    val sim1CalibrationHint: String? = null,
+    val sim2CalibrationHint: String? = null
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -109,7 +115,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 callerPhoneSim2 = settingsRepository.getCallerPhoneSim2(),
                 whatsappPreference = settingsRepository.getWhatsappPreference(),
                 themeMode = settingsRepository.getThemeMode(),
-                lastSyncTime = settingsRepository.getLastSyncTime()
+                lastSyncTime = settingsRepository.getLastSyncTime(),
+                sim1SubId = settingsRepository.getSim1SubscriptionId(),
+                sim2SubId = settingsRepository.getSim2SubscriptionId(),
+                sim1CalibrationHint = settingsRepository.getSim1CalibrationHint(),
+                sim2CalibrationHint = settingsRepository.getSim2CalibrationHint()
             )
         }
     }
@@ -129,6 +139,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             android.Manifest.permission.READ_PHONE_STATE to "Read Phone State",
             android.Manifest.permission.POST_NOTIFICATIONS to "Notifications"
         )
+        
+        if (sdkInt >= android.os.Build.VERSION_CODES.R) {
+            permissionsToCheck.add(android.Manifest.permission.READ_PHONE_NUMBERS to "Phone Number Access")
+        }
 
         if (sdkInt >= android.os.Build.VERSION_CODES.TIRAMISU) {
             // Android 13+
@@ -158,12 +172,69 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             val infoList = subscriptionManager?.activeSubscriptionInfoList
             if (infoList != null) {
                 val sims = infoList.map { 
-                    SimInfo(it.simSlotIndex, it.displayName.toString(), it.carrierName.toString())
+                    SimInfo(
+                        slotIndex = it.simSlotIndex, 
+                        displayName = it.displayName.toString(), 
+                        carrierName = it.carrierName.toString(),
+                        subscriptionId = it.subscriptionId
+                    )
                 }.sortedBy { it.slotIndex }
+                
                 _uiState.update { it.copy(availableSims = sims) }
+                
+                // Update UI state with detected IDs, but DON'T save to repository yet
+                // User must manually "Identify/Calibrate" to confirm the mapping
+                sims.find { it.slotIndex == 0 }?.let { sim ->
+                    _uiState.update { state -> state.copy(sim1SubId = settingsRepository.getSim1SubscriptionId()) }
+                    
+                    // Try to auto-access phone number if not already set (this is safe to auto-populate)
+                    if (settingsRepository.getCallerPhoneSim1().isBlank()) {
+                        val number = getSimNumber(ctx, sim.subscriptionId)
+                        if (!number.isNullOrBlank()) {
+                            settingsRepository.setCallerPhoneSim1(number)
+                            _uiState.update { it.copy(callerPhoneSim1 = number) }
+                        }
+                    }
+                }
+                sims.find { it.slotIndex == 1 }?.let { sim ->
+                    _uiState.update { state -> state.copy(sim2SubId = settingsRepository.getSim2SubscriptionId()) }
+                    
+                    // Try to auto-access phone number if not already set
+                    if (settingsRepository.getCallerPhoneSim2().isBlank()) {
+                        val number = getSimNumber(ctx, sim.subscriptionId)
+                        if (!number.isNullOrBlank()) {
+                            settingsRepository.setCallerPhoneSim2(number)
+                            _uiState.update { it.copy(callerPhoneSim2 = number) }
+                        }
+                    }
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    private fun getSimNumber(ctx: Context, subId: Int): String? {
+        // Requires READ_PHONE_NUMBERS or READ_PHONE_STATE depending on OS version
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (androidx.core.app.ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_PHONE_NUMBERS) 
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) return null
+        } else if (androidx.core.app.ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_PHONE_STATE) 
+            != android.content.pm.PackageManager.PERMISSION_GRANTED) return null
+
+        return try {
+            val subscriptionManager = androidx.core.content.ContextCompat.getSystemService(ctx, android.telephony.SubscriptionManager::class.java)
+            if (subscriptionManager != null) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    subscriptionManager.getPhoneNumber(subId)
+                } else {
+                    // Best effort for older versions
+                    @Suppress("DEPRECATION")
+                    subscriptionManager.getActiveSubscriptionInfo(subId)?.number
+                }
+            } else null
+        } catch (e: Exception) {
+            null
         }
     }
 
@@ -690,16 +761,132 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         Toast.makeText(getApplication(), "Left organisation successfully", Toast.LENGTH_SHORT).show()
     }
     
+    data class VerificationCall(
+        val number: String,
+        val date: Long,
+        val subscriptionId: Int
+    )
+
+    fun fetchRecentSystemCalls(onResult: (List<VerificationCall>) -> Unit) {
+        val ctx = getApplication<Application>()
+        
+        // Log permission status
+        val hasPermission = androidx.core.content.ContextCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_CALL_LOG) == 
+                           android.content.pm.PackageManager.PERMISSION_GRANTED
+        Log.d("SettingsViewModel", "fetchRecentSystemCalls: has READ_CALL_LOG = $hasPermission")
+        
+        if (!hasPermission) {
+            Log.e("SettingsViewModel", "fetchRecentSystemCalls: Permission denied")
+            onResult(emptyList())
+            return
+        }
+
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val calls = mutableListOf<VerificationCall>()
+            val subIdColumns = listOf("subscription_id", "sub_id", "sim_id", "sim_slot", "phone_id")
+            val sortOrder = "${android.provider.CallLog.Calls.DATE} DESC" // Try without LIMIT first for compatibility
+            
+            try {
+                Log.d("SettingsViewModel", "Querying CallLog.Calls.CONTENT_URI...")
+                ctx.contentResolver.query(
+                    android.provider.CallLog.Calls.CONTENT_URI,
+                    null, // Fetch all columns
+                    null,
+                    null,
+                    sortOrder
+                )?.use { cursor ->
+                    val totalRows = cursor.count
+                    Log.d("SettingsViewModel", "CallLog Query successful. Rows found: $totalRows")
+                    
+                    // Log columns for debugging if few calls found or issues identifying sim
+                    if (totalRows > 0) {
+                        val allCols = cursor.columnNames.joinToString(", ")
+                        Log.d("SettingsViewModel", "Available columns: $allCols")
+                    }
+
+                    val numberIdx = cursor.getColumnIndex(android.provider.CallLog.Calls.NUMBER)
+                    val dateIdx = cursor.getColumnIndex(android.provider.CallLog.Calls.DATE)
+                    
+                    var subIdIdx = -1
+                    for (col in subIdColumns) {
+                        val idx = cursor.getColumnIndex(col)
+                        if (idx != -1) {
+                            subIdIdx = idx
+                            Log.d("SettingsViewModel", "Identified subId column: $col at index $idx")
+                            break
+                        }
+                    }
+                    
+                    if (subIdIdx == -1 && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                         subIdIdx = cursor.getColumnIndex(android.provider.CallLog.Calls.PHONE_ACCOUNT_ID)
+                         if (subIdIdx != -1) Log.d("SettingsViewModel", "Falling back to phone_account_id at index $subIdIdx")
+                    }
+
+                    var count = 0
+                    while(cursor.moveToNext() && count < 20) {
+                        val number = cursor.getString(numberIdx) ?: "Unknown"
+                        val date = cursor.getLong(dateIdx)
+                        
+                        var subId = -1
+                        if (subIdIdx != -1) {
+                            try {
+                                subId = cursor.getInt(subIdIdx)
+                            } catch (e: Exception) {
+                                val strVal = cursor.getString(subIdIdx)
+                                subId = strVal?.toIntOrNull() ?: -1
+                                if (subId == -1 && !strVal.isNullOrEmpty()) {
+                                    // Hash string IDs (like "subscription:1") if they aren't numeric
+                                    subId = strVal.hashCode()
+                                    Log.d("SettingsViewModel", "Hashed non-numeric subId '$strVal' to $subId")
+                                }
+                            }
+                        }
+                        
+                        calls.add(VerificationCall(number, date, subId))
+                        count++
+                    }
+                } ?: Log.e("SettingsViewModel", "CallLog query returned NULL cursor")
+                
+            } catch (e: SecurityException) {
+                Log.e("SettingsViewModel", "SecurityException reading call log: ${e.message}")
+            } catch (e: Exception) {
+                Log.e("SettingsViewModel", "General error reading call log", e)
+            }
+            
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                Log.d("SettingsViewModel", "Returning ${calls.size} calls to UI")
+                onResult(calls)
+            }
+        }
+    }
+    
+    fun setSimCalibration(simIndex: Int, subscriptionId: Int, hint: String) {
+        if (simIndex == 0) { // Sim 1
+            settingsRepository.setSim1SubscriptionId(subscriptionId)
+            settingsRepository.setSim1CalibrationHint(hint)
+            _uiState.update { it.copy(sim1SubId = subscriptionId, sim1CalibrationHint = hint) }
+            Log.d("SettingsViewModel", "Calibrated Sim1 to SubId: $subscriptionId with hint: $hint")
+        } else if (simIndex == 1) { // Sim 2
+            settingsRepository.setSim2SubscriptionId(subscriptionId)
+            settingsRepository.setSim2CalibrationHint(hint)
+            _uiState.update { it.copy(sim2SubId = subscriptionId, sim2CalibrationHint = hint) }
+            Log.d("SettingsViewModel", "Calibrated Sim2 to SubId: $subscriptionId with hint: $hint")
+        }
+        // Refresh SIM info
+        fetchSimInfo()
+    }
+
     fun resetOnboarding() {
         settingsRepository.setOnboardingCompleted(false)
         val ctx = getApplication<Application>()
         Toast.makeText(ctx, "Restarting app to show onboarding...", Toast.LENGTH_SHORT).show()
         
-        // Restart the app
+        // Restart the app more robustly
         val intent = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)
-        intent?.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        intent?.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-        ctx.startActivity(intent)
-        android.os.Process.killProcess(android.os.Process.myPid())
+        val mainIntent = android.content.Intent.makeRestartActivityTask(intent?.component)
+        ctx.startActivity(mainIntent)
+        
+        // Ensure process is terminated to force fresh state
+        java.lang.System.exit(0)
     }
 }

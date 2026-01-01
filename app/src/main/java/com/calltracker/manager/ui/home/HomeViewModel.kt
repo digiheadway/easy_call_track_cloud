@@ -108,13 +108,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
         // Observe Pending Syncs (Calls + Persons)
         viewModelScope.launch {
-            combine(
-                callDataRepository.getPendingCallsFlow(),
-                callDataRepository.getPendingSyncPersonsFlow()
-            ) { pendingCalls, pendingPersons ->
-                pendingCalls.size + pendingPersons.size
-            }.collect { totalPending ->
+            callDataRepository.getPendingChangesCountFlow().collect { totalPending ->
                 _uiState.update { it.copy(pendingSyncCount = totalPending) }
+                
+                // If auto-sync is desired and we just got new pending items
+                // we can trigger sync here, but usually it's better to trigger on action.
             }
         }
         
@@ -124,9 +122,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.update { it.copy(isNetworkAvailable = isAvailable) }
                 // If network becomes available and we have pending syncs, trigger sync
                 if (isAvailable && _uiState.value.pendingSyncCount > 0 && _uiState.value.isSyncSetup) {
-                     syncFromSystem() // This also triggers upload worker in a way if we were to enqueue it, but syncFromSystem just does local sync.
-                     // We should trigger the worker really.
-                     com.calltracker.manager.worker.UploadWorker.enqueue(application)
+                     syncNow()
                 }
             }
         }
@@ -188,6 +184,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             
             try {
                 callDataRepository.syncFromSystemCallLog()
+                syncNow()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -436,18 +433,21 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun saveCallNote(compositeId: String, note: String) {
         viewModelScope.launch {
             callDataRepository.updateCallNote(compositeId, note.ifEmpty { null })
+            syncNow()
         }
     }
 
     fun savePersonNote(phoneNumber: String, note: String) {
         viewModelScope.launch {
             callDataRepository.updatePersonNote(phoneNumber, note.ifEmpty { null })
+            syncNow()
         }
     }
     
     fun savePersonLabel(phoneNumber: String, label: String) {
         viewModelScope.launch {
             callDataRepository.updatePersonLabel(phoneNumber, label.ifEmpty { null })
+            syncNow()
         }
     }
 
@@ -464,7 +464,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun updateRecordingPathForLog(compositeId: String, path: String?) {
         viewModelScope.launch {
             callDataRepository.updateRecordingPath(compositeId, path)
+            syncNow()
         }
+    }
+
+    fun syncNow() {
+        com.calltracker.manager.worker.UploadWorker.runNow(getApplication())
     }
 
     // ============================================

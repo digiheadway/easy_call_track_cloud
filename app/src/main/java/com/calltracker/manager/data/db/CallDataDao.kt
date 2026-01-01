@@ -39,6 +39,14 @@ interface CallDataDao {
     fun getPendingCallsFlow(): Flow<List<CallDataEntity>>
     
     @Query("""
+        SELECT COUNT(*) FROM call_data c 
+        LEFT JOIN person_data p ON c.phoneNumber = p.phoneNumber 
+        WHERE c.syncStatus != 'COMPLETED' 
+        AND (p.isExcluded IS NULL OR p.isExcluded = 0)
+    """)
+    fun getUnsyncedCallsCountFlow(): Flow<Int>
+
+    @Query("""
         SELECT c.* FROM call_data c 
         LEFT JOIN person_data p ON c.phoneNumber = p.phoneNumber 
         WHERE c.syncStatus != 'COMPLETED' 

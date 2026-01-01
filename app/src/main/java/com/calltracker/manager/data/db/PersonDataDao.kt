@@ -59,6 +59,9 @@ interface PersonDataDao {
     @Query("SELECT * FROM person_data WHERE needsSync = 1")
     fun getPendingSyncPersonsFlow(): Flow<List<PersonDataEntity>>
 
+    @Query("SELECT COUNT(*) FROM person_data WHERE needsSync = 1")
+    fun getPendingSyncPersonsCountFlow(): Flow<Int>
+
     @Query("UPDATE person_data SET needsSync = :needsSync WHERE phoneNumber = :phoneNumber")
     suspend fun updateSyncStatus(phoneNumber: String, needsSync: Boolean)
 
@@ -67,6 +70,9 @@ interface PersonDataDao {
 
     @Query("UPDATE person_data SET label = :label, needsSync = 0 WHERE phoneNumber = :phoneNumber")
     suspend fun updateLabelFromRemote(phoneNumber: String, label: String?)
+
+    @Query("UPDATE person_data SET contactName = :name, needsSync = 0 WHERE phoneNumber = :phoneNumber")
+    suspend fun updateNameFromRemote(phoneNumber: String, name: String?)
     
     // ============================================
     // DELETE

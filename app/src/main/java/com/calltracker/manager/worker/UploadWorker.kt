@@ -38,34 +38,34 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         val phone2 = settingsRepository.getCallerPhoneSim2()
         val simSelection = settingsRepository.getSimSelection() // "Both", "Sim1", "Sim2"
 
-        if (orgId.isEmpty() || userId.isEmpty() || (phone1.isEmpty() && phone2.isEmpty())) {
-            Log.w(TAG, "Required settings missing: orgId='$orgId', userId='$userId', phones='$phone1 / $phone2'. Skipping sync pass.")
+        if (orgId.isEmpty() || userId.isEmpty()) {
+            Log.w(TAG, "Required settings missing: orgId='$orgId', userId='$userId'. Skipping sync pass.")
             return@withContext Result.success()
         }
 
-        // First, sync any new calls from system
+        // 1. Fetch updates FROM server first (Bidirectional Sync)
+        fetchContactsFromServer(orgId, userId)
+
+        // 2. Sync any new calls from system log
         callDataRepository.syncFromSystemCallLog()
         
-        // Get unsynced calls from Room
+        // 3. Process new or failed calls
         val allUnsyncedCalls = callDataRepository.getUnsyncedCalls()
-        
-        // Filter calls based on SIM selection
         val unsyncedCalls = allUnsyncedCalls.filter { call ->
+            // Filter by SIM selection and ignore those that ONLY need note updates for now
+            if (call.syncStatus == CallLogStatus.NOTE_UPDATE_PENDING) return@filter false
+            
             val phoneForCall = getPhoneForCall(call, phone1, phone2)
             when (simSelection) {
                 "Sim1" -> phoneForCall == phone1
                 "Sim2" -> phoneForCall == phone2
-                else -> true // "Both" - sync all calls
+                else -> true 
             }
         }
         
-        Log.d(TAG, "SIM Selection: $simSelection")
-        Log.d(TAG, "Found ${allUnsyncedCalls.size} unsynced calls, filtered to ${unsyncedCalls.size} based on SIM selection")
-
         var successCount = 0
         for (call in unsyncedCalls) {
             try {
-                Log.d(TAG, "Processing call: ${call.compositeId} to ${call.phoneNumber}")
                 val activePhone = getPhoneForCall(call, phone1, phone2)
                 uploadCall(call, orgId, userId, activePhone)
                 successCount++
@@ -75,8 +75,20 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
             }
         }
 
-        Log.d(TAG, "Sync pass completed. Synced $successCount calls.")
-        
+        // 4. Update notes for already synced calls (NOTE_UPDATE_PENDING)
+        val noteUpdateCalls = allUnsyncedCalls.filter { it.syncStatus == CallLogStatus.NOTE_UPDATE_PENDING }
+        for (call in noteUpdateCalls) {
+            try {
+                updateCallNotesOnly(call)
+                successCount++
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to update notes for call ${call.compositeId}", e)
+            }
+        }
+
+        // 5. Update person labels/notes (Person Level Sync)
+        syncPendingPersons(orgId, userId)
+
         if (unsyncedCalls.isNotEmpty() || successCount > 0) {
             settingsRepository.setLastSyncTime(System.currentTimeMillis())
         }
@@ -87,6 +99,93 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         )
         
         Result.success(outputData)
+    }
+
+    private suspend fun fetchContactsFromServer(orgId: String, userId: String) {
+        try {
+            Log.d(TAG, "Fetching contacts from server...")
+            val deviceId = android.provider.Settings.Secure.getString(
+                applicationContext.contentResolver,
+                android.provider.Settings.Secure.ANDROID_ID
+            ) ?: "unknown_device"
+
+            val resp = NetworkClient.api.fetchContacts("fetch_contacts", orgId, userId, deviceId)
+            if (resp.isSuccessful) {
+                val body = resp.body()
+                if (body?.get("success") == true) {
+                    val contactsData = body["contacts"] as? List<Map<String, Any>>
+                    if (contactsData != null) {
+                        Log.d(TAG, "Received ${contactsData.size} contacts from server")
+                        // Map to internal DTOs or handle directly
+                        val updates = contactsData.map {
+                            com.calltracker.manager.network.PersonUpdateDto(
+                                phone = it["phone"] as String,
+                                name = it["name"] as? String,
+                                personNote = it["person_note"] as? String,
+                                label = it["label"] as? String
+                            )
+                        }
+
+                        // Parse Call Updates
+                        val callsData = body["call_updates"] as? List<Map<String, Any>>
+                        val callUpdates = callsData?.map {
+                            com.calltracker.manager.network.CallUpdateDto(
+                                uniqueId = it["unique_id"] as String,
+                                note = it["note"] as? String ?: ""
+                            )
+                        } ?: emptyList()
+
+                        callDataRepository.saveRemoteUpdates(updates, callUpdates)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to fetch contacts from server", e)
+        }
+    }
+
+    private suspend fun updateCallNotesOnly(call: CallDataEntity) {
+        val person = callDataRepository.getPersonByNumber(call.phoneNumber)
+        val resp = NetworkClient.api.updateNote(
+            action = "update_note",
+            uniqueId = call.compositeId,
+            note = call.callNote,
+            personNote = person?.personNote,
+            label = person?.label
+        )
+        if (resp.isSuccessful && resp.body()?.get("success") == true) {
+            callDataRepository.markAsSynced(call.compositeId)
+            Log.d(TAG, "Updated notes for already synced call: ${call.compositeId}")
+        }
+    }
+
+    private suspend fun syncPendingPersons(orgId: String, userId: String) {
+        val pendingPersons = callDataRepository.getPendingSyncPersons()
+        if (pendingPersons.isEmpty()) return
+
+        Log.d(TAG, "Syncing ${pendingPersons.size} persons with pending updates")
+        for (person in pendingPersons) {
+            try {
+                // To update a person we need a unique_id of their last call or any call
+                // If they have no calls yet, we can't use update_note action.
+                // But usually persons are created/updated via call logs.
+                val lastCallId = person.lastCallCompositeId
+                if (lastCallId != null) {
+                    val resp = NetworkClient.api.updateNote(
+                        action = "update_note",
+                        uniqueId = lastCallId,
+                        note = null, // Don't overwrite call note
+                        personNote = person.personNote,
+                        label = person.label
+                    )
+                    if (resp.isSuccessful && resp.body()?.get("success") == true) {
+                        callDataRepository.updatePersonSyncStatus(person.phoneNumber, false)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to sync person ${person.phoneNumber}", e)
+            }
+        }
     }
 
     private suspend fun uploadCall(call: CallDataEntity, orgId: String, userId: String, devicePhone: String) {
@@ -168,13 +267,14 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         val person = callDataRepository.getPersonByNumber(call.phoneNumber)
         val personNote = person?.personNote
         
-        if (callNote != null || personNote != null) {
+        if (callNote != null || personNote != null || person?.label != null) {
             Log.d(TAG, "Updating notes for ${call.compositeId}")
             val noteResp = NetworkClient.api.updateNote(
                 action = "update_note",
                 uniqueId = call.compositeId,
                 note = callNote,
-                personNote = personNote
+                personNote = personNote,
+                label = person?.label
             )
             Log.d(TAG, "Update note status: ${noteResp.code()}, Body: ${noteResp.body()}")
         }
@@ -263,6 +363,22 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 "CallUploadWorker",
                 ExistingPeriodicWorkPolicy.KEEP,
+                request
+            )
+        }
+
+        fun runNow(context: Context) {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+
+            val request = OneTimeWorkRequestBuilder<UploadWorker>()
+                .setConstraints(constraints)
+                .build()
+
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                "CallUploadWorker_Immediate",
+                ExistingWorkPolicy.REPLACE,
                 request
             )
         }

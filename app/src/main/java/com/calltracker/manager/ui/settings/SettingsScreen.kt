@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -1514,147 +1516,6 @@ fun CreateOrgModal(
                 Text("Go to Website Now")
             }
              Spacer(Modifier.height(48.dp))
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TrackSimModal(
-    uiState: SettingsUiState,
-    viewModel: SettingsViewModel,
-    onDismiss: () -> Unit
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var selectedSim by remember { mutableStateOf(uiState.simSelection) }
-    var sim1Phone by remember { mutableStateOf(uiState.callerPhoneSim1) }
-    var sim2Phone by remember { mutableStateOf(uiState.callerPhoneSim2) }
-    var showDropdown by remember { mutableStateOf(false) }
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
-            Text(
-                text = "Call Tracking Settings",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-            
-            Spacer(Modifier.height(24.dp))
-            
-            // SIM Selection Dropdown
-            Text("Select SIM to Track", style = MaterialTheme.typography.labelMedium)
-            Spacer(Modifier.height(8.dp))
-            Box {
-                OutlinedCard(
-                    onClick = { showDropdown = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        val label = when(selectedSim) {
-                            "Off" -> "Off"
-                            "Both" -> "Both SIMs"
-                            else -> selectedSim.replace("Sim", "SIM ")
-                        }
-                        Text(label, modifier = Modifier.weight(1f))
-                        Icon(Icons.Default.ArrowDropDown, null)
-                    }
-                }
-                
-                DropdownMenu(
-                    expanded = showDropdown,
-                    onDismissRequest = { showDropdown = false },
-                    modifier = Modifier.fillMaxWidth(0.85f)
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Off") },
-                        onClick = { selectedSim = "Off"; showDropdown = false },
-                        leadingIcon = { Icon(Icons.Default.Block, null) }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Both SIMs") },
-                        onClick = { selectedSim = "Both"; showDropdown = false },
-                        leadingIcon = { Icon(Icons.Default.DoneAll, null) }
-                    )
-                    uiState.availableSims.forEach { sim ->
-                        val simValue = "Sim${sim.slotIndex + 1}"
-                        DropdownMenuItem(
-                            text = { Text("SIM ${sim.slotIndex + 1} (${sim.displayName})") },
-                            onClick = { selectedSim = simValue; showDropdown = false },
-                            leadingIcon = { Icon(Icons.Default.SimCard, null) }
-                        )
-                    }
-                }
-            }
-            
-            Spacer(Modifier.height(24.dp))
-            
-            // Conditional Phone Inputs
-            if (selectedSim == "Sim1" || selectedSim == "Both") {
-                OutlinedTextField(
-                    value = sim1Phone,
-                    onValueChange = { sim1Phone = it },
-                    label = { Text("SIM 1 Phone Number") },
-                    placeholder = { Text("Enter SIM 1 Number") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                    leadingIcon = { Icon(Icons.Default.Phone, null) }
-                )
-                Spacer(Modifier.height(16.dp))
-            }
-            
-            if (selectedSim == "Sim2" || selectedSim == "Both") {
-                OutlinedTextField(
-                    value = sim2Phone,
-                    onValueChange = { sim2Phone = it },
-                    label = { Text("SIM 2 Phone Number") },
-                    placeholder = { Text("Enter SIM 2 Number") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                    leadingIcon = { Icon(Icons.Default.Phone, null) }
-                )
-                Spacer(Modifier.height(16.dp))
-            }
-            
-            Spacer(Modifier.height(8.dp))
-            
-            val isSaveEnabled = when(selectedSim) {
-                "Off" -> true
-                "Sim1" -> sim1Phone.isNotBlank()
-                "Sim2" -> sim2Phone.isNotBlank()
-                "Both" -> sim1Phone.isNotBlank() && sim2Phone.isNotBlank()
-                else -> false
-            }
-            
-            Button(
-                onClick = {
-                    viewModel.updateSimSelection(selectedSim)
-                    viewModel.updateCallerPhoneSim1(sim1Phone)
-                    viewModel.updateCallerPhoneSim2(sim2Phone)
-                    onDismiss()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = isSaveEnabled,
-                shape = RoundedCornerShape(12.dp),
-                contentPadding = PaddingValues(16.dp)
-            ) {
-                Text("Save Tracking Settings")
-            }
-            
-            Spacer(Modifier.height(48.dp))
         }
     }
 }

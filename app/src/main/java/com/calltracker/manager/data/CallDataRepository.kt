@@ -159,6 +159,13 @@ class CallDataRepository(private val context: Context) {
     suspend fun updatePersonSyncStatus(phoneNumber: String, needsSync: Boolean) = withContext(Dispatchers.IO) {
         personDataDao.updateSyncStatus(phoneNumber, needsSync)
     }
+
+    fun getPendingChangesCountFlow(): Flow<Int> {
+        return kotlinx.coroutines.flow.combine(
+            callDataDao.getUnsyncedCallsCountFlow(),
+            personDataDao.getPendingSyncPersonsCountFlow()
+        ) { calls, persons -> calls + persons }
+    }
     
     // ============================================
     // PERSON DATA - WRITE OPERATIONS
@@ -211,14 +218,24 @@ class CallDataRepository(private val context: Context) {
                 val normalized = normalizePhoneNumber(update.phone)
                 Log.d(TAG, "Processing update for ${update.phone} -> Normalized: $normalized. Label: ${update.label}")
                 
-                val existing = personDataDao.getByPhoneNumber(normalized)
+                var existing = personDataDao.getByPhoneNumber(normalized)
+                
+                // Fallback: try matching without '+' if normalized starts with it
+                if (existing == null && normalized.startsWith("+")) {
+                    val stripped = normalized.substring(1)
+                    existing = personDataDao.getByPhoneNumber(stripped)
+                }
+                
                 if (existing != null) {
-                    if (update.personNote != null) personDataDao.updatePersonNoteFromRemote(normalized, update.personNote)
-                    if (update.label != null) personDataDao.updateLabelFromRemote(normalized, update.label)
+                    val key = existing.phoneNumber
+                    if (update.name != null) personDataDao.updateNameFromRemote(key, update.name)
+                    if (update.personNote != null) personDataDao.updatePersonNoteFromRemote(key, update.personNote)
+                    if (update.label != null) personDataDao.updateLabelFromRemote(key, update.label)
                 } else {
                     Log.d(TAG, "Inserting new person entry for $normalized")
                     personDataDao.insert(PersonDataEntity(
                         phoneNumber = normalized,
+                        contactName = update.name,
                         personNote = update.personNote,
                         label = update.label
                     ))

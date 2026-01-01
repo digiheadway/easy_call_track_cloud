@@ -58,6 +58,16 @@ interface CallCloudApi {
         @Field("action") action: String,
         @Field("unique_id") uniqueId: String,
         @Field("note") note: String?,
-        @Field("person_note") personNote: String?
+        @Field("person_note") personNote: String?,
+        @Field("label") label: String?
+    ): Response<Map<String, Any>>
+
+    @FormUrlEncoded
+    @POST("sync_app.php")
+    suspend fun fetchContacts(
+        @Field("action") action: String,
+        @Field("org_id") orgId: String,
+        @Field("user_id") userId: String,
+        @Field("device_id") deviceId: String
     ): Response<Map<String, Any>>
 }
