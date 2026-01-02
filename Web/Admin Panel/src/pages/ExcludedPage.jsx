@@ -24,6 +24,16 @@ export default function ExcludedPage() {
     const [formData, setFormData] = useState({ phone: '', name: '', is_active: true });
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    // Confirmation Modal State
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        action: null,
+        isDestructive: false
+    });
 
     useEffect(() => {
         fetchContacts();
@@ -62,51 +72,70 @@ export default function ExcludedPage() {
         }
     };
 
-    const handleDelete = async (e, id) => {
+    const handleDelete = (e, id) => {
         e.preventDefault();
         e.stopPropagation();
-        if (!window.confirm('Remove this exclusion?')) return;
-        try {
-            await api.delete(`/excluded_contacts.php?id=${id}`);
-            toast.success('Exclusion removed');
-            fetchContacts();
-        } catch (err) {
-            toast.error('Failed to remove exclusion');
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: 'Remove Exclusion',
+            message: 'Are you sure you want to remove this contact from the exclusion list?',
+            isDestructive: true,
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/excluded_contacts.php?id=${id}`);
+                    toast.success('Exclusion removed');
+                    fetchContacts();
+                } catch (err) {
+                    toast.error('Failed to remove exclusion');
+                }
+            }
+        });
     };
 
-    const handleDeleteAllData = async (e) => {
+    const handleDeleteAllData = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (!window.confirm('WARNING: This will permanently delete ALL call history, recordings, and contact details for EVERY contact in this exclusion list. This action cannot be undone. Are you sure?')) return;
-
-        setDeleting(true);
-        try {
-            await api.post('/excluded_contacts.php?action=delete_all_data');
-            toast.success('Successfully erased all history for excluded contacts');
-            fetchContacts();
-        } catch (err) {
-            toast.error('Failed to erase all data');
-        } finally {
-            setDeleting(false);
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: 'ERASE ALL HISTORY',
+            message: 'WARNING: This will permanently delete ALL call history, recordings, and contact details for EVERY contact in this exclusion list. This action cannot be undone. Are you sure?',
+            isDestructive: true,
+            onConfirm: async () => {
+                setDeleting(true);
+                try {
+                    await api.post('/excluded_contacts.php?action=delete_all_data');
+                    toast.success('Successfully erased all history for excluded contacts');
+                    fetchContacts();
+                } catch (err) {
+                    toast.error('Failed to erase all data');
+                } finally {
+                    setDeleting(false);
+                }
+            }
+        });
     };
 
-    const handleDeleteContactData = async (e, phone) => {
+    const handleDeleteContactData = (e, phone) => {
         e.preventDefault();
         e.stopPropagation();
-        if (!window.confirm(`Permanently delete all call history, recordings, and contact data for ${phone}?`)) return;
-
-        setDeleting(true);
-        try {
-            await api.post('/excluded_contacts.php?action=delete_contact_data', { phone });
-            toast.success(`History for ${phone} erased`);
-            fetchContacts();
-        } catch (err) {
-            toast.error('Failed to erase contact history');
-        } finally {
-            setDeleting(false);
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: 'Erase History',
+            message: `Permanently delete all call history, recordings, and contact data for ${phone}?`,
+            isDestructive: true,
+            onConfirm: async () => {
+                setDeleting(true);
+                try {
+                    await api.post('/excluded_contacts.php?action=delete_contact_data', { phone });
+                    toast.success(`History for ${phone} erased`);
+                    fetchContacts();
+                } catch (err) {
+                    toast.error('Failed to erase contact history');
+                } finally {
+                    setDeleting(false);
+                }
+            }
+        });
     };
 
     const toggleStatus = async (e, contact) => {
@@ -294,6 +323,43 @@ export default function ExcludedPage() {
                         </button>
                     </div>
                 </form>
+            </Modal>
+
+            {/* Confirmation Modal */}
+            <Modal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                title={confirmModal.title}
+            >
+                <div className="space-y-4">
+                    <div className="flex items-start gap-3 p-3 bg-orange-50 rounded-lg text-orange-800 border border-orange-100">
+                        <AlertTriangle className="shrink-0 mt-0.5" size={18} />
+                        <p className="text-sm font-medium">{confirmModal.message}</p>
+                    </div>
+                    <div className="flex gap-3 pt-2">
+                        <button
+                            type="button"
+                            onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                            className="flex-1 btn bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                setIsProcessing(true);
+                                const onConfirm = confirmModal.onConfirm;
+                                setConfirmModal({ ...confirmModal, isOpen: false });
+                                await onConfirm();
+                                setIsProcessing(false);
+                            }}
+                            disabled={isProcessing}
+                            className={`flex-1 btn ${confirmModal.isDestructive ? 'bg-red-600 hover:bg-red-700 text-white' : 'btn-primary'}`}
+                        >
+                            {isProcessing ? 'Processing...' : 'Confirm'}
+                        </button>
+                    </div>
+                </div>
             </Modal>
         </div>
     );
