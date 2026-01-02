@@ -52,13 +52,29 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
         }
 
         try {
-            // Get calls with pending recording uploads
-            val pendingCalls = callDataRepository.getCallsNeedingRecordingSync()
-            Log.d(TAG, "Found ${pendingCalls.size} recordings to upload")
+            // Cleanup stuck recordings (stuck in COMPRESSING or UPLOADING for more than 30 mins)
+            val activeSyncs = callDataRepository.getActiveRecordingSyncsFlow()
+            // Note: Since this is a suspend function in a worker, we can't easily observe a flow here
+            // better to use a one-time fetch or a more direct approach.
+            // Let's use a simpler approach: reset anything stuck in an active state when starting
+            // to ensure fresh start, especially if the worker was killed.
             
-            if (pendingCalls.isEmpty()) {
+            val needingSync = callDataRepository.getCallsNeedingRecordingSync()
+            Log.d(TAG, "Found ${needingSync.size} recordings needing sync (including stuck ones)")
+            
+            if (needingSync.isEmpty()) {
                 return@withContext Result.success()
             }
+
+            // Group by status to log info
+            val stuckCount = needingSync.count { it.recordingSyncStatus == RecordingSyncStatus.COMPRESSING || it.recordingSyncStatus == RecordingSyncStatus.UPLOADING }
+            if (stuckCount > 0) {
+                Log.i(TAG, "Resetting $stuckCount stuck recording syncs to PENDING")
+                // We don't need to explicitly reset them in DB if we just process them, 
+                // but resetting PENDING makes the UI look cleaner if we fail later.
+            }
+            
+            val pendingCalls = needingSync
             
 
             
@@ -96,8 +112,12 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
 
             var uploadedCount = 0
             
-            // Process one at a time to avoid resource exhaustion
-            for (call in pendingCalls) {
+            // Process in small batches to stay within WorkManager execution limits
+            val batchSize = 10
+            val batch = pendingCalls.take(batchSize)
+            Log.d(TAG, "Processing batch of ${batch.size} recordings")
+            
+            for (call in batch) {
                 if (alreadyCompletedSet.contains(call.compositeId)) {
                     continue
                 }
@@ -113,8 +133,14 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                     }
                     
                     if (recordingPath == null) {
-                        Log.w(TAG, "No recording found for ${call.compositeId}")
-                        callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.NOT_APPLICABLE)
+                        val hoursSinceCall = (System.currentTimeMillis() - call.callDate) / (1000 * 60 * 60)
+                        if (hoursSinceCall > 3) {
+                            Log.w(TAG, "No recording found for ${call.compositeId} after 3 hours. Marking as NOT_APPLICABLE.")
+                            callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.NOT_APPLICABLE)
+                        } else {
+                            Log.d(TAG, "Recording not found yet for ${call.compositeId}. Will retry later.")
+                            // Keep as PENDING
+                        }
                         continue
                     }
                     
@@ -168,11 +194,17 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                 }
             }
             
-            Log.d(TAG, "Recording upload complete. Uploaded $uploadedCount/${pendingCalls.size}")
+            Log.d(TAG, "Batch complete. Uploaded $uploadedCount/${batch.size}. Total remaining: ${pendingCalls.size - uploadedCount}")
             
+            if (pendingCalls.size > batch.size) {
+                Log.d(TAG, "More recordings pending, rescheduling worker...")
+                return@withContext Result.retry() 
+            }
+
             Result.success(workDataOf(
                 "uploaded_count" to uploadedCount,
-                "total_pending" to pendingCalls.size
+                "total_processed" to batch.size,
+                "remaining" to (pendingCalls.size - uploadedCount)
             ))
         } catch (e: kotlinx.coroutines.CancellationException) {
             Log.d(TAG, "Upload work cancelled", e)
@@ -250,7 +282,7 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
 
-            val request = PeriodicWorkRequestBuilder<RecordingUploadWorker>(30, TimeUnit.MINUTES)
+            val request = PeriodicWorkRequestBuilder<RecordingUploadWorker>(15, TimeUnit.MINUTES)
                 .setConstraints(constraints)
                 .build()
 

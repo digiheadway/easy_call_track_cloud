@@ -71,7 +71,7 @@ interface CallDataDao {
     @Query("""
         SELECT c.* FROM call_data c 
         LEFT JOIN person_data p ON c.phoneNumber = p.phoneNumber 
-        WHERE c.recordingSyncStatus IN ('PENDING', 'FAILED')
+        WHERE c.recordingSyncStatus IN ('PENDING', 'FAILED', 'COMPRESSING', 'UPLOADING')
         AND c.callDate >= :minDate
         AND c.localRecordingPath IS NOT NULL
         AND (p.isExcluded IS NULL OR p.isExcluded = 0)
@@ -113,7 +113,7 @@ interface CallDataDao {
     @Query("""
         SELECT COUNT(*) FROM call_data c 
         LEFT JOIN person_data p ON c.phoneNumber = p.phoneNumber 
-        WHERE c.recordingSyncStatus IN ('PENDING', 'FAILED')
+        WHERE c.recordingSyncStatus IN ('PENDING', 'FAILED', 'COMPRESSING', 'UPLOADING')
         AND c.callDate >= :minDate
         AND c.localRecordingPath IS NOT NULL
         AND (p.isExcluded IS NULL OR p.isExcluded = 0)

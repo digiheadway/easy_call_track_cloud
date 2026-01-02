@@ -115,11 +115,15 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // Update last sync time
             settingsRepository.setLastSyncTime(System.currentTimeMillis())
             
-            Log.d(TAG, "Metadata sync complete. Synced $syncedCount calls.")
-            
+            val pendingRecordingCount = callDataRepository.getCallsNeedingRecordingSync().size
+            if (pendingRecordingCount > 0) {
+                Log.d(TAG, "Triggering RecordingUploadWorker for $pendingRecordingCount pending recordings")
+                RecordingUploadWorker.runNow(applicationContext)
+            }
+
             Result.success(workDataOf(
                 "synced_calls" to syncedCount,
-                "pending_recordings" to callDataRepository.getCallsNeedingRecordingSync().size
+                "pending_recordings" to pendingRecordingCount
             ))
         } catch (e: kotlinx.coroutines.CancellationException) {
             Log.d(TAG, "Sync work cancelled", e)
@@ -339,7 +343,7 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
 
-            val request = PeriodicWorkRequestBuilder<CallSyncWorker>(2, TimeUnit.HOURS)
+            val request = PeriodicWorkRequestBuilder<CallSyncWorker>(30, TimeUnit.MINUTES)
                 .setConstraints(constraints)
                 .build()
 

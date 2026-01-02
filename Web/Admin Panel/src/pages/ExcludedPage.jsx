@@ -53,25 +53,31 @@ export default function ExcludedPage() {
             });
             setIsModalOpen(false);
             setFormData({ phone: '', name: '', is_active: true });
+            toast.success('Contact added to exclusion list');
             fetchContacts();
         } catch (err) {
-            alert(err.response?.data?.message || 'Failed to add contact');
+            toast.error(err.response?.data?.message || 'Failed to add contact');
         } finally {
             setSaving(false);
         }
     };
 
-    const handleDelete = async (id) => {
+    const handleDelete = async (e, id) => {
+        e.preventDefault();
+        e.stopPropagation();
         if (!window.confirm('Remove this exclusion?')) return;
         try {
             await api.delete(`/excluded_contacts.php?id=${id}`);
+            toast.success('Exclusion removed');
             fetchContacts();
         } catch (err) {
-            alert('Failed to remove exclusion');
+            toast.error('Failed to remove exclusion');
         }
     };
 
-    const handleDeleteAllData = async () => {
+    const handleDeleteAllData = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         if (!window.confirm('WARNING: This will permanently delete ALL call history, recordings, and contact details for EVERY contact in this exclusion list. This action cannot be undone. Are you sure?')) return;
 
         setDeleting(true);
@@ -86,7 +92,9 @@ export default function ExcludedPage() {
         }
     };
 
-    const handleDeleteContactData = async (phone) => {
+    const handleDeleteContactData = async (e, phone) => {
+        e.preventDefault();
+        e.stopPropagation();
         if (!window.confirm(`Permanently delete all call history, recordings, and contact data for ${phone}?`)) return;
 
         setDeleting(true);
@@ -101,14 +109,16 @@ export default function ExcludedPage() {
         }
     };
 
-    const toggleStatus = async (contact) => {
+    const toggleStatus = async (e, contact) => {
+        e.preventDefault();
+        e.stopPropagation();
         try {
             await api.put(`/excluded_contacts.php?id=${contact.id}`, {
                 is_active: contact.is_active == 1 ? 0 : 1
             });
             fetchContacts();
         } catch (err) {
-            alert('Failed to update status');
+            toast.error('Failed to update status');
         }
     };
 
@@ -138,7 +148,8 @@ export default function ExcludedPage() {
                     </div>
                     {contacts.length > 0 && (
                         <button
-                            onClick={handleDeleteAllData}
+                            type="button"
+                            onClick={(e) => handleDeleteAllData(e)}
                             disabled={deleting}
                             className="btn bg-red-50 text-red-600 border-red-100 hover:bg-red-100 whitespace-nowrap gap-2"
                             title="Erase all history for all excluded numbers"
@@ -148,6 +159,7 @@ export default function ExcludedPage() {
                         </button>
                     )}
                     <button
+                        type="button"
                         onClick={() => setIsModalOpen(true)}
                         className="btn btn-primary whitespace-nowrap gap-2"
                     >
@@ -188,7 +200,8 @@ export default function ExcludedPage() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <button
-                                            onClick={() => toggleStatus(c)}
+                                            type="button"
+                                            onClick={(e) => toggleStatus(e, c)}
                                             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${c.is_active == 1
                                                 ? 'bg-green-50 text-green-700 border border-green-100'
                                                 : 'bg-gray-50 text-gray-500 border border-gray-100'
@@ -204,7 +217,8 @@ export default function ExcludedPage() {
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-1">
                                             <button
-                                                onClick={() => handleDeleteContactData(c.phone)}
+                                                type="button"
+                                                onClick={(e) => handleDeleteContactData(e, c.phone)}
                                                 disabled={deleting}
                                                 className="p-2 hover:bg-orange-50 text-gray-400 hover:text-orange-600 rounded-lg transition-colors"
                                                 title="Erase all history for this contact"
@@ -212,7 +226,8 @@ export default function ExcludedPage() {
                                                 <RotateCcw size={18} />
                                             </button>
                                             <button
-                                                onClick={() => handleDelete(c.id)}
+                                                type="button"
+                                                onClick={(e) => handleDelete(e, c.id)}
                                                 className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-lg transition-colors"
                                                 title="Remove from exclusion list"
                                             >

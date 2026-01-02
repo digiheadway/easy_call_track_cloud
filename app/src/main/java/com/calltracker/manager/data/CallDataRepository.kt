@@ -324,8 +324,9 @@ class CallDataRepository(private val context: Context) {
         return combine(
             getPendingNewCallsCountFlow(),
             getPendingMetadataUpdatesCountFlow(),
-            getPendingPersonUpdatesCountFlow()
-        ) { newCalls, updates, persons -> newCalls + updates + persons }
+            getPendingPersonUpdatesCountFlow(),
+            getPendingRecordingSyncCountFlow()
+        ) { newCalls, updates, persons, recordings -> newCalls + updates + persons + recordings }
     }
     
     // ============================================

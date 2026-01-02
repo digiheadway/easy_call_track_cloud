@@ -316,7 +316,7 @@ class RecordingRepository(private val context: Context) {
         contactName: String? = null
     ): String? {
         val callEndTime = callDate + (durationSec * 1000)
-        val tolerance = 30 * 1000L // 30 seconds
+        val tolerance = 60 * 1000L // 60 seconds
         val searchWindowEnd = callEndTime + tolerance
 
         // Filter to audio files within time window

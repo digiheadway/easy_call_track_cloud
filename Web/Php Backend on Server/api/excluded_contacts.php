@@ -12,6 +12,10 @@ header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Authorization, Content-Type');
 header('Content-Type: application/json');
 
+// Disable error display to prevent breaking JSON output
+ini_set('display_errors', 0);
+error_reporting(0);
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
