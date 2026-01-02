@@ -17,7 +17,6 @@ import {
     Calendar,
     UserX,
     CalendarClock,
-    CalendarClock,
     SmartphoneNfc,
     AlertTriangle
 } from 'lucide-react';
