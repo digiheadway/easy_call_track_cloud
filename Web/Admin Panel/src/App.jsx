@@ -10,6 +10,9 @@ import CallsPage from './pages/CallsPage';
 import ReportsPage from './pages/ReportsPage';
 import EmployeesPage from './pages/EmployeesPage';
 import ExcludedPage from './pages/ExcludedPage';
+import { AudioPlayerProvider } from './context/AudioPlayerContext';
+import FloatingAudioPlayer from './components/FloatingAudioPlayer';
+import { Toaster } from 'sonner';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -27,19 +30,13 @@ const PrivateRoute = ({ children }) => {
   ) : <Navigate to="/login" />;
 };
 
-import { AudioPlayerProvider } from './context/AudioPlayerContext';
-import FloatingAudioPlayer from './components/FloatingAudioPlayer';
-import { Toaster } from 'sonner';
-
-// ... (existing imports)
-
 function App() {
   return (
     <AuthProvider>
       <PersonModalProvider>
         <AudioPlayerProvider>
           <Toaster position="top-right" richColors closeButton />
-          <Router>
+          <Router basename="/dashboard">
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />

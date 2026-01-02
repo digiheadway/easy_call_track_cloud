@@ -61,24 +61,16 @@
         }
     </script>
     <style type="text/tailwindcss">
-        .glass {
-            background-color: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .glass-card {
-            background-color: rgba(17, 24, 39, 0.6);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(31, 41, 55, 0.5);
-            transition: all 0.3s;
-        }
-        .glass-card:hover {
-            border-color: rgba(14, 165, 233, 0.3);
-        }
-        .text-gradient {
-            background: linear-gradient(to right, #38bdf8, #c084fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        @layer utilities {
+            .glass {
+                @apply bg-white/5 backdrop-blur-lg border border-white/10;
+            }
+            .glass-card {
+                @apply bg-dark-card/60 backdrop-blur-md border border-dark-border/50 hover:border-brand-500/30 transition-all duration-300;
+            }
+            .text-gradient {
+                @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-400 to-purple-400;
+            }
         }
         body {
             background-color: #0B0F19; /* dark-bg */
@@ -127,9 +119,9 @@
                     </div>
                 </div>
                 <div class="hidden md:flex items-center gap-4">
-                    <a href="login.html"
+                    <a href="/dashboard/login"
                         class="text-gray-300 hover:text-white transition-colors text-sm font-medium">Log In</a>
-                    <a href="signup.html"
+                    <a href="/dashboard/signup"
                         class="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-all shadow-lg shadow-brand-500/20 hover:shadow-brand-500/40">
                         Get Started
                     </a>
@@ -151,9 +143,9 @@
                 <a href="#how-it-works" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">How it
                     Works</a>
                 <a href="#pricing" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">Pricing</a>
-                <a href="login.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">Log
+                <a href="/dashboard/login" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">Log
                     In</a>
-                <a href="signup.html"
+                <a href="/dashboard/signup"
                     class="block w-full text-center mt-4 bg-brand-600 hover:bg-brand-500 text-white px-5 py-3 rounded-lg text-base font-medium">Get
                     Started</a>
             </div>
@@ -420,7 +412,7 @@
                             <i data-feather="check" class="w-4 h-4 text-brand-400"></i> Employee Activity Reports
                         </li>
                     </ul>
-                    <a href="signup.html"
+                    <a href="/dashboard/signup"
                         class="w-full block text-center py-3 rounded-xl bg-brand-600 hover:bg-brand-500 transition-colors text-white font-bold shadow-lg shadow-brand-500/25">Start
                         3-Day Free Trial</a>
                 </div>
@@ -445,7 +437,7 @@
                             <i data-feather="check" class="w-4 h-4 text-purple-400"></i> Accessible Anywhere
                         </li>
                     </ul>
-                    <a href="signup.html"
+                    <a href="/dashboard/signup"
                         class="w-full block text-center py-3 rounded-xl border border-white/20 hover:bg-white/10 transition-colors font-medium">Add
                         to Plan</a>
                 </div>
@@ -461,7 +453,7 @@
             <p class="text-xl text-gray-300 mb-10">Join thousands of micro and small businesses streamlining their
                 communication today.</p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="signup.html"
+                <a href="/dashboard/signup"
                     class="px-8 py-4 bg-white text-dark-bg font-bold rounded-full hover:bg-gray-100 transition-all shadow-xl">Get
                     Started Now</a>
             </div>
@@ -497,8 +489,8 @@
                 <div>
                     <h4 class="font-bold mb-4">Admin</h4>
                     <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="login.html" class="hover:text-white transition-colors">Login</a></li>
-                        <li><a href="signup.html" class="hover:text-white transition-colors">Sign Up</a></li>
+                        <li><a href="/dashboard/login" class="hover:text-white transition-colors">Login</a></li>
+                        <li><a href="/dashboard/signup" class="hover:text-white transition-colors">Sign Up</a></li>
                     </ul>
                 </div>
             </div>
