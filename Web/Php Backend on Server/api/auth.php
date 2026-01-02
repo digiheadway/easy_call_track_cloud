@@ -26,22 +26,16 @@ switch ($action) {
     /* ===== SIGNUP ===== */
     case 'signup':
         // Validate required fields
-        Validator::required($data, ['organizationName', 'organizationId', 'adminName', 'email', 'password']);
+        Validator::required($data, ['email', 'password']);
         Validator::email($data['email']);
-        Validator::orgId($data['organizationId']);
         
-        $orgName = Database::escape($data['organizationName']);
-        $orgId = Database::escape($data['organizationId']);
-        $adminName = Database::escape($data['adminName']);
         $email = Database::escape($data['email']);
         $password = Auth::hashPassword($data['password']);
         
-        // ORG CHECK: Check if org_id is already taken by another user
-        // Since user table holds org info, we check users table.
-        $existingOrg = Database::getOne("SELECT id FROM users WHERE org_id = '$orgId'");
-        if ($existingOrg) {
-            Response::error('Organization ID already taken');
-        }
+        // Generate Org ID (random 6 char alphanumeric)
+        $orgId = strtoupper(substr(md5(uniqid($email, true)), 0, 6));
+        $orgName = explode('@', $email)[0] . "'s Organization";
+        $adminName = explode('@', $email)[0];
         
         // EMAIL CHECK
         $existingUser = Database::getOne("SELECT id FROM users WHERE email = '$email'");

@@ -15,7 +15,8 @@ import android.widget.Toast
 import android.util.Log
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import com.calltracker.manager.worker.UploadWorker
+import com.calltracker.manager.worker.CallSyncWorker
+import com.calltracker.manager.worker.RecordingUploadWorker
 
 data class PermissionState(
     val name: String,
@@ -58,7 +59,19 @@ data class SettingsUiState(
     val sim1SubId: Int? = null,
     val sim2SubId: Int? = null,
     val sim1CalibrationHint: String? = null,
-    val sim2CalibrationHint: String? = null
+    val sim2CalibrationHint: String? = null,
+    val pendingNewCallsCount: Int = 0,
+    val pendingMetadataUpdatesCount: Int = 0,
+    val pendingPersonUpdatesCount: Int = 0,
+    val pendingRecordingCount: Int = 0,
+    val activeRecordings: List<com.calltracker.manager.data.db.CallDataEntity> = emptyList(),
+    val allowPersonalExclusion: Boolean = false,
+    val allowChangingTrackingStartDate: Boolean = false,
+    val allowUpdatingTrackingSims: Boolean = false,
+    val defaultTrackingStartingDate: String? = null,
+    val recordingCount: Int = 0,
+    val isRecordingPathVerified: Boolean = false,
+    val isRecordingPathCustom: Boolean = false
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -76,6 +89,35 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         fetchSimInfo()
         fetchWhatsappApps()
         observeExcludedPersons()
+        observeSyncCounts()
+    }
+
+    private fun observeSyncCounts() {
+        viewModelScope.launch {
+            callDataRepository.getPendingNewCallsCountFlow().collect { count ->
+                _uiState.update { it.copy(pendingNewCallsCount = count) }
+            }
+        }
+        viewModelScope.launch {
+            callDataRepository.getPendingMetadataUpdatesCountFlow().collect { count ->
+                _uiState.update { it.copy(pendingMetadataUpdatesCount = count) }
+            }
+        }
+        viewModelScope.launch {
+            callDataRepository.getPendingPersonUpdatesCountFlow().collect { count ->
+                _uiState.update { it.copy(pendingPersonUpdatesCount = count) }
+            }
+        }
+        viewModelScope.launch {
+            callDataRepository.getPendingRecordingSyncCountFlow().collect { count ->
+                _uiState.update { it.copy(pendingRecordingCount = count) }
+            }
+        }
+        viewModelScope.launch {
+            callDataRepository.getActiveRecordingSyncsFlow().collect { recordings ->
+                _uiState.update { it.copy(activeRecordings = recordings) }
+            }
+        }
     }
 
     private fun observeExcludedPersons() {
@@ -119,9 +161,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 sim1SubId = settingsRepository.getSim1SubscriptionId(),
                 sim2SubId = settingsRepository.getSim2SubscriptionId(),
                 sim1CalibrationHint = settingsRepository.getSim1CalibrationHint(),
-                sim2CalibrationHint = settingsRepository.getSim2CalibrationHint()
+                sim2CalibrationHint = settingsRepository.getSim2CalibrationHint(),
+                allowPersonalExclusion = settingsRepository.isAllowPersonalExclusion(),
+                allowChangingTrackingStartDate = settingsRepository.isAllowChangingTrackStartDate(),
+                allowUpdatingTrackingSims = settingsRepository.isAllowUpdatingTrackSims(),
+                defaultTrackingStartingDate = settingsRepository.getDefaultTrackStartDate()
             )
         }
+        refreshRecordingPathInfo()
     }
     
     fun updateThemeMode(mode: String) {
@@ -160,7 +207,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _uiState.update { it.copy(permissions = states) }
     }
 
-    private fun fetchSimInfo() {
+    fun fetchSimInfo() {
         val ctx = getApplication<Application>()
         if (androidx.core.app.ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_PHONE_STATE) 
             != android.content.pm.PackageManager.PERMISSION_GRANTED) {
@@ -366,8 +413,26 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
     
     fun updateRecordingPath(path: String) {
-        recordingRepository.setRecordingPath(path)
+        recordingRepository.setCustomPath(path)
+        refreshRecordingPathInfo()
         _uiState.update { it.copy(recordingPath = path) }
+    }
+
+    fun clearCustomRecordingPath() {
+        recordingRepository.clearCustomPath()
+        refreshRecordingPathInfo()
+    }
+
+    private fun refreshRecordingPathInfo() {
+        val info = recordingRepository.getPathInfo()
+        _uiState.update { 
+            it.copy(
+                recordingPath = info.effectivePath,
+                isRecordingPathVerified = info.isVerified,
+                isRecordingPathCustom = info.isCustom,
+                recordingCount = info.recordingCount
+            )
+        }
     }
 
     fun updatePairingCode(code: String) {
@@ -464,14 +529,40 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
                 if (response.isSuccessful && response.body()?.get("success") == true) {
                     val employeeName = response.body()?.get("employee_name")?.toString() ?: "Unknown"
+                    val settings = response.body()?.get("settings") as? Map<String, Any>
                     
+                    if (settings != null) {
+                        val allowChanging = parseBooleanSettings(settings["allow_changing_tracking_start_date"])
+                        val defaultDateStr = settings["default_tracking_starting_date"] as? String
+
+                        settingsRepository.setAllowPersonalExclusion(parseBooleanSettings(settings["allow_personal_exclusion"]))
+                        settingsRepository.setAllowChangingTrackStartDate(allowChanging)
+                        settingsRepository.setAllowUpdatingTrackSims(parseBooleanSettings(settings["allow_updating_tracking_sims"]))
+                        settingsRepository.setDefaultTrackStartDate(defaultDateStr)
+
+                        if (!allowChanging && !defaultDateStr.isNullOrBlank()) {
+                            try {
+                                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                                sdf.parse(defaultDateStr)?.let { date ->
+                                    settingsRepository.setTrackStartDate(date.time)
+                                }
+                            } catch (e: Exception) {
+                                Log.e("SettingsViewModel", "Failed to parse default date: $defaultDateStr", e)
+                            }
+                        }
+                    }
+
                     // For now, use ORGID as org name (could be fetched from backend in future)
                     _uiState.update { 
                         it.copy(
                             verificationStatus = "verified",
                             verifiedOrgName = orgId,
                             verifiedEmployeeName = employeeName,
-                            pairingCode = trimmedCode
+                            pairingCode = trimmedCode,
+                            allowPersonalExclusion = settingsRepository.isAllowPersonalExclusion(),
+                            allowChangingTrackingStartDate = settingsRepository.isAllowChangingTrackStartDate(),
+                            allowUpdatingTrackingSims = settingsRepository.isAllowUpdatingTrackSims(),
+                            defaultTrackingStartingDate = settingsRepository.getDefaultTrackStartDate()
                         )
                     }
                     
@@ -495,6 +586,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun retryRecordingUpload(compositeId: String) {
+        viewModelScope.launch {
+            // Reset status to PENDING so the worker will pick it up
+            callDataRepository.updateRecordingSyncStatus(compositeId, com.calltracker.manager.data.db.RecordingSyncStatus.PENDING)
+            callDataRepository.updateSyncError(compositeId, null) // Clear error message
+            
+            // Trigger the worker immediately
+            val recordingRequest = OneTimeWorkRequestBuilder<RecordingUploadWorker>().build()
+            WorkManager.getInstance(getApplication()).enqueue(recordingRequest)
+            
+            Toast.makeText(getApplication(), "Retrying upload...", Toast.LENGTH_SHORT).show()
+        }
+    }
+
 
     fun syncCallManually() {
         val ctx = getApplication<Application>()
@@ -515,16 +620,25 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             return
         }
 
-        val request = OneTimeWorkRequestBuilder<UploadWorker>().build()
+        // Start both workers: fast metadata sync first, then recording upload
+        val syncRequest = OneTimeWorkRequestBuilder<CallSyncWorker>().build()
+        val recordingRequest = OneTimeWorkRequestBuilder<RecordingUploadWorker>().build()
         val workManager = WorkManager.getInstance(ctx)
         
-        _uiState.update { it.copy(isSyncing = true, lastSyncStats = "Starting...") }
+        _uiState.update { it.copy(isSyncing = true, lastSyncStats = "Refreshing...") }
         
-        workManager.enqueue(request)
+        viewModelScope.launch {
+            // Refresh from system first
+            callDataRepository.syncFromSystemCallLog()
+            
+            // Then enqueue workers
+            workManager.enqueue(syncRequest)
+            workManager.enqueue(recordingRequest)
+        }
         
         // Observe the work status
         viewModelScope.launch {
-            workManager.getWorkInfoByIdFlow(request.id).collect { workInfo ->
+            workManager.getWorkInfoByIdFlow(syncRequest.id).collect { workInfo ->
                 if (workInfo != null) {
                     when (workInfo.state) {
                         androidx.work.WorkInfo.State.SUCCEEDED -> {
@@ -532,6 +646,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                             val synced = workInfo.outputData.getInt("synced_now", 0)
                             val now = System.currentTimeMillis()
                             settingsRepository.setLastSyncTime(now)
+                            // Reload settings as sync might have updated config
+                            loadSettings()
                             _uiState.update { it.copy(
                                 isSyncing = false, 
                                 lastSyncStats = "Success! Found $total calls, uploaded $synced.",
@@ -587,7 +703,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 settingsRepository.clearAllSettings()
                 
                 // Clear recording path
-                recordingRepository.clearRecordingPath()
+                recordingRepository.clearCustomPath()
                 
                 Toast.makeText(ctx, "All app data cleared successfully", Toast.LENGTH_SHORT).show()
                 
@@ -688,10 +804,36 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     }
                     
                     val employeeName = response.body()?.get("employee_name")?.toString() ?: "User"
+                    val settings = response.body()?.get("settings") as? Map<String, Any>
+                    
+                    if (settings != null) {
+                        val allowChanging = parseBooleanSettings(settings["allow_changing_tracking_start_date"])
+                        val defaultDateStr = settings["default_tracking_starting_date"] as? String
+
+                        settingsRepository.setAllowPersonalExclusion(parseBooleanSettings(settings["allow_personal_exclusion"]))
+                        settingsRepository.setAllowChangingTrackStartDate(allowChanging)
+                        settingsRepository.setAllowUpdatingTrackSims(parseBooleanSettings(settings["allow_updating_tracking_sims"]))
+                        settingsRepository.setDefaultTrackStartDate(defaultDateStr)
+
+                        if (!allowChanging && !defaultDateStr.isNullOrBlank()) {
+                            try {
+                                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                                sdf.parse(defaultDateStr)?.let { date ->
+                                    settingsRepository.setTrackStartDate(date.time)
+                                }
+                            } catch (e: Exception) {
+                                Log.e("SettingsViewModel", "Failed to parse default date: $defaultDateStr", e)
+                            }
+                        }
+                    }
+
                     val message = response.body()?.get("message")?.toString() ?: "Pairing successful"
                     
                     Toast.makeText(ctx, "✓ $message\nWelcome, $employeeName!", Toast.LENGTH_LONG).show()
                     Log.d("SettingsViewModel", "Pairing successful for employee: $employeeName")
+                    
+                    // Reload to update UI with new enterprise settings
+                    loadSettings()
                     
                     onSuccess()
                 } else {
@@ -888,5 +1030,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         
         // Ensure process is terminated to force fresh state
         java.lang.System.exit(0)
+    }
+
+    private fun parseBooleanSettings(value: Any?): Boolean {
+        if (value == null) return false
+        if (value is Boolean) return value
+        if (value is Number) return value.toInt() == 1
+        val s = value.toString().trim().lowercase()
+        return s == "1" || s == "true" || s == "1.0"
     }
 }

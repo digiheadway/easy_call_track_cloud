@@ -43,7 +43,8 @@ CREATE TABLE `calls` (
   `created_at` datetime DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `number_id` int(11) DEFAULT NULL,
-  `call_time` datetime DEFAULT NULL
+  `call_time` datetime DEFAULT NULL,
+  `is_archived` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -99,7 +100,30 @@ CREATE TABLE `employees` (
   `call_record_crm` tinyint(1) DEFAULT 1,
   `expiry_date` datetime DEFAULT NULL,
   `last_sync` datetime DEFAULT NULL,
-  `device_id` varchar(255) DEFAULT NULL
+  `device_id` varchar(255) DEFAULT NULL,
+  `allow_personal_exclusion` tinyint(1) DEFAULT 0,
+  `allow_changing_tracking_start_date` tinyint(1) DEFAULT 0,
+  `allow_updating_tracking_sims` tinyint(1) DEFAULT 0,
+  `default_tracking_starting_date` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `excluded_contacts`
+--
+
+CREATE TABLE `excluded_contacts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `org_id` varchar(20) NOT NULL,
+  `phone` varchar(20) NOT NULL,
+  `name` varchar(100) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_excluded_org` (`org_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------

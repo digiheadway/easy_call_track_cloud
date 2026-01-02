@@ -34,8 +34,8 @@ $BASE_URL = "https://calltrack.mylistings.in/public";
 
 // Directory Setup
 // Go up one level from 'api' to root, then 'public'
-$PUBLIC_DIR = realpath(__DIR__ . "/../public") . "/";
-$TMP_DIR    = realpath(__DIR__ . "/../public") . "/tmp_chunks/";
+$PUBLIC_DIR = dirname(__DIR__) . "/public/";
+$TMP_DIR    = dirname(__DIR__) . "/public/tmp_chunks/";
 
 /* ============================
    HELPERS
@@ -94,7 +94,7 @@ if ($action === "verify_pairing_code") {
     }
 
     // Check if employee exists
-    $stmt = $conn->prepare("SELECT id, org_id, device_id, name FROM employees WHERE id = ? AND org_id = ?");
+    $stmt = $conn->prepare("SELECT id, org_id, device_id, name, allow_personal_exclusion, allow_changing_tracking_start_date, allow_updating_tracking_sims, default_tracking_starting_date FROM employees WHERE id = ? AND org_id = ?");
     $stmt->bind_param("is", $employee_id, $org_id);
     $stmt->execute();
     $res = $stmt->get_result();
@@ -125,20 +125,30 @@ if ($action === "verify_pairing_code") {
         if (!$upd->execute()) {
             errorOut("Failed to link device: " . $conn->error, 500);
         }
-
         out([
             "success" => true,
             "message" => "Pairing successful - Device linked",
-            "employee_name" => $employee['name']
+            "employee_name" => $employee['name'],
+            "settings" => [
+                "allow_personal_exclusion" => (int)$employee['allow_personal_exclusion'],
+                "allow_changing_tracking_start_date" => (int)$employee['allow_changing_tracking_start_date'],
+                "allow_updating_tracking_sims" => (int)$employee['allow_updating_tracking_sims'],
+                "default_tracking_starting_date" => $employee['default_tracking_starting_date']
+            ]
         ]);
     } else {
         // Employee already has a linked device
         if ($employee['device_id'] === $device_id) {
-            // Same device - already linked
             out([
                 "success" => true,
                 "message" => "Device already verified",
-                "employee_name" => $employee['name']
+                "employee_name" => $employee['name'],
+                "settings" => [
+                    "allow_personal_exclusion" => (int)$employee['allow_personal_exclusion'],
+                    "allow_changing_tracking_start_date" => (int)$employee['allow_changing_tracking_start_date'],
+                    "allow_updating_tracking_sims" => (int)$employee['allow_updating_tracking_sims'],
+                    "default_tracking_starting_date" => $employee['default_tracking_starting_date']
+                ]
             ]);
         } else {
             // Different device - FORCE LOGOUT from old device by switching to new device
@@ -161,11 +171,16 @@ if ($action === "verify_pairing_code") {
             if (!$upd->execute()) {
                 errorOut("Failed to switch device: " . $conn->error, 500);
             }
-
             out([
                 "success" => true,
                 "message" => "Switched to new device - Previous device logged out",
-                "employee_name" => $employee['name']
+                "employee_name" => $employee['name'],
+                "settings" => [
+                    "allow_personal_exclusion" => (int)$employee['allow_personal_exclusion'],
+                    "allow_changing_tracking_start_date" => (int)$employee['allow_changing_tracking_start_date'],
+                    "allow_updating_tracking_sims" => (int)$employee['allow_updating_tracking_sims'],
+                    "default_tracking_starting_date" => $employee['default_tracking_starting_date']
+                ]
             ]);
         }
     }
@@ -184,12 +199,19 @@ if ($action === "start_call") {
     $caller_phone = isset($_POST['caller']) ? preg_replace('/[^\d]/', '', $_POST['caller']) : null;      // 'caller' from app maps to caller_phone
     $duration     = intval($_POST['duration'] ?? 0);
     $type         = $_POST['type'] ?? 'unknown';   // Incoming, Outgoing, Missed
+    $call_time_param = $_POST['call_time'] ?? null;
     
     // Map type if needed (App sends 'missed', DB might want 'Missed')
     // But DB holds varchar, so case insensitive usually fine, but let's standardize if we want.
     $type = ucfirst($type); 
 
     $created_at   = date("Y-m-d H:i:s");
+    
+    // Use provided call_time if valid, else default to created_at
+    $call_time_to_insert = $created_at;
+    if ($call_time_param && strtotime($call_time_param)) {
+        $call_time_to_insert = $call_time_param;
+    }
 
     if ($unique_id === '') errorOut("unique_id required");
     if ($org_id === '' || $employee_id === '') errorOut("org_id and user_id required");
@@ -220,8 +242,6 @@ if ($action === "start_call") {
     }
 
     // Insert into 'calls' table
-    // Note: 'call_time' is the new datetime column. 'created_at' is timestamp default now()
-    // We'll use $created_at for call_time.
     
     $stmt = $conn->prepare("
         INSERT INTO calls
@@ -249,7 +269,7 @@ if ($action === "start_call") {
         $duration,
         $type,
         $upload_status,
-        $created_at
+        $call_time_to_insert
     );
 
     if (!$stmt->execute()) {
@@ -281,14 +301,13 @@ if ($action === "upload_chunk") {
         errorOut("unique_id or chunk_index missing");
     }
 
-    // Check calls table
-    $check = $conn->prepare("SELECT upload_status FROM calls WHERE unique_id=?");
+    // Check calls table and get org/device info for folder structure
+    $check = $conn->prepare("SELECT upload_status, org_id, device_phone FROM calls WHERE unique_id=?");
     $check->bind_param("s", $unique_id);
     $check->execute();
     $res = $check->get_result();
     
     if ($res->num_rows === 0) {
-        // Optional: create placeholder call if not exists? No, start_call should be called first.
         errorOut("Call not found for this chunk");
     }
     
@@ -297,14 +316,18 @@ if ($action === "upload_chunk") {
         errorOut("No recording expected for this call (already completed)");
     }
 
-    $path = $TMP_DIR . $unique_id . "/";
-    if (!is_dir($path)) {
-        if (!mkdir($path, 0777, true)) {
-            errorOut("Failed to create temp directory", 500);
+    // Store chunks in user-specific folder: public/{ORG_ID}/{DEVICE_PHONE}/chunks/{unique_id}/
+    $orgId = $row['org_id'] ?: 'unknown_org';
+    $devicePhone = safeCaller($row['device_phone'] ?: 'unknown');
+    
+    $chunkDir = $PUBLIC_DIR . "$orgId/$devicePhone/chunks/$unique_id/";
+    if (!is_dir($chunkDir)) {
+        if (!mkdir($chunkDir, 0777, true)) {
+            errorOut("Failed to create chunk directory", 500);
         }
     }
 
-    if (!move_uploaded_file($_FILES['chunk']['tmp_name'], $path . $index)) {
+    if (!move_uploaded_file($_FILES['chunk']['tmp_name'], $chunkDir . $index)) {
         errorOut("Failed to save chunk", 500);
     }
     
@@ -323,7 +346,7 @@ if ($action === "finalize_upload") {
         errorOut("Missing finalize data");
 
     $stmt = $conn->prepare("
-        SELECT caller_phone, upload_status, device_phone, duration, org_id
+        SELECT caller_phone, upload_status, device_phone, duration, org_id, call_time
         FROM calls WHERE unique_id=?
     ");
     $stmt->bind_param("s", $unique_id);
@@ -343,9 +366,14 @@ if ($action === "finalize_upload") {
     $orgId = $call['org_id'] ?: 'unknown_org';
 
     // Folder Structure: public/ORG_ID/DEVICE_PHONE/YYYY_MM/YYYYMMDD/
-    $monthFolder = date("Y_m");
-    $dateFolder = date("Ymd");
-    $timeNow = date("Ymd_His");
+    // Use call_time for the folder structure and filename timestamp
+    $deployTimestamp = (!empty($call['call_time']) && strtotime($call['call_time']) > 0) 
+        ? strtotime($call['call_time']) 
+        : time();
+
+    $monthFolder = date("Y_m", $deployTimestamp);
+    $dateFolder = date("Ymd", $deployTimestamp);
+    $timeNow = date("Ymd_His", $deployTimestamp);
 
     $relPath = "$orgId/$device_phone/$monthFolder/$dateFolder/";
     $finalDir = $PUBLIC_DIR . $relPath;
@@ -362,8 +390,11 @@ if ($action === "finalize_upload") {
     $outFile = fopen($finalPath, "ab");
     if (!$outFile) errorOut("Failed to open output file", 500);
     
+    // Chunks are stored in user-specific folder: public/{ORG_ID}/{DEVICE_PHONE}/chunks/{unique_id}/
+    $chunkBaseDir = $PUBLIC_DIR . "$orgId/$device_phone/chunks/$unique_id/";
+    
     for ($i = 0; $i < $total; $i++) {
-        $chunkPath = $TMP_DIR . $unique_id . "/" . $i;
+        $chunkPath = $chunkBaseDir . $i;
         if (!file_exists($chunkPath)) {
             fclose($outFile);
             errorOut("Missing chunk $i");
@@ -375,8 +406,8 @@ if ($action === "finalize_upload") {
     fclose($outFile);
 
     // Cleanup chunks
-    array_map('unlink', glob($TMP_DIR . $unique_id . "/*"));
-    rmdir($TMP_DIR . $unique_id);
+    array_map('unlink', glob($chunkBaseDir . "*"));
+    @rmdir($chunkBaseDir);
 
     // URL to access file
     $recording_url = "$BASE_URL/$relPath$fileName";
@@ -502,6 +533,13 @@ if ($action === "update_note") {
                     $upd->bind_param("sss", $label, $phone, $orgId);
                     $upd->execute();
                 }
+                
+                // Also update calls.labels for all calls from this phone
+                if ($label !== null) {
+                    $callsLabelUpd = $conn->prepare("UPDATE calls SET labels=?, updated_at=NOW() WHERE caller_phone=? AND org_id=?");
+                    $callsLabelUpd->bind_param("sss", $label, $phone, $orgId);
+                    $callsLabelUpd->execute();
+                }
             }
         }
     }
@@ -509,6 +547,284 @@ if ($action === "update_note") {
     out(["success" => true, "message" => "Notes/Labels updated"]);
 }
 
+/* =====================================================
+   6️⃣ FETCH UPDATES (Delta Sync - App pulls changes)
+   Returns all call/person updates since last_sync_time
+===================================================== */
+if ($action === "fetch_updates") {
+    $org_id = trim($_POST['org_id'] ?? '');
+    $user_id = trim($_POST['user_id'] ?? '');
+    $device_id = trim($_POST['device_id'] ?? '');
+    $last_sync = max(0, intval($_POST['last_sync_time'] ?? 0));
+    
+    if ($org_id === '') errorOut("org_id required");
+
+    // Convert millis to seconds for SQL
+    $last_sync_sec = $last_sync / 1000;
+
+    // 1. Get Call Updates (note, reviewed, caller_name)
+    $stmt = $conn->prepare("
+        SELECT unique_id, note, reviewed, caller_name, 
+               UNIX_TIMESTAMP(updated_at) * 1000 as updated_at
+        FROM calls 
+        WHERE org_id = ? AND updated_at > FROM_UNIXTIME(?)
+    ");
+    $stmt->bind_param("sd", $org_id, $last_sync_sec);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    
+    $call_updates = [];
+    while ($row = $res->fetch_assoc()) {
+        $call_updates[] = [
+            "unique_id" => $row['unique_id'],
+            "note" => $row['note'],
+            "reviewed" => (int)$row['reviewed'],
+            "caller_name" => $row['caller_name'],
+            "updated_at" => (int)$row['updated_at']
+        ];
+    }
+    
+    // 2. Get Person/Contact Updates (name, person_note, label)
+    $stmt2 = $conn->prepare("
+        SELECT phone, name, notes as person_note, label,
+               UNIX_TIMESTAMP(updated_at) * 1000 as updated_at
+        FROM contacts 
+        WHERE org_id = ? AND updated_at > FROM_UNIXTIME(?)
+    ");
+    $stmt2->bind_param("sd", $org_id, $last_sync_sec);
+    $stmt2->execute();
+    $res2 = $stmt2->get_result();
+    
+    $person_updates = [];
+    while ($row = $res2->fetch_assoc()) {
+        $person_updates[] = [
+            "phone" => $row['phone'],
+            "name" => $row['name'],
+            "person_note" => $row['person_note'],
+            "label" => $row['label'],
+            "updated_at" => (int)$row['updated_at']
+        ];
+    }
+
+    out([
+        "success" => true,
+        "call_updates" => $call_updates,
+        "person_updates" => $person_updates,
+        "server_time" => time() * 1000
+    ]);
+}
+
+/* =====================================================
+   7️⃣ UPDATE CALL (App pushes call metadata changes)
+   Updates reviewed, note, caller_name with conflict resolution
+===================================================== */
+if ($action === "update_call") {
+    $unique_id = trim($_POST['unique_id'] ?? '');
+    $reviewed = isset($_POST['reviewed']) ? ($_POST['reviewed'] === 'true' || $_POST['reviewed'] === '1' ? 1 : 0) : null;
+    $note = $_POST['note'] ?? null;
+    $caller_name = $_POST['caller_name'] ?? null;
+    $updated_at = intval($_POST['updated_at'] ?? 0); // Client's update timestamp in millis
+    
+    if ($unique_id === '') errorOut("unique_id required");
+    
+    // Build dynamic update query
+    $updates = [];
+    $params = [];
+    $types = "";
+    
+    if ($reviewed !== null) {
+        $updates[] = "reviewed = ?";
+        $params[] = $reviewed;
+        $types .= "i";
+    }
+    
+    if ($note !== null) {
+        $updates[] = "note = ?";
+        $params[] = $note;
+        $types .= "s";
+    }
+    
+    if ($caller_name !== null) {
+        $updates[] = "caller_name = ?";
+        $params[] = $caller_name;
+        $types .= "s";
+    }
+    
+    if (empty($updates)) {
+        out(["success" => true, "message" => "Nothing to update", "server_time" => time() * 1000]);
+    }
+    
+    // Add updated_at = NOW() 
+    $updates[] = "updated_at = NOW()";
+    
+    // Add unique_id to params
+    $params[] = $unique_id;
+    $types .= "s";
+    
+    $sql = "UPDATE calls SET " . implode(", ", $updates) . " WHERE unique_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param($types, ...$params);
+    
+    if ($stmt->execute()) {
+        out([
+            "success" => true, 
+            "message" => "Call updated",
+            "server_time" => time() * 1000
+        ]);
+    } else {
+        errorOut("Failed to update call: " . $conn->error, 500);
+    }
+}
+
+/* =====================================================
+   8️⃣ UPDATE PERSON (App pushes person metadata changes)
+   Updates person_note, label, name in contacts table
+===================================================== */
+if ($action === "update_person") {
+    $phone = isset($_POST['phone']) ? preg_replace('/[^\d]/', '', $_POST['phone']) : '';
+    $org_id = trim($_POST['org_id'] ?? '');
+    $person_note = $_POST['person_note'] ?? null;
+    $label = $_POST['label'] ?? null;
+    $name = $_POST['name'] ?? null;
+    $updated_at = intval($_POST['updated_at'] ?? 0);
+    
+    if ($phone === '' || $org_id === '') {
+        errorOut("phone and org_id required");
+    }
+    
+    // Check if contact exists
+    $checkStmt = $conn->prepare("SELECT id FROM contacts WHERE phone = ? AND org_id = ?");
+    $checkStmt->bind_param("ss", $phone, $org_id);
+    $checkStmt->execute();
+    $exists = $checkStmt->get_result()->num_rows > 0;
+    
+    if ($exists) {
+        // Build update query
+        $updates = [];
+        $params = [];
+        $types = "";
+        
+        if ($person_note !== null) {
+            $updates[] = "notes = ?";
+            $params[] = $person_note;
+            $types .= "s";
+        }
+        
+        if ($label !== null) {
+            $updates[] = "label = ?";
+            $params[] = $label;
+            $types .= "s";
+        }
+        
+        if ($name !== null) {
+            $updates[] = "name = ?";
+            $params[] = $name;
+            $types .= "s";
+        }
+        
+        if (!empty($updates)) {
+            $updates[] = "updated_at = NOW()";
+            $params[] = $phone;
+            $params[] = $org_id;
+            $types .= "ss";
+            
+            $sql = "UPDATE contacts SET " . implode(", ", $updates) . " WHERE phone = ? AND org_id = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param($types, ...$params);
+            $stmt->execute();
+        }
+    } else {
+        // Insert new contact
+        $stmt = $conn->prepare("
+            INSERT INTO contacts (phone, org_id, name, notes, label, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+        ");
+        $stmt->bind_param("sssss", $phone, $org_id, $name, $person_note, $label);
+        $stmt->execute();
+    }
+    
+    // If label was updated, also update calls.labels for all calls from this phone
+    if ($label !== null) {
+        $labelUpdate = $conn->prepare("UPDATE calls SET labels = ?, updated_at = NOW() WHERE caller_phone = ? AND org_id = ?");
+        $labelUpdate->bind_param("sss", $label, $phone, $org_id);
+        $labelUpdate->execute();
+    }
+    
+    out([
+        "success" => true,
+        "message" => "Person updated",
+        "server_time" => time() * 1000
+    ]);
+}
+
+/* =====================================================
+   9️⃣ FETCH CONFIG (App pulls excluded contacts and settings)
+   ===================================================== */
+if ($action === "fetch_config") {
+    $org_id = trim($_POST['org_id'] ?? '');
+    $user_id = trim($_POST['user_id'] ?? ''); // employee_id
+    
+    if ($org_id === '' || $user_id === '') errorOut("org_id and user_id required");
+
+    // 1. Get Excluded Contacts
+    $stmt = $conn->prepare("SELECT phone FROM excluded_contacts WHERE org_id = ? AND is_active = 1");
+    $stmt->bind_param("s", $org_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    
+    $excluded = [];
+    while ($row = $res->fetch_assoc()) {
+        $excluded[] = $row['phone'];
+    }
+
+    // 2. Get Employee Settings
+    $stmt2 = $conn->prepare("SELECT allow_personal_exclusion, allow_changing_tracking_start_date, allow_updating_tracking_sims, default_tracking_starting_date FROM employees WHERE id = ? AND org_id = ?");
+    $stmt2->bind_param("is", $user_id, $org_id);
+    $stmt2->execute();
+    $res2 = $stmt2->get_result();
+    $settings = $res2->fetch_assoc();
+
+    out([
+        "success" => true,
+        "excluded_contacts" => $excluded,
+        "settings" => [
+            "allow_personal_exclusion" => (int)($settings['allow_personal_exclusion'] ?? 0),
+            "allow_changing_tracking_start_date" => (int)($settings['allow_changing_tracking_start_date'] ?? 1), // Default to allowed if not set
+            "allow_updating_tracking_sims" => (int)($settings['allow_updating_tracking_sims'] ?? 0),
+            "default_tracking_starting_date" => $settings['default_tracking_starting_date'] ?: null
+        ]
+    ]);
+}
+/* =====================================================
+   🔟 CHECK RECORDINGS STATUS (Batch Check)
+   Avoids re-uploading existing files
+   ===================================================== */
+if ($action === "check_recordings_status") {
+    $unique_ids_json = $_POST['unique_ids'] ?? '[]';
+    $unique_ids = json_decode($unique_ids_json, true);
+    
+    if (!is_array($unique_ids) || empty($unique_ids)) {
+        out(["success" => true, "completed_ids" => []]);
+    }
+    
+    // Sanitize IDs
+    $safe_ids = array_map(function($id) use ($conn) {
+        return "'" . $conn->real_escape_string($id) . "'";
+    }, $unique_ids);
+    
+    $id_list = implode(",", $safe_ids);
+    
+    $stmt = $conn->prepare("SELECT unique_id FROM calls WHERE unique_id IN ($id_list) AND upload_status = 'completed'");
+    $stmt->execute();
+    $res = $stmt->get_result();
+    
+    $completed = [];
+    while ($row = $res->fetch_assoc()) {
+        $completed[] = $row['unique_id'];
+    }
+    
+    out(["success" => true, "completed_ids" => $completed]);
+}
 /* ============================
    INVALID ACTION
 ============================ */

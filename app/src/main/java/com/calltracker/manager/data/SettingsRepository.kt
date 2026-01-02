@@ -2,6 +2,9 @@ package com.calltracker.manager.data
 
 import android.content.Context
 import java.util.Calendar
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.channels.awaitClose
 
 class SettingsRepository(private val context: Context) {
 
@@ -20,6 +23,11 @@ class SettingsRepository(private val context: Context) {
     private val KEY_SIM2_SUB_ID = "sim2_sub_id"
     private val KEY_SIM1_CALIBRATION_HINT = "sim1_calibration_hint"
     private val KEY_SIM2_CALIBRATION_HINT = "sim2_calibration_hint"
+    private val KEY_ALLOW_PERSONAL_EXCLUSION = "allow_personal_exclusion"
+    private val KEY_ALLOW_CHANGING_TRACK_START_DATE = "allow_changing_track_start_date"
+    private val KEY_ALLOW_UPDATING_TRACK_SIMS = "allow_updating_track_sims"
+    private val KEY_DEFAULT_TRACK_START_DATE = "default_track_start_date"
+    private val KEY_EXCLUDED_CONTACTS = "excluded_contacts"
 
     private val prefs by lazy {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -72,6 +80,17 @@ class SettingsRepository(private val context: Context) {
             set(Calendar.MILLISECOND, 0)
         }.timeInMillis
         return prefs.getLong(KEY_TRACK_START_DATE, defaultDate)
+    }
+
+    fun getTrackStartDateFlow(): Flow<Long> = callbackFlow {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
+            if (key == KEY_TRACK_START_DATE) {
+                trySend(getTrackStartDate())
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(getTrackStartDate())
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }
 
     fun setTrackStartDate(date: Long) {
@@ -158,6 +177,28 @@ class SettingsRepository(private val context: Context) {
 
     fun setSim2CalibrationHint(hint: String?) {
         prefs.edit().putString(KEY_SIM2_CALIBRATION_HINT, hint).apply()
+    }
+
+    fun isAllowPersonalExclusion(): Boolean = prefs.getBoolean(KEY_ALLOW_PERSONAL_EXCLUSION, false)
+    fun setAllowPersonalExclusion(allow: Boolean) = prefs.edit().putBoolean(KEY_ALLOW_PERSONAL_EXCLUSION, allow).apply()
+
+    fun isAllowChangingTrackStartDate(): Boolean = prefs.getBoolean(KEY_ALLOW_CHANGING_TRACK_START_DATE, false)
+    fun setAllowChangingTrackStartDate(allow: Boolean) = prefs.edit().putBoolean(KEY_ALLOW_CHANGING_TRACK_START_DATE, allow).apply()
+
+    fun isAllowUpdatingTrackSims(): Boolean = prefs.getBoolean(KEY_ALLOW_UPDATING_TRACK_SIMS, false)
+    fun setAllowUpdatingTrackSims(allow: Boolean) = prefs.edit().putBoolean(KEY_ALLOW_UPDATING_TRACK_SIMS, allow).apply()
+
+    fun getDefaultTrackStartDate(): String? = prefs.getString(KEY_DEFAULT_TRACK_START_DATE, null)
+    fun setDefaultTrackStartDate(date: String?) = prefs.edit().putString(KEY_DEFAULT_TRACK_START_DATE, date).apply()
+
+    fun getExcludedContacts(): Set<String> = prefs.getStringSet(KEY_EXCLUDED_CONTACTS, emptySet()) ?: emptySet()
+    fun setExcludedContacts(contacts: Set<String>) = prefs.edit().putStringSet(KEY_EXCLUDED_CONTACTS, contacts).apply()
+
+    fun isNumberExcluded(number: String): Boolean {
+        val excluded = getExcludedContacts()
+        // Clean number for comparison
+        val cleanNumber = number.replace("[^\\d]".toRegex(), "")
+        return excluded.any { it.replace("[^\\d]".toRegex(), "") == cleanNumber }
     }
 
     fun clearAllSettings() {

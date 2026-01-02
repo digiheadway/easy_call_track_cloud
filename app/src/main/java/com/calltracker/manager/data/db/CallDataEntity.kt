@@ -7,7 +7,13 @@ import androidx.room.PrimaryKey
  * Complete call data entity - stores all call information in Room DB.
  * This is the single source of truth for call data.
  */
-@Entity(tableName = "call_data")
+@Entity(
+    tableName = "call_data",
+    indices = [
+        androidx.room.Index("phoneNumber"),
+        androidx.room.Index("callDate")
+    ]
+)
 data class CallDataEntity(
     @PrimaryKey
     val compositeId: String,
@@ -26,11 +32,17 @@ data class CallDataEntity(
     // App-specific data
     val callNote: String? = null,
     val localRecordingPath: String? = null,
+    val reviewed: Boolean = false,  // NEW: Synced bidirectionally with server
     
-    // Sync status
-    val syncStatus: CallLogStatus = CallLogStatus.PENDING,
+    // Sync status - Split for independent sync of metadata vs recordings
+    @Deprecated("Use metadataSyncStatus and recordingSyncStatus instead")
+    val syncStatus: CallLogStatus = CallLogStatus.PENDING,  // Legacy, kept for migration
+    val metadataSyncStatus: MetadataSyncStatus = MetadataSyncStatus.PENDING,  // Fast sync
+    val recordingSyncStatus: RecordingSyncStatus = RecordingSyncStatus.NOT_APPLICABLE,  // Slow sync
     
-    // Metadata
+    // Timestamps for conflict resolution in bidirectional sync
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),  // Local update time
+    val serverUpdatedAt: Long? = null,  // Last known server update time (for conflict resolution)
+    val syncError: String? = null       // NEW: Failure reason for sync
 )

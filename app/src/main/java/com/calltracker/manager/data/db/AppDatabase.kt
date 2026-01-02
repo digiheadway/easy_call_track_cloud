@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         CallDataEntity::class,
         PersonDataEntity::class
     ],
-    version = 4,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -107,6 +107,55 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
         
+        // Migration from version 4 to version 5 (split sync status + reviewed + serverUpdatedAt)
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add new columns to call_data
+                database.execSQL("ALTER TABLE call_data ADD COLUMN reviewed INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE call_data ADD COLUMN metadataSyncStatus TEXT NOT NULL DEFAULT 'PENDING'")
+                database.execSQL("ALTER TABLE call_data ADD COLUMN recordingSyncStatus TEXT NOT NULL DEFAULT 'NOT_APPLICABLE'")
+                database.execSQL("ALTER TABLE call_data ADD COLUMN serverUpdatedAt INTEGER")
+                
+                // Add serverUpdatedAt to person_data
+                database.execSQL("ALTER TABLE person_data ADD COLUMN serverUpdatedAt INTEGER")
+                
+                // Migrate existing syncStatus to new columns:
+                // If COMPLETED -> metadataSyncStatus=SYNCED, recordingSyncStatus=COMPLETED
+                // If PENDING/FAILED -> metadataSyncStatus=PENDING, recordingSyncStatus based on duration
+                database.execSQL("""
+                    UPDATE call_data SET 
+                        metadataSyncStatus = CASE 
+                            WHEN syncStatus = 'COMPLETED' THEN 'SYNCED'
+                            WHEN syncStatus = 'NOTE_UPDATE_PENDING' THEN 'UPDATE_PENDING'
+                            WHEN syncStatus = 'FAILED' THEN 'FAILED'
+                            ELSE 'PENDING'
+                        END,
+                        recordingSyncStatus = CASE 
+                            WHEN syncStatus = 'COMPLETED' THEN 'COMPLETED'
+                            WHEN syncStatus = 'COMPRESSING' THEN 'COMPRESSING'
+                            WHEN syncStatus = 'UPLOADING' THEN 'UPLOADING'
+                            WHEN duration > 0 AND localRecordingPath IS NOT NULL THEN 'PENDING'
+                            ELSE 'NOT_APPLICABLE'
+                        END
+                """.trimIndent())
+            }
+        }
+        
+        // Migration from version 5 to version 6 (addition of syncError to call_data)
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE call_data ADD COLUMN syncError TEXT")
+            }
+        }
+        
+        // Migration from version 6 to version 7 (addition of indices to call_data)
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_call_data_phoneNumber ON call_data(phoneNumber)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_call_data_callDate ON call_data(callDate)")
+            }
+        }
+        
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -114,7 +163,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "callcloud_database"
                 )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance

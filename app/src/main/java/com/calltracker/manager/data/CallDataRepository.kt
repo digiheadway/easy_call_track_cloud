@@ -7,6 +7,8 @@ import android.util.Log
 import com.calltracker.manager.data.db.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.withContext
 import com.calltracker.manager.network.PersonUpdateDto
 import com.calltracker.manager.network.CallUpdateDto
@@ -52,10 +54,10 @@ class CallDataRepository(private val context: Context) {
     }
     
     /**
-     * Get all unsynced calls (for upload worker)
+     * Get calls missing local recording paths (to trigger a find)
      */
-    suspend fun getUnsyncedCalls(): List<CallDataEntity> = withContext(Dispatchers.IO) {
-        callDataDao.getUnsyncedCalls()
+    suspend fun getCallsMissingRecordings(): List<CallDataEntity> = withContext(Dispatchers.IO) {
+        callDataDao.getCallsMissingRecordings()
     }
     
     /**
@@ -76,11 +78,11 @@ class CallDataRepository(private val context: Context) {
     suspend fun updateCallNote(compositeId: String, note: String?) = withContext(Dispatchers.IO) {
         callDataDao.updateCallNote(compositeId, note)
         
-        // If call was already synced, mark it for note update
+        // Mark call for metadata update sync (use new metadataSyncStatus field)
         val call = callDataDao.getByCompositeId(compositeId)
-        if (call != null && call.syncStatus == CallLogStatus.COMPLETED) {
-            callDataDao.updateSyncStatus(compositeId, CallLogStatus.NOTE_UPDATE_PENDING)
-            Log.d(TAG, "Marked call $compositeId as NOTE_UPDATE_PENDING")
+        if (call != null && call.metadataSyncStatus == MetadataSyncStatus.SYNCED) {
+            callDataDao.updateMetadataSyncStatus(compositeId, MetadataSyncStatus.UPDATE_PENDING)
+            Log.d(TAG, "Marked call $compositeId for note sync (UPDATE_PENDING)")
         }
     }
     
@@ -112,6 +114,164 @@ class CallDataRepository(private val context: Context) {
         val call = callDataDao.getByCompositeId(compositeId)
         call?.syncStatus == CallLogStatus.COMPLETED
     }
+    
+    // ============================================
+    // NEW SPLIT SYNC METHODS
+    // ============================================
+    
+    /**
+     * Get calls needing metadata sync (fast sync)
+     */
+    suspend fun getCallsNeedingMetadataSync(): List<CallDataEntity> = withContext(Dispatchers.IO) {
+        val minDate = settingsRepository.getTrackStartDate()
+        callDataDao.getCallsNeedingMetadataSync(minDate)
+    }
+    
+    /**
+     * Get calls needing recording upload (slow sync)
+     * Only returns calls where metadata is already SYNCED, to avoid "Call not found" errors on server.
+     */
+    suspend fun getCallsNeedingRecordingSync(): List<CallDataEntity> = withContext(Dispatchers.IO) {
+        val minDate = settingsRepository.getTrackStartDate()
+        val calls = callDataDao.getCallsNeedingRecordingSync(minDate)
+        
+        // Ensure metadata is synced first
+        calls.filter { it.metadataSyncStatus == MetadataSyncStatus.SYNCED }
+    }
+    
+    /**
+     * Update metadata sync status
+     */
+    suspend fun updateMetadataSyncStatus(compositeId: String, status: MetadataSyncStatus) = withContext(Dispatchers.IO) {
+        callDataDao.updateMetadataSyncStatus(compositeId, status)
+    }
+    
+    /**
+     * Update recording sync status
+     */
+    suspend fun updateRecordingSyncStatus(compositeId: String, status: RecordingSyncStatus) = withContext(Dispatchers.IO) {
+        callDataDao.updateRecordingSyncStatus(compositeId, status)
+    }
+    
+    /**
+     * Mark metadata as synced with server timestamp
+     */
+    suspend fun markMetadataSynced(compositeId: String, serverTime: Long) = withContext(Dispatchers.IO) {
+        callDataDao.markMetadataSynced(compositeId, serverTime)
+    }
+    
+    /**
+     * Update call from server (bidirectional sync - pull changes)
+     */
+    suspend fun updateCallFromServer(
+        compositeId: String,
+        reviewed: Boolean,
+        note: String?,
+        callerName: String?,
+        serverUpdatedAt: Long
+    ) = withContext(Dispatchers.IO) {
+        callDataDao.updateFromServer(compositeId, reviewed, note, callerName, serverUpdatedAt)
+        Log.d(TAG, "Updated call from server: $compositeId (reviewed=$reviewed)")
+    }
+
+    /**
+     * Update sync error message
+     */
+    suspend fun updateSyncError(compositeId: String, error: String?) = withContext(Dispatchers.IO) {
+        callDataDao.updateSyncError(compositeId, error)
+    }
+    
+    /**
+     * Update person from server (bidirectional sync - pull changes)
+     */
+    suspend fun updatePersonFromServer(
+        phone: String,
+        personNote: String?,
+        label: String?,
+        name: String?,
+        serverUpdatedAt: Long
+    ) = withContext(Dispatchers.IO) {
+        val normalized = normalizePhoneNumber(phone)
+        
+        // Check if person exists
+        val existing = personDataDao.getByPhoneNumber(normalized)
+        if (existing != null) {
+            personDataDao.updateFromServer(normalized, personNote, label, name, serverUpdatedAt)
+        } else {
+            // Create new person entry from server data
+            personDataDao.insert(PersonDataEntity(
+                phoneNumber = normalized,
+                contactName = name,
+                personNote = personNote,
+                label = label,
+                serverUpdatedAt = serverUpdatedAt
+            ))
+        }
+        Log.d(TAG, "Updated person from server: $normalized")
+    }
+    
+    /**
+     * Update reviewed status (local change, will be synced)
+     */
+    suspend fun updateReviewed(compositeId: String, reviewed: Boolean) = withContext(Dispatchers.IO) {
+        callDataDao.updateReviewed(compositeId, reviewed)
+        Log.d(TAG, "Updated reviewed status for $compositeId: $reviewed")
+    }
+
+    /**
+     * Mark all calls for a phone number as reviewed
+     */
+    suspend fun markAllCallsReviewed(phoneNumber: String) = withContext(Dispatchers.IO) {
+        val normalized = normalizePhoneNumber(phoneNumber)
+        callDataDao.markAllCallsReviewed(normalized)
+        Log.d(TAG, "Marked all calls for $normalized as reviewed")
+    }
+    
+    /**
+     * Get pending metadata sync count as Flow
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getPendingMetadataSyncCountFlow(): Flow<Int> = 
+        settingsRepository.getTrackStartDateFlow().flatMapLatest { minDate ->
+            callDataDao.getPendingMetadataSyncCountFlow(minDate)
+        }
+    
+    /**
+     * Get pending recording sync count as Flow
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getPendingRecordingSyncCountFlow(): Flow<Int> = 
+        settingsRepository.getTrackStartDateFlow().flatMapLatest { minDate ->
+            callDataDao.getPendingRecordingSyncCountFlow(minDate)
+        }
+    
+    /**
+     * Get pending new calls count as Flow
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getPendingNewCallsCountFlow(): Flow<Int> = 
+        settingsRepository.getTrackStartDateFlow().flatMapLatest { minDate ->
+            callDataDao.getPendingNewCallsCountFlow(minDate)
+        }
+
+    /**
+     * Get pending metadata updates count as Flow (notes, reviewed, etc)
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun getPendingMetadataUpdatesCountFlow(): Flow<Int> = 
+        settingsRepository.getTrackStartDateFlow().flatMapLatest { minDate ->
+            callDataDao.getPendingMetadataUpdatesCountFlow(minDate)
+        }
+
+    /**
+     * Get pending person updates count as Flow
+     */
+    fun getPendingPersonUpdatesCountFlow(): Flow<Int> = personDataDao.getPendingSyncPersonsCountFlow()
+
+    /**
+     * Get active recording syncs as Flow (for monitoring progress)
+     */
+    fun getActiveRecordingSyncsFlow(): Flow<List<CallDataEntity>> = callDataDao.getActiveRecordingSyncsFlow()
     
     // ============================================
     // PERSON DATA - READ OPERATIONS
@@ -161,10 +321,11 @@ class CallDataRepository(private val context: Context) {
     }
 
     fun getPendingChangesCountFlow(): Flow<Int> {
-        return kotlinx.coroutines.flow.combine(
-            callDataDao.getUnsyncedCallsCountFlow(),
-            personDataDao.getPendingSyncPersonsCountFlow()
-        ) { calls, persons -> calls + persons }
+        return combine(
+            getPendingNewCallsCountFlow(),
+            getPendingMetadataUpdatesCountFlow(),
+            getPendingPersonUpdatesCountFlow()
+        ) { newCalls, updates, persons -> newCalls + updates + persons }
     }
     
     // ============================================
@@ -203,6 +364,24 @@ class CallDataRepository(private val context: Context) {
             personDataDao.insert(PersonDataEntity(
                 phoneNumber = normalized,
                 label = label,
+                needsSync = true
+            ))
+        }
+    }
+
+    /**
+     * Update person name (custom name set by user, synced to server)
+     */
+    suspend fun updatePersonName(phoneNumber: String, name: String?) = withContext(Dispatchers.IO) {
+        val normalized = normalizePhoneNumber(phoneNumber)
+        val existing = personDataDao.getByPhoneNumber(normalized)
+        if (existing != null) {
+            personDataDao.updateName(normalized, name)
+        } else {
+            // Create person entry if doesn't exist
+            personDataDao.insert(PersonDataEntity(
+                phoneNumber = normalized,
+                contactName = name,
                 needsSync = true
             ))
         }
@@ -276,7 +455,7 @@ class CallDataRepository(private val context: Context) {
         Log.d(TAG, "Starting sync from system call log...")
         
         val filterDate = settingsRepository.getTrackStartDate()
-        val deviceId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+        val deviceId = android.provider.Settings.Secure.getString(context.contentResolver, android.provider.Settings.Secure.ANDROID_ID)
         val simSelection = settingsRepository.getSimSelection()
         
         // Skip if tracking is Off
@@ -284,13 +463,18 @@ class CallDataRepository(private val context: Context) {
             Log.d(TAG, "Call tracking is OFF, skipping sync")
             return@withContext
         }
+
+        // Optimize: Only fetch calls since the latest call in our DB (with a 2-day safety buffer)
+        // or the tracking start date, whichever is more recent.
+        val latestCallDate = callDataDao.getMaxCallDate() ?: 0L
+        val fetchStartDate = maxOf(filterDate, latestCallDate - (2 * 24 * 60 * 60 * 1000L))
         
-        // Get existing IDs once
-        val existingIds = callDataDao.getAllCompositeIds().toSet()
-        Log.d(TAG, "Existing calls in Room: ${existingIds.size}")
+        // Get existing IDs once (only need those since fetchStartDate)
+        val existingIds = callDataDao.getCompositeIdsSince(fetchStartDate).toSet()
+        Log.d(TAG, "Existing calls since ${java.util.Date(fetchStartDate)}: ${existingIds.size}")
         
         // Fetch from system call log with SIM filter  
-        val systemCalls = fetchSystemCallLog(filterDate, deviceId, simSelection)
+        val systemCalls = fetchSystemCallLog(fetchStartDate, deviceId, simSelection)
         Log.d(TAG, "System call log returned: ${systemCalls.size} calls (SIM: $simSelection)")
         
         val newCalls = mutableListOf<CallDataEntity>()
@@ -319,7 +503,7 @@ class CallDataRepository(private val context: Context) {
         
         // Update recordings for calls that don't have them yet (including existing ones)
         // We do this after insertion to simplify
-        val unsyncedWithNoPath = callDataDao.getUnsyncedCalls().filter { it.localRecordingPath == null }
+        val unsyncedWithNoPath = callDataDao.getCallsMissingRecordings().filter { it.localRecordingPath == null }
         if (unsyncedWithNoPath.isNotEmpty()) {
             val recordingFiles = recordingRepository.getRecordingFiles()
             for (call in unsyncedWithNoPath) {
@@ -328,7 +512,8 @@ class CallDataRepository(private val context: Context) {
                         recordingFiles,
                         call.callDate,
                         call.duration,
-                        call.phoneNumber
+                        call.phoneNumber,
+                        call.contactName
                     )
                     if (recordingPath != null) {
                         callDataDao.updateRecordingPath(call.compositeId, recordingPath)
@@ -341,7 +526,13 @@ class CallDataRepository(private val context: Context) {
         // Update person data in batch
         updatePersonsData(personCallsMap)
         
-        Log.d(TAG, "Sync complete. New calls: ${newCalls.size}")
+        // CRITICAL: Delete any calls from Room that are now before the filter date
+        // This handles cases where user changed the start date to a later date
+        Log.d(TAG, "Cleaning up calls before $filterDate...")
+        callDataDao.deleteBefore(filterDate)
+        
+        val finalCount = callDataDao.getAllCompositeIds().size
+        Log.d(TAG, "Sync complete. New calls: ${newCalls.size}. Remaining in Room: $finalCount")
     }
     
     /**
@@ -477,7 +668,8 @@ class CallDataRepository(private val context: Context) {
                         duration = duration,
                         photoUri = photoUri,
                         subscriptionId = subId,
-                        deviceId = deviceId
+                        deviceId = deviceId,
+                        recordingSyncStatus = if (duration > 0) RecordingSyncStatus.PENDING else RecordingSyncStatus.NOT_APPLICABLE
                     ))
                 }
             }
@@ -494,7 +686,17 @@ class CallDataRepository(private val context: Context) {
     private fun generateCompositeId(type: Int, deviceId: String, number: String, date: Long): String {
         val cleanNumber = number.filter { it.isDigit() || it == '+' }
         val cleanDevice = deviceId.ifEmpty { "unknown_dev" }
-        return "$type-$cleanDevice-$cleanNumber-$date"
+        
+        val typeStr = when (type) {
+            CallLog.Calls.INCOMING_TYPE -> "incoming"
+            CallLog.Calls.OUTGOING_TYPE -> "outgoing"
+            CallLog.Calls.MISSED_TYPE -> "missed"
+            5 -> "rejected" // CallLog.Calls.REJECTED_TYPE
+            6 -> "blocked"  // CallLog.Calls.BLOCKED_TYPE
+            else -> "unknown"
+        }
+        
+        return "$typeStr-$cleanDevice-$cleanNumber-$date"
     }
     
     /**
@@ -529,13 +731,24 @@ class CallDataRepository(private val context: Context) {
     // ============================================
     
     /**
-     * Clear all sync status (reset all calls to PENDING)
+     * Clear all sync status (reset all calls to PENDING for full re-sync)
+     * This resets syncStatus, metadataSyncStatus, and recordingSyncStatus
      */
     suspend fun clearSyncStatus() = withContext(Dispatchers.IO) {
         val allCalls = callDataDao.getAllCalls()
         for (call in allCalls) {
+            // Reset general sync status
             callDataDao.updateSyncStatus(call.compositeId, CallLogStatus.PENDING)
+            // Reset metadata sync status
+            callDataDao.updateMetadataSyncStatus(call.compositeId, MetadataSyncStatus.PENDING)
+            // Reset recording sync status (only if call had a recording)
+            if (call.duration > 0) {
+                callDataDao.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.PENDING)
+            }
+            // Clear any sync errors
+            callDataDao.updateSyncError(call.compositeId, null)
         }
+        Log.d(TAG, "Reset sync status for ${allCalls.size} calls")
     }
     
     /**

@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.calltracker.manager.ui.home.CallsScreen
 import com.calltracker.manager.ui.home.PersonsScreen
 import com.calltracker.manager.ui.home.ReportsScreen
@@ -19,7 +20,6 @@ import com.calltracker.manager.ui.settings.SettingsScreen
 import com.calltracker.manager.ui.theme.CallCloudTheme
 
 import com.calltracker.manager.ui.utils.AudioPlayer
-import com.calltracker.manager.worker.UploadWorker
 import com.calltracker.manager.ui.onboarding.OnboardingScreen
 import com.calltracker.manager.data.SettingsRepository
 
@@ -41,12 +41,10 @@ class MainActivity : ComponentActivity() {
     private lateinit var viewModel: MainViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         viewModel = androidx.lifecycle.ViewModelProvider(this)[MainViewModel::class.java]
         audioPlayer = AudioPlayer(context = this)
-        
-        // Start background upload worker
-        UploadWorker.enqueue(this)
         
         enableEdgeToEdge()
         setContent {

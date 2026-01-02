@@ -52,6 +52,9 @@ interface PersonDataDao {
 
     @Query("UPDATE person_data SET label = :label, updatedAt = :timestamp, needsSync = 1 WHERE phoneNumber = :phoneNumber")
     suspend fun updateLabel(phoneNumber: String, label: String?, timestamp: Long = System.currentTimeMillis())
+
+    @Query("UPDATE person_data SET contactName = :name, updatedAt = :timestamp, needsSync = 1 WHERE phoneNumber = :phoneNumber")
+    suspend fun updateName(phoneNumber: String, name: String?, timestamp: Long = System.currentTimeMillis())
     
     @Query("SELECT * FROM person_data WHERE needsSync = 1")
     suspend fun getPendingSyncPersons(): List<PersonDataEntity>
@@ -73,6 +76,18 @@ interface PersonDataDao {
 
     @Query("UPDATE person_data SET contactName = :name, needsSync = 0 WHERE phoneNumber = :phoneNumber")
     suspend fun updateNameFromRemote(phoneNumber: String, name: String?)
+    
+    // NEW: Update from server with conflict resolution
+    @Query("""
+        UPDATE person_data SET 
+            personNote = COALESCE(:personNote, personNote),
+            label = COALESCE(:label, label),
+            contactName = COALESCE(:name, contactName),
+            serverUpdatedAt = :serverUpdatedAt,
+            needsSync = 0
+        WHERE phoneNumber = :phoneNumber AND (serverUpdatedAt IS NULL OR serverUpdatedAt < :serverUpdatedAt)
+    """)
+    suspend fun updateFromServer(phoneNumber: String, personNote: String?, label: String?, name: String?, serverUpdatedAt: Long)
     
     // ============================================
     // DELETE

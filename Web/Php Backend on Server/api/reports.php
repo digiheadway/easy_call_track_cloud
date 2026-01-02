@@ -26,22 +26,49 @@ $reportType = $_GET['type'] ?? 'overview';
 $dateRange = $_GET['dateRange'] ?? 'week';
 
 // Build date filter
+$timezoneOffset = isset($_GET['tzOffset']) ? (int)$_GET['tzOffset'] : 0;
+$dbOffsetMinutes = -1 * $timezoneOffset;
+$sqlLocalTime = "DATE_ADD(call_time, INTERVAL $dbOffsetMinutes MINUTE)";
+$sqlLocalNow = "DATE_ADD(UTC_TIMESTAMP(), INTERVAL $dbOffsetMinutes MINUTE)";
+
 $dateFilter = '';
 switch ($dateRange) {
     case 'today':
-        $dateFilter = "AND DATE(call_timestamp) = CURDATE()";
+        $dateFilter = "AND DATE($sqlLocalTime) = DATE($sqlLocalNow)";
+        break;
+    case 'yesterday':
+    case 'Yesterday':
+        $dateFilter = "AND DATE($sqlLocalTime) = DATE(DATE_SUB($sqlLocalNow, INTERVAL 1 DAY))";
+        break;
+    case '3days':
+        $dateFilter = "AND $sqlLocalTime >= DATE_SUB($sqlLocalNow, INTERVAL 3 DAY)";
         break;
     case 'week':
-        $dateFilter = "AND call_timestamp >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+    case '7days':
+        $dateFilter = "AND $sqlLocalTime >= DATE_SUB($sqlLocalNow, INTERVAL 7 DAY)";
+        break;
+    case '14days':
+        $dateFilter = "AND $sqlLocalTime >= DATE_SUB($sqlLocalNow, INTERVAL 14 DAY)";
         break;
     case 'month':
-        $dateFilter = "AND call_timestamp >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+    case '30days':
+        $dateFilter = "AND $sqlLocalTime >= DATE_SUB($sqlLocalNow, INTERVAL 30 DAY)";
+        break;
+    case 'this_month':
+        $dateFilter = "AND MONTH($sqlLocalTime) = MONTH($sqlLocalNow) AND YEAR($sqlLocalTime) = YEAR($sqlLocalNow)";
         break;
     case 'quarter':
-        $dateFilter = "AND call_timestamp >= DATE_SUB(NOW(), INTERVAL 90 DAY)";
+        $dateFilter = "AND $sqlLocalTime >= DATE_SUB($sqlLocalNow, INTERVAL 90 DAY)";
         break;
     case 'year':
-        $dateFilter = "AND call_timestamp >= DATE_SUB(NOW(), INTERVAL 365 DAY)";
+        $dateFilter = "AND $sqlLocalTime >= DATE_SUB($sqlLocalNow, INTERVAL 365 DAY)";
+        break;
+    case 'custom':
+        if (isset($_GET['startDate']) && isset($_GET['endDate'])) {
+            $s = Database::escape($_GET['startDate']);
+            $e = Database::escape($_GET['endDate']);
+            $dateFilter = "AND DATE($sqlLocalTime) BETWEEN '$s' AND '$e'";
+        }
         break;
     default:
         $dateFilter = '';
@@ -55,12 +82,12 @@ switch ($reportType) {
         $metrics = Database::getOne("
             SELECT 
                 COUNT(*) as total_calls,
-                SUM(CASE WHEN direction = 'inbound' THEN 1 ELSE 0 END) as inbound_calls,
-                SUM(CASE WHEN direction = 'outbound' THEN 1 ELSE 0 END) as outbound_calls,
-                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_calls,
-                SUM(CASE WHEN status = 'missed' THEN 1 ELSE 0 END) as missed_calls,
-                AVG(CASE WHEN status = 'completed' THEN TIME_TO_SEC(duration) ELSE NULL END) as avg_duration,
-                (SELECT COUNT(*) FROM recordings WHERE org_id = '$orgId') as recordings_count,
+                SUM(CASE WHEN type = 'Inbound' OR type = 'Incoming' THEN 1 ELSE 0 END) as inbound_calls,
+                SUM(CASE WHEN type = 'Outbound' OR type = 'Outgoing' THEN 1 ELSE 0 END) as outbound_calls,
+                SUM(CASE WHEN duration > 0 THEN 1 ELSE 0 END) as completed_calls,
+                SUM(CASE WHEN duration = 0 THEN 1 ELSE 0 END) as missed_calls,
+                AVG(CASE WHEN duration > 0 THEN duration ELSE NULL END) as avg_duration,
+                (SELECT COUNT(*) FROM calls WHERE org_id = '$orgId' AND recording_url IS NOT NULL AND recording_url != '') as recordings_count,
                 (SELECT COUNT(*) FROM employees WHERE org_id = '$orgId' AND status = 'active') as active_employees
             FROM calls 
             WHERE org_id = '$orgId' $dateFilter
@@ -85,12 +112,12 @@ switch ($reportType) {
         // Call trends by day (last 7 days)
         $trends = Database::select("
             SELECT 
-                DATE(call_timestamp) as date,
+                DATE(call_time) as date,
                 COUNT(*) as call_count
             FROM calls 
             WHERE org_id = '$orgId' 
-            AND call_timestamp >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-            GROUP BY DATE(call_timestamp)
+            AND call_time >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            GROUP BY DATE(call_time)
             ORDER BY date ASC
         ");
         
@@ -106,12 +133,10 @@ switch ($reportType) {
             SELECT 
                 e.id,
                 e.name,
-                e.department,
-                e.role,
                 COUNT(c.id) as total_calls,
-                SUM(CASE WHEN c.status = 'completed' THEN 1 ELSE 0 END) as completed_calls,
-                AVG(CASE WHEN c.status = 'completed' THEN TIME_TO_SEC(c.duration) ELSE NULL END) as avg_duration,
-                (SELECT COUNT(*) FROM recordings r WHERE r.employee_id = e.id) as recordings_count
+                SUM(CASE WHEN c.duration > 0 THEN 1 ELSE 0 END) as completed_calls,
+                AVG(CASE WHEN c.duration > 0 THEN c.duration ELSE NULL END) as avg_duration,
+                (SELECT COUNT(*) FROM calls r WHERE r.employee_id = e.id AND r.recording_url IS NOT NULL AND r.recording_url != '') as recordings_count
             FROM employees e
             LEFT JOIN calls c ON e.id = c.employee_id $dateFilter
             WHERE e.org_id = '$orgId' AND e.status = 'active'
@@ -126,7 +151,7 @@ switch ($reportType) {
             $completionScore = $employee['total_calls'] > 0 
                 ? ($employee['completed_calls'] / $employee['total_calls']) * 35 
                 : 0;
-            $recordingScore = min(25, ($employee['recordings_count'] / $employee['total_calls']) * 25);
+            $recordingScore = min(25, ($employee['recordings_count'] / ($employee['total_calls'] ?: 1)) * 25);
             
             $employee['score'] = round($callScore + $completionScore + $recordingScore);
             
@@ -143,31 +168,9 @@ switch ($reportType) {
         Response::success($employees, 'Employee performance report generated');
         break;
     
-    /* ===== DEPARTMENT BREAKDOWN ===== */
+    /* ===== DEPARTMENT BREAKDOWN (Unused in simple schema, but keeping structure) ===== */
     case 'department':
-        $departments = Database::select("
-            SELECT 
-                e.department,
-                COUNT(c.id) as total_calls,
-                SUM(CASE WHEN c.status = 'completed' THEN 1 ELSE 0 END) as completed_calls,
-                COUNT(DISTINCT e.id) as employee_count
-            FROM employees e
-            LEFT JOIN calls c ON e.id = c.employee_id $dateFilter
-            WHERE e.org_id = '$orgId'
-            GROUP BY e.department
-            ORDER BY total_calls DESC
-        ");
-        
-        // Calculate total calls for percentage
-        $totalCalls = array_sum(array_column($departments, 'total_calls'));
-        
-        foreach ($departments as &$dept) {
-            $dept['percentage'] = $totalCalls > 0 
-                ? round(($dept['total_calls'] / $totalCalls) * 100) 
-                : 0;
-        }
-        
-        Response::success($departments, 'Department breakdown generated');
+        Response::success([], 'Department breakdown not supported in current schema');
         break;
     
     /* ===== CALL ANALYTICS ===== */
@@ -175,20 +178,20 @@ switch ($reportType) {
         // Hourly distribution
         $hourly = Database::select("
             SELECT 
-                HOUR(call_timestamp) as hour,
+                HOUR(call_time) as hour,
                 COUNT(*) as call_count,
-                AVG(TIME_TO_SEC(duration)) as avg_duration
+                AVG(duration) as avg_duration
             FROM calls 
             WHERE org_id = '$orgId' $dateFilter
-            GROUP BY HOUR(call_timestamp)
+            GROUP BY HOUR(call_time)
             ORDER BY hour ASC
         ");
         
         // Day of week distribution
         $weekly = Database::select("
             SELECT 
-                DAYNAME(call_timestamp) as day_name,
-                DAYOFWEEK(call_timestamp) as day_num,
+                DAYNAME(call_time) as day_name,
+                DAYOFWEEK(call_time) as day_num,
                 COUNT(*) as call_count
             FROM calls 
             WHERE org_id = '$orgId' $dateFilter
@@ -199,8 +202,8 @@ switch ($reportType) {
         // Direction breakdown
         $direction = Database::getOne("
             SELECT 
-                SUM(CASE WHEN direction = 'inbound' THEN 1 ELSE 0 END) as inbound,
-                SUM(CASE WHEN direction = 'outbound' THEN 1 ELSE 0 END) as outbound
+                SUM(CASE WHEN type = 'Inbound' OR type = 'Incoming' THEN 1 ELSE 0 END) as inbound,
+                SUM(CASE WHEN type = 'Outbound' OR type = 'Outgoing' THEN 1 ELSE 0 END) as outbound
             FROM calls 
             WHERE org_id = '$orgId' $dateFilter
         ");

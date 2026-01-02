@@ -13,8 +13,8 @@ android {
         applicationId = "com.calltracker.manager"
         minSdk = 22
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 3
+        versionName = "1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -41,7 +41,7 @@ android {
 }
 
 dependencies {
-
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -74,5 +74,5 @@ dependencies {
     ksp(libs.room.compiler)
 
     // Audio Compression
-    implementation("com.mrljdx:ffmpeg-kit-full:6.1.1")
+    // implementation(libs.ffmpeg.kit)
 }

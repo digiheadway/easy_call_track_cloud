@@ -252,9 +252,13 @@ class AudioPlayer(private val context: Context) {
         timer?.scheduleAtFixedRate(object : TimerTask() {
             override fun run() {
                 mediaPlayer?.let {
-                    if (it.isPlaying && it.duration > 0) {
-                        _progress.value = it.currentPosition.toFloat() / it.duration.toFloat()
-                        _currentPosition.value = it.currentPosition
+                    try {
+                        if (it.isPlaying && it.duration > 0) {
+                            _progress.value = it.currentPosition.toFloat() / it.duration.toFloat()
+                            _currentPosition.value = it.currentPosition
+                        }
+                    } catch (e: Exception) {
+                        // Media player invalid state
                     }
                 }
             }

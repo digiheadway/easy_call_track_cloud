@@ -31,6 +31,31 @@ switch ($method) {
     
     /* ===== GET CONTACTS ===== */
     case 'GET':
+        // Return unique labels
+        if ($action === 'labels') {
+            $labelsRows = Database::select("
+                SELECT DISTINCT label 
+                FROM contacts 
+                WHERE org_id = '$orgId' AND label IS NOT NULL AND label != ''
+                ORDER BY label ASC
+            ");
+            
+            $uniqueLabels = [];
+            foreach ($labelsRows as $row) {
+                $parts = explode(',', $row['label']);
+                foreach ($parts as $part) {
+                    $part = trim($part);
+                    if ($part && !in_array($part, $uniqueLabels)) {
+                        $uniqueLabels[] = $part;
+                    }
+                }
+            }
+            sort($uniqueLabels);
+            $result = array_map(function($l) { return ['label' => $l]; }, $uniqueLabels);
+            Response::success($result, 'Labels retrieved successfully');
+            break;
+        }
+        
         $search = $_GET['search'] ?? '';
         $label = $_GET['label'] ?? '';
         
@@ -43,7 +68,7 @@ switch ($method) {
         
         if ($label && $label !== 'all') {
             $label = Database::escape($label);
-            $where[] = "label = '$label'";
+            $where[] = "label LIKE '%$label%'";
         }
         
         $whereClause = implode(' AND ', $where);
@@ -60,6 +85,38 @@ switch ($method) {
     
     /* ===== CREATE/UPDATE CONTACT (UPSERT) ===== */
     case 'POST':
+        // Handle exclude action
+        if ($action === 'exclude') {
+            Validator::required($data, ['phone_number']);
+            
+            $phone = Database::escape($data['phone_number']);
+            $excluded = isset($data['excluded']) ? (bool)$data['excluded'] : true;
+            $name = isset($data['name']) ? Database::escape($data['name']) : '';
+            
+            // Check if already in excluded_contacts
+            $existing = Database::getOne("SELECT id FROM excluded_contacts WHERE org_id = '$orgId' AND phone = '$phone'");
+            
+            if ($excluded) {
+                // Add to exclude list
+                if (!$existing) {
+                    $sql = "INSERT INTO excluded_contacts (org_id, phone, name, is_active) 
+                            VALUES ('$orgId', '$phone', '$name', 1)";
+                    Database::insert($sql);
+                } else {
+                    // Reactivate if exists but was inactive
+                    Database::execute("UPDATE excluded_contacts SET is_active = 1 WHERE id = {$existing['id']}");
+                }
+                Response::success(['excluded' => true], 'Contact added to exclude list');
+            } else {
+                // Remove from exclude list
+                if ($existing) {
+                    Database::execute("DELETE FROM excluded_contacts WHERE id = {$existing['id']}");
+                }
+                Response::success(['excluded' => false], 'Contact removed from exclude list');
+            }
+            break;
+        }
+        
         Validator::required($data, ['phone']);
         
         $phone = Database::escape($data['phone']);

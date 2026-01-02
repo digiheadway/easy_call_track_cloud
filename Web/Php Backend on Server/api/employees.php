@@ -36,8 +36,7 @@ switch ($method) {
             $stats = Database::getOne("
                 SELECT 
                     COUNT(*) as total,
-                    SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
-                    SUM(calls_today) as calls_today
+                    SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active
                 FROM employees 
                 WHERE org_id = '$orgId'
             ");
@@ -58,22 +57,27 @@ switch ($method) {
     /* ===== CREATE EMPLOYEE ===== */
     case 'POST':
         // Validate required fields
-        Validator::required($data, ['name', 'email', 'phone', 'department', 'role']);
+        Validator::required($data, ['name']);
         
         $name = Database::escape($data['name']);
-        $email = Database::escape($data['email']);
-        $phone = Database::escape($data['phone']);
-        $department = Database::escape($data['department']);
-        $role = Database::escape($data['role']);
+        $phone = Database::escape($data['phone'] ?? '');
         $joinDate = date('Y-m-d');
         
         // Optional fields
-        $callTrack = isset($data['call_track']) ? (int)$data['call_track'] : 1;
-        $callRecordCrm = isset($data['call_record_crm']) ? (int)$data['call_record_crm'] : 1;
+        $callTrack = isset($data['track_calls']) ? (int)$data['track_calls'] : 1;
+        $callRecordCrm = isset($data['track_recordings']) ? (int)$data['track_recordings'] : 1;
         $expiryDate = isset($data['expiry_date']) ? "'" . Database::escape($data['expiry_date']) . "'" : "NULL";
         
-        $sql = "INSERT INTO employees (org_id, name, email, phone, department, role, join_date, status, call_track, call_record_crm, expiry_date) 
-                VALUES ('$orgId', '$name', '$email', '$phone', '$department', '$role', '$joinDate', 'active', $callTrack, $callRecordCrm, $expiryDate)";
+        // New settings
+        $allowPersonalExclusion = isset($data['allow_personal_exclusion']) ? (int)$data['allow_personal_exclusion'] : 0;
+        $allowChangeStart = isset($data['allow_changing_tracking_start_date']) ? (int)$data['allow_changing_tracking_start_date'] : 0;
+        $allowUpdateSims = isset($data['allow_updating_tracking_sims']) ? (int)$data['allow_updating_tracking_sims'] : 0;
+        $defaultStartDate = isset($data['default_tracking_starting_date']) && !empty($data['default_tracking_starting_date']) ? "'" . Database::escape($data['default_tracking_starting_date']) . "'" : "NULL";
+        
+        $sql = "INSERT INTO employees (org_id, name, phone, join_date, status, call_track, call_record_crm, expiry_date,
+                    allow_personal_exclusion, allow_changing_tracking_start_date, allow_updating_tracking_sims, default_tracking_starting_date) 
+                VALUES ('$orgId', '$name', '$phone', '$joinDate', 'active', $callTrack, $callRecordCrm, $expiryDate,
+                    $allowPersonalExclusion, $allowChangeStart, $allowUpdateSims, $defaultStartDate)";
         
         $employeeId = Database::insert($sql);
         
@@ -101,20 +105,25 @@ switch ($method) {
         // Build update query
         $updates = [];
         if (isset($data['name'])) $updates[] = "name = '" . Database::escape($data['name']) . "'";
-        if (isset($data['email'])) $updates[] = "email = '" . Database::escape($data['email']) . "'";
         if (isset($data['phone'])) $updates[] = "phone = '" . Database::escape($data['phone']) . "'";
-        if (isset($data['department'])) $updates[] = "department = '" . Database::escape($data['department']) . "'";
-        if (isset($data['role'])) $updates[] = "role = '" . Database::escape($data['role']) . "'";
         if (isset($data['status'])) $updates[] = "status = '" . Database::escape($data['status']) . "'";
         
-        // Update new fields
-        if (isset($data['call_track'])) $updates[] = "call_track = " . (int)$data['call_track'];
-        if (isset($data['call_record_crm'])) $updates[] = "call_record_crm = " . (int)$data['call_record_crm'];
+        // Update fields
+        if (isset($data['track_calls'])) $updates[] = "call_track = " . (int)$data['track_calls'];
+        if (isset($data['track_recordings'])) $updates[] = "call_record_crm = " . (int)$data['track_recordings'];
         if (isset($data['expiry_date'])) {
              $ed = Database::escape($data['expiry_date']);
              $updates[] = "expiry_date = " . ($ed ? "'$ed'" : "NULL");
         }
         if (isset($data['last_sync'])) $updates[] = "last_sync = '" . Database::escape($data['last_sync']) . "'";
+        
+        if (isset($data['allow_personal_exclusion'])) $updates[] = "allow_personal_exclusion = " . (int)$data['allow_personal_exclusion'];
+        if (isset($data['allow_changing_tracking_start_date'])) $updates[] = "allow_changing_tracking_start_date = " . (int)$data['allow_changing_tracking_start_date'];
+        if (isset($data['allow_updating_tracking_sims'])) $updates[] = "allow_updating_tracking_sims = " . (int)$data['allow_updating_tracking_sims'];
+        if (isset($data['default_tracking_starting_date'])) {
+             $dt = Database::escape($data['default_tracking_starting_date']);
+             $updates[] = "default_tracking_starting_date = " . ($dt ? "'$dt'" : "NULL");
+        }
         
         if (empty($updates)) {
             Response::error('No fields to update');

@@ -38,6 +38,10 @@ fun TrackSimModal(
     // Calibration State
     var showCalibrationModal by remember { mutableStateOf(false) }
     var calibrationSimIndex by remember { mutableStateOf(-1) } // 0 for Sim1, 1 for Sim2
+    
+    LaunchedEffect(Unit) {
+        viewModel.fetchSimInfo()
+    }
 
     if (showCalibrationModal) {
         CallSelectionModal(

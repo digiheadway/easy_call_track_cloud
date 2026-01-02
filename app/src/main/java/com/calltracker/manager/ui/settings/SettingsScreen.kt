@@ -2,9 +2,12 @@ package com.calltracker.manager.ui.settings
 
 import android.app.DatePickerDialog
 import android.content.Context
+import android.widget.Toast
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import com.calltracker.manager.ui.common.SyncQueueModal
+import com.calltracker.manager.ui.common.RecordingQueueModal
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -53,6 +56,8 @@ fun SettingsScreen(
     var showResetConfirmDialog by remember { mutableStateOf(false) }
     var contactSubject by remember { mutableStateOf("") }
     var accountEditField by remember { mutableStateOf<String?>(null) } // "pairing", "phone1", "phone2", null for all
+    var showSyncQueue by remember { mutableStateOf(false) }
+    var showRecordingQueue by remember { mutableStateOf(false) }
 
     if (onBack != null) {
         androidx.activity.compose.BackHandler {
@@ -142,7 +147,8 @@ fun SettingsScreen(
             excludedPersons = uiState.excludedPersons,
             onAddNumbers = { viewModel.addExcludedNumbers(it) },
             onRemoveNumber = { viewModel.unexcludeNumber(it) },
-            onDismiss = { showExcludedModal = false }
+            onDismiss = { showExcludedModal = false },
+            canAddNew = uiState.allowPersonalExclusion || uiState.pairingCode.isEmpty()
         )
     }
 
@@ -161,6 +167,16 @@ fun SettingsScreen(
             dismissButton = {
                 TextButton(onClick = { showResetConfirmDialog = false }) { Text("Cancel") }
             }
+        )
+    }
+
+    if (showSyncQueue) {
+        SyncQueueModal(
+            pendingNewCalls = uiState.pendingNewCallsCount,
+            pendingRelatedData = uiState.pendingMetadataUpdatesCount + uiState.pendingPersonUpdatesCount,
+            pendingRecordings = uiState.pendingRecordingCount,
+            onSyncAll = viewModel::syncCallManually,
+            onDismiss = { showSyncQueue = false }
         )
     }
 
@@ -198,6 +214,14 @@ fun SettingsScreen(
         )
     }
 
+    if (showRecordingQueue) {
+        RecordingQueueModal(
+            activeRecordings = uiState.activeRecordings,
+            onDismiss = { showRecordingQueue = false },
+            onRetry = viewModel::retryRecordingUpload
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -210,6 +234,15 @@ fun SettingsScreen(
                     }
                 } else {
                     {}
+                },
+                actions = {
+                    IconButton(onClick = { showRecordingQueue = true }) {
+                        Icon(
+                            imageVector = Icons.Default.CloudUpload,
+                            contentDescription = "Recording Queue",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             )
         }
@@ -261,6 +294,16 @@ fun SettingsScreen(
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                             )
+                        }
+                        
+                        if (uiState.pairingCode.isNotEmpty()) {
+                            IconButton(onClick = { showSyncQueue = true }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.List,
+                                    contentDescription = "Show Sync Queue",
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
                         }
                     }
                     
@@ -537,6 +580,7 @@ fun SettingsScreen(
                 SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(uiState.trackStartDate))
 
             SettingsSection(title = "Call Tracking") {
+                val isDateLocked = !uiState.allowChangingTrackingStartDate && uiState.pairingCode.isNotEmpty()
                 ListItem(
                     headlineContent = { Text("Call Tracking Starting Date") },
                     supportingContent = { Text(dateString) },
@@ -544,11 +588,19 @@ fun SettingsScreen(
                         SettingsIcon(Icons.Default.CalendarToday, MaterialTheme.colorScheme.primary) 
                     },
                     trailingContent = {
-                        Icon(Icons.Default.ChevronRight, contentDescription = null)
+                        if (isDateLocked) {
+                            Icon(Icons.Default.Lock, contentDescription = "Locked", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                        } else {
+                            Icon(Icons.Default.ChevronRight, contentDescription = null)
+                        }
                     },
                     modifier = Modifier.clickable {
-                        showDatePicker(context, uiState.trackStartDate) { newDate ->
-                            viewModel.updateTrackStartDate(newDate)
+                        if (isDateLocked) {
+                            Toast.makeText(context, "Locked by your organisation", Toast.LENGTH_SHORT).show()
+                        } else {
+                            showDatePicker(context, uiState.trackStartDate) { newDate ->
+                                viewModel.updateTrackStartDate(newDate)
+                            }
                         }
                     }
                 )
@@ -558,6 +610,7 @@ fun SettingsScreen(
                 // ===============================================
                 // 2. TRACK CALLS (Modal)
                 // ===============================================
+                val isSimLocked = !uiState.allowUpdatingTrackingSims && uiState.pairingCode.isNotEmpty()
                 ListItem(
                     headlineContent = { Text("Track Calls") },
                     supportingContent = { 
@@ -576,15 +629,30 @@ fun SettingsScreen(
                             }
                             " (" + details.joinToString(" | ") + ")"
                         } else ""
-                        Text(currentSim + phoneInfo) 
+                        
+                        if (isSimLocked) {
+                            Text(currentSim + phoneInfo, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        } else {
+                            Text(currentSim + phoneInfo) 
+                        }
                     },
                     leadingContent = { 
                         SettingsIcon(Icons.Default.SimCard, MaterialTheme.colorScheme.tertiary) 
                     },
                     trailingContent = {
-                        Icon(Icons.Default.ChevronRight, contentDescription = null)
+                        if (isSimLocked) {
+                            Icon(Icons.Default.Lock, contentDescription = "Locked", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                        } else {
+                            Icon(Icons.Default.ChevronRight, contentDescription = null)
+                        }
                     },
-                    modifier = Modifier.clickable { showTrackSimModal = true }
+                    modifier = Modifier.clickable { 
+                        if (isSimLocked) {
+                            Toast.makeText(context, "Locked by your organisation", Toast.LENGTH_SHORT).show()
+                        } else {
+                            showTrackSimModal = true
+                        }
+                    }
                 )
             }
 
@@ -596,6 +664,7 @@ fun SettingsScreen(
             val excludedCount = uiState.excludedPersons.size
 
             SettingsSection(title = "Exclusions") {
+                val isExclusionLocked = !uiState.allowPersonalExclusion && uiState.pairingCode.isNotEmpty()
                 ListItem(
                     headlineContent = { Text("Excluded Contacts") },
                     supportingContent = { 
@@ -608,7 +677,13 @@ fun SettingsScreen(
                         SettingsIcon(Icons.Default.PersonOff, MaterialTheme.colorScheme.error) 
                     },
                     trailingContent = {
-                        Icon(Icons.Default.ChevronRight, contentDescription = null)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (isExclusionLocked) {
+                                Icon(Icons.Default.Lock, contentDescription = "Adding locked", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                            }
+                            Icon(Icons.Default.ChevronRight, contentDescription = null)
+                        }
                     },
                     modifier = Modifier.clickable { showExcludedModal = true }
                 )
@@ -682,26 +757,127 @@ fun SettingsScreen(
 
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 
-                // Recording Path
-                ListItem(
-                    headlineContent = { Text("Recording Path") },
-                    supportingContent = { 
-                        val displayPath = if (uiState.recordingPath.isNotEmpty()) {
-                            try {
-                                Uri.decode(uiState.recordingPath).takeLast(40)
-                            } catch(e: Exception) { uiState.recordingPath.takeLast(40) }
-                        } else {
-                            "Default: Music/Recordings/Call Recordings"
+                // Recording Path with verification
+                var showPathWarningDialog by remember { mutableStateOf(false) }
+                
+                // Warning Dialog for editing verified path
+                if (showPathWarningDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showPathWarningDialog = false },
+                        icon = { Icon(Icons.Default.Warning, null, tint = Color(0xFFEAB308)) },
+                        title = { Text("Change Recording Path?") },
+                        text = {
+                            Column {
+                                Text(
+                                    "Current path is verified with ${uiState.recordingCount} recordings found.",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    "Changing this may break recording detection. Only change if recordings are not being found correctly.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    showPathWarningDialog = false
+                                    folderLauncher.launch(null)
+                                }
+                            ) {
+                                Text("Change Anyway")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showPathWarningDialog = false }) {
+                                Text("Cancel")
+                            }
                         }
-                        Text(displayPath, maxLines = 1) 
+                    )
+                }
+                
+                ListItem(
+                    headlineContent = { 
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Recording Path")
+                            if (uiState.isRecordingPathVerified) {
+                                Spacer(Modifier.width(8.dp))
+                                Icon(
+                                    Icons.Default.CheckCircle,
+                                    contentDescription = "Verified",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    },
+                    supportingContent = { 
+                        Column {
+                            val displayPath = if (uiState.recordingPath.isNotEmpty()) {
+                                try {
+                                    val decoded = Uri.decode(uiState.recordingPath)
+                                    // Show relative path from storage
+                                    if (decoded.contains("/storage/emulated/0/")) {
+                                        decoded.replace("/storage/emulated/0/", "")
+                                    } else {
+                                        decoded.takeLast(40)
+                                    }
+                                } catch(e: Exception) { uiState.recordingPath.takeLast(40) }
+                            } else {
+                                "Not detected"
+                            }
+                            
+                            Text(displayPath, maxLines = 1)
+                            
+                            // Status line
+                            val statusText = buildString {
+                                if (uiState.isRecordingPathCustom) {
+                                    append("Custom")
+                                } else {
+                                    append("Auto-detected")
+                                }
+                                if (uiState.recordingCount > 0) {
+                                    append(" • ${uiState.recordingCount} recordings")
+                                }
+                            }
+                            
+                            Text(
+                                statusText,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (uiState.isRecordingPathVerified) 
+                                    MaterialTheme.colorScheme.primary 
+                                else 
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     },
                     leadingContent = { 
                         SettingsIcon(Icons.Default.FolderOpen, MaterialTheme.colorScheme.tertiary) 
                     },
                     trailingContent = {
-                        Icon(Icons.Default.ChevronRight, contentDescription = null)
+                        Row {
+                            if (uiState.isRecordingPathCustom) {
+                                // Show reset button if custom path is set
+                                IconButton(onClick = { viewModel.clearCustomRecordingPath() }) {
+                                    Icon(
+                                        Icons.Default.Refresh,
+                                        contentDescription = "Use Auto-Detected",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                            Icon(Icons.Default.ChevronRight, contentDescription = null)
+                        }
                     },
-                    modifier = Modifier.clickable { folderLauncher.launch(null) }
+                    modifier = Modifier.clickable { 
+                        if (uiState.isRecordingPathVerified && uiState.recordingCount > 0) {
+                            showPathWarningDialog = true
+                        } else {
+                            folderLauncher.launch(null)
+                        }
+                    }
                 )
             }
 
@@ -1027,7 +1203,8 @@ fun ExcludedContactsModal(
     excludedPersons: List<com.calltracker.manager.data.db.PersonDataEntity>,
     onAddNumbers: (String) -> Unit,
     onRemoveNumber: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    canAddNew: Boolean = true
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showAddDialog by remember { mutableStateOf(false) }
@@ -1119,6 +1296,35 @@ fun ExcludedContactsModal(
 
             Spacer(Modifier.height(16.dp))
 
+            // Lock banner when adding is disabled
+            if (!canAddNew) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Lock,
+                            null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Adding new exclusions is disabled by your organisation",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+
             if (excludedPersons.isEmpty()) {
                 // Empty State
                 Card(
@@ -1206,15 +1412,17 @@ fun ExcludedContactsModal(
 
             Spacer(Modifier.height(16.dp))
 
-            // Add Button at Bottom
-            Button(
-                onClick = { showAddDialog = true },
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(16.dp)
-            ) {
-                Icon(Icons.Default.Add, null)
-                Spacer(Modifier.width(8.dp))
-                Text("Add Number to Exclude", style = MaterialTheme.typography.titleMedium)
+            // Add Button at Bottom (only when allowed)
+            if (canAddNew) {
+                Button(
+                    onClick = { showAddDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(16.dp)
+                ) {
+                    Icon(Icons.Default.Add, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Add Number to Exclude", style = MaterialTheme.typography.titleMedium)
+                }
             }
 
             Spacer(Modifier.height(32.dp))

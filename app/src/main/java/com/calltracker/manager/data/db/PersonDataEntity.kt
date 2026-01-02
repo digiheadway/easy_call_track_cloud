@@ -35,9 +35,10 @@ data class PersonDataEntity(
     // Exclusion flag
     val isExcluded: Boolean = false,
     
-    // Metadata
+    // Timestamps for sync
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),  // Local update time
+    val serverUpdatedAt: Long? = null,  // Last known server update time (for conflict resolution)
     
     // Sync status
     val needsSync: Boolean = false

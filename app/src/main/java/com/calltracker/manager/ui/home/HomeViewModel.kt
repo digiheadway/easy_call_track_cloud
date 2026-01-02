@@ -70,8 +70,14 @@ data class HomeUiState(
     
     // Sync Status
     val pendingSyncCount: Int = 0,
+    val pendingMetadataCount: Int = 0,
+    val pendingRecordingCount: Int = 0,
+    val pendingNewCallsCount: Int = 0,
+    val pendingMetadataUpdatesCount: Int = 0,
+    val pendingPersonUpdatesCount: Int = 0,
     val isNetworkAvailable: Boolean = true,
-    val isSyncSetup: Boolean = false
+    val isSyncSetup: Boolean = false,
+    val allowPersonalExclusion: Boolean = false
 )
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
@@ -87,34 +93,61 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     init {
         refreshSettings()
         loadRecordingPath()
-        loadDataFromRoom()
         
         // Observe Room DB for real-time updates
         viewModelScope.launch {
             callDataRepository.getAllCallsFlow().collect { calls ->
                 _uiState.update { it.copy(callLogs = calls) }
-                applyFilters()
+                triggerFilter()
             }
         }
         
         viewModelScope.launch {
             callDataRepository.getAllPersonsFlow().collect { persons ->
                 _uiState.update { it.copy(persons = persons) }
-                applyPersonFilters()
+                triggerFilter()
             }
         }
         
-
 
         // Observe Pending Syncs (Calls + Persons)
         viewModelScope.launch {
             callDataRepository.getPendingChangesCountFlow().collect { totalPending ->
                 _uiState.update { it.copy(pendingSyncCount = totalPending) }
-                
-                // If auto-sync is desired and we just got new pending items
-                // we can trigger sync here, but usually it's better to trigger on action.
             }
         }
+
+        // Observe Metadata Sync Queue (Total)
+        viewModelScope.launch {
+            callDataRepository.getPendingMetadataSyncCountFlow().collect { count ->
+                _uiState.update { it.copy(pendingMetadataCount = count) }
+            }
+        }
+
+        // Observe Granular Metadata Queues
+        viewModelScope.launch {
+            callDataRepository.getPendingNewCallsCountFlow().collect { count ->
+                _uiState.update { it.copy(pendingNewCallsCount = count) }
+            }
+        }
+        viewModelScope.launch {
+            callDataRepository.getPendingMetadataUpdatesCountFlow().collect { count ->
+                _uiState.update { it.copy(pendingMetadataUpdatesCount = count) }
+            }
+        }
+        viewModelScope.launch {
+            callDataRepository.getPendingPersonUpdatesCountFlow().collect { count ->
+                _uiState.update { it.copy(pendingPersonUpdatesCount = count) }
+            }
+        }
+
+        // Observe Recording Sync Queue
+        viewModelScope.launch {
+            callDataRepository.getPendingRecordingSyncCountFlow().collect { count ->
+                _uiState.update { it.copy(pendingRecordingCount = count) }
+            }
+        }
+        
         
         // Observe Network Status
         viewModelScope.launch {
@@ -126,14 +159,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
-        
-        // Ensure worker is scheduled (if setup)
-        if (settingsRepository.getOrganisationId().isNotEmpty()) {
-            com.calltracker.manager.worker.UploadWorker.enqueue(application)
-        }
-        
-        // Sync with system call log in background
-        syncFromSystem()
     }
 
     private fun loadRecordingPath() {
@@ -141,7 +166,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun updateRecordingPath(path: String) {
-        recordingRepository.setRecordingPath(path)
+        recordingRepository.setCustomPath(path)
         loadRecordingPath()
         syncFromSystem() // Re-sync to find recordings in new path
     }
@@ -218,7 +243,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
         // Find in file system
         return withContext(Dispatchers.IO) {
-            val path = recordingRepository.findRecording(call.callDate, call.duration, call.phoneNumber)
+            val path = recordingRepository.findRecording(call.callDate, call.duration, call.phoneNumber, call.contactName)
             if (path != null) {
                 // Update cache
                 _uiState.update { 
@@ -291,112 +316,120 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setDateRange(range: DateRange, start: Long? = null, end: Long? = null) {
         _uiState.update { it.copy(dateRange = range, customStartDate = start, customEndDate = end) }
-        applyFilters()
+        triggerFilter()
+    }
+
+    private var filterJob: kotlinx.coroutines.Job? = null
+    private fun triggerFilter() {
+        filterJob?.cancel()
+        filterJob = viewModelScope.launch(Dispatchers.Default) {
+            // Give a tiny delay to debounce rapid updates (e.g. multi-stat updates)
+            kotlinx.coroutines.delay(16)
+            applyFilters()
+            applyPersonFilters()
+        }
     }
 
     fun normalizePhoneNumber(number: String) = callDataRepository.normalizePhoneNumber(number)
 
     private fun applyFilters() {
         val current = _uiState.value
+        if (current.callLogs.isEmpty()) {
+            _uiState.update { it.copy(filteredLogs = emptyList()) }
+            return
+        }
+
         val query = current.searchQuery.lowercase()
+        val labelFilter = current.labelFilter
+        val typeFilter = current.callTypeFilter
+        val connFilter = current.connectedFilter
+        val nFilter = current.notesFilter
+        val cFilter = current.contactsFilter
+        val aFilter = current.attendedFilter
+        val dRange = current.dateRange
+        val cStart = current.customStartDate ?: 0L
+        val cEnd = current.customEndDate ?: Long.MAX_VALUE
+        val tStartDate = current.trackStartDate
+        val simSel = current.simSelection
+
+        // Pre-calculate date boundaries ONCE outside the loop
+        val todayStart = getStartOfDay(0)
+        val threeDaysStart = getStartOfDay(2)
+        val sevenDaysStart = getStartOfDay(6)
+        val fourteenDaysStart = getStartOfDay(13)
+        val thirtyDaysStart = getStartOfDay(29)
+        val thisMonthStart = getStartOfThisMonth()
+        val prevMonthStart = getStartOfPreviousMonth()
+
+        // Cache target sub ID
+        val targetSubId = if (simSel == "Both") null else getSubIdForSim(simSel)
         
-            // SIM Filter
-            val targetSubId = if (current.simSelection == "Both") null else getSubIdForSim(current.simSelection)
-            
-            // Map for quick person lookup
-            val personsMap = current.persons.associateBy { it.phoneNumber }
-            
-            val filtered = current.callLogs.filter { call ->
-                // Label Filter
-                val labelMatch = if (current.labelFilter.isEmpty()) true else {
-                    val person = personsMap[call.phoneNumber] ?: personsMap[normalizePhoneNumber(call.phoneNumber)]
-                    person?.label == current.labelFilter
-                }
-                
-                if (!labelMatch) return@filter false
-
-                // Call Type Filter
-                // Call Type Filter
-                val typeMatch = when (current.callTypeFilter) {
-                    CallTypeFilter.ALL -> true
-                    CallTypeFilter.INCOMING -> call.callType == CallLog.Calls.INCOMING_TYPE
-                    CallTypeFilter.OUTGOING -> call.callType == CallLog.Calls.OUTGOING_TYPE
-                    CallTypeFilter.MISSED -> call.callType == CallLog.Calls.MISSED_TYPE
-                    CallTypeFilter.REJECTED -> call.callType == CallLog.Calls.REJECTED_TYPE
-                }
-                
-                // Connected Filter
-                val connectedMatch = when (current.connectedFilter) {
-                    ConnectedFilter.ALL -> true
-                    ConnectedFilter.CONNECTED -> call.duration > 0
-                    ConnectedFilter.NOT_CONNECTED -> call.duration <= 0
-                }
-                
-                // Notes Filter
-                val notesMatch = when (current.notesFilter) {
-                    NotesFilter.ALL -> true
-                    NotesFilter.WITH_NOTE -> !call.callNote.isNullOrEmpty()
-                    NotesFilter.WITHOUT_NOTE -> call.callNote.isNullOrEmpty()
-                }
-                
-                // Contacts Filter
-                val contactsMatch = when (current.contactsFilter) {
-                    ContactsFilter.ALL -> true
-                    ContactsFilter.IN_CONTACTS -> !call.contactName.isNullOrEmpty()
-                    ContactsFilter.NOT_IN_CONTACTS -> call.contactName.isNullOrEmpty()
-                }
-                
-                // Attended Filter
-                val attendedMatch = when (current.attendedFilter) {
-                    AttendedFilter.ALL -> true
-                    AttendedFilter.ATTENDED -> call.duration > 0
-                    AttendedFilter.NEVER_ATTENDED -> call.duration <= 0
-                }
-
-                // Search Filter
-                val searchMatch = if (query.isEmpty()) true else {
-                    call.phoneNumber.contains(query) || 
-                    (call.contactName?.lowercase()?.contains(query) == true) ||
-                    (call.callNote?.lowercase()?.contains(query) == true)
-                }
-
-                // SIM Filter logic
-                val simMatch = if (current.simSelection == "Both") true else {
-                    if (targetSubId != null) {
-                        call.subscriptionId == targetSubId
-                    } else {
-                        false
-                    }
-                }
-
-                // Date Range Filter
-                val dateRangeMatch = when (current.dateRange) {
-                    DateRange.TODAY -> call.callDate >= getStartOfDay(0)
-                    DateRange.LAST_3_DAYS -> call.callDate >= getStartOfDay(2)
-                    DateRange.LAST_7_DAYS -> call.callDate >= getStartOfDay(6)
-                    DateRange.LAST_14_DAYS -> call.callDate >= getStartOfDay(13)
-                    DateRange.LAST_30_DAYS -> call.callDate >= getStartOfDay(29)
-                    DateRange.THIS_MONTH -> call.callDate >= getStartOfThisMonth()
-                    DateRange.PREVIOUS_MONTH -> {
-                        val start = getStartOfPreviousMonth()
-                        val end = getStartOfThisMonth()
-                        call.callDate in start until end
-                    }
-                    DateRange.CUSTOM -> {
-                        val start = current.customStartDate ?: 0L
-                        val end = (current.customEndDate ?: Long.MAX_VALUE) 
-                        call.callDate in start..end
-                    }
-                    DateRange.ALL -> true
-                }
-                
-                // Old Settings Date Filter (keep as additional constraint if needed, or replace)
-                val trackDateMatch = if (current.trackStartDate > 0) {
-                    call.callDate >= current.trackStartDate
-                } else true
-                
-                typeMatch && connectedMatch && notesMatch && contactsMatch && attendedMatch && searchMatch && simMatch && dateRangeMatch && trackDateMatch
+        // Map for quick person lookup
+        val personsMap = current.persons.associateBy { it.phoneNumber }
+        
+        val filtered = current.callLogs.filter { call ->
+            // Date Range Filter (Most restrictive/fastest first)
+            val dateRangeMatch = when (dRange) {
+                DateRange.TODAY -> call.callDate >= todayStart
+                DateRange.LAST_3_DAYS -> call.callDate >= threeDaysStart
+                DateRange.LAST_7_DAYS -> call.callDate >= sevenDaysStart
+                DateRange.LAST_14_DAYS -> call.callDate >= fourteenDaysStart
+                DateRange.LAST_30_DAYS -> call.callDate >= thirtyDaysStart
+                DateRange.THIS_MONTH -> call.callDate >= thisMonthStart
+                DateRange.PREVIOUS_MONTH -> call.callDate in prevMonthStart until thisMonthStart
+                DateRange.CUSTOM -> call.callDate in cStart..cEnd
+                DateRange.ALL -> true
             }
+            if (!dateRangeMatch) return@filter false
+
+            // Track date
+            if (tStartDate > 0 && call.callDate < tStartDate) return@filter false
+
+            // Label Filter
+            if (labelFilter.isNotEmpty()) {
+                val person = personsMap[call.phoneNumber] ?: personsMap[normalizePhoneNumber(call.phoneNumber)]
+                if (person?.label != labelFilter) return@filter false
+            }
+
+            // Call Type Filter
+            val typeMatch = when (typeFilter) {
+                CallTypeFilter.ALL -> true
+                CallTypeFilter.INCOMING -> call.callType == CallLog.Calls.INCOMING_TYPE
+                CallTypeFilter.OUTGOING -> call.callType == CallLog.Calls.OUTGOING_TYPE
+                CallTypeFilter.MISSED -> call.callType == CallLog.Calls.MISSED_TYPE
+                CallTypeFilter.REJECTED -> call.callType == CallLog.Calls.REJECTED_TYPE
+            }
+            if (!typeMatch) return@filter false
+            
+            // Connected/Attended Filter (duration based)
+            val durationMatch = when {
+                connFilter == ConnectedFilter.CONNECTED || aFilter == AttendedFilter.ATTENDED -> call.duration > 0
+                connFilter == ConnectedFilter.NOT_CONNECTED || aFilter == AttendedFilter.NEVER_ATTENDED -> call.duration <= 0
+                else -> true
+            }
+            if (!durationMatch) return@filter false
+            
+            // Notes Filter
+            if (nFilter == NotesFilter.WITH_NOTE && call.callNote.isNullOrEmpty()) return@filter false
+            if (nFilter == NotesFilter.WITHOUT_NOTE && !call.callNote.isNullOrEmpty()) return@filter false
+            
+            // Contacts Filter
+            if (cFilter == ContactsFilter.IN_CONTACTS && call.contactName.isNullOrEmpty()) return@filter false
+            if (cFilter == ContactsFilter.NOT_IN_CONTACTS && !call.contactName.isNullOrEmpty()) return@filter false
+
+            // SIM Filter
+            if (targetSubId != null && call.subscriptionId != targetSubId) return@filter false
+
+            // Search Filter (last as it's string based)
+            if (query.isNotEmpty()) {
+                val matches = call.phoneNumber.contains(query) || 
+                              (call.contactName?.lowercase()?.contains(query) == true) ||
+                              (call.callNote?.lowercase()?.contains(query) == true)
+                if (!matches) return@filter false
+            }
+
+            true
+        }
         
         _uiState.update { it.copy(filteredLogs = filtered) }
     }
@@ -451,6 +484,27 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun savePersonName(phoneNumber: String, name: String) {
+        viewModelScope.launch {
+            callDataRepository.updatePersonName(phoneNumber, name.ifEmpty { null })
+            syncNow()
+        }
+    }
+    
+    fun updateReviewed(compositeId: String, reviewed: Boolean) {
+        viewModelScope.launch {
+            callDataRepository.updateReviewed(compositeId, reviewed)
+            syncNow()
+        }
+    }
+
+    fun markAllCallsReviewed(phoneNumber: String) {
+        viewModelScope.launch {
+            callDataRepository.markAllCallsReviewed(phoneNumber)
+            syncNow()
+        }
+    }
+
     // ============================================
     // SYNC STATUS
     // ============================================
@@ -469,7 +523,22 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun syncNow() {
-        com.calltracker.manager.worker.UploadWorker.runNow(getApplication())
+        val application = getApplication<android.app.Application>()
+        com.calltracker.manager.worker.CallSyncWorker.runNow(application)
+        com.calltracker.manager.worker.RecordingUploadWorker.runNow(application)
+    }
+
+    /**
+     * Look for pending sync again and check server for updates
+     * This is a "Force Refresh & Sync"
+     */
+    fun fullSync() {
+        viewModelScope.launch {
+            // First refresh local scan from system
+            callDataRepository.syncFromSystemCallLog()
+            // Then trigger workers
+            syncNow()
+        }
     }
 
     // ============================================
@@ -489,16 +558,19 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val whatsappPreference = settingsRepository.getWhatsappPreference()
         val orgId = settingsRepository.getOrganisationId()
         val isSyncSetup = orgId.isNotEmpty()
+        val allowPersonalExclusion = settingsRepository.isAllowPersonalExclusion()
         
         if (simSelection != _uiState.value.simSelection || 
             trackStartDate != _uiState.value.trackStartDate ||
             whatsappPreference != _uiState.value.whatsappPreference ||
-            isSyncSetup != _uiState.value.isSyncSetup) {
+            isSyncSetup != _uiState.value.isSyncSetup ||
+            allowPersonalExclusion != _uiState.value.allowPersonalExclusion) {
             _uiState.update { it.copy(
                 simSelection = simSelection, 
                 trackStartDate = trackStartDate,
                 whatsappPreference = whatsappPreference,
-                isSyncSetup = isSyncSetup
+                isSyncSetup = isSyncSetup,
+                allowPersonalExclusion = allowPersonalExclusion
             ) }
             applyFilters()
         }

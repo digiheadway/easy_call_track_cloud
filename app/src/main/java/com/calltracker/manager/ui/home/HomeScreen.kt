@@ -58,6 +58,8 @@ import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
+import com.calltracker.manager.ui.common.SyncQueueModal
+import com.calltracker.manager.ui.common.SyncQueueItem
 
 // ============================================
 // CALLS SCREEN (Individual call logs)
@@ -95,7 +97,7 @@ fun CallsScreen(
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) {
-        viewModel.syncFromSystem()
+        // Just refresh Room data if permissions granted, background sync will handle the rest
     }
 
     // Audio Picker
@@ -113,7 +115,8 @@ fun CallsScreen(
     }
 
     com.calltracker.manager.ui.settings.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-        viewModel.syncFromSystem()
+        // No auto-sync here to avoid lag. 
+        // Sync is handled by workers triggered by call events or manual pull-to-refresh.
     }
 
     LaunchedEffect(Unit) {
@@ -192,11 +195,26 @@ fun CallsScreen(
             isFilterActive = uiState.isFiltersVisible
         )
         
+        var showSyncQueue by remember { mutableStateOf(false) }
+        
+        if (showSyncQueue) {
+            SyncQueueModal(
+                pendingNewCalls = uiState.pendingNewCallsCount,
+                pendingRelatedData = uiState.pendingMetadataUpdatesCount + uiState.pendingPersonUpdatesCount,
+                pendingRecordings = uiState.pendingRecordingCount,
+                onSyncAll = viewModel::fullSync,
+                onDismiss = { showSyncQueue = false }
+            )
+        }
+
         // Sync Status Strip
         SyncStatusStrip(
             pendingCount = uiState.pendingSyncCount,
+            pendingMetadata = uiState.pendingMetadataCount,
+            pendingRecordings = uiState.pendingRecordingCount,
             isNetworkAvailable = uiState.isNetworkAvailable,
-            onSyncNow = viewModel::syncNow
+            onSyncNow = viewModel::syncNow,
+            onShowQueue = { showSyncQueue = true }
         )
         
         // Expandable Search Row
@@ -288,7 +306,8 @@ fun CallsScreen(
                     onAttachRecording = { 
                         attachTarget = it
                         audioPickerLauncher.launch(arrayOf("audio/*"))
-                    }
+                    },
+                    canExclude = uiState.allowPersonalExclusion || !uiState.isSyncSetup
                 )
             }
         }
@@ -397,7 +416,7 @@ fun PersonsScreen(
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) {
-        viewModel.syncFromSystem()
+        // Just refresh Room data if permissions granted, background sync will handle the rest
     }
 
     // Audio Picker
@@ -415,7 +434,8 @@ fun PersonsScreen(
     }
 
     com.calltracker.manager.ui.settings.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-        viewModel.syncFromSystem()
+        // No auto-sync here to avoid lag. 
+        // Sync is handled by workers triggered by call events or manual pull-to-refresh.
     }
 
     LaunchedEffect(Unit) {
@@ -483,11 +503,26 @@ fun PersonsScreen(
             isFilterActive = uiState.isFiltersVisible
         )
         
+        var showSyncQueue by remember { mutableStateOf(false) }
+        
+        if (showSyncQueue) {
+            SyncQueueModal(
+                pendingNewCalls = uiState.pendingNewCallsCount,
+                pendingRelatedData = uiState.pendingMetadataUpdatesCount + uiState.pendingPersonUpdatesCount,
+                pendingRecordings = uiState.pendingRecordingCount,
+                onSyncAll = viewModel::fullSync,
+                onDismiss = { showSyncQueue = false }
+            )
+        }
+
         // Sync Status Strip
         SyncStatusStrip(
             pendingCount = uiState.pendingSyncCount,
+            pendingMetadata = uiState.pendingMetadataCount,
+            pendingRecordings = uiState.pendingRecordingCount,
             isNetworkAvailable = uiState.isNetworkAvailable,
-            onSyncNow = viewModel::syncNow
+            onSyncNow = viewModel::syncNow,
+            onShowQueue = { showSyncQueue = true }
         )
         
         // Expandable Search Row
@@ -576,7 +611,8 @@ fun PersonsScreen(
                     onAttachRecording = { 
                         attachTarget = it
                         audioPickerLauncher.launch(arrayOf("audio/*"))
-                    }
+                    },
+                    canExclude = uiState.allowPersonalExclusion || !uiState.isSyncSetup
                 )
             }
         }
@@ -643,15 +679,18 @@ fun PersonsList(
     whatsappPreference: String,
     onExclude: (String) -> Unit,
     onViewMoreClick: (PersonGroup) -> Unit,
-    onAttachRecording: (CallDataEntity) -> Unit
+    onAttachRecording: (CallDataEntity) -> Unit,
+    canExclude: Boolean = true
 ) {
     var expandedNumber by remember { mutableStateOf<String?>(null) }
     var excludeTarget by remember { mutableStateOf<PersonGroup?>(null) }
+    var longPressTarget by remember { mutableStateOf<PersonGroup?>(null) }
     
     // Note Dialog States
     var personNoteTarget by remember { mutableStateOf<PersonGroup?>(null) }
     var callNoteTarget by remember { mutableStateOf<CallDataEntity?>(null) }
     var labelTarget by remember { mutableStateOf<PersonGroup?>(null) }
+    var nameTarget by remember { mutableStateOf<PersonGroup?>(null) }
 
     if (personNoteTarget != null) {
         NoteDialog(
@@ -691,6 +730,79 @@ fun PersonsList(
             onSave = { label ->
                 labelTarget?.let { viewModel.savePersonLabel(it.number, label) }
                 labelTarget = null
+            }
+        )
+    }
+
+    // Set Name Dialog
+    if (nameTarget != null) {
+        NoteDialog(
+            title = "Set Name",
+            initialNote = nameTarget?.name ?: "",
+            label = "Name for this contact",
+            buttonText = "Save Name",
+            onDismiss = { nameTarget = null },
+            onSave = { name ->
+                nameTarget?.let { viewModel.savePersonName(it.number, name) }
+                nameTarget = null
+            }
+        )
+    }
+
+    // Long Press Menu
+    if (longPressTarget != null) {
+        AlertDialog(
+            onDismissRequest = { longPressTarget = null },
+            title = { Text(cleanNumber(longPressTarget!!.number)) },
+            text = {
+                Column {
+                    // Set Name Option
+                    TextButton(
+                        onClick = {
+                            nameTarget = longPressTarget
+                            longPressTarget = null
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Set Name", modifier = Modifier.weight(1f), textAlign = TextAlign.Start)
+                    }
+                    
+                    // Exclude Option
+                    if (canExclude) {
+                        TextButton(
+                            onClick = {
+                                excludeTarget = longPressTarget
+                                longPressTarget = null
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                Icons.Default.Block,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Exclude from Tracking",
+                                modifier = Modifier.weight(1f),
+                                textAlign = TextAlign.Start,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { longPressTarget = null }) {
+                    Text("Cancel")
+                }
             }
         )
     }
@@ -736,7 +848,7 @@ fun PersonsList(
                     expandedNumber = if (isExpanded) null else person.number
                 },
                 onLongClick = {
-                    excludeTarget = person
+                    longPressTarget = person
                 },
                 onCallClick = {
                     try {
@@ -808,7 +920,8 @@ fun PersonsList(
                 },
                 onViewMoreClick = { onViewMoreClick(person) },
                 onLabelClick = { labelTarget = person },
-                onAttachRecording = onAttachRecording
+                onAttachRecording = onAttachRecording,
+                onMarkAllReviewed = { viewModel.markAllCallsReviewed(person.number) }
             )
         }
     }
@@ -833,7 +946,8 @@ fun PersonCard(
     onAddToCrmClick: () -> Unit,
     onViewMoreClick: () -> Unit,
     onLabelClick: () -> Unit,
-    onAttachRecording: (CallDataEntity) -> Unit
+    onAttachRecording: (CallDataEntity) -> Unit,
+    onMarkAllReviewed: () -> Unit
 ) {
     ElevatedCard(
         modifier = Modifier
@@ -890,14 +1004,28 @@ fun PersonCard(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = person.name ?: cleanNumber(person.number),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
+                        val allReviewed = person.calls.isNotEmpty() && person.calls.all { it.reviewed }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.weight(1f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = person.name ?: cleanNumber(person.number),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (allReviewed) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "All Reviewed",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = Color(0xFF4CAF50)
+                                )
+                            }
+                        }
                         Spacer(Modifier.width(8.dp))
                         // Call Count Chip
                         Surface(
@@ -997,6 +1125,15 @@ fun PersonCard(
                     ActionIconButton(icon = Icons.Default.PersonAddAlt, label = "Contact", onClick = onAddContactClick)
                     ActionIconButton(icon = Icons.Default.AppRegistration, label = "CRM", onClick = onAddToCrmClick)
                     ActionIconButton(icon = Icons.Default.Label, label = "Label", onClick = onLabelClick)
+                    
+                    // Mark All Reviewed - check if all calls are already reviewed
+                    val allReviewed = person.calls.all { it.reviewed }
+                    ActionIconButton(
+                        icon = if (allReviewed) Icons.Default.CheckCircle else Icons.Default.PlaylistAddCheck,
+                        label = if (allReviewed) "All Done" else "Review All",
+                        onClick = onMarkAllReviewed,
+                        tint = if (allReviewed) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -1864,6 +2001,8 @@ fun InteractionRow(
                     .background(
                         when (call.callType) {
                             android.provider.CallLog.Calls.MISSED_TYPE -> Color(0xFFFFEBEE)
+                            5 -> Color(0xFFFFEBEE) // Rejected
+                            6 -> Color(0xFFECEFF1) // Blocked
                             else -> MaterialTheme.colorScheme.surfaceVariant
                         }
                     ),
@@ -1874,12 +2013,16 @@ fun InteractionRow(
                         android.provider.CallLog.Calls.INCOMING_TYPE -> Icons.AutoMirrored.Filled.CallReceived
                         android.provider.CallLog.Calls.OUTGOING_TYPE -> Icons.AutoMirrored.Filled.CallMade
                         android.provider.CallLog.Calls.MISSED_TYPE -> Icons.AutoMirrored.Filled.CallMissed
+                        5 -> Icons.Default.PhoneDisabled // Rejected
+                        6 -> Icons.Default.Block // Blocked
                         else -> Icons.Default.Phone
                     },
                     contentDescription = null,
                     modifier = Modifier.size(14.dp),
                     tint = when (call.callType) {
                         android.provider.CallLog.Calls.MISSED_TYPE -> Color(0xFFF44336)
+                        5 -> Color(0xFFF44336) // Rejected
+                        6 -> Color(0xFF607D8B) // Blocked
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     }
                 )
@@ -1943,6 +2086,8 @@ fun InteractionRow(
                                     android.provider.CallLog.Calls.INCOMING_TYPE -> "Incoming"
                                     android.provider.CallLog.Calls.OUTGOING_TYPE -> "Outgoing"
                                     android.provider.CallLog.Calls.MISSED_TYPE -> "Missed"
+                                    5 -> "Rejected"
+                                    6 -> "Blocked"
                                     else -> "Call"
                                 }
                                 val timeStr = SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()).format(java.util.Date(call.callDate))
@@ -2137,12 +2282,16 @@ fun CallLogList(
     whatsappPreference: String,
     context: Context,
     onViewMoreClick: (PersonGroup) -> Unit,
-    onAttachRecording: (CallDataEntity) -> Unit
+    onAttachRecording: (CallDataEntity) -> Unit,
+    canExclude: Boolean = true
 ) {
     // Note Dialog States
     var callNoteTarget by remember { mutableStateOf<CallDataEntity?>(null) }
     var personNoteTarget by remember { mutableStateOf<CallDataEntity?>(null) }
     var labelTarget by remember { mutableStateOf<CallDataEntity?>(null) }
+    var nameTarget by remember { mutableStateOf<CallDataEntity?>(null) }
+    var longPressTarget by remember { mutableStateOf<CallDataEntity?>(null) }
+    var excludeTarget by remember { mutableStateOf<CallDataEntity?>(null) }
 
     if (callNoteTarget != null) {
         NoteDialog(
@@ -2186,11 +2335,83 @@ fun CallLogList(
         )
     }
 
+    // Set Name Dialog
+    if (nameTarget != null) {
+        NoteDialog(
+            title = "Set Name",
+            initialNote = personGroupsMap[nameTarget?.phoneNumber]?.name ?: "",
+            label = "Name for this contact",
+            buttonText = "Save Name",
+            onDismiss = { nameTarget = null },
+            onSave = { name ->
+                nameTarget?.let { viewModel.savePersonName(it.phoneNumber, name) }
+                nameTarget = null
+            }
+        )
+    }
+
+    // Long Press Menu
+    if (longPressTarget != null) {
+        AlertDialog(
+            onDismissRequest = { longPressTarget = null },
+            title = { Text(cleanNumber(longPressTarget!!.phoneNumber)) },
+            text = {
+                Column {
+                    // Set Name Option
+                    TextButton(
+                        onClick = {
+                            nameTarget = longPressTarget
+                            longPressTarget = null
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Set Name", modifier = Modifier.weight(1f), textAlign = TextAlign.Start)
+                    }
+                    
+                    // Exclude Option
+                    if (canExclude) {
+                        TextButton(
+                            onClick = {
+                                excludeTarget = longPressTarget
+                                longPressTarget = null
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                Icons.Default.Block,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Exclude from Tracking",
+                                modifier = Modifier.weight(1f),
+                                textAlign = TextAlign.Start,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { longPressTarget = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     // Expanded State
     var expandedLogId by remember { mutableStateOf<String?>(null) }
     
     // Exclusion Dialog State
-    var excludeTarget by remember { mutableStateOf<CallDataEntity?>(null) }
     if (excludeTarget != null) {
         AlertDialog(
             onDismissRequest = { excludeTarget = null },
@@ -2228,7 +2449,7 @@ fun CallLogList(
                     uniqueCalls = headerLogs.distinctBy { it.phoneNumber }.size
                 )
             }
-            items(headerLogs) { log ->
+            items(headerLogs, key = { it.compositeId }) { log ->
                 val isExpanded = expandedLogId == log.compositeId
                 // Trigger check on expand
                 if (isExpanded) {
@@ -2252,13 +2473,15 @@ fun CallLogList(
                         expandedLogId = if (isExpanded) null else log.compositeId
                     },
                     onLongClick = {
-                        excludeTarget = log
+                        longPressTarget = log
                     },
                     onPlayClick = { path -> 
                         val callTypeStr = when (log.callType) {
                             android.provider.CallLog.Calls.INCOMING_TYPE -> "Incoming"
                             android.provider.CallLog.Calls.OUTGOING_TYPE -> "Outgoing"
                             android.provider.CallLog.Calls.MISSED_TYPE -> "Missed"
+                            5 -> "Rejected"
+                            6 -> "Blocked"
                             else -> "Call"
                         }
                         val timeStr = SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()).format(java.util.Date(log.callDate))
@@ -2347,7 +2570,8 @@ fun CallLogList(
                     audioPlayer = audioPlayer,
                     personGroup = personGroupsMap[log.phoneNumber],
                     onLabelClick = { labelTarget = log },
-                    onAttachRecording = onAttachRecording
+                    onAttachRecording = onAttachRecording,
+                    onReviewedToggle = { viewModel.updateReviewed(log.compositeId, !log.reviewed) }
                 )
             }
         }
@@ -2454,13 +2678,10 @@ fun CallLogItem(
     audioPlayer: AudioPlayer,
     personGroup: PersonGroup?,
     onLabelClick: () -> Unit,
-    onAttachRecording: (CallDataEntity) -> Unit
+    onAttachRecording: (CallDataEntity) -> Unit,
+    onReviewedToggle: () -> Unit
 ) {
-    val isPlaying by audioPlayer.isPlaying.collectAsState()
-    val progress by audioPlayer.progress.collectAsState()
     val currentFile by audioPlayer.currentFile.collectAsState()
-    val currentPos by audioPlayer.currentPosition.collectAsState()
-    val duration by audioPlayer.duration.collectAsState()
     
     // Check if this recording is currently playing
     val isThisPlaying = currentFile == recordingPath && recordingPath != null
@@ -2497,6 +2718,8 @@ fun CallLogItem(
                             android.provider.CallLog.Calls.INCOMING_TYPE -> Icons.AutoMirrored.Filled.CallReceived
                             android.provider.CallLog.Calls.OUTGOING_TYPE -> Icons.AutoMirrored.Filled.CallMade
                             android.provider.CallLog.Calls.MISSED_TYPE -> Icons.AutoMirrored.Filled.CallMissed
+                            5 -> Icons.Default.PhoneDisabled // Rejected
+                            6 -> Icons.Default.Block // Blocked
                             else -> Icons.Default.Phone
                         },
                         contentDescription = null,
@@ -2511,13 +2734,26 @@ fun CallLogItem(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.Center
                 ) {
-                    // Row 1: Contact Name / Number
-                    Text(
-                        text = log.contactName ?: cleanNumber(log.phoneNumber),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    // Row 1: Contact Name / Number with Reviewed Checkmark
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = personGroup?.name ?: log.contactName ?: cleanNumber(log.phoneNumber),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        if (log.reviewed) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = "Reviewed",
+                                modifier = Modifier.size(16.dp),
+                                tint = Color(0xFF4CAF50) // Green checkmark
+                            )
+                        }
+                    }
 
                     // Row 2: Duration, Notes (Optional, Multiline wrapping)
                     FlowRow(
@@ -2643,37 +2879,12 @@ fun CallLogItem(
 
             // Inline Player (visible if playing, even if collapsed)
             if (isThisPlaying && !isExpanded) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Slider(
-                        value = progress,
-                        onValueChange = { audioPlayer.seekTo(it) },
-                        modifier = Modifier.weight(1f),
-                        colors = SliderDefaults.colors(
-                            thumbColor = MaterialTheme.colorScheme.primary,
-                            activeTrackColor = MaterialTheme.colorScheme.primary,
-                            inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "${formatTime(currentPos)}/${formatTime(duration)}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        val speed by audioPlayer.speed.collectAsState()
-                        PlaybackSpeedButton(
-                            currentSpeed = speed,
-                            onSpeedChange = { audioPlayer.setPlaybackSpeed(it) }
-                        )
-                    }
-                }
+                PlaybackControls(
+                    audioPlayer = audioPlayer,
+                    recordingPath = recordingPath!!,
+                    isExpanded = false,
+                    log = log
+                )
             }
 
             // Expanded Section
@@ -2744,92 +2955,25 @@ fun CallLogItem(
                         label = "Label",
                         onClick = onLabelClick
                     )
+                    
+                    // Reviewed Toggle
+                    ActionIconButton(
+                        icon = if (log.reviewed) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                        label = if (log.reviewed) "Reviewed" else "Review",
+                        onClick = onReviewedToggle,
+                        tint = if (log.reviewed) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 
                 // Recording Player Row (if recording exists)
                 if (hasRecording && recordingPath != null) {
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Play/Pause Button
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary)
-                                .clickable {
-                                    if (isThisPlaying) {
-                                        audioPlayer.togglePlayPause()
-                                    } else {
-                                        val callTypeStr = when (log.callType) {
-                                            android.provider.CallLog.Calls.INCOMING_TYPE -> "Incoming"
-                                            android.provider.CallLog.Calls.OUTGOING_TYPE -> "Outgoing"
-                                            android.provider.CallLog.Calls.MISSED_TYPE -> "Missed"
-                                            else -> "Call"
-                                        }
-                                        val timeStr = SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()).format(java.util.Date(log.callDate))
-                                        audioPlayer.play(
-                                            recordingPath,
-                                            PlaybackMetadata(
-                                                name = log.contactName,
-                                                phoneNumber = log.phoneNumber,
-                                                callTime = timeStr,
-                                                callType = callTypeStr
-                                            )
-                                        )
-                                    }
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = if (isThisPlaying && isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                contentDescription = "Play/Pause",
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
-                        
-                        Spacer(Modifier.width(8.dp))
-                        
-                        // Seekbar
-                        Slider(
-                            value = if (isThisPlaying) progress else 0f,
-                            onValueChange = { if (isThisPlaying) audioPlayer.seekTo(it) },
-                            modifier = Modifier.weight(1f),
-                            colors = SliderDefaults.colors(
-                                thumbColor = MaterialTheme.colorScheme.primary,
-                                activeTrackColor = MaterialTheme.colorScheme.primary,
-                                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
-                        )
-                        
-                        Spacer(Modifier.width(8.dp))
-                        
-                        // Time Display
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = if (isThisPlaying) {
-                                    "${formatTime(currentPos)}/${formatTime(duration)}"
-                                } else {
-                                    "0:00"
-                                },
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            if (isThisPlaying) {
-                                Spacer(Modifier.width(4.dp))
-                                val speed by audioPlayer.speed.collectAsState()
-                                PlaybackSpeedButton(
-                                    currentSpeed = speed,
-                                    onSpeedChange = { audioPlayer.setPlaybackSpeed(it) }
-                                )
-                            }
-                        }
-                    }
+                    PlaybackControls(
+                        audioPlayer = audioPlayer,
+                        recordingPath = recordingPath,
+                        isExpanded = true,
+                        log = log
+                    )
                 } else if (log.duration > 0) {
                      HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                      Row(
@@ -3141,8 +3285,11 @@ fun EmptyState(
 @Composable
 fun SyncStatusStrip(
     pendingCount: Int,
+    pendingMetadata: Int,
+    pendingRecordings: Int,
     isNetworkAvailable: Boolean,
-    onSyncNow: () -> Unit
+    onSyncNow: () -> Unit,
+    onShowQueue: () -> Unit
 ) {
     AnimatedVisibility(
         visible = pendingCount > 0,
@@ -3151,9 +3298,7 @@ fun SyncStatusStrip(
     ) {
         Surface(
             color = if (isNetworkAvailable) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f) else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.9f),
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(enabled = isNetworkAvailable) { onSyncNow() }
+            modifier = Modifier.fillMaxWidth()
         ) {
             Row(
                 modifier = Modifier
@@ -3161,7 +3306,10 @@ fun SyncStatusStrip(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.weight(1f).clickable(enabled = isNetworkAvailable) { onSyncNow() },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Icon(
                         imageVector = if (isNetworkAvailable) Icons.Default.CloudSync else Icons.Default.CloudOff,
                         contentDescription = null,
@@ -3171,20 +3319,35 @@ fun SyncStatusStrip(
                     Spacer(Modifier.width(8.dp))
                     Text(
                         text = if (isNetworkAvailable) 
-                            "$pendingCount changes pending upload" 
-                            else "No internet: $pendingCount changes pending",
+                            "$pendingCount changes to sync" 
+                            else "No internet: $pendingCount pending",
                         style = MaterialTheme.typography.labelMedium,
                         color = if (isNetworkAvailable) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer
                     )
                 }
                 
-                if (isNetworkAvailable) {
-                    Text(
-                        text = "Sync Now",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (isNetworkAvailable) {
+                        Text(
+                            text = "Sync Now",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.clickable { onSyncNow() }.padding(horizontal = 8.dp)
+                        )
+                    }
+                    
+                    IconButton(
+                        onClick = onShowQueue,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.List,
+                            contentDescription = "Sync Queue",
+                            modifier = Modifier.size(20.dp),
+                            tint = if (isNetworkAvailable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
                 }
             }
         }
@@ -3208,5 +3371,111 @@ fun copyUriToInternalStorage(context: Context, uri: Uri): String? {
     } catch (e: Exception) {
         e.printStackTrace()
         null
+    }
+}
+
+@Composable
+fun PlaybackControls(
+    audioPlayer: AudioPlayer,
+    recordingPath: String,
+    isExpanded: Boolean,
+    log: CallDataEntity
+) {
+    val isPlaying by audioPlayer.isPlaying.collectAsState()
+    val progress by audioPlayer.progress.collectAsState()
+    val currentPos by audioPlayer.currentPosition.collectAsState()
+    val duration by audioPlayer.duration.collectAsState()
+    val currentFile by audioPlayer.currentFile.collectAsState()
+    
+    val isThisPlaying = currentFile == recordingPath
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                start = if (isExpanded) 12.dp else 16.dp, 
+                end = if (isExpanded) 12.dp else 16.dp, 
+                bottom = 8.dp,
+                top = if (isExpanded) 8.dp else 0.dp
+            ),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (isExpanded) {
+            // Play/Pause Button for Expanded view
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
+                    .clickable {
+                        if (isThisPlaying) {
+                            audioPlayer.togglePlayPause()
+                        } else {
+                            val callTypeStr = when (log.callType) {
+                                android.provider.CallLog.Calls.INCOMING_TYPE -> "Incoming"
+                                android.provider.CallLog.Calls.OUTGOING_TYPE -> "Outgoing"
+                                android.provider.CallLog.Calls.MISSED_TYPE -> "Missed"
+                                5 -> "Rejected"
+                                6 -> "Blocked"
+                                else -> "Call"
+                            }
+                            val timeStr = SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()).format(java.util.Date(log.callDate))
+                            audioPlayer.play(
+                                recordingPath,
+                                PlaybackMetadata(
+                                    name = log.contactName,
+                                    phoneNumber = log.phoneNumber,
+                                    callTime = timeStr,
+                                    callType = callTypeStr
+                                )
+                            )
+                        }
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (isThisPlaying && isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = "Play/Pause",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+        }
+
+        // Seekbar
+        Slider(
+            value = if (isThisPlaying) progress else 0f,
+            onValueChange = { if (isThisPlaying) audioPlayer.seekTo(it) },
+            modifier = Modifier.weight(1f),
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        )
+        
+        Spacer(Modifier.width(8.dp))
+        
+        // Time Display
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = if (isThisPlaying) {
+                    "${formatTime(currentPos)}/${formatTime(duration)}"
+                } else {
+                    "0:00"
+                },
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (isThisPlaying) {
+                Spacer(Modifier.width(4.dp))
+                val speed by audioPlayer.speed.collectAsState()
+                PlaybackSpeedButton(
+                    currentSpeed = speed,
+                    onSpeedChange = { audioPlayer.setPlaybackSpeed(it) }
+                )
+            }
+        }
     }
 }
