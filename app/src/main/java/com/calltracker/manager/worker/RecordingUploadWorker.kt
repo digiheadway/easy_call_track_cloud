@@ -151,13 +151,12 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                         continue
                     }
                     
-                    // Compress
-                    callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.COMPRESSING)
-                    Log.d(TAG, "Compressing recording for ${call.compositeId}")
-                    
-                    val compressedFile = File(applicationContext.cacheDir, "compressed_${call.compositeId}.m4a")
-                    val success = AudioCompressor.compressAudio(originalFile, compressedFile)
-                    val fileToUpload = if (success && compressedFile.exists()) compressedFile else originalFile
+                    // Skip compression to avoid MediaCodec crashes on some devices (Oplus) and preventing timeouts
+                    // val compressedFile = File(applicationContext.cacheDir, "compressed_${call.compositeId}.m4a")
+                    // val success = AudioCompressor.compressAudio(originalFile, compressedFile)
+                    // val fileToUpload = if (success && compressedFile.exists()) compressedFile else originalFile
+                    val fileToUpload = originalFile
+                    Log.i(TAG, "Skipping compression for stability. Uploading original file: ${fileToUpload.length()} bytes")
                     
                     // Upload
                     callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.UPLOADING)
@@ -166,9 +165,9 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                     val uploadSuccess = uploadFileInChunks(fileToUpload, call.compositeId)
                     
                     // Cleanup compressed file
-                    if (compressedFile.exists()) {
-                        compressedFile.delete()
-                    }
+                    // if (compressedFile.exists()) {
+                    //    compressedFile.delete()
+                    // }
                     
                     if (uploadSuccess) {
                         callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.COMPLETED)

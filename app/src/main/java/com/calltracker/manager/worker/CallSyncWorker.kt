@@ -69,7 +69,11 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
                     // Check if number is excluded
                     if (settingsRepository.isNumberExcluded(call.phoneNumber)) {
-                        Log.d(TAG, "Skipping excluded number: ${call.phoneNumber}")
+                        Log.d(TAG, "Skipping excluded number: ${call.phoneNumber}. Marking as SYNCED to clear queue.")
+                        // Mark as synced so it doesn't stay in the pending queue
+                        callDataRepository.markMetadataSynced(call.compositeId, System.currentTimeMillis())
+                        // Also ensure recording status is NOT_APPLICABLE
+                        callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.NOT_APPLICABLE)
                         continue
                     }
                     
