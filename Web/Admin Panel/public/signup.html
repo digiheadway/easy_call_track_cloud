@@ -83,7 +83,7 @@
     <!-- Navbar -->
     <nav class="w-full p-6 z-20">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <a href="index.html" class="flex items-center gap-2 group">
+            <a href="/" class="flex items-center gap-2 group">
                 <div
                     class="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-white/10 transition-colors">
                     <i data-feather="arrow-left" class="text-white w-4 h-4"></i>
@@ -105,8 +105,7 @@
                 <p class="text-gray-400">Start your 3-day free trial today</p>
             </div>
 
-            <form class="space-y-4" action="/dashboard/" method="POST">
-
+            <form id="signupForm" class="space-y-4">
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
                     <div class="relative">
@@ -129,24 +128,26 @@
                             class="input-field w-full rounded-xl py-3 pl-10 pr-4 placeholder-gray-500"
                             placeholder="Create a strong password">
                     </div>
-                    <input type="password" id="password"
-                        class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none transition-all text-white placeholder-gray-500"
-                        placeholder="Create a password" required>
                 </div>
 
                 <div>
                     <label for="confirm_password" class="block text-sm font-medium text-gray-300 mb-2">Confirm
                         Password</label>
-                    <input type="password" id="confirm_password"
-                        class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:border-brand-500 focus:ring-1 focus:ring-brand-500 outline-none transition-all text-white placeholder-gray-500"
-                        placeholder="Confirm your password" required>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i data-feather="lock" class="text-gray-500 w-5 h-5"></i>
+                        </div>
+                        <input type="password" id="confirm_password" name="confirm_password" required
+                            class="input-field w-full rounded-xl py-3 pl-10 pr-4 placeholder-gray-500"
+                            placeholder="Confirm your password">
+                    </div>
                 </div>
 
                 <div id="errorMessage"
                     class="hidden text-red-500 text-sm p-3 bg-red-500/10 border border-red-500/20 rounded-lg"></div>
 
                 <div class="flex items-start gap-3 mt-2">
-                    <input type="checkbox" id="terms"
+                    <input type="checkbox" id="terms" required
                         class="mt-1 w-4 h-4 rounded border-gray-600 text-brand-500 focus:ring-brand-500 bg-white/5">
                     <label for="terms" class="text-sm text-gray-400">
                         I agree to the <a href="#" class="text-brand-400 hover:text-brand-300">Terms of Service</a> and
@@ -155,69 +156,10 @@
                 </div>
 
                 <button type="submit" id="submitBtn"
-                    class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-brand-500/20 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed">
+                    class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-brand-500/25 mt-4">
                     Create Account
                 </button>
             </form>
-
-            <script>
-                const signupForm = document.getElementById('signupForm');
-                const errorMessage = document.getElementById('errorMessage');
-                const submitBtn = document.getElementById('submitBtn');
-                const BASE_URL = 'https://calltrack.mylistings.in/api';
-
-                signupForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-
-                    const email = document.getElementById('email').value;
-                    const password = document.getElementById('password').value;
-                    const confirmPassword = document.getElementById('confirm_password').value;
-
-                    // Reset error
-                    errorMessage.classList.add('hidden');
-                    errorMessage.textContent = '';
-
-                    if (password !== confirmPassword) {
-                        errorMessage.textContent = 'Passwords do not match';
-                        errorMessage.classList.remove('hidden');
-                        return;
-                    }
-
-                    // Set loading state
-                    submitBtn.disabled = true;
-                    submitBtn.textContent = 'Creating Account...';
-
-                    try {
-                        const response = await fetch(`${BASE_URL}/auth.php?action=signup`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ email, password })
-                        });
-
-                        const data = await response.json();
-
-                        if (data.status === false) {
-                            throw new Error(data.message || 'Signup failed');
-                        }
-
-                        // Success
-                        if (data.data && data.data.token) {
-                            localStorage.setItem('cc_token', data.data.token);
-                            window.location.href = '/dashboard/';
-                        } else {
-                            throw new Error('Invalid response from server');
-                        }
-
-                    } catch (err) {
-                        errorMessage.textContent = err.message || 'Something went wrong. Please try again.';
-                        errorMessage.classList.remove('hidden');
-                        submitBtn.disabled = false;
-                        submitBtn.textContent = 'Create Account';
-                    }
-                });
-            </script>
 
             <div class="mt-8 text-center sm:hidden">
                 <p class="text-gray-400 text-sm">
@@ -228,7 +170,68 @@
             </div>
         </div>
     </main>
-    <script>feather.replace()</script>
+
+    <script>
+        feather.replace();
+
+        const signupForm = document.getElementById('signupForm');
+        const errorMessage = document.getElementById('errorMessage');
+        const submitBtn = document.getElementById('submitBtn');
+        const BASE_URL = 'https://calltrack.mylistings.in/api';
+
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+
+            // Reset error
+            errorMessage.classList.add('hidden');
+            errorMessage.textContent = '';
+
+            if (password !== confirmPassword) {
+                errorMessage.textContent = 'Passwords do not match';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            // Set loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'Creating account... <i data-feather="loader" class="animate-spin w-4 h-4 ml-2"></i>';
+            feather.replace();
+
+            try {
+                const response = await fetch(`${BASE_URL}/auth.php?action=signup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (data.status === false) {
+                    throw new Error(data.message || 'Signup failed');
+                }
+
+                // Success
+                if (data.data && data.data.token) {
+                    localStorage.setItem('cc_token', data.data.token);
+                    window.location.href = '/dashboard/';
+                } else {
+                    throw new Error('Invalid response from server');
+                }
+
+            } catch (err) {
+                errorMessage.textContent = err.message || 'Something went wrong. Please try again.';
+                errorMessage.classList.remove('hidden');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Account';
+            }
+        });
+    </script>
 </body>
 
 </html>

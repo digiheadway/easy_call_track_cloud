@@ -1,0 +1,21 @@
+# Enable RewriteEngine
+RewriteEngine On
+
+# Set the base for rewrites
+RewriteBase /
+
+# If the request is for an existing file, serve it directly
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# If the request is for an existing directory, serve it directly
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# For any request starting with /dashboard, serve dashboard/index.html
+# This allows React Router to handle the client-side routing
+RewriteRule ^dashboard(/.*)?$ dashboard/index.html [L]
+
+# For root-level routes that don't match existing files, serve the main index.html
+# (This handles the static homepage)
+RewriteRule ^$ index.html [L]
