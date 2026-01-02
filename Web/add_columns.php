@@ -27,9 +27,27 @@ try {
         $likedMsg = "'is_liked' column exists.";
     }
 
+    // 3. Check for 'device_id' in employees
+    $checkDeviceId = Database::getOne("SHOW COLUMNS FROM employees LIKE 'device_id'");
+    if (!$checkDeviceId) {
+        Database::execute("ALTER TABLE employees ADD COLUMN device_id VARCHAR(255) DEFAULT NULL");
+        $deviceMsg = "Added 'device_id' column.";
+    } else {
+        $deviceMsg = "'device_id' column exists.";
+    }
+
+    // 4. Check for 'last_sync' in employees
+    $checkLastSync = Database::getOne("SHOW COLUMNS FROM employees LIKE 'last_sync'");
+    if (!$checkLastSync) {
+        Database::execute("ALTER TABLE employees ADD COLUMN last_sync DATETIME DEFAULT NULL");
+        $syncMsg = "Added 'last_sync' column.";
+    } else {
+        $syncMsg = "'last_sync' column exists.";
+    }
+
     echo json_encode([
         "status" => true, 
-        "message" => "Migration complete. $labelsMsg $likedMsg"
+        "message" => "Migration complete. $labelsMsg $likedMsg $deviceMsg $syncMsg"
     ]);
 
 } catch (Exception $e) {

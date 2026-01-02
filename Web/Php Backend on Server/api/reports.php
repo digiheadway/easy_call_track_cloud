@@ -91,8 +91,6 @@ $response = [];
 // 1. Employee Performance Report
 // ---------------------------------------------------------
 if ($reportType === 'all' || $reportType === 'employee_performance') {
-    // Note: We use LEFT JOIN calls so we still get employees even if they have no calls in the period
-    // Filtering by employee_id if provided is done in the WHERE clause of the sub-selection or main query
     
     $employeeFilter = "";
     if (isset($_GET['employeeId']) && $_GET['employeeId'] !== 'all' && $_GET['employeeId'] !== '') {
@@ -109,22 +107,20 @@ if ($reportType === 'all' || $reportType === 'employee_performance') {
             SUM(CASE WHEN (c.type = 'Outbound' OR c.type = 'Outgoing') THEN 1 ELSE 0 END) as outbound_calls,
             SUM(CASE WHEN (c.type = 'Outbound' OR c.type = 'Outgoing') AND c.duration > 0 THEN 1 ELSE 0 END) as outbound_connected,
             SUM(c.duration) as total_duration,
-            AVG(NULLIF(c.duration, 0)) as avg_handle_time, -- Avg duration of non-zero calls
+            AVG(NULLIF(c.duration, 0)) as avg_handle_time,
             AVG(c.duration) as avg_duration_all
         FROM employees e
-        LEFT JOIN calls c ON e.id = c.employee_id AND c.org_id = '$orgId' $dateFilter
-        WHERE e.org_id = '$orgId' AND e.status = 'active' $employeeFilter
+        LEFT JOIN calls c ON e.id = c.employee_id $dateFilter 
+        WHERE UPPER(e.org_id) = UPPER('$orgId') AND e.status = 'active' $employeeFilter
         GROUP BY e.id, e.name
         ORDER BY total_calls DESC
     ");
     
     $performanceData = [];
     foreach ($employees as $emp) {
-        // Connection Rate: Outbound Connected / Total Outbound
         $outboundTotal = (int)$emp['outbound_calls'];
         $outboundConnected = (int)$emp['outbound_connected'];
         $connectionRate = $outboundTotal > 0 ? round(($outboundConnected / $outboundTotal) * 100, 1) : 0;
-        
         $aht = (float)$emp['avg_handle_time'];
 
         $performanceData[] = [
@@ -150,10 +146,6 @@ if ($reportType === 'all' || $reportType === 'employee_performance') {
 // ---------------------------------------------------------
 if ($reportType === 'all' || $reportType === 'missed_opportunities') {
     
-    // Get missed inbound calls
-    // Optimally, we would check if they were called back.
-    // For "Unreturned", we look for an outbound call to the same number AFTER the missed call time.
-    
     $missedCalls = Database::select("
         SELECT 
             c.id,
@@ -164,7 +156,7 @@ if ($reportType === 'all' || $reportType === 'missed_opportunities') {
             e.name as employee_name
         FROM calls c
         LEFT JOIN employees e ON c.employee_id = e.id
-        WHERE c.org_id = '$orgId' 
+        WHERE UPPER(c.org_id) = UPPER('$orgId')
         AND (c.type = 'Inbound' OR c.type = 'Incoming') 
         AND c.duration = 0 
         $dateFilter
@@ -177,12 +169,10 @@ if ($reportType === 'all' || $reportType === 'missed_opportunities') {
         $phone = $missed['caller_phone'];
         $missedTime = $missed['call_time'];
         
-        // Check for callback
-        // Look for ANY outbound call to this phone number that happened AFTER the missed call
         $callback = Database::getOne("
             SELECT call_time, employee_id, duration 
             FROM calls 
-            WHERE org_id = '$orgId' 
+            WHERE UPPER(org_id) = UPPER('$orgId')
             AND caller_phone = '$phone' 
             AND (type = 'Outbound' OR type = 'Outgoing')
             AND call_time > '$missedTime'
@@ -217,24 +207,17 @@ if ($reportType === 'all' || $reportType === 'missed_opportunities') {
 // ---------------------------------------------------------
 if ($reportType === 'all' || $reportType === 'operational_insights') {
     
-    // Peak Activity Times (Heatmap style logic)
-    // Group by Day of Week and Hour
-    // We'll just return data suitable for a heatmap: [{day: 1, hour: 14, count: 5}, ...]
-    
-    // Note: DAYOFWEEK returns 1 for Sunday, 2 for Monday...
     $activity = Database::select("
         SELECT 
             DAYOFWEEK($sqlLocalTime) as day_num,
             HOUR($sqlLocalTime) as hour_num,
             COUNT(*) as call_volume
         FROM calls
-        WHERE org_id = '$orgId' $dateFilter
+        WHERE UPPER(org_id) = UPPER('$orgId') $dateFilter
         GROUP BY day_num, hour_num
         ORDER BY day_num, hour_num
     ");
     
-    // Device Health Status
-    // Employees whose last_sync is old (> 24 hours) are "Needs Attention"
     $deviceHealth = Database::select("
         SELECT 
             name, 
@@ -242,11 +225,11 @@ if ($reportType === 'all' || $reportType === 'operational_insights') {
             last_sync,
             device_id
         FROM employees
-        WHERE org_id = '$orgId' AND status = 'active'
+        WHERE UPPER(org_id) = UPPER('$orgId') AND status = 'active'
     ");
     
     $healthData = [];
-    $now = new DateTime("now", new DateTimeZone("UTC")); // Server time matches DB UTC usually
+    $now = new DateTime("now", new DateTimeZone("UTC")); 
     
     foreach ($deviceHealth as $dev) {
         $status = 'Healthy';
@@ -260,14 +243,13 @@ if ($reportType === 'all' || $reportType === 'operational_insights') {
             $totalHours = $diff->h + ($diff->days * 24);
             
             if ($totalHours > 24) {
-                 $status = 'Offline'; // > 24 hours
+                 $status = 'Offline'; 
             } else if ($totalHours > 1) {
-                 $status = 'Away'; // > 1 hour
+                 $status = 'Away';
             } else {
-                 $status = 'Online'; // < 1 hour
+                 $status = 'Online';
             }
             
-            // Format time ago
             if ($diff->days > 0) $timeDiff = $diff->days . 'd ago';
             else if ($diff->h > 0) $timeDiff = $diff->h . 'h ago';
             else $timeDiff = $diff->i . 'm ago';
@@ -287,9 +269,7 @@ if ($reportType === 'all' || $reportType === 'operational_insights') {
         ];
     }
     
-    // Sort health data: Offline/Never first
     usort($healthData, function($a, $b) {
-        // Define priority: Offline(1), Never Synced(2), Away(3), Online(4)
         $pA = ($a['status'] == 'Offline') ? 1 : (($a['status'] == 'Never Synced') ? 2 : (($a['status'] == 'Away') ? 3 : 4));
         $pB = ($b['status'] == 'Offline') ? 1 : (($b['status'] == 'Never Synced') ? 2 : (($b['status'] == 'Away') ? 3 : 4));
         return $pA <=> $pB;
@@ -301,7 +281,7 @@ if ($reportType === 'all' || $reportType === 'operational_insights') {
     ];
 }
 
-// Summary Metrics (Generic, useful for top cards)
+// Summary Metrics
 if ($reportType === 'all' || $reportType === 'summary') {
     $summary = Database::getOne("
         SELECT 
@@ -310,7 +290,7 @@ if ($reportType === 'all' || $reportType === 'summary') {
             SUM(CASE WHEN duration > 0 THEN 1 ELSE 0 END) as connected,
             SUM(CASE WHEN duration = 0 THEN 1 ELSE 0 END) as missed
         FROM calls 
-        WHERE org_id = '$orgId' $dateFilter
+        WHERE UPPER(org_id) = UPPER('$orgId') $dateFilter
     ");
     
     $summary['formatted_duration'] = formatDuration($summary['total_duration']);

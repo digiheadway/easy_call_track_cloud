@@ -233,6 +233,11 @@ if ($action === "start_call") {
     if ($emp['device_id'] !== $device_id) {
         errorOut("Unauthorized: This device is not linked to this employee account.");
     }
+    
+    // Update last_sync for the employee
+    $updSync = $conn->prepare("UPDATE employees SET last_sync = NOW() WHERE id = ?");
+    $updSync->bind_param("i", $employee_id);
+    $updSync->execute();
 
     // Upload status logic
     $upload_status = 'pending';
@@ -558,6 +563,13 @@ if ($action === "fetch_updates") {
     $last_sync = max(0, intval($_POST['last_sync_time'] ?? 0));
     
     if ($org_id === '') errorOut("org_id required");
+
+    // Update last_sync for the employee
+    if ($user_id !== '') {
+        $updSync = $conn->prepare("UPDATE employees SET last_sync = NOW() WHERE id = ? AND org_id = ?");
+        $updSync->bind_param("is", $user_id, $org_id);
+        $updSync->execute();
+    }
 
     // Convert millis to seconds for SQL
     $last_sync_sec = $last_sync / 1000;
