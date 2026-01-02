@@ -17,7 +17,9 @@ import {
     Calendar,
     UserX,
     CalendarClock,
-    SmartphoneNfc
+    CalendarClock,
+    SmartphoneNfc,
+    AlertTriangle
 } from 'lucide-react';
 import Modal from '../components/Modal';
 import { format } from 'date-fns';
@@ -43,6 +45,16 @@ export default function EmployeesPage() {
     });
     const [saving, setSaving] = useState(false);
     const [copiedCode, setCopiedCode] = useState(null);
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    // Confirmation Modal State
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        action: null,
+        isDestructive: false
+    });
 
     useEffect(() => {
         fetchEmployees();
@@ -129,16 +141,23 @@ export default function EmployeesPage() {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this employee?')) return;
-        try {
-            await api.delete(`/employees.php?id=${id}`);
-            toast.success('Employee deleted');
-            fetchEmployees();
-        } catch (err) {
-            console.error(err);
-            toast.error('Failed to delete employee.');
-        }
+    const handleDelete = (id) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Employee',
+            message: 'Are you sure you want to delete this employee? This action cannot be undone.',
+            isDestructive: true,
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/employees.php?id=${id}`);
+                    toast.success('Employee deleted');
+                    fetchEmployees();
+                } catch (err) {
+                    console.error(err);
+                    toast.error('Failed to delete employee.');
+                }
+            }
+        });
     };
 
     const copyToClipboard = (code) => {
@@ -478,6 +497,43 @@ export default function EmployeesPage() {
                         </button>
                     </div>
                 </form>
+            </Modal>
+
+            {/* Confirmation Modal */}
+            <Modal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                title={confirmModal.title}
+            >
+                <div className="space-y-4">
+                    <div className="flex items-start gap-3 p-3 bg-orange-50 rounded-lg text-orange-800 border border-orange-100">
+                        <AlertTriangle className="shrink-0 mt-0.5" size={18} />
+                        <p className="text-sm font-medium">{confirmModal.message}</p>
+                    </div>
+                    <div className="flex gap-3 pt-2">
+                        <button
+                            type="button"
+                            onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                            className="flex-1 btn bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                setIsProcessing(true);
+                                const onConfirm = confirmModal.onConfirm;
+                                setConfirmModal({ ...confirmModal, isOpen: false });
+                                await onConfirm();
+                                setIsProcessing(false);
+                            }}
+                            disabled={isProcessing}
+                            className={`flex-1 btn ${confirmModal.isDestructive ? 'bg-red-600 hover:bg-red-700 text-white' : 'btn-primary'}`}
+                        >
+                            {isProcessing ? 'Processing...' : 'Confirm'}
+                        </button>
+                    </div>
+                </div>
             </Modal>
         </div>
     );

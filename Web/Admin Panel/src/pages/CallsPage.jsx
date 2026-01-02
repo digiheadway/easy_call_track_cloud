@@ -37,8 +37,8 @@ import {
     Layers,
     GripVertical,
     Eye,
-    EyeOff,
-    Edit3
+    Edit3,
+    AlertTriangle
 } from 'lucide-react';
 
 import Modal from '../components/Modal';
@@ -405,6 +405,16 @@ export default function CallsPage() {
         return saved !== null ? JSON.parse(saved) : true;
     });
     const [activeSegement, setActiveSegement] = useState(null);
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    // Confirmation Modal State
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        action: null,
+        isDestructive: false
+    });
 
     // Calculate active filter count
     const activeFilterCount = useMemo(() => {
@@ -1027,13 +1037,20 @@ export default function CallsPage() {
     const deleteFilterSet = (id, e) => {
         if (e) e.stopPropagation();
         const setToDelete = savedFilterSets.find(s => s.id === id);
-        if (window.confirm(`Are you sure you want to delete the segment "${setToDelete?.name}"?`)) {
-            setSavedFilterSets(prev => prev.filter(s => s.id !== id));
-            if (activeSegement?.id === id) {
-                setActiveSegement(null);
+
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Segment',
+            message: `Are you sure you want to delete the segment "${setToDelete?.name}"?`,
+            isDestructive: true,
+            onConfirm: async () => {
+                setSavedFilterSets(prev => prev.filter(s => s.id !== id));
+                if (activeSegement?.id === id) {
+                    setActiveSegement(null);
+                }
+                toast.success("Segment deleted");
             }
-            toast.success("Segment deleted");
-        }
+        });
     };
 
     const renameFilterSet = (id, e) => {
@@ -1995,6 +2012,42 @@ export default function CallsPage() {
                     }
                 </div>
             </div>
+            {/* Confirmation Modal */}
+            <Modal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                title={confirmModal.title}
+            >
+                <div className="space-y-4">
+                    <div className="flex items-start gap-3 p-3 bg-orange-50 rounded-lg text-orange-800 border border-orange-100">
+                        <AlertTriangle className="shrink-0 mt-0.5" size={18} />
+                        <p className="text-sm font-medium">{confirmModal.message}</p>
+                    </div>
+                    <div className="flex gap-3 pt-2">
+                        <button
+                            type="button"
+                            onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                            className="flex-1 btn bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                setIsProcessing(true);
+                                const onConfirm = confirmModal.onConfirm;
+                                setConfirmModal({ ...confirmModal, isOpen: false });
+                                await onConfirm();
+                                setIsProcessing(false);
+                            }}
+                            disabled={isProcessing}
+                            className={`flex-1 btn ${confirmModal.isDestructive ? 'bg-red-600 hover:bg-red-700 text-white' : 'btn-primary'}`}
+                        >
+                            {isProcessing ? 'Processing...' : 'Confirm'}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </div >
     );
 }
