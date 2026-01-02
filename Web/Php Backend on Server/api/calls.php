@@ -323,6 +323,8 @@ switch ($method) {
                 $where[] = "(c.recording_url IS NOT NULL AND c.recording_url != '')";
             } else if ($recordingFilter === 'no_recording') {
                 $where[] = "(c.recording_url IS NULL OR c.recording_url = '')";
+            } else if ($recordingFilter === 'pending_upload') {
+                $where[] = "(c.upload_status = 'pending' AND (c.recording_url IS NULL OR c.recording_url = ''))";
             }
             
             // Duration Filter
@@ -351,7 +353,16 @@ switch ($method) {
             
             if ($search) {
                 $search = Database::escape($search);
-                $where[] = "(c.caller_name LIKE '%$search%' OR c.caller_phone LIKE '%$search%' OR c.note LIKE '%$search%')";
+                $where[] = "(
+                    c.caller_name LIKE '%$search%' OR 
+                    c.caller_phone LIKE '%$search%' OR 
+                    c.note LIKE '%$search%' OR
+                    c.labels LIKE '%$search%' OR
+                    c_info.name LIKE '%$search%' OR
+                    c_info.notes LIKE '%$search%' OR
+                    c_info.label LIKE '%$search%' OR
+                    e.name LIKE '%$search%'
+                )";
             }
 
             // Advanced Filters

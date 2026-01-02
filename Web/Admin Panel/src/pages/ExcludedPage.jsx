@@ -8,8 +8,12 @@ import {
     Phone,
     User,
     CheckCircle,
-    XCircle
+    XCircle,
+    Database,
+    RotateCcw,
+    AlertTriangle
 } from 'lucide-react';
+import { toast } from 'sonner';
 import Modal from '../components/Modal';
 
 export default function ExcludedPage() {
@@ -19,6 +23,7 @@ export default function ExcludedPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [formData, setFormData] = useState({ phone: '', name: '', is_active: true });
     const [saving, setSaving] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
     useEffect(() => {
         fetchContacts();
@@ -66,6 +71,36 @@ export default function ExcludedPage() {
         }
     };
 
+    const handleDeleteAllData = async () => {
+        if (!window.confirm('WARNING: This will permanently delete ALL call history, recordings, and contact details for EVERY contact in this exclusion list. This action cannot be undone. Are you sure?')) return;
+
+        setDeleting(true);
+        try {
+            await api.post('/excluded_contacts.php?action=delete_all_data');
+            toast.success('Successfully erased all history for excluded contacts');
+            fetchContacts();
+        } catch (err) {
+            toast.error('Failed to erase all data');
+        } finally {
+            setDeleting(false);
+        }
+    };
+
+    const handleDeleteContactData = async (phone) => {
+        if (!window.confirm(`Permanently delete all call history, recordings, and contact data for ${phone}?`)) return;
+
+        setDeleting(true);
+        try {
+            await api.post('/excluded_contacts.php?action=delete_contact_data', { phone });
+            toast.success(`History for ${phone} erased`);
+            fetchContacts();
+        } catch (err) {
+            toast.error('Failed to erase contact history');
+        } finally {
+            setDeleting(false);
+        }
+    };
+
     const toggleStatus = async (contact) => {
         try {
             await api.put(`/excluded_contacts.php?id=${contact.id}`, {
@@ -101,6 +136,17 @@ export default function ExcludedPage() {
                             className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg w-full focus:ring-2 focus:ring-blue-500 outline-none"
                         />
                     </div>
+                    {contacts.length > 0 && (
+                        <button
+                            onClick={handleDeleteAllData}
+                            disabled={deleting}
+                            className="btn bg-red-50 text-red-600 border-red-100 hover:bg-red-100 whitespace-nowrap gap-2"
+                            title="Erase all history for all excluded numbers"
+                        >
+                            <Database size={18} />
+                            Erase All History
+                        </button>
+                    )}
                     <button
                         onClick={() => setIsModalOpen(true)}
                         className="btn btn-primary whitespace-nowrap gap-2"
@@ -144,8 +190,8 @@ export default function ExcludedPage() {
                                         <button
                                             onClick={() => toggleStatus(c)}
                                             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${c.is_active == 1
-                                                    ? 'bg-green-50 text-green-700 border border-green-100'
-                                                    : 'bg-gray-50 text-gray-500 border border-gray-100'
+                                                ? 'bg-green-50 text-green-700 border border-green-100'
+                                                : 'bg-gray-50 text-gray-500 border border-gray-100'
                                                 }`}
                                         >
                                             {c.is_active == 1 ? <CheckCircle size={12} /> : <XCircle size={12} />}
@@ -156,12 +202,23 @@ export default function ExcludedPage() {
                                         {new Date(c.created_at).toLocaleDateString()}
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <button
-                                            onClick={() => handleDelete(c.id)}
-                                            className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-lg transition-colors"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
+                                        <div className="flex items-center justify-end gap-1">
+                                            <button
+                                                onClick={() => handleDeleteContactData(c.phone)}
+                                                disabled={deleting}
+                                                className="p-2 hover:bg-orange-50 text-gray-400 hover:text-orange-600 rounded-lg transition-colors"
+                                                title="Erase all history for this contact"
+                                            >
+                                                <RotateCcw size={18} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(c.id)}
+                                                className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-lg transition-colors"
+                                                title="Remove from exclusion list"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

@@ -7,12 +7,15 @@ import {
     X, Phone, Clock, Smartphone,
     PhoneIncoming, PhoneOutgoing, PhoneMissed, User,
     MessageSquare, Edit3, FileText, CheckCircle2, Circle, Tag, UserX, Plus,
-    Archive, Trash2, ShieldAlert, ChevronDown
+    Archive, Trash2, ShieldAlert, MoreVertical
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAudioPlayer } from '../context/AudioPlayerContext';
+import { Play, Pause } from 'lucide-react';
 
 export default function PersonDetailDrawer() {
     const { isOpen, personData, closePersonModal } = usePersonModal();
+    const { playRecording, currentCall, isPlaying, currentTime, duration: activeDuration } = useAudioPlayer();
     const [calls, setCalls] = useState([]);
     const [loading, setLoading] = useState(false);
 
@@ -58,7 +61,7 @@ export default function PersonDetailDrawer() {
             const labels = personData.person_labels ? personData.person_labels.split(',').filter(Boolean) : [];
             setPersonLabels(labels);
             setPendingLabels(labels);
-            setIsExcluded(personData.is_excluded || false);
+            setIsExcluded(Boolean(Number(personData.is_excluded)));
             fetchPersonHistory(personData.phone_number);
             fetchLabelSuggestions();
         } else {
@@ -207,7 +210,7 @@ export default function PersonDetailDrawer() {
         try {
             // Update all calls
             await Promise.all(
-                calls.filter(c => !c.reviewed).map(call =>
+                calls.filter(c => !Number(c.reviewed)).map(call =>
                     api.post(`/calls.php?action=update&id=${call.id}`, { reviewed: true })
                 )
             );
@@ -425,12 +428,98 @@ export default function PersonDetailDrawer() {
                                 <p className="text-gray-500 font-mono text-sm">{personData?.phone_number}</p>
                             </div>
                         </div>
-                        <button
-                            onClick={closePersonModal}
-                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-                        >
-                            <X size={24} />
-                        </button>
+                        <div className="flex items-center gap-1">
+                            {/* Three-dot menu for management actions */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowManagement(!showManagement)}
+                                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                                    title="More options"
+                                >
+                                    <MoreVertical size={20} />
+                                </button>
+                                {showManagement && (
+                                    <>
+                                        <div className="fixed inset-0 z-10" onClick={() => setShowManagement(false)} />
+                                        <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-20 animate-in fade-in slide-in-from-top-2 duration-150">
+                                            <button
+                                                onClick={() => { handleToggleExclude(); setShowManagement(false); }}
+                                                disabled={excludeLoading}
+                                                className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                                            >
+                                                <UserX size={16} className={isExcluded ? 'text-green-500' : 'text-gray-400'} />
+                                                {excludeLoading ? 'Updating...' : isExcluded ? 'Remove from Exclude List' : 'Add to Exclude List'}
+                                            </button>
+                                            <div className="border-t border-gray-100 my-1" />
+                                            <button
+                                                onClick={() => { handleArchiveData(); setShowManagement(false); }}
+                                                disabled={isArchiving}
+                                                className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                                            >
+                                                <Archive size={16} className="text-gray-400" />
+                                                Archive All Calls
+                                            </button>
+                                            <button
+                                                onClick={() => { handleArchiveAndExclude(); setShowManagement(false); }}
+                                                disabled={isArchiving}
+                                                className="w-full px-4 py-2.5 text-left text-sm text-orange-600 hover:bg-orange-50 flex items-center gap-3 transition-colors"
+                                            >
+                                                <ShieldAlert size={16} className="text-orange-500" />
+                                                Archive & Exclude
+                                            </button>
+                                            <div className="border-t border-gray-100 my-1" />
+                                            <button
+                                                onClick={() => { setShowDeleteConfirm(true); setShowManagement(false); }}
+                                                className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors"
+                                            >
+                                                <Trash2 size={16} className="text-red-500" />
+                                                Delete Person & Data
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                            <button
+                                onClick={closePersonModal}
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Labels - Quick Access in Header */}
+                    <div className="mt-3 flex items-center gap-2 flex-wrap">
+                        {personLabels.length === 0 ? (
+                            <button
+                                onClick={openLabelModal}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 text-purple-600 text-xs font-medium border border-purple-200 hover:bg-purple-100 transition-colors"
+                            >
+                                <Plus size={12} />
+                                Add Label
+                            </button>
+                        ) : (
+                            <>
+                                {personLabels.map(label => (
+                                    <span key={label} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-medium border border-purple-200">
+                                        {label}
+                                        <button
+                                            onClick={() => handleRemoveLabel(label)}
+                                            className="hover:text-red-500 transition-colors"
+                                        >
+                                            <X size={12} />
+                                        </button>
+                                    </span>
+                                ))}
+                                <button
+                                    onClick={openLabelModal}
+                                    className="p-1.5 rounded-full text-purple-500 hover:bg-purple-50 transition-colors"
+                                    title="Add more labels"
+                                >
+                                    <Plus size={14} />
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -482,47 +571,10 @@ export default function PersonDetailDrawer() {
                         )}
                     </div>
 
-                    {/* Person Labels */}
-                    <div className="bg-purple-50 rounded-xl border border-purple-200 p-3">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                                <Tag size={14} className="text-purple-600" />
-                                <span className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Person Labels</span>
-                            </div>
-                            <button
-                                onClick={openLabelModal}
-                                className="text-xs text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
-                            >
-                                <Plus size={12} /> {personLabels.length > 0 ? 'Edit' : 'Add'}
-                            </button>
-                        </div>
 
-                        <div className="flex flex-wrap gap-1.5">
-                            {personLabels.length === 0 ? (
-                                <span
-                                    className="text-xs text-purple-600/60 italic cursor-pointer hover:text-purple-700"
-                                    onClick={openLabelModal}
-                                >
-                                    Click to add labels...
-                                </span>
-                            ) : (
-                                personLabels.map(label => (
-                                    <span key={label} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-medium border border-purple-200">
-                                        {label}
-                                        <button
-                                            onClick={() => handleRemoveLabel(label)}
-                                            className="hover:text-red-500 transition-colors"
-                                        >
-                                            <X size={12} />
-                                        </button>
-                                    </span>
-                                ))
-                            )}
-                        </div>
-                    </div>
 
                     {/* Label Picker Modal */}
-                    {showLabelModal && (
+                    {showLabelModal && createPortal(
                         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/30 backdrop-blur-[2px]" onClick={() => setShowLabelModal(false)}>
                             <div
                                 className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-150"
@@ -619,7 +671,8 @@ export default function PersonDetailDrawer() {
                                     </button>
                                 </div>
                             </div>
-                        </div>
+                        </div>,
+                        document.body
                     )}
 
                     {/* Call History */}
@@ -643,13 +696,13 @@ export default function PersonDetailDrawer() {
                                                 {/* Reviewed Toggle */}
                                                 <button
                                                     onClick={() => handleToggleReviewed(call.id, call.reviewed)}
-                                                    className={`p-0.5 rounded-full transition-all duration-200 hover:scale-110 ${call.reviewed
+                                                    className={`p-0.5 rounded-full transition-all duration-200 hover:scale-110 ${Number(call.reviewed)
                                                         ? 'text-green-500 hover:text-green-600'
                                                         : 'text-gray-300 hover:text-gray-400'
                                                         }`}
-                                                    title={call.reviewed ? 'Mark as unreviewed' : 'Mark as reviewed'}
+                                                    title={Number(call.reviewed) ? 'Mark as unreviewed' : 'Mark as reviewed'}
                                                 >
-                                                    {call.reviewed ? (
+                                                    {Number(call.reviewed) ? (
                                                         <CheckCircle2 size={18} className="fill-green-100" />
                                                     ) : (
                                                         <Circle size={18} />
@@ -659,9 +712,11 @@ export default function PersonDetailDrawer() {
                                                 <span className="text-sm font-medium text-gray-900 capitalize">
                                                     {call.type}
                                                 </span>
-                                                <span className={`text-xs px-1.5 py-0.5 rounded ${call.duration > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                    {call.duration > 0 ? 'Connected' : 'Missed'}
-                                                </span>
+                                                {call.duration > 0 && (
+                                                    <span className="text-xs text-gray-500">
+                                                        {call.duration >= 60 ? `${Math.floor(call.duration / 60)}m ${call.duration % 60}s` : `${call.duration}s`}
+                                                    </span>
+                                                )}
                                             </div>
                                             <span className="text-xs text-gray-500">
                                                 {format(new Date(call.call_time + (call.call_time.endsWith('Z') ? '' : 'Z')), 'MMM d, h:mm a')}
@@ -669,63 +724,59 @@ export default function PersonDetailDrawer() {
                                         </div>
 
                                         {/* Call Details */}
-                                        <div className="grid grid-cols-3 gap-2 text-xs text-gray-600 mb-3">
-                                            <div className="flex items-center gap-1.5">
-                                                <Clock size={12} className="text-gray-400" />
-                                                {call.duration >= 60 ? `${Math.floor(call.duration / 60)}m ${call.duration % 60}s` : `${call.duration}s`}
-                                            </div>
-                                            <div className="flex items-center gap-1.5">
-                                                <Smartphone size={12} className="text-gray-400" />
-                                                {call.device_phone || '-'}
-                                            </div>
-                                            <div className="flex items-center gap-1.5">
-                                                <User size={12} className="text-gray-400" />
-                                                {call.employee_name || 'System'}
+                                        <div className="flex items-center gap-3 text-xs text-gray-500 mb-2">
+                                            <div className="flex items-center gap-1">
+                                                <User size={11} className="text-gray-400" />
+                                                {call.employee_name || 'System'} {call.device_phone ? `(${call.device_phone})` : ''}
                                             </div>
                                         </div>
 
-                                        {/* Call Note - Click to Edit */}
-                                        <div className="bg-gray-50 rounded-lg p-2 border border-gray-100">
-                                            {editingCallNote === call.id ? (
-                                                <div className="space-y-2">
-                                                    <textarea
-                                                        className="w-full text-xs p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none bg-white"
-                                                        rows={2}
-                                                        value={callNoteValue}
-                                                        onChange={(e) => setCallNoteValue(e.target.value)}
-                                                        placeholder="Add call note..."
-                                                        autoFocus
-                                                    />
-                                                    <div className="flex justify-end gap-2">
-                                                        <button
-                                                            onClick={() => setEditingCallNote(null)}
-                                                            className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1"
-                                                        >
-                                                            Cancel
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleSaveCallNote(call.id)}
-                                                            className="text-xs bg-blue-600 text-white px-3 py-1 rounded font-medium hover:bg-blue-700"
-                                                        >
-                                                            Save
-                                                        </button>
-                                                    </div>
+                                        {/* Call Note - Improved UI */}
+                                        {editingCallNote === call.id ? (
+                                            <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                                                <textarea
+                                                    className="w-full text-sm p-2.5 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none bg-white"
+                                                    rows={3}
+                                                    value={callNoteValue}
+                                                    onChange={(e) => setCallNoteValue(e.target.value)}
+                                                    placeholder="Add a note about this call..."
+                                                    autoFocus
+                                                />
+                                                <div className="flex justify-end gap-2 mt-2">
+                                                    <button
+                                                        onClick={() => setEditingCallNote(null)}
+                                                        className="text-xs text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-md hover:bg-white transition-colors"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleSaveCallNote(call.id)}
+                                                        className="text-xs bg-blue-600 text-white px-4 py-1.5 rounded-md font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                                                    >
+                                                        Save Note
+                                                    </button>
                                                 </div>
-                                            ) : (
-                                                <div
-                                                    onClick={() => startEditingCallNote(call)}
-                                                    className="flex items-start gap-2 cursor-pointer group"
-                                                >
-                                                    <MessageSquare size={12} className="text-gray-400 mt-0.5 flex-shrink-0" />
-                                                    {call.note ? (
-                                                        <span className="text-xs text-gray-700 flex-1">{call.note}</span>
-                                                    ) : (
-                                                        <span className="text-xs text-gray-400 italic flex-1">Click to add call note...</span>
-                                                    )}
-                                                    <Edit3 size={12} className="text-gray-300 group-hover:text-blue-500 transition-colors flex-shrink-0" />
+                                            </div>
+                                        ) : call.note ? (
+                                            <div
+                                                onClick={() => startEditingCallNote(call)}
+                                                className="bg-gray-50 rounded-lg p-2.5 border border-gray-100 cursor-pointer group hover:border-blue-200 hover:bg-blue-50/50 transition-all"
+                                            >
+                                                <div className="flex items-start gap-2">
+                                                    <MessageSquare size={14} className="text-blue-500 mt-0.5 flex-shrink-0" />
+                                                    <p className="text-sm text-gray-700 flex-1 leading-relaxed">{call.note}</p>
+                                                    <Edit3 size={12} className="text-gray-300 group-hover:text-blue-500 transition-colors flex-shrink-0 mt-0.5" />
                                                 </div>
-                                            )}
-                                        </div>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => startEditingCallNote(call)}
+                                                className="w-full text-left px-3 py-2 text-xs text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg border border-dashed border-gray-200 hover:border-blue-300 transition-all flex items-center gap-2"
+                                            >
+                                                <Plus size={12} />
+                                                Add note
+                                            </button>
+                                        )}
 
                                         {/* Labels */}
                                         {call.labels && (
@@ -741,13 +792,25 @@ export default function PersonDetailDrawer() {
 
                                         {/* Recording */}
                                         {call.recording_url && (
-                                            <div className="mt-3 pt-2 border-t border-gray-100">
-                                                <audio
-                                                    controls
-                                                    src={call.recording_url}
-                                                    className="w-full h-8"
-                                                    preload="none"
-                                                />
+                                            <div className="mt-3 pt-2 border-t border-gray-100 flex items-center gap-3">
+                                                <button
+                                                    onClick={() => playRecording(call)}
+                                                    className="flex items-center gap-2 bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-200 px-3 py-1.5 rounded-full shadow-sm transition-all group/player"
+                                                    title="Play Recording"
+                                                >
+                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${currentCall?.id === call.id ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-600 group-hover/player:bg-blue-600 group-hover/player:text-white'}`}>
+                                                        {currentCall?.id === call.id && isPlaying ? <Pause size={10} fill="currentColor" /> : <Play size={10} fill="currentColor" className={currentCall?.id === call.id ? '' : 'ml-0.5'} />}
+                                                    </div>
+                                                    <span className={`text-xs font-mono group-hover/player:text-blue-700 ${currentCall?.id === call.id ? 'text-blue-700 font-semibold' : 'text-gray-600'}`}>
+                                                        {currentCall?.id === call.id ? (
+                                                            `${Math.floor(currentTime / 60)}:${String(Math.floor(currentTime % 60)).padStart(2, '0')}`
+                                                        ) : (
+                                                            call.duration > 0 ? (
+                                                                call.duration >= 60 ? `${Math.floor(call.duration / 60)}:${String(call.duration % 60).padStart(2, '0')}` : `0:${String(call.duration).padStart(2, '0')}`
+                                                            ) : '0:00'
+                                                        )}
+                                                    </span>
+                                                </button>
                                             </div>
                                         )}
                                     </div>
@@ -756,7 +819,7 @@ export default function PersonDetailDrawer() {
                         </div>
 
                         {/* Mark All as Reviewed Button */}
-                        {calls.length > 0 && calls.some(c => !c.reviewed) && (
+                        {calls.length > 0 && calls.some(c => !Number(c.reviewed)) && (
                             <button
                                 onClick={handleMarkAllReviewed}
                                 className="w-full mt-3 py-2.5 px-4 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
@@ -767,88 +830,42 @@ export default function PersonDetailDrawer() {
                         )}
                     </div>
 
-                    {/* Actions Section */}
-
-                    <div className="mt-8 pt-6 border-t border-gray-100">
-                        <button
-                            onClick={() => setShowManagement(!showManagement)}
-                            className="w-full flex items-center justify-between text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 hover:text-gray-600 transition-colors"
-                        >
-                            Management Actions
-                            <ChevronDown size={14} className={`transition-transform duration-200 ${showManagement ? 'rotate-180' : ''}`} />
-                        </button>
-
-                        {showManagement && (
-                            <div className="space-y-3 animate-in slide-in-from-top-2 duration-200">
-
-                                {/* Archive Actions */}
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button
-                                        onClick={handleArchiveData}
-                                        disabled={isArchiving}
-                                        className="flex flex-col items-center justify-center gap-2 p-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-colors text-sm font-medium text-gray-700"
-                                    >
-                                        <Archive size={20} className="text-gray-500" />
-                                        Archive Data
-                                    </button>
-                                    <button
-                                        onClick={handleArchiveAndExclude}
-                                        disabled={isArchiving}
-                                        className="flex flex-col items-center justify-center gap-2 p-3 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-xl transition-colors text-sm font-medium text-orange-800"
-                                    >
-                                        <ShieldAlert size={20} className="text-orange-500" />
-                                        Archive & Exclude
-                                    </button>
-                                </div>
-
-                                {/* Exclude Toggle (Existing) */}
-                                <button
-                                    onClick={handleToggleExclude}
-                                    disabled={excludeLoading}
-                                    className={`w-full py-3 px-4 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 border ${isExcluded
-                                        ? 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                                        }`}
-                                >
-                                    <UserX size={18} className={isExcluded ? 'text-gray-400' : 'text-gray-500'} />
-                                    {excludeLoading ? 'Updating...' : isExcluded ? 'Remove from Exclude List' : 'Add to Exclude List'}
-                                </button>
-
-                                {/* Delete Zone */}
-                                <div className="pt-2">
-                                    {!showDeleteConfirm ? (
+                    {/* Delete Confirmation Modal */}
+                    {showDeleteConfirm && createPortal(
+                        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/30 backdrop-blur-[2px]" onClick={() => setShowDeleteConfirm(false)}>
+                            <div
+                                className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+                                onClick={e => e.stopPropagation()}
+                            >
+                                <div className="p-6 text-center">
+                                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Trash2 size={24} className="text-red-600" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Person & Data?</h3>
+                                    <p className="text-sm text-gray-500 mb-6">This will permanently delete all call history, excluded status, and contact details. This action cannot be undone.</p>
+                                    <div className="flex gap-3">
                                         <button
-                                            onClick={() => setShowDeleteConfirm(true)}
-                                            className="w-full py-3 px-4 rounded-xl text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-100 transition-colors flex items-center justify-center gap-2"
+                                            onClick={() => setShowDeleteConfirm(false)}
+                                            className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                                         >
-                                            <Trash2 size={18} />
-                                            Delete Person & Data
+                                            Cancel
                                         </button>
-                                    ) : (
-                                        <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-center space-y-3 animate-in fade-in slide-in-from-bottom-2">
-                                            <div className="text-sm text-red-800 font-medium">Are you sure? This action cannot be undone.</div>
-                                            <p className="text-xs text-red-600/80">This will delete all call history, excluded status, and contact details.</p>
-                                            <div className="flex gap-2 justify-center">
-                                                <button
-                                                    onClick={() => setShowDeleteConfirm(false)}
-                                                    className="px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-lg text-xs font-medium hover:bg-gray-50"
-                                                >
-                                                    Cancel
-                                                </button>
-                                                <button
-                                                    onClick={handleDeletePerson}
-                                                    disabled={isDeleting}
-                                                    className="px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700 shadow-sm"
-                                                >
-                                                    {isDeleting ? 'Deleting...' : 'Confirm Delete'}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
+                                        <button
+                                            onClick={handleDeletePerson}
+                                            disabled={isDeleting}
+                                            className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors shadow-sm"
+                                        >
+                                            {isDeleting ? 'Deleting...' : 'Delete'}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        )}
-                    </div>
+                        </div>,
+                        document.body
+                    )}
+
+                    {/* Bottom Spacing */}
+                    <div className="h-6"></div>
                 </div>
             </div>
         </div>,

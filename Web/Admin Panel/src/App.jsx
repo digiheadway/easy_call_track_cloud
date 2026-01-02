@@ -35,7 +35,7 @@ function App() {
     <AuthProvider>
       <PersonModalProvider>
         <AudioPlayerProvider>
-          <Toaster position="top-right" richColors closeButton />
+          <Toaster position="bottom-right" richColors closeButton />
           <Router basename="/dashboard">
             <Routes>
               <Route path="/login" element={<LoginPage />} />

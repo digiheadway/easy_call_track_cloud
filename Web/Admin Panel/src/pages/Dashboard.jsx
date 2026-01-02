@@ -12,12 +12,16 @@ import {
     CheckCircle2,
     XCircle,
     BarChart3,
-    ExternalLink
+    ExternalLink,
+    Play,
+    Pause
 } from 'lucide-react';
+import { useAudioPlayer } from '../context/AudioPlayerContext';
 
 export default function Dashboard() {
     const navigate = useNavigate();
     const { openPersonModal } = usePersonModal();
+    const { playRecording, currentCall, isPlaying, currentTime, duration: activeDuration } = useAudioPlayer();
     const [data, setData] = useState({
         metrics: {},
         breakdown: [],
@@ -226,10 +230,24 @@ export default function Dashboard() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 {call.recording_url ? (
-                                                    <audio controls className="h-8 w-32" preload="none">
-                                                        <source src={call.recording_url} type="audio/mpeg" />
-                                                        Your browser does not support the audio element.
-                                                    </audio>
+                                                    <button
+                                                        onClick={() => playRecording(call)}
+                                                        className="flex items-center gap-2 bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-200 px-3 py-1.5 rounded-full shadow-sm transition-all group/player"
+                                                        title="Play Recording"
+                                                    >
+                                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${currentCall?.id === call.id ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-600 group-hover/player:bg-blue-600 group-hover/player:text-white'}`}>
+                                                            {currentCall?.id === call.id && isPlaying ? <Pause size={10} fill="currentColor" /> : <Play size={10} fill="currentColor" className={currentCall?.id === call.id ? '' : 'ml-0.5'} />}
+                                                        </div>
+                                                        <span className={`text-[10px] font-mono group-hover/player:text-blue-700 ${currentCall?.id === call.id ? 'text-blue-700 font-semibold' : 'text-gray-600'}`}>
+                                                            {currentCall?.id === call.id ? (
+                                                                `${Math.floor(currentTime / 60)}:${String(Math.floor(currentTime % 60)).padStart(2, '0')}`
+                                                            ) : (
+                                                                call.duration > 0 ? (
+                                                                    call.duration >= 60 ? `${Math.floor(call.duration / 60)}:${String(call.duration % 60).padStart(2, '0')}` : `0:${String(call.duration).padStart(2, '0')}`
+                                                                ) : '0:00'
+                                                            )}
+                                                        </span>
+                                                    </button>
                                                 ) : (
                                                     <span className="text-xs text-gray-400">No Rec</span>
                                                 )}

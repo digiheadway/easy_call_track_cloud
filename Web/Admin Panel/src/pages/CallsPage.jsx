@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import api from '../api/client';
@@ -37,7 +37,8 @@ import {
     Layers,
     GripVertical,
     Eye,
-    EyeOff
+    EyeOff,
+    Edit3
 } from 'lucide-react';
 
 import Modal from '../components/Modal';
@@ -233,7 +234,7 @@ const LabelCell = ({ call, onUpdate }) => {
 export default function CallsPage() {
     const location = useLocation();
     const { openPersonModal } = usePersonModal();
-    const { playRecording, currentCall } = useAudioPlayer();
+    const { playRecording, currentCall, isPlaying, currentTime, duration: activeDuration } = useAudioPlayer();
     const [calls, setCalls] = useState([]);
     const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, total_pages: 1 });
     const [loading, setLoading] = useState(true);
@@ -349,6 +350,38 @@ export default function CallsPage() {
         return saved ? JSON.parse(saved) : { showPhone: true, showReview: true };
     });
 
+    // New Calls Notification Logic
+    const [clickedNewCalls, setClickedNewCalls] = useState(() => {
+        try {
+            const saved = localStorage.getItem('calls_clicked_new');
+            return saved ? JSON.parse(saved) : {};
+        } catch (e) { return {}; }
+    });
+
+    const markCallClicked = (callId) => {
+        setClickedNewCalls(prev => {
+            const updated = { ...prev, [callId]: Date.now() };
+            // Cleanup: Keep only items from the last 10 minutes to stay lean
+            const limit = Date.now() - 10 * 60 * 1000;
+            const cleaned = Object.fromEntries(
+                Object.entries(updated).filter(([_, time]) => time > limit)
+            );
+            localStorage.setItem('calls_clicked_new', JSON.stringify(cleaned));
+            return cleaned;
+        });
+    };
+
+    const newArrivals = useMemo(() => {
+        const twoMinsAgo = Date.now() - 2 * 60 * 1000;
+        return calls
+            .filter(call => {
+                const callTime = new Date(call.call_time + (call.call_time.endsWith('Z') ? '' : 'Z')).getTime();
+                return callTime > twoMinsAgo && !clickedNewCalls[call.id];
+            })
+            .sort((a, b) => new Date(b.call_time).getTime() - new Date(a.call_time).getTime())
+            .slice(0, 5);
+    }, [calls, clickedNewCalls]);
+
     const [draggedColumn, setDraggedColumn] = useState(null);
 
     // Advanced Filters (persisted)
@@ -372,6 +405,26 @@ export default function CallsPage() {
         return saved !== null ? JSON.parse(saved) : true;
     });
     const [activeSegement, setActiveSegement] = useState(null);
+
+    // Calculate active filter count
+    const activeFilterCount = useMemo(() => {
+        let count = 0;
+        if (direction !== 'all') count++;
+        if (reviewedFilter !== 'all') count++;
+        if (connectedFilter !== 'all') count++;
+        if (noteFilter !== 'all') count++;
+        if (recordingFilter !== 'all') count++;
+        if (durationFilter !== 'all') count++;
+        if (labelFilter !== 'all') count++;
+        if (nameFilter !== 'all') count++;
+        if (selectedEmployee) count++;
+        if (dateRange !== '7days') count++;
+        if (customFilters.length > 0) count += customFilters.length;
+        return count;
+    }, [direction, reviewedFilter, connectedFilter, noteFilter, recordingFilter, durationFilter, labelFilter, nameFilter, selectedEmployee, dateRange, customFilters]);
+
+    const [segmentsMenuPosition, setSegmentsMenuPosition] = useState({ top: 0, left: 0 });
+    const segmentsButtonRef = useRef(null);
 
     // Resize Logic
     const handleResizeStart = (e, columnId) => {
@@ -943,13 +996,67 @@ export default function CallsPage() {
         toast.info("You can access this view later from the 'Saved' section.");
     };
 
+    const updateFilterSet = () => {
+        if (!activeSegement) return;
+        if (!filterSetName.trim()) {
+            toast.error("Please enter a name for the filter set");
+            return;
+        }
+
+        setSavedFilterSets(prev => prev.map(s => s.id === activeSegement.id ? {
+            ...s,
+            name: filterSetName,
+            filters: customFilters,
+            dateRange,
+            direction,
+            reviewedFilter
+        } : s));
+
+        setActiveSegement(prev => ({
+            ...prev,
+            name: filterSetName,
+            filters: customFilters,
+            dateRange,
+            direction,
+            reviewedFilter
+        }));
+
+        toast.success(`Segment "${filterSetName}" updated`);
+    };
+
+    const deleteFilterSet = (id, e) => {
+        if (e) e.stopPropagation();
+        const setToDelete = savedFilterSets.find(s => s.id === id);
+        if (window.confirm(`Are you sure you want to delete the segment "${setToDelete?.name}"?`)) {
+            setSavedFilterSets(prev => prev.filter(s => s.id !== id));
+            if (activeSegement?.id === id) {
+                setActiveSegement(null);
+            }
+            toast.success("Segment deleted");
+        }
+    };
+
+    const renameFilterSet = (id, e) => {
+        if (e) e.stopPropagation();
+        const setToRename = savedFilterSets.find(s => s.id === id);
+        const newName = window.prompt("Enter new name for the segment:", setToRename?.name);
+        if (newName && newName.trim()) {
+            setSavedFilterSets(prev => prev.map(s => s.id === id ? { ...s, name: newName.trim() } : s));
+            if (activeSegement?.id === id) {
+                setActiveSegement(prev => ({ ...prev, name: newName.trim() }));
+            }
+            toast.success("Segment renamed");
+        }
+    };
+
     const applyFilterSet = (set) => {
         setCustomFilters(set.filters);
         setDateRange(set.dateRange);
         setDirection(set.direction);
-        setReviewedFilter(set.reviewedFilter);
+        setReviewedFilter(set.reviewedFilter || 'all');
         setShowSegmentsDropdown(false);
         setActiveSegement(set);
+        setFilterSetName(set.name);
         toast.success(`Filter set "${set.name}" applied`);
     };
 
@@ -962,7 +1069,9 @@ export default function CallsPage() {
         setRecordingFilter('all');
         setDurationFilter('all');
         setLabelFilter('all');
+        setNameFilter('all');
         setDateRange('7days');
+        setSelectedEmployee('');
         setActiveSegement(null);
         toast.success("All filters cleared");
     }
@@ -974,13 +1083,6 @@ export default function CallsPage() {
         // Or if we want to revert to "default" (all), we can do:
         clearAllFilters();
     }
-
-    const deleteFilterSet = (e, id) => {
-        e.stopPropagation();
-        setSavedFilterSets(prev => prev.filter(s => s.id !== id));
-        toast.success("Filter set deleted");
-    };
-
 
     const columnLabels = {
         time: 'Time',
@@ -1058,10 +1160,15 @@ export default function CallsPage() {
                             <div className="w-px h-6 bg-gray-200 mx-2"></div>
                             <button
                                 onClick={() => setShowFilterBar(!showFilterBar)}
-                                className={`p-2 rounded-lg transition-all ${showFilterBar ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
+                                className={`relative p-2 rounded-lg transition-all ${showFilterBar ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
                                 title={showFilterBar ? "Hide Filters" : "Show Filters"}
                             >
                                 <Filter size={18} />
+                                {activeFilterCount > 0 && (
+                                    <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold rounded-full px-1 ${showFilterBar ? 'bg-white text-blue-600' : 'bg-blue-600 text-white'}`}>
+                                        {activeFilterCount}
+                                    </span>
+                                )}
                             </button>
                         </div>
 
@@ -1077,6 +1184,29 @@ export default function CallsPage() {
 
                     </div>
                 </div>
+
+                {/* New Arrivals Banner */}
+                {newArrivals.length > 0 && (
+                    <div className="flex flex-wrap gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                        {newArrivals.map(call => (
+                            <button
+                                key={`new-${call.id}`}
+                                onClick={() => {
+                                    markCallClicked(call.id);
+                                    openPersonModal(call);
+                                }}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-full hover:bg-blue-100 transition-all group"
+                            >
+                                <span className="flex h-2 w-2 rounded-full bg-blue-600 animate-pulse"></span>
+                                <span className="text-xs font-bold text-blue-700">NEW:</span>
+                                <span className="text-xs font-medium text-blue-900 group-hover:underline">
+                                    {call.contact_name || call.phone_number || 'Unknown'}
+                                </span>
+                                <ChevronRight size={12} className="text-blue-400" />
+                            </button>
+                        ))}
+                    </div>
+                )}
 
                 {/* Filters Bar & Table Container */}
                 <div className="space-y-6">
@@ -1192,6 +1322,7 @@ export default function CallsPage() {
                                                 <option value="all">All Recording</option>
                                                 <option value="has_recording">Has Recording</option>
                                                 <option value="no_recording">No Recording</option>
+                                                <option value="pending_upload">Pending Upload</option>
                                             </select>
                                             <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-600" />
                                         </div>
@@ -1228,18 +1359,93 @@ export default function CallsPage() {
                                         </div>
                                     );
                                     if (id === 'segments') return (
-                                        <div key="segments" className="relative group">
-                                            <select
-                                                value={activeSegement?.id || 'all'}
-                                                onChange={(e) => setActiveSegement(e.target.value === 'all' ? null : savedFilterSets.find(s => s.id == e.target.value))}
-                                                className="appearance-none text-sm border border-gray-200 rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 font-medium transition-all hover:bg-gray-100 cursor-pointer text-gray-700 min-w-[160px]"
+                                        <div key="segments" className="relative">
+                                            <button
+                                                ref={segmentsButtonRef}
+                                                onClick={(e) => {
+                                                    const rect = e.currentTarget.getBoundingClientRect();
+                                                    setSegmentsMenuPosition({
+                                                        top: rect.bottom + 8,
+                                                        left: rect.left
+                                                    });
+                                                    setShowSegmentsDropdown(!showSegmentsDropdown);
+                                                }}
+                                                className={`flex items-center justify-between text-sm border rounded-xl py-2 px-4 outline-none transition-all font-medium min-w-[180px] group ${activeSegement ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'}`}
                                             >
-                                                <option value="all">Saved Segments</option>
-                                                {savedFilterSets.map(set => (
-                                                    <option key={set.id} value={set.id}>{set.name}</option>
-                                                ))}
-                                            </select>
-                                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-600" />
+                                                <span className="truncate">{activeSegement ? activeSegement.name : 'Saved Segments'}</span>
+                                                <ChevronDown size={14} className={`transition-transform ${showSegmentsDropdown ? 'rotate-180' : ''} ${activeSegement ? 'text-blue-100' : 'text-gray-400'}`} />
+                                            </button>
+
+                                            {showSegmentsDropdown && createPortal(
+                                                <>
+                                                    <div className="fixed inset-0 z-[190]" onClick={() => setShowSegmentsDropdown(false)} />
+                                                    <div
+                                                        style={{
+                                                            position: 'fixed',
+                                                            top: `${segmentsMenuPosition.top}px`,
+                                                            left: `${segmentsMenuPosition.left}px`,
+                                                            width: '288px' // w-72 equivalent
+                                                        }}
+                                                        className="bg-white rounded-2xl shadow-2xl border border-gray-100 py-2.5 z-[200] animate-in fade-in slide-in-from-top-2 duration-200"
+                                                    >
+                                                        <div className="px-4 pb-2 mb-1.5 border-b border-gray-50 flex items-center justify-between">
+                                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Your Segments</p>
+                                                            <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-bold">{savedFilterSets.length}</span>
+                                                        </div>
+                                                        {savedFilterSets.length === 0 ? (
+                                                            <div className="px-5 py-6 text-center">
+                                                                <ListFilter size={24} className="mx-auto text-gray-200 mb-2" />
+                                                                <p className="text-xs text-gray-400">Apply filters and save them as a segment to quickly access them later.</p>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                                                                {savedFilterSets.map(set => (
+                                                                    <div
+                                                                        key={set.id}
+                                                                        className={`group flex items-center justify-between px-2 mx-1 rounded-xl py-2 text-sm cursor-pointer transition-all ${activeSegement?.id === set.id ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'}`}
+                                                                        onClick={() => { applyFilterSet(set); setShowSegmentsDropdown(false); }}
+                                                                    >
+                                                                        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                                                            <div className={`w-1.5 h-1.5 rounded-full ${activeSegement?.id === set.id ? 'bg-blue-500' : 'bg-transparent group-hover:bg-gray-300'}`} />
+                                                                            <span className="truncate flex-1 font-semibold">{set.name}</span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                            <button
+                                                                                onClick={(e) => renameFilterSet(set.id, e)}
+                                                                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-100/50 rounded-lg transition-colors"
+                                                                                title="Rename"
+                                                                            >
+                                                                                <Edit3 size={14} />
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={(e) => deleteFilterSet(set.id, e)}
+                                                                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-100/50 rounded-lg transition-colors"
+                                                                                title="Delete"
+                                                                            >
+                                                                                <Trash2 size={14} />
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        {activeSegement && (
+                                                            <>
+                                                                <div className="border-t border-gray-100 mt-1.5 pt-1.5 px-1">
+                                                                    <button
+                                                                        onClick={() => { setActiveSegement(null); setShowSegmentsDropdown(false); clearAllFilters(); }}
+                                                                        className="w-full px-3 py-2 text-left text-xs text-red-500 hover:bg-red-50 rounded-xl transition-colors font-bold flex items-center gap-2"
+                                                                    >
+                                                                        <X size={14} />
+                                                                        Clear active segment
+                                                                    </button>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </>,
+                                                document.body
+                                            )}
                                         </div>
                                     );
                                     return null;
@@ -1264,7 +1470,15 @@ export default function CallsPage() {
                             {/* Sticky Filter Settings Button */}
                             {/* Sticky Filter Settings Button + Clear Filters */}
                             <div className="absolute right-0 top-0 bottom-0 flex items-center gap-2 pr-4 pl-8 bg-gradient-to-l from-white via-white to-transparent pointer-events-auto">
-                                {(customFilters.length > 0 || direction !== 'all' || reviewedFilter !== 'all' || connectedFilter !== 'all' || noteFilter !== 'all' || recordingFilter !== 'all' || durationFilter !== 'all' || labelFilter !== 'all' || (dateRange !== '7days' && dateRange !== 'today' && dateRange !== 'yesterday' && dateRange !== '3days' && dateRange !== '14days' && dateRange !== '30days' && dateRange !== 'custom')) && (
+                                <button
+                                    onClick={() => setShowFilterBar(false)}
+                                    className="flex items-center gap-1 px-2.5 py-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm border border-gray-100 bg-white group"
+                                    title="Close Filter Bar"
+                                >
+                                    <Settings size={16} className="group-hover:rotate-90 transition-transform" />
+                                    <X size={14} />
+                                </button>
+                                {activeFilterCount > 0 && (
                                     <button
                                         onClick={clearAllFilters}
                                         className="whitespace-nowrap flex-shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-all border border-red-100 shadow-sm"
@@ -1357,7 +1571,9 @@ export default function CallsPage() {
 
                             <div className="pt-4 border-t border-gray-100 flex flex-col gap-5">
                                 <div className="flex flex-col gap-2">
-                                    <label className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Save as Segment</label>
+                                    <label className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+                                        {activeSegement ? `Managing Segment: ${activeSegement.name}` : 'Save as Segment'}
+                                    </label>
                                     <div className="flex gap-2">
                                         <input
                                             type="text"
@@ -1366,14 +1582,25 @@ export default function CallsPage() {
                                             onChange={(e) => setFilterSetName(e.target.value)}
                                             className="flex-1 text-base px-4 py-2.5 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-100"
                                         />
-                                        <button
-                                            onClick={saveFilterSet}
-                                            disabled={customFilters.length === 0 || !filterSetName.trim()}
-                                            className="flex items-center gap-2 px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            <Save size={18} />
-                                            Save
-                                        </button>
+                                        <div className="flex gap-2">
+                                            {activeSegement && (
+                                                <button
+                                                    onClick={updateFilterSet}
+                                                    disabled={customFilters.length === 0 || !filterSetName.trim()}
+                                                    className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-all shadow-sm disabled:opacity-50"
+                                                >
+                                                    <Save size={18} />
+                                                    Update
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={saveFilterSet}
+                                                disabled={customFilters.length === 0 || !filterSetName.trim()}
+                                                className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50 ${activeSegement ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'}`}
+                                            >
+                                                {activeSegement ? 'Save as New' : 'Save'}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1510,7 +1737,10 @@ export default function CallsPage() {
                                         <tr
                                             key={call.id}
                                             className="hover:bg-blue-50/50 transition-colors group cursor-pointer"
-                                            onClick={() => openPersonModal(call)}
+                                            onClick={() => {
+                                                markCallClicked(call.id);
+                                                openPersonModal(call);
+                                            }}
                                         >
                                             {columnOrder.filter(id => visibleColumns.includes(id)).map(id => {
                                                 if (id === 'time') return (
@@ -1525,14 +1755,17 @@ export default function CallsPage() {
                                                                 <button
                                                                     onClick={(e) => { e.stopPropagation(); handleToggleReviewed(call.id, call.reviewed); }}
                                                                     className="shrink-0 transition-transform active:scale-95"
-                                                                    title={call.reviewed ? "Mark as unreviewed" : "Mark as reviewed"}
+                                                                    title={Number(call.reviewed) ? "Mark as unreviewed" : "Mark as reviewed"}
                                                                 >
-                                                                    {call.reviewed ? <CheckCircle2 className="text-green-500 fill-green-50" size={18} /> : <Circle className="text-gray-300 hover:text-green-500" size={18} />}
+                                                                    {Number(call.reviewed) ? <CheckCircle2 className="text-green-500 fill-green-50" size={18} /> : <Circle className="text-gray-300 hover:text-green-500" size={18} />}
                                                                 </button>
                                                             )}
                                                             <div className="min-w-0 overflow-hidden">
-                                                                <div className="font-medium text-gray-900 truncate" title={call.contact_name || call.phone_number}>
-                                                                    {call.contact_name || ((!contactColumnOptions.showPhone && !call.contact_name) ? call.phone_number : (contactColumnOptions.showPhone ? (call.contact_name ? call.contact_name : call.phone_number) : 'Unknown'))}
+                                                                <div className="font-medium text-gray-900 truncate flex items-center gap-2" title={call.contact_name || call.phone_number}>
+                                                                    <span className="truncate">{call.contact_name || ((!contactColumnOptions.showPhone && !call.contact_name) ? call.phone_number : (contactColumnOptions.showPhone ? (call.contact_name ? call.contact_name : call.phone_number) : 'Unknown'))}</span>
+                                                                    {newArrivals.some(n => n.id === call.id) && (
+                                                                        <span className="px-1.5 py-0.5 bg-blue-600 text-white text-[9px] font-black rounded uppercase tracking-tighter animate-pulse shrink-0">New</span>
+                                                                    )}
                                                                 </div>
                                                                 {contactColumnOptions.showPhone && call.contact_name && (
                                                                     <div className="text-xs text-gray-500">{call.phone_number}</div>
@@ -1598,18 +1831,22 @@ export default function CallsPage() {
                                                                 title="Play Recording"
                                                             >
                                                                 <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${currentCall?.id === call.id ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-600 group-hover/player:bg-blue-600 group-hover/player:text-white'}`}>
-                                                                    {currentCall?.id === call.id ? <Pause size={10} fill="currentColor" /> : <Play size={10} fill="currentColor" />}
+                                                                    {currentCall?.id === call.id && isPlaying ? <Pause size={10} fill="currentColor" /> : <Play size={10} fill="currentColor" className={currentCall?.id === call.id ? '' : 'ml-0.5'} />}
                                                                 </div>
-                                                                {call.duration > 0 && (
-                                                                    <span className={`text-xs font-mono group-hover/player:text-blue-700 ${currentCall?.id === call.id ? 'text-blue-700 font-semibold' : 'text-gray-600'}`}>
-                                                                        {call.duration >= 60 ? `${Math.floor(call.duration / 60)}:${String(call.duration % 60).padStart(2, '0')}` : `0:${String(call.duration).padStart(2, '0')}`}
-                                                                    </span>
-                                                                )}
+                                                                <span className={`text-xs font-mono group-hover/player:text-blue-700 ${currentCall?.id === call.id ? 'text-blue-700 font-semibold' : 'text-gray-600'}`}>
+                                                                    {currentCall?.id === call.id ? (
+                                                                        `${Math.floor(currentTime / 60)}:${String(Math.floor(currentTime % 60)).padStart(2, '0')}`
+                                                                    ) : (
+                                                                        call.duration > 0 ? (
+                                                                            call.duration >= 60 ? `${Math.floor(call.duration / 60)}:${String(call.duration % 60).padStart(2, '0')}` : `0:${String(call.duration).padStart(2, '0')}`
+                                                                        ) : '0:00'
+                                                                    )}
+                                                                </span>
                                                             </button>
                                                         ) : (
                                                             call.duration === 0 || call.duration === '0' ? (
                                                                 <span className="text-gray-300">-</span>
-                                                            ) : call.recording_status === 'pending' ? (
+                                                            ) : call.upload_status === 'pending' ? (
                                                                 <span className="text-xs text-amber-500 italic flex items-center gap-1">
                                                                     <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse"></span>
                                                                     Pending Upload
