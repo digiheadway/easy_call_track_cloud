@@ -43,7 +43,7 @@ export default function LoginPage() {
             {/* Navbar */}
             <nav className="absolute top-0 w-full p-6 z-20">
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
-                    <a href="/website_static/index.html" className="flex items-center gap-2 group">
+                    <a href="/" className="flex items-center gap-2 group">
                         <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-white/10 transition-colors">
                             <ArrowLeft className="text-white w-4 h-4" />
                         </div>
