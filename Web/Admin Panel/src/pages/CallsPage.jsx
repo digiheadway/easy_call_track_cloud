@@ -441,7 +441,104 @@ export default function CallsPage() {
         setPagination(prev => ({ ...prev, page: 1 }));
     }, [direction, dateRange, customRange.startDate, customRange.endDate, selectedEmployee, reviewedFilter, connectedFilter, noteFilter, recordingFilter, durationFilter, JSON.stringify(customFilters)]);
 
-    // Save column settings
+    // --- Settings Sync Logic ---
+    const isFirstLoad = useRef(true);
+
+    // Save Settings to API (Debounced)
+    useEffect(() => {
+        if (isFirstLoad.current) return;
+
+        const timer = setTimeout(() => {
+            const settings = {
+                filters: {
+                    direction, reviewed: reviewedFilter, dateRange, customRange, employee: selectedEmployee,
+                    connected: connectedFilter, note: noteFilter, recording: recordingFilter,
+                    duration: durationFilter, label: labelFilter, name: nameFilter,
+                    visible: visibleFilters, order: filterOrder
+                },
+                columns: {
+                    visible: visibleColumns, widths: columnWidths, order: columnOrder, options: contactColumnOptions
+                },
+                ui: {
+                    sort: sortConfig, showFilterBar
+                },
+                customFilters: {
+                    active: customFilters, sets: savedFilterSets
+                }
+            };
+
+            api.post('/user_settings.php', {
+                key: 'calls_page_config',
+                value: settings
+            }).catch(err => console.error("Failed to save settings", err));
+
+        }, 2000); // 2 second debounce
+
+        return () => clearTimeout(timer);
+    }, [
+        direction, reviewedFilter, dateRange, customRange, selectedEmployee,
+        connectedFilter, noteFilter, recordingFilter, durationFilter, labelFilter, nameFilter,
+        visibleFilters, filterOrder,
+        visibleColumns, columnWidths, columnOrder, contactColumnOptions,
+        sortConfig, showFilterBar,
+        customFilters, savedFilterSets
+    ]);
+
+    // Load Settings from API on Mount
+    useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                const res = await api.get('/user_settings.php?key=calls_page_config');
+                if (res.data?.data?.value) {
+                    const s = res.data.data.value;
+
+                    // Restore Filters
+                    if (s.filters) {
+                        if (s.filters.direction) setDirection(s.filters.direction);
+                        if (s.filters.reviewed) setReviewedFilter(s.filters.reviewed);
+                        if (s.filters.dateRange) setDateRange(s.filters.dateRange);
+                        if (s.filters.customRange) setCustomRange(s.filters.customRange);
+                        if (s.filters.employee) setSelectedEmployee(s.filters.employee);
+                        if (s.filters.connected) setConnectedFilter(s.filters.connected);
+                        if (s.filters.note) setNoteFilter(s.filters.note);
+                        if (s.filters.recording) setRecordingFilter(s.filters.recording);
+                        if (s.filters.duration) setDurationFilter(s.filters.duration);
+                        if (s.filters.label) setLabelFilter(s.filters.label);
+                        if (s.filters.name) setNameFilter(s.filters.name);
+                        if (s.filters.visible) setVisibleFilters(s.filters.visible);
+                        if (s.filters.order) setFilterOrder(s.filters.order);
+                    }
+
+                    // Restore Columns
+                    if (s.columns) {
+                        if (s.columns.visible) setVisibleColumns(s.columns.visible);
+                        if (s.columns.widths) setColumnWidths(s.columns.widths);
+                        if (s.columns.order) setColumnOrder(s.columns.order);
+                        if (s.columns.options) setContactColumnOptions(s.columns.options);
+                    }
+
+                    // Restore UI
+                    if (s.ui) {
+                        if (s.ui.sort) setSortConfig(s.ui.sort);
+                        if (s.ui.showFilterBar !== undefined) setShowFilterBar(s.ui.showFilterBar);
+                    }
+
+                    // Restore Custom Filters
+                    if (s.customFilters) {
+                        if (s.customFilters.active) setCustomFilters(s.customFilters.active);
+                        if (s.customFilters.sets) setSavedFilterSets(s.customFilters.sets);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load settings", err);
+            } finally {
+                isFirstLoad.current = false;
+            }
+        };
+        loadSettings();
+    }, []);
+
+    // Save column settings (Keep localStorage for backup/offline speed)
     useEffect(() => {
         localStorage.setItem('calls_visible_columns', JSON.stringify(visibleColumns));
     }, [visibleColumns]);
