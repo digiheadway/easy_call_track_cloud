@@ -1,4 +1,5 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import {
     LayoutDashboard,
     BarChart2,
@@ -10,7 +11,12 @@ import {
     UserX,
     ChevronLeft,
     ChevronRight,
-    X
+    CreditCard,
+    HardDrive,
+    X,
+    Bell,
+    ChevronDown,
+    LayoutGrid
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { clsx } from 'clsx';
@@ -27,29 +33,57 @@ export default function Sidebar({
     setIsMobileOpen,
     isMobile
 }) {
-    const { user, logout } = useAuth();
+    const { user, logout, unreadNotificationsCount } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Manage Section Collapse State
+    const [isManageOpen, setIsManageOpen] = useState(true);
 
     const handleLogout = () => {
         logout();
         navigate('/login');
     };
 
-    const navItems = [
+    const mainItems = [
         { name: 'Dashboard', icon: LayoutDashboard, path: '/' },
         { name: 'Reports', icon: BarChart2, path: '/reports' },
         { name: 'Calls', icon: Phone, path: '/calls' },
+    ];
+
+    const manageItems = [
         { name: 'Employees', icon: Users, path: '/employees' },
         { name: 'Exclusions', icon: UserX, path: '/excluded' },
+        { name: 'Storage', icon: HardDrive, path: '/storage' },
+    ];
+
+    const bottomItems = [
+        { name: 'Notifications', icon: Bell, path: '/notifications' },
+        { name: 'Plans', icon: CreditCard, path: '/plans' },
         { name: 'Settings', icon: Settings, path: '/settings' },
     ];
+
+    // Open manage section automatically if we are on a manage page
+    useEffect(() => {
+        if (manageItems.some(item => location.pathname === item.path)) {
+            setIsManageOpen(true);
+        }
+    }, [location.pathname]);
+
+    const navLinkClass = ({ isActive }) => cn(
+        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+        isActive
+            ? "bg-blue-50 text-blue-600"
+            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+        isCollapsed && "justify-center px-2"
+    );
 
     const sidebarContent = (
         <div className="flex flex-col h-full bg-white border-r border-gray-200">
             {/* Header */}
             <div className={cn("p-6 flex items-center h-20 transition-all duration-300", isCollapsed ? "justify-center px-2" : "justify-between")}>
-                {/* Logo Area - Only visible when not collapsed or on mobile */}
-                <div className={cn("flex items-center gap-2 text-blue-600 font-bold text-xl overflow-hidden transition-all duration-300",
+                {/* Logo Area */}
+                <div className={cn("flex items-center gap-2 text-blue-600 font-bold text-xl transition-all duration-300",
                     (isCollapsed && !isMobile) ? "w-0 opacity-0 hidden" : "flex")}>
                     <Cloud size={24} className="flex-shrink-0" />
                     <span className="whitespace-nowrap">CallCloud</span>
@@ -80,28 +114,97 @@ export default function Sidebar({
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
-                {navItems.map((item) => (
+            <nav className="flex-1 px-3 space-y-1 overflow-y-auto pt-4 scrollbar-hide">
+                {/* Main Section */}
+                <div className="space-y-1">
+                    {mainItems.map((item) => (
+                        <NavLink
+                            key={item.name}
+                            to={item.path}
+                            onClick={() => isMobile && setIsMobileOpen(false)}
+                            className={navLinkClass}
+                            title={isCollapsed ? item.name : undefined}
+                        >
+                            <div className="relative">
+                                <item.icon size={18} className="flex-shrink-0" />
+                                {item.name === 'Notifications' && unreadNotificationsCount > 0 && (
+                                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                                        {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                                    </span>
+                                )}
+                            </div>
+                            <span className={cn("whitespace-nowrap transition-all duration-300", isCollapsed ? "w-0 opacity-0 hidden" : "block")}>
+                                {item.name}
+                            </span>
+                        </NavLink>
+                    ))}
+                </div>
+
+                {/* Manage Section */}
+                <div className="pt-4 mt-4 border-t border-gray-50">
+                    {!isCollapsed && (
+                        <div
+                            className="flex items-center justify-between px-3 mb-2 cursor-pointer group"
+                            onClick={() => setIsManageOpen(!isManageOpen)}
+                        >
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-blue-500 transition-colors">Manage</span>
+                            <ChevronDown
+                                size={12}
+                                className={cn("text-gray-400 transition-transform duration-300", isManageOpen ? "rotate-0" : "-rotate-90")}
+                            />
+                        </div>
+                    )}
+                    {isCollapsed && (
+                        <div className="flex justify-center mb-2">
+                            <div className="w-6 h-[1px] bg-gray-100" />
+                        </div>
+                    )}
+
+                    {(isManageOpen || isCollapsed) && (
+                        <div className="space-y-1">
+                            {manageItems.map((item) => (
+                                <NavLink
+                                    key={item.name}
+                                    to={item.path}
+                                    onClick={() => isMobile && setIsMobileOpen(false)}
+                                    className={navLinkClass}
+                                    title={isCollapsed ? item.name : undefined}
+                                >
+                                    <item.icon size={18} className="flex-shrink-0" />
+                                    <span className={cn("whitespace-nowrap transition-all duration-300", isCollapsed ? "w-0 opacity-0 hidden" : "block")}>
+                                        {item.name}
+                                    </span>
+                                </NavLink>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </nav>
+
+            {/* Bottom Utilities */}
+            <div className="px-3 py-4 space-y-1 border-t border-gray-100">
+                {bottomItems.map((item) => (
                     <NavLink
                         key={item.name}
                         to={item.path}
                         onClick={() => isMobile && setIsMobileOpen(false)}
-                        className={({ isActive }) => cn(
-                            "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-                            isActive
-                                ? "bg-blue-50 text-blue-600"
-                                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                            isCollapsed && "justify-center px-2"
-                        )}
+                        className={navLinkClass}
                         title={isCollapsed ? item.name : undefined}
                     >
-                        <item.icon size={20} className="flex-shrink-0" />
+                        <div className="relative">
+                            <item.icon size={18} className="flex-shrink-0" />
+                            {item.name === 'Notifications' && unreadNotificationsCount > 0 && (
+                                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                                    {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                                </span>
+                            )}
+                        </div>
                         <span className={cn("whitespace-nowrap transition-all duration-300", isCollapsed ? "w-0 opacity-0 hidden" : "block")}>
                             {item.name}
                         </span>
                     </NavLink>
                 ))}
-            </nav>
+            </div>
 
             {/* Footer */}
             <div className="p-4 border-t border-gray-100 mt-auto">

@@ -38,7 +38,14 @@ import {
     GripVertical,
     Eye,
     Edit3,
-    AlertTriangle
+    AlertTriangle,
+    Clock,
+    User,
+    Activity,
+    PlayCircle,
+    Briefcase,
+    Smartphone,
+    EyeOff
 } from 'lucide-react';
 
 import Modal from '../components/Modal';
@@ -55,8 +62,21 @@ const LabelCell = ({ call, onUpdate }) => {
         'Important', 'Follow Up', 'Resolved', 'Pending', 'Callback',
         'Wrong Number', 'Inquiry', 'Complaint', 'Order', 'Hot Lead'
     ];
+    const [isAdding, setIsAdding] = useState(false);
+    const [inputValue, setInputValue] = useState('');
 
     const currentLabels = call.labels ? call.labels.split(',').filter(Boolean) : [];
+
+    const getLabelColor = (label) => {
+        const l = label.toLowerCase();
+        if (l.includes('important')) return 'bg-rose-100 text-rose-700 border-rose-200';
+        if (l.includes('follow')) return 'bg-amber-100 text-amber-700 border-amber-200';
+        if (l.includes('resolved')) return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        if (l.includes('callback')) return 'bg-indigo-100 text-indigo-700 border-indigo-200';
+        if (l.includes('lead')) return 'bg-blue-100 text-blue-700 border-blue-200';
+        if (l.includes('hot')) return 'bg-orange-100 text-orange-700 border-orange-200';
+        return 'bg-slate-100 text-slate-700 border-slate-200';
+    };
 
     const openModal = async () => {
         setPendingLabels([...currentLabels]);
@@ -107,7 +127,7 @@ const LabelCell = ({ call, onUpdate }) => {
         <>
             <div className="flex flex-wrap gap-1.5 max-w-[200px]" onClick={e => e.stopPropagation()}>
                 {currentLabels.map(label => (
-                    <span key={label} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-medium border border-blue-100">
+                    <span key={label} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border shadow-sm transition-all ${getLabelColor(label)}`}>
                         {label}
                         <button
                             onClick={(e) => { e.stopPropagation(); onUpdate(call.id, call.labels, 'remove', label); }}
@@ -117,117 +137,121 @@ const LabelCell = ({ call, onUpdate }) => {
                         </button>
                     </span>
                 ))}
-                <button
-                    onClick={openModal}
-                    className="w-5 h-5 rounded flex items-center justify-center border border-dashed border-gray-300 text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors bg-white/50"
-                    title="Add Label"
-                >
-                    <Plus size={12} />
-                </button>
-            </div>
-
-            {/* Label Picker Modal */}
-            {showModal && createPortal(
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/30 backdrop-blur-[2px]" onClick={() => setShowModal(false)}>
-                    <div
-                        className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-150"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div className="px-4 py-3 bg-blue-50 border-b border-blue-100 flex justify-between items-center">
-                            <h3 className="font-semibold text-blue-900 text-sm">Select Labels</h3>
-                            <button onClick={() => setShowModal(false)} className="text-blue-400 hover:text-blue-600">
-                                <X size={18} />
-                            </button>
-                        </div>
-
-                        <div className="p-4">
-                            {/* Search Input */}
-                            <div className="relative mb-3">
-                                <input
-                                    type="text"
-                                    value={labelSearch}
-                                    onChange={(e) => setLabelSearch(e.target.value)}
-                                    placeholder="Search or add new label..."
-                                    className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-300"
-                                    autoFocus
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && labelSearch.trim()) {
-                                            addCustomLabel();
-                                        }
-                                    }}
-                                />
-                                {labelSearch.trim() && !filteredSuggestions.includes(labelSearch.trim()) && (
+                {isAdding ? (
+                    <div className="relative">
+                        <input
+                            autoFocus
+                            type="text"
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    const val = inputValue.trim();
+                                    if (val) {
+                                        onUpdate(call.id, [...currentLabels, val].join(','), 'set');
+                                    }
+                                    setInputValue('');
+                                    setIsAdding(false);
+                                } else if (e.key === 'Escape') {
+                                    setIsAdding(false);
+                                    setInputValue('');
+                                }
+                            }}
+                            onBlur={() => {
+                                setTimeout(() => {
+                                    setIsAdding(false);
+                                    setInputValue('');
+                                }, 200);
+                            }}
+                            placeholder="Type label..."
+                            className="text-[11px] px-2 py-0.5 border border-blue-400 rounded-lg outline-none w-24 bg-white shadow-sm"
+                        />
+                        <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-gray-100 rounded-lg shadow-xl z-50 max-h-72 overflow-y-auto p-1 flex flex-col gap-0.5">
+                            {defaultSuggestions
+                                .filter(s => s.toLowerCase().includes(inputValue.toLowerCase()) && !currentLabels.includes(s))
+                                .map(s => (
                                     <button
-                                        onClick={addCustomLabel}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-xs bg-blue-600 text-white px-2 py-1 rounded font-medium hover:bg-blue-700"
+                                        key={s}
+                                        onMouseDown={(e) => {
+                                            e.preventDefault();
+                                            onUpdate(call.id, [...currentLabels, s].join(','), 'set');
+                                            setInputValue('');
+                                            setIsAdding(false);
+                                        }}
+                                        className="w-full text-left px-2 py-1.5 text-[11px] hover:bg-blue-50 rounded transition-colors font-semibold text-gray-700 whitespace-nowrap"
                                     >
-                                        Add "{labelSearch.trim()}"
+                                        {s}
                                     </button>
-                                )}
-                            </div>
-
-                            {/* Selected Labels */}
-                            {pendingLabels.length > 0 && (
-                                <div className="mb-3">
-                                    <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">Selected</p>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {pendingLabels.map(label => (
-                                            <span
-                                                key={label}
-                                                onClick={() => toggleLabel(label)}
-                                                className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-600 text-white text-xs font-medium cursor-pointer hover:bg-blue-700 transition-colors"
-                                            >
-                                                {label}
-                                                <X size={12} />
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
+                                ))}
+                            {inputValue.trim() && !defaultSuggestions.some(s => s.toLowerCase() === inputValue.toLowerCase()) && (
+                                <button
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        onUpdate(call.id, [...currentLabels, inputValue.trim()].join(','), 'set');
+                                        setInputValue('');
+                                        setIsAdding(false);
+                                    }}
+                                    className="w-full text-left px-2 py-1.5 text-[11px] hover:bg-green-50 text-green-700 rounded transition-colors font-bold border-t border-gray-50 mt-1 pt-1"
+                                >
+                                    + Add "{inputValue.trim()}"
+                                </button>
                             )}
-
-                            {/* Suggestions */}
-                            <div>
-                                <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">Suggestions</p>
-                                <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
-                                    {filteredSuggestions.length === 0 ? (
-                                        <span className="text-xs text-gray-400 italic">No suggestions found</span>
-                                    ) : (
-                                        filteredSuggestions.map(label => (
-                                            <button
-                                                key={label}
-                                                onClick={() => toggleLabel(label)}
-                                                className={`px-2 py-1 rounded-full text-xs font-medium border transition-all ${pendingLabels.includes(label)
-                                                    ? 'bg-blue-100 text-blue-700 border-blue-300'
-                                                    : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-blue-300 hover:text-blue-600'
-                                                    }`}
-                                            >
-                                                {label}
-                                            </button>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex justify-end gap-2">
-                            <button
-                                onClick={() => setShowModal(false)}
-                                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={saveLabels}
-                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-                            >
-                                Done
-                            </button>
+                            {inputValue === '' && defaultSuggestions.every(s => currentLabels.includes(s)) && (
+                                <div className="p-2 text-[10px] text-gray-400 italic text-center">All suggests used</div>
+                            )}
                         </div>
                     </div>
-                </div>,
-                document.body
-            )}
+                ) : (
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setIsAdding(true); }}
+                        className="w-6 h-6 rounded-lg flex items-center justify-center border border-dashed border-gray-300 text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-all bg-white hover:bg-blue-50/50 shadow-sm"
+                        title="Add Label"
+                    >
+                        <Plus size={14} />
+                    </button>
+                )}
+            </div>
+
+
         </>
+    );
+};
+
+
+const CallTypeBadge = ({ type, duration, showDuration = true }) => {
+    const t = type?.toLowerCase() || '';
+    let icon = <PhoneIncoming size={14} />;
+    let colors = 'bg-emerald-50 text-emerald-700 border-emerald-100';
+    let label = type;
+
+    if (t.includes('missed')) {
+        icon = <PhoneMissed size={14} />;
+        colors = 'bg-rose-50 text-rose-700 border-rose-100';
+    } else if (t.includes('outgoing') || t.includes('out')) {
+        icon = <PhoneOutgoing size={14} />;
+        colors = 'bg-blue-50 text-blue-700 border-blue-100';
+    } else if (t.includes('reject') || t.includes('block')) {
+        icon = <PhoneMissed size={14} className="rotate-45" />;
+        colors = 'bg-amber-50 text-amber-700 border-amber-100';
+    }
+
+    return (
+        <div className="flex flex-col items-start">
+            <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border ${colors} font-medium text-xs uppercase tracking-wider shadow-sm transition-transform hover:scale-105`}>
+                {icon}
+                <div className="flex items-center gap-2">
+                    <span>{label}</span>
+                    {duration > 0 && showDuration && (
+                        <>
+                            <span className="w-1 h-1 rounded-full bg-current opacity-30" />
+                            <span className="font-semibold opacity-80">
+                                {duration >= 60 ? `${Math.floor(duration / 60)}m ${duration % 60}s` : `${duration}s`}
+                            </span>
+                        </>
+                    )}
+                </div>
+            </span>
+        </div>
     );
 };
 
@@ -347,7 +371,7 @@ export default function CallsPage() {
 
     const [contactColumnOptions, setContactColumnOptions] = useState(() => {
         const saved = localStorage.getItem('calls_contact_column_options');
-        return saved ? JSON.parse(saved) : { showPhone: true, showReview: true };
+        return saved ? JSON.parse(saved) : { showPhone: true, showReview: true, showDuration: true };
     });
 
     // New Calls Notification Logic
@@ -412,8 +436,17 @@ export default function CallsPage() {
         isOpen: false,
         title: '',
         message: '',
-        action: null,
+        onConfirm: null,
         isDestructive: false
+    });
+
+    // Prompt Modal State
+    const [promptModal, setPromptModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        value: '',
+        onConfirm: null
     });
 
     // Calculate active filter count
@@ -1056,14 +1089,22 @@ export default function CallsPage() {
     const renameFilterSet = (id, e) => {
         if (e) e.stopPropagation();
         const setToRename = savedFilterSets.find(s => s.id === id);
-        const newName = window.prompt("Enter new name for the segment:", setToRename?.name);
-        if (newName && newName.trim()) {
-            setSavedFilterSets(prev => prev.map(s => s.id === id ? { ...s, name: newName.trim() } : s));
-            if (activeSegement?.id === id) {
-                setActiveSegement(prev => ({ ...prev, name: newName.trim() }));
+
+        setPromptModal({
+            isOpen: true,
+            title: 'Rename Segment',
+            message: 'Enter new name for the segment:',
+            value: setToRename?.name || '',
+            onConfirm: (newName) => {
+                if (newName && newName.trim()) {
+                    setSavedFilterSets(prev => prev.map(s => s.id === id ? { ...s, name: newName.trim() } : s));
+                    if (activeSegement?.id === id) {
+                        setActiveSegement(prev => ({ ...prev, name: newName.trim() }));
+                    }
+                    toast.success("Segment renamed");
+                }
             }
-            toast.success("Segment renamed");
-        }
+        });
     };
 
     const applyFilterSet = (set) => {
@@ -1171,7 +1212,7 @@ export default function CallsPage() {
                                     placeholder="Search calls..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    className="pl-10 pr-4 py-2 text-sm bg-transparent border-none outline-none w-full lg:w-64 font-medium"
+                                    className="pl-10 pr-4 py-2.5 text-base bg-transparent border-none outline-none w-full lg:w-72 font-medium"
                                 />
                             </div>
                             <div className="w-px h-6 bg-gray-200 mx-2"></div>
@@ -1243,14 +1284,14 @@ export default function CallsPage() {
                                             <select
                                                 value={selectedEmployee || ''}
                                                 onChange={(e) => setSelectedEmployee(e.target.value)}
-                                                className="appearance-none text-sm border border-gray-200 rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 font-medium transition-all hover:bg-gray-100 cursor-pointer text-gray-700 w-full min-w-[150px]"
+                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none transition-all cursor-pointer w-full min-w-[150px] ${selectedEmployee ? 'border-2 border-blue-400 bg-blue-50 text-blue-700 font-bold shadow-sm' : 'border border-gray-200 text-gray-700 font-medium hover:bg-gray-100'}`}
                                             >
                                                 <option value="">All Employees</option>
                                                 {employees.map(emp => (
                                                     <option key={emp.id} value={emp.id}>{emp.name}</option>
                                                 ))}
                                             </select>
-                                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-600" />
+                                            <ChevronDown size={14} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${selectedEmployee ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-600'}`} />
                                         </div>
                                     );
                                     if (id === 'type') return (
@@ -1258,7 +1299,7 @@ export default function CallsPage() {
                                             <select
                                                 value={direction}
                                                 onChange={(e) => setDirection(e.target.value)}
-                                                className="appearance-none text-sm border border-gray-200 rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 font-medium transition-all hover:bg-gray-100 cursor-pointer text-gray-700"
+                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none transition-all cursor-pointer ${direction !== 'all' ? 'border-2 border-blue-400 bg-blue-50 text-blue-700 font-bold shadow-sm' : 'border border-gray-200 text-gray-700 font-medium hover:bg-gray-100'}`}
                                             >
                                                 <option value="all">All Types</option>
                                                 <option value="inbound">Inbound</option>
@@ -1267,7 +1308,7 @@ export default function CallsPage() {
                                                 <option value="rejected">Rejected</option>
                                                 <option value="blocked">Blocked</option>
                                             </select>
-                                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-600" />
+                                            <ChevronDown size={14} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${direction !== 'all' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-600'}`} />
                                         </div>
                                     );
                                     if (id === 'connected') return (
@@ -1275,13 +1316,13 @@ export default function CallsPage() {
                                             <select
                                                 value={connectedFilter}
                                                 onChange={(e) => setConnectedFilter(e.target.value)}
-                                                className="appearance-none text-sm border border-gray-200 rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 font-medium transition-all hover:bg-gray-100 cursor-pointer text-gray-700"
+                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none transition-all cursor-pointer ${connectedFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 text-blue-700 font-bold shadow-sm' : 'border border-gray-200 text-gray-700 font-medium hover:bg-gray-100'}`}
                                             >
                                                 <option value="all">All Connections</option>
                                                 <option value="connected">Connected</option>
                                                 <option value="not_connected">Not Connected</option>
                                             </select>
-                                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-600" />
+                                            <ChevronDown size={14} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${connectedFilter !== 'all' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-600'}`} />
                                         </div>
                                     );
                                     if (id === 'name') return (
@@ -1289,13 +1330,13 @@ export default function CallsPage() {
                                             <select
                                                 value={nameFilter}
                                                 onChange={(e) => setNameFilter(e.target.value)}
-                                                className="appearance-none text-sm border border-gray-200 rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 font-medium transition-all hover:bg-gray-100 cursor-pointer text-gray-700"
+                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none transition-all cursor-pointer ${nameFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 text-blue-700 font-bold shadow-sm' : 'border border-gray-200 text-gray-700 font-medium hover:bg-gray-100'}`}
                                             >
                                                 <option value="all">All Names</option>
                                                 <option value="has_name">Has Name</option>
                                                 <option value="no_name">No Name</option>
                                             </select>
-                                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-600" />
+                                            <ChevronDown size={14} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${nameFilter !== 'all' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-600'}`} />
                                         </div>
                                     );
                                     if (id === 'status') return (
@@ -1303,13 +1344,13 @@ export default function CallsPage() {
                                             <select
                                                 value={reviewedFilter}
                                                 onChange={(e) => setReviewedFilter(e.target.value)}
-                                                className="appearance-none text-sm border border-gray-200 rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 font-medium transition-all hover:bg-gray-100 cursor-pointer text-gray-700"
+                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none transition-all cursor-pointer ${reviewedFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 text-blue-700 font-bold shadow-sm' : 'border border-gray-200 text-gray-700 font-medium hover:bg-gray-100'}`}
                                             >
                                                 <option value="all">All Status</option>
                                                 <option value="reviewed">Reviewed</option>
                                                 <option value="not_reviewed">Not Reviewed</option>
                                             </select>
-                                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-600" />
+                                            <ChevronDown size={14} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${reviewedFilter !== 'all' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-600'}`} />
                                         </div>
                                     );
                                     if (id === 'notes') return (
@@ -1317,7 +1358,7 @@ export default function CallsPage() {
                                             <select
                                                 value={noteFilter}
                                                 onChange={(e) => setNoteFilter(e.target.value)}
-                                                className="appearance-none text-sm border border-gray-200 rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 font-medium transition-all hover:bg-gray-100 cursor-pointer text-gray-700"
+                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none transition-all cursor-pointer ${noteFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 text-blue-700 font-bold shadow-sm' : 'border border-gray-200 text-gray-700 font-medium hover:bg-gray-100'}`}
                                             >
                                                 <option value="all">All Notes</option>
                                                 <option value="has_call_note">Has Call Note</option>
@@ -1326,7 +1367,7 @@ export default function CallsPage() {
                                                 <option value="no_person_note">No Person Note</option>
                                                 <option value="has_any_note">Has Any Note</option>
                                             </select>
-                                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-600" />
+                                            <ChevronDown size={14} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${noteFilter !== 'all' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-600'}`} />
                                         </div>
                                     );
                                     if (id === 'recording') return (
@@ -1334,14 +1375,14 @@ export default function CallsPage() {
                                             <select
                                                 value={recordingFilter}
                                                 onChange={(e) => setRecordingFilter(e.target.value)}
-                                                className="appearance-none text-sm border border-gray-200 rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 font-medium transition-all hover:bg-gray-100 cursor-pointer text-gray-700"
+                                                className={`appearance-none text-base rounded-xl py-2.5 pl-4 pr-10 bg-gray-50 outline-none transition-all cursor-pointer ${recordingFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 text-blue-700 font-bold shadow-sm' : 'border border-gray-200 text-gray-700 font-medium hover:bg-gray-100'}`}
                                             >
                                                 <option value="all">All Recording</option>
                                                 <option value="has_recording">Has Recording</option>
                                                 <option value="no_recording">No Recording</option>
                                                 <option value="pending_upload">Pending Upload</option>
                                             </select>
-                                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-600" />
+                                            <ChevronDown size={16} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${recordingFilter !== 'all' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-600'}`} />
                                         </div>
                                     );
                                     if (id === 'duration') return (
@@ -1349,7 +1390,7 @@ export default function CallsPage() {
                                             <select
                                                 value={durationFilter}
                                                 onChange={(e) => setDurationFilter(e.target.value)}
-                                                className="appearance-none text-sm border border-gray-200 rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 font-medium transition-all hover:bg-gray-100 cursor-pointer text-gray-700"
+                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none transition-all cursor-pointer ${durationFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 text-blue-700 font-bold shadow-sm' : 'border border-gray-200 text-gray-700 font-medium hover:bg-gray-100'}`}
                                             >
                                                 <option value="all">Any Duration</option>
                                                 <option value="under_30s">Under 30s</option>
@@ -1357,7 +1398,7 @@ export default function CallsPage() {
                                                 <option value="1m_to_5m">1 - 5 min</option>
                                                 <option value="over_5m">Over 5 min</option>
                                             </select>
-                                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-600" />
+                                            <ChevronDown size={14} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${durationFilter !== 'all' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-600'}`} />
                                         </div>
                                     );
                                     if (id === 'labels') return (
@@ -1365,14 +1406,14 @@ export default function CallsPage() {
                                             <select
                                                 value={labelFilter}
                                                 onChange={(e) => setLabelFilter(e.target.value)}
-                                                className="appearance-none text-sm border border-gray-200 rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 font-medium transition-all hover:bg-gray-100 cursor-pointer text-gray-700"
+                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none transition-all cursor-pointer ${labelFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 text-blue-700 font-bold shadow-sm' : 'border border-gray-200 text-gray-700 font-medium hover:bg-gray-100'}`}
                                             >
                                                 <option value="all">All Labels</option>
                                                 {availableLabels.map(label => (
                                                     <option key={label} value={label}>{label}</option>
                                                 ))}
                                             </select>
-                                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-600" />
+                                            <ChevronDown size={14} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${labelFilter !== 'all' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-600'}`} />
                                         </div>
                                     );
                                     if (id === 'segments') return (
@@ -1486,14 +1527,20 @@ export default function CallsPage() {
 
                             {/* Sticky Filter Settings Button */}
                             {/* Sticky Filter Settings Button + Clear Filters */}
-                            <div className="absolute right-0 top-0 bottom-0 flex items-center gap-2 pr-4 pl-8 bg-gradient-to-l from-white via-white to-transparent pointer-events-auto">
+                            <div className="absolute right-0 top-0 bottom-0 flex items-center gap-2 pr-5 pl-10 bg-gradient-to-l from-white via-white to-transparent pointer-events-auto">
+                                <button
+                                    onClick={() => setShowFilterCustomization(true)}
+                                    className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-white bg-gray-50 rounded-xl transition-all shadow-sm border border-gray-100 group"
+                                    title="Filter Settings"
+                                >
+                                    <Settings size={18} className="group-hover:rotate-90 transition-transform" />
+                                </button>
                                 <button
                                     onClick={() => setShowFilterBar(false)}
-                                    className="flex items-center gap-1 px-2.5 py-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all shadow-sm border border-gray-100 bg-white group"
-                                    title="Close Filter Bar"
+                                    className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 bg-gray-50 rounded-xl transition-all shadow-sm border border-gray-100 group"
+                                    title="Close Filters"
                                 >
-                                    <Settings size={16} className="group-hover:rotate-90 transition-transform" />
-                                    <X size={14} />
+                                    <X size={18} />
                                 </button>
                                 {activeFilterCount > 0 && (
                                     <button
@@ -1504,13 +1551,7 @@ export default function CallsPage() {
                                         Clear Filters
                                     </button>
                                 )}
-                                <button
-                                    onClick={() => setShowFilterCustomization(true)}
-                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all shadow-sm border border-gray-100 bg-white"
-                                    title="Customize Filters"
-                                >
-                                    <Settings size={18} />
-                                </button>
+
                             </div>
                         </div>
                     )}
@@ -1649,7 +1690,7 @@ export default function CallsPage() {
                     <div className="card !p-0 overflow-hidden border border-gray-200 shadow-sm w-full max-w-full">
                         <div className="overflow-x-auto w-full">
                             <table className="w-full text-sm text-left table-fixed">
-                                <thead className="bg-[#f8fafc] border-b border-gray-100 text-gray-500 font-medium whitespace-nowrap sticky top-0 z-20">
+                                <thead className="bg-[#f8fafc] border-b-2 border-gray-100 text-gray-500 font-bold uppercase tracking-widest text-[11px] whitespace-nowrap sticky top-0 z-20 shadow-sm transition-all">
                                     <tr>
                                         {columnOrder.filter(id => visibleColumns.includes(id)).map(id => {
                                             const width = columnWidths[id] || 150;
@@ -1657,7 +1698,7 @@ export default function CallsPage() {
 
                                             const commonProps = {
                                                 key: id,
-                                                className: `relative px-4 py-4 cursor-pointer hover:bg-gray-100 transition-colors group select-none ${draggedColumn === id ? 'opacity-50 bg-gray-100' : ''}`,
+                                                className: `relative px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors group select-none ${draggedColumn === id ? 'opacity-50 bg-gray-100' : ''}`,
                                                 style: { width: `${width}px`, minWidth: `${width}px`, maxWidth: `${width}px` },
                                                 draggable: true,
                                                 onDragStart: (e) => handleColumnDragStart(e, id),
@@ -1676,7 +1717,7 @@ export default function CallsPage() {
                                             if (id === 'time') return (
                                                 <th {...commonProps} onClick={() => handleSort('call_time')}>
                                                     <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-1 overflow-hidden">Time {getSortIcon('call_time')}</div>
+                                                        <div className="flex items-center gap-2 overflow-hidden"><Clock size={12} className="text-gray-400 shrink-0" /> Time {getSortIcon('call_time')}</div>
                                                     </div>
                                                     <ResizeHandle />
                                                 </th>
@@ -1684,7 +1725,7 @@ export default function CallsPage() {
                                             if (id === 'contact') return (
                                                 <th {...commonProps} onClick={() => handleSort('contact_name')}>
                                                     <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-1 overflow-hidden">Contact {getSortIcon('contact_name')}</div>
+                                                        <div className="flex items-center gap-2 overflow-hidden"><User size={12} className="text-gray-400 shrink-0" /> Contact {getSortIcon('contact_name')}</div>
                                                     </div>
                                                     <ResizeHandle />
                                                 </th>
@@ -1692,7 +1733,7 @@ export default function CallsPage() {
                                             if (id === 'type') return (
                                                 <th {...commonProps} onClick={() => handleSort('type')}>
                                                     <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-1 overflow-hidden">Type {getSortIcon('type')}</div>
+                                                        <div className="flex items-center gap-2 overflow-hidden"><Activity size={12} className="text-gray-400 shrink-0" /> Type {getSortIcon('type')}</div>
                                                     </div>
                                                     <ResizeHandle />
                                                 </th>
@@ -1700,7 +1741,7 @@ export default function CallsPage() {
                                             if (id === 'person_note') return (
                                                 <th {...commonProps} className={`${commonProps.className} !cursor-default`} onClick={undefined}>
                                                     <div className="flex items-center justify-between">
-                                                        <span className="overflow-hidden">Person Note</span>
+                                                        <span className="overflow-hidden flex items-center gap-2"><Edit3 size={12} className="text-gray-400 shrink-0" /> Person Note</span>
                                                     </div>
                                                     <ResizeHandle />
                                                 </th>
@@ -1708,7 +1749,7 @@ export default function CallsPage() {
                                             if (id === 'note') return (
                                                 <th {...commonProps} className={`${commonProps.className} !cursor-default`} onClick={undefined}>
                                                     <div className="flex items-center justify-between">
-                                                        <span className="overflow-hidden">Call Note</span>
+                                                        <span className="overflow-hidden flex items-center gap-2"><Tag size={12} className="text-gray-400 shrink-0" /> Call Note</span>
                                                     </div>
                                                     <ResizeHandle />
                                                 </th>
@@ -1716,7 +1757,7 @@ export default function CallsPage() {
                                             if (id === 'recording') return (
                                                 <th {...commonProps} onClick={() => handleSort('duration')}>
                                                     <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-1 overflow-hidden">Recording {getSortIcon('duration')}</div>
+                                                        <div className="flex items-center gap-2 overflow-hidden"><PlayCircle size={12} className="text-gray-400 shrink-0" /> Recording {getSortIcon('duration')}</div>
                                                     </div>
                                                     <ResizeHandle />
                                                 </th>
@@ -1724,7 +1765,7 @@ export default function CallsPage() {
                                             if (id === 'labels') return (
                                                 <th {...commonProps} className={`${commonProps.className} !cursor-default`} onClick={undefined}>
                                                     <div className="flex items-center justify-between">
-                                                        <span className="overflow-hidden">Labels</span>
+                                                        <span className="overflow-hidden flex items-center gap-2"><Layers size={12} className="text-gray-400 shrink-0" /> Labels</span>
                                                     </div>
                                                     <ResizeHandle />
                                                 </th>
@@ -1732,7 +1773,7 @@ export default function CallsPage() {
                                             if (id === 'employee') return (
                                                 <th {...commonProps} onClick={() => handleSort('employee_name')}>
                                                     <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-1 overflow-hidden">Employee {getSortIcon('employee_name')}</div>
+                                                        <div className="flex items-center gap-2 overflow-hidden"><Briefcase size={12} className="text-gray-400 shrink-0" /> Employee {getSortIcon('employee_name')}</div>
                                                     </div>
                                                     <ResizeHandle />
                                                 </th>
@@ -1740,7 +1781,7 @@ export default function CallsPage() {
                                             if (id === 'device_phone') return (
                                                 <th {...commonProps} onClick={() => handleSort('phone_number')}>
                                                     <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-1 overflow-hidden">Device Phone {getSortIcon('phone_number')}</div>
+                                                        <div className="flex items-center gap-2 overflow-hidden"><Smartphone size={12} className="text-gray-400 shrink-0" /> Device Phone {getSortIcon('phone_number')}</div>
                                                     </div>
                                                     <ResizeHandle />
                                                 </th>
@@ -1753,7 +1794,7 @@ export default function CallsPage() {
                                     {calls.map((call, index) => (
                                         <tr
                                             key={call.id}
-                                            className="hover:bg-blue-50/50 transition-colors group cursor-pointer"
+                                            className="hover:bg-blue-50/40 transition-all group cursor-pointer border-l-4 border-l-transparent hover:border-l-blue-500 py-6"
                                             onClick={() => {
                                                 markCallClicked(call.id);
                                                 openPersonModal(call);
@@ -1761,35 +1802,46 @@ export default function CallsPage() {
                                         >
                                             {columnOrder.filter(id => visibleColumns.includes(id)).map(id => {
                                                 if (id === 'time') return (
-                                                    <td key="time" className="px-6 py-4 text-xs text-gray-500 whitespace-nowrap">
-                                                        {format(new Date(call.call_time + (call.call_time.endsWith('Z') ? '' : 'Z')), 'MMM d, h:mm a')}
+                                                    <td key="time" className="px-6 py-5 whitespace-nowrap">
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <span className="text-sm font-semibold text-slate-700 leading-tight">
+                                                                {format(new Date(call.call_time + (call.call_time.endsWith('Z') ? '' : 'Z')), 'h:mm a')}
+                                                            </span>
+                                                            <span className="text-xs text-gray-400 font-medium">
+                                                                {format(new Date(call.call_time + (call.call_time.endsWith('Z') ? '' : 'Z')), 'MMM d, yyyy')}
+                                                            </span>
+                                                        </div>
                                                     </td>
                                                 );
                                                 if (id === 'contact') return (
-                                                    <td key="contact" className="px-6 py-4 truncate">
+                                                    <td key="contact" className="px-6 py-5 truncate">
                                                         <div className="flex items-center gap-3">
                                                             {contactColumnOptions.showReview && (
                                                                 <button
                                                                     onClick={(e) => { e.stopPropagation(); handleToggleReviewed(call.id, call.reviewed); }}
-                                                                    className="shrink-0 transition-transform active:scale-95"
+                                                                    className="shrink-0 transition-all active:scale-95 group/review"
                                                                     title={Number(call.reviewed) ? "Mark as unreviewed" : "Mark as reviewed"}
                                                                 >
-                                                                    {Number(call.reviewed) ? <CheckCircle2 className="text-green-500 fill-green-50" size={18} /> : <Circle className="text-gray-300 hover:text-green-500" size={18} />}
+                                                                    {Number(call.reviewed) ? (
+                                                                        <div className="p-1 rounded-full bg-green-50 text-green-600 border border-green-100 shadow-sm">
+                                                                            <CheckCircle2 size={16} fill="currentColor" fillOpacity={0.2} />
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="p-1 rounded-full bg-gray-50 text-gray-300 border border-gray-100 group-hover/review:text-green-500 group-hover/review:bg-green-50 transition-colors">
+                                                                            <Circle size={16} />
+                                                                        </div>
+                                                                    )}
                                                                 </button>
                                                             )}
-                                                            <div className="min-w-0 overflow-hidden">
-                                                                <div className="font-medium text-gray-900 truncate flex items-center gap-2" title={call.contact_name || call.phone_number}>
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="font-semibold text-slate-700 truncate flex items-center gap-2 group-hover:text-blue-600 transition-colors text-sm" title={call.contact_name || call.phone_number}>
                                                                     <span className="truncate">{call.contact_name || ((!contactColumnOptions.showPhone && !call.contact_name) ? call.phone_number : (contactColumnOptions.showPhone ? (call.contact_name ? call.contact_name : call.phone_number) : 'Unknown'))}</span>
                                                                     {newArrivals.some(n => n.id === call.id) && (
-                                                                        <span className="px-1.5 py-0.5 bg-blue-600 text-white text-[9px] font-black rounded uppercase tracking-tighter animate-pulse shrink-0">New</span>
+                                                                        <span className="px-2 py-0.5 bg-blue-600 text-white text-[11px] font-bold rounded shadow-lg shadow-blue-200 uppercase tracking-tighter animate-pulse shrink-0">New</span>
                                                                     )}
                                                                 </div>
                                                                 {contactColumnOptions.showPhone && call.contact_name && (
-                                                                    <div className="text-xs text-gray-500">{call.phone_number}</div>
-                                                                )}
-                                                                {!contactColumnOptions.showPhone && !call.contact_name && (
-                                                                    // If hiding phone but no name, we must show phone in main div. Logic handled above.
-                                                                    null
+                                                                    <div className="text-xs font-semibold text-gray-400 mt-1 tracking-tight group-hover:text-gray-500">{call.phone_number}</div>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -1797,20 +1849,7 @@ export default function CallsPage() {
                                                 );
                                                 if (id === 'type') return (
                                                     <td key="type" className="px-6 py-4">
-                                                        <div className="flex flex-col">
-                                                            <span className={`font-medium text-sm ${call.type?.toLowerCase().includes('missed') ? 'text-red-600' :
-                                                                call.type?.toLowerCase().includes('reject') ? 'text-orange-600' :
-                                                                    call.type?.toLowerCase().includes('block') ? 'text-gray-500' :
-                                                                        call.type?.toLowerCase().includes('in') ? 'text-gray-700' : 'text-gray-700'
-                                                                }`}>
-                                                                {call.type}
-                                                            </span>
-                                                            {call.duration > 0 && (
-                                                                <span className="text-xs text-gray-400">
-                                                                    ({call.duration >= 60 ? `${Math.floor(call.duration / 60)}m ${call.duration % 60}s` : `${call.duration}s`})
-                                                                </span>
-                                                            )}
-                                                        </div>
+                                                        <CallTypeBadge type={call.type} duration={call.duration} showDuration={contactColumnOptions.showDuration} />
                                                     </td>
                                                 );
                                                 if (id === 'person_note') return (
@@ -1844,13 +1883,13 @@ export default function CallsPage() {
                                                         {call.recording_url ? (
                                                             <button
                                                                 onClick={() => playRecording(call)}
-                                                                className="flex items-center gap-2 bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-200 px-3 py-1.5 rounded-full shadow-sm transition-all group/player"
+                                                                className={`flex items-center gap-3 px-4 py-2 rounded-xl border transition-all group/player shadow-sm ${currentCall?.id === call.id ? 'bg-blue-600 border-blue-600 text-white shadow-blue-200 scale-105' : 'bg-white border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-700 hover:shadow-md'}`}
                                                                 title="Play Recording"
                                                             >
-                                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${currentCall?.id === call.id ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-600 group-hover/player:bg-blue-600 group-hover/player:text-white'}`}>
-                                                                    {currentCall?.id === call.id && isPlaying ? <Pause size={10} fill="currentColor" /> : <Play size={10} fill="currentColor" className={currentCall?.id === call.id ? '' : 'ml-0.5'} />}
+                                                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${currentCall?.id === call.id ? 'bg-white/20' : 'bg-blue-100 text-blue-600 group-hover/player:bg-blue-600 group-hover/player:text-white'}`}>
+                                                                    {currentCall?.id === call.id && isPlaying ? <Pause size={12} fill="currentColor" /> : <Play size={12} fill="currentColor" className={currentCall?.id === call.id ? '' : 'ml-0.5'} />}
                                                                 </div>
-                                                                <span className={`text-xs font-mono group-hover/player:text-blue-700 ${currentCall?.id === call.id ? 'text-blue-700 font-semibold' : 'text-gray-600'}`}>
+                                                                <span className={`text-sm font-bold font-mono tracking-tight ${currentCall?.id === call.id ? 'text-white' : 'text-gray-600 group-hover/player:text-blue-700'}`}>
                                                                     {currentCall?.id === call.id ? (
                                                                         `${Math.floor(currentTime / 60)}:${String(Math.floor(currentTime % 60)).padStart(2, '0')}`
                                                                     ) : (
@@ -1880,13 +1919,23 @@ export default function CallsPage() {
                                                     </td>
                                                 );
                                                 if (id === 'employee') return (
-                                                    <td key="employee" className="px-6 py-4 font-medium text-xs whitespace-nowrap text-gray-600">
-                                                        {call.employee_name || 'System'}
+                                                    <td key="employee" className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center text-xs font-extrabold text-blue-600 border border-blue-200 uppercase shadow-sm">
+                                                                {(call.employee_name || 'S')[0]}
+                                                            </div>
+                                                            <span className="text-sm font-bold text-gray-700">{call.employee_name || 'System'}</span>
+                                                        </div>
                                                     </td>
                                                 );
                                                 if (id === 'device_phone') return (
-                                                    <td key="device_phone" className="px-6 py-4 text-xs text-gray-500 whitespace-nowrap">
-                                                        {call.device_phone || '-'}
+                                                    <td key="device_phone" className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="flex items-center gap-2 text-gray-500 font-bold text-xs tracking-tight">
+                                                            <div className="p-1 rounded-md bg-gray-50 border border-gray-100">
+                                                                <Smartphone size={12} className="text-gray-400" />
+                                                            </div>
+                                                            {call.device_phone || '-'}
+                                                        </div>
                                                     </td>
                                                 );
                                                 return null;
@@ -2048,6 +2097,48 @@ export default function CallsPage() {
                     </div>
                 </div>
             </Modal>
+
+            {/* Prompt Modal */}
+            <Modal
+                isOpen={promptModal.isOpen}
+                onClose={() => setPromptModal({ ...promptModal, isOpen: false })}
+                title={promptModal.title}
+                maxWidth="max-w-sm"
+            >
+                <div className="space-y-4">
+                    <p className="text-sm font-medium text-gray-600">{promptModal.message}</p>
+                    <input
+                        type="text"
+                        value={promptModal.value}
+                        onChange={(e) => setPromptModal({ ...promptModal, value: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                        autoFocus
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                promptModal.onConfirm(promptModal.value);
+                                setPromptModal({ ...promptModal, isOpen: false });
+                            }
+                        }}
+                    />
+                    <div className="flex gap-3 pt-2">
+                        <button
+                            onClick={() => setPromptModal({ ...promptModal, isOpen: false })}
+                            className="flex-1 px-4 py-2 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 font-medium"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={() => {
+                                promptModal.onConfirm(promptModal.value);
+                                setPromptModal({ ...promptModal, isOpen: false });
+                            }}
+                            className="flex-1 btn btn-primary"
+                        >
+                            Save
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </div >
     );
 }
@@ -2165,6 +2256,22 @@ function CustomizeViewModal({
                                             </div>
                                         </div>
                                     )}
+
+                                    {id === 'type' && visibleColumns.includes('type') && (
+                                        <div className="ml-12 mr-3 my-1 space-y-2 border-l-2 border-gray-100 pl-4 py-1">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs font-medium text-gray-500">Show Duration</span>
+                                                <button
+                                                    onClick={() => setContactColumnOptions(prev => ({ ...prev, showDuration: !prev.showDuration }))}
+                                                    className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors focus:outline-none ${contactColumnOptions?.showDuration ? 'bg-blue-600' : 'bg-gray-200'}`}
+                                                >
+                                                    <span
+                                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${contactColumnOptions?.showDuration ? 'translate-x-[14px]' : 'translate-x-[2px]'}`}
+                                                    />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -2223,7 +2330,7 @@ function CustomizeViewModal({
                     </button>
                 </div>
             </div>
-        </div>,
+        </div >,
         document.body
     );
 }

@@ -307,7 +307,7 @@ if ($action === "upload_chunk") {
     }
 
     // Check calls table and get org/device info for folder structure
-    $check = $conn->prepare("SELECT upload_status, org_id, device_phone FROM calls WHERE unique_id=?");
+    $check = $conn->prepare("SELECT upload_status, org_id, employee_id FROM calls WHERE unique_id=?");
     $check->bind_param("s", $unique_id);
     $check->execute();
     $res = $check->get_result();
@@ -321,11 +321,11 @@ if ($action === "upload_chunk") {
         errorOut("No recording expected for this call (already completed)");
     }
 
-    // Store chunks in user-specific folder: public/{ORG_ID}/{DEVICE_PHONE}/chunks/{unique_id}/
+    // Store chunks in user-specific folder: public/{ORG_ID}/{EMP_ID}/chunks/{unique_id}/
     $orgId = $row['org_id'] ?: 'unknown_org';
-    $devicePhone = safeCaller($row['device_phone'] ?: 'unknown');
+    $empId = $row['employee_id'] ?: 'unknown_emp';
     
-    $chunkDir = $PUBLIC_DIR . "$orgId/$devicePhone/chunks/$unique_id/";
+    $chunkDir = $PUBLIC_DIR . "$orgId/$empId/chunks/$unique_id/";
     if (!is_dir($chunkDir)) {
         if (!mkdir($chunkDir, 0777, true)) {
             errorOut("Failed to create chunk directory", 500);
@@ -351,7 +351,7 @@ if ($action === "finalize_upload") {
         errorOut("Missing finalize data");
 
     $stmt = $conn->prepare("
-        SELECT caller_phone, upload_status, device_phone, duration, org_id, call_time
+        SELECT caller_phone, upload_status, employee_id, duration, org_id, call_time
         FROM calls WHERE unique_id=?
     ");
     $stmt->bind_param("s", $unique_id);
@@ -366,11 +366,11 @@ if ($action === "finalize_upload") {
     }
 
     $callerSafe = safeCaller($call['caller_phone']);
-    $device_phone = safeCaller($call['device_phone'] ?: 'unknown');
+    $empId = $call['employee_id'] ?: 'unknown_emp';
     $duration = intval($call['duration']);
     $orgId = $call['org_id'] ?: 'unknown_org';
 
-    // Folder Structure: public/ORG_ID/DEVICE_PHONE/YYYY_MM/YYYYMMDD/
+    // Folder Structure: public/ORG_ID/EMP_ID/YYYY_MM/YYYYMMDD/
     // Use call_time for the folder structure and filename timestamp
     $deployTimestamp = (!empty($call['call_time']) && strtotime($call['call_time']) > 0) 
         ? strtotime($call['call_time']) 
@@ -380,7 +380,7 @@ if ($action === "finalize_upload") {
     $dateFolder = date("Ymd", $deployTimestamp);
     $timeNow = date("Ymd_His", $deployTimestamp);
 
-    $relPath = "$orgId/$device_phone/$monthFolder/$dateFolder/";
+    $relPath = "$orgId/$empId/$monthFolder/$dateFolder/";
     $finalDir = $PUBLIC_DIR . $relPath;
     
     if (!is_dir($finalDir)) {
@@ -395,8 +395,8 @@ if ($action === "finalize_upload") {
     $outFile = fopen($finalPath, "ab");
     if (!$outFile) errorOut("Failed to open output file", 500);
     
-    // Chunks are stored in user-specific folder: public/{ORG_ID}/{DEVICE_PHONE}/chunks/{unique_id}/
-    $chunkBaseDir = $PUBLIC_DIR . "$orgId/$device_phone/chunks/$unique_id/";
+    // Chunks are stored in user-specific folder: public/{ORG_ID}/{EMP_ID}/chunks/{unique_id}/
+    $chunkBaseDir = $PUBLIC_DIR . "$orgId/$empId/chunks/$unique_id/";
     
     for ($i = 0; $i < $total; $i++) {
         $chunkPath = $chunkBaseDir . $i;

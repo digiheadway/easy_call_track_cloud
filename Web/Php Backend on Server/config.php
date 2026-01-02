@@ -21,6 +21,16 @@ define('DB_NAME', 'u542940820_easycalls');
 define('TOKEN_EXPIRY_HOURS', 24);
 define('API_VERSION', 'v1');
 
+// Cashfree Payment Gateway Configuration
+// Get your sandbox API keys from: https://merchant.cashfree.com/merchants/pg-dashboard
+define('CASHFREE_APP_ID', ''); // Add your Cashfree App ID here
+define('CASHFREE_SECRET_KEY', ''); // Add your Cashfree Secret Key here
+define('CASHFREE_MODE', 'sandbox'); // 'sandbox' or 'production'
+define('CASHFREE_API_BASE', CASHFREE_MODE === 'production' 
+    ? 'https://api.cashfree.com/pg' 
+    : 'https://sandbox.cashfree.com/pg');
+define('CASHFREE_API_VERSION', '2023-08-01');
+
 // CORS Settings
 define('CORS_ALLOWED_ORIGINS', '*');
 

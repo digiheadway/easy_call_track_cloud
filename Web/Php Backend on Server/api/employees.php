@@ -56,6 +56,15 @@ switch ($method) {
     
     /* ===== CREATE EMPLOYEE ===== */
     case 'POST':
+        // Check organization limits (only count active employees)
+        $userStats = Database::getOne("SELECT allowed_users_count FROM users WHERE id = " . $currentUser['id']);
+        $currentCount = Database::getOne("SELECT COUNT(*) as count FROM employees WHERE org_id = '$orgId' AND status = 'active'")['count'];
+        
+        $allowed = (int)($userStats['allowed_users_count'] ?? 0);
+        if ($currentCount >= $allowed) {
+            Response::error("Employee limit reached ($allowed). Please upgrade your plan.");
+        }
+
         // Validate required fields
         Validator::required($data, ['name']);
         
@@ -66,7 +75,6 @@ switch ($method) {
         // Optional fields
         $callTrack = isset($data['track_calls']) ? (int)$data['track_calls'] : 1;
         $callRecordCrm = isset($data['track_recordings']) ? (int)$data['track_recordings'] : 1;
-        $expiryDate = isset($data['expiry_date']) ? "'" . Database::escape($data['expiry_date']) . "'" : "NULL";
         
         // New settings
         $allowPersonalExclusion = isset($data['allow_personal_exclusion']) ? (int)$data['allow_personal_exclusion'] : 0;
@@ -74,9 +82,9 @@ switch ($method) {
         $allowUpdateSims = isset($data['allow_updating_tracking_sims']) ? (int)$data['allow_updating_tracking_sims'] : 0;
         $defaultStartDate = isset($data['default_tracking_starting_date']) && !empty($data['default_tracking_starting_date']) ? "'" . Database::escape($data['default_tracking_starting_date']) . "'" : "NULL";
         
-        $sql = "INSERT INTO employees (org_id, name, phone, join_date, status, call_track, call_record_crm, expiry_date,
+        $sql = "INSERT INTO employees (org_id, name, phone, join_date, status, call_track, call_record_crm,
                     allow_personal_exclusion, allow_changing_tracking_start_date, allow_updating_tracking_sims, default_tracking_starting_date) 
-                VALUES ('$orgId', '$name', '$phone', '$joinDate', 'active', $callTrack, $callRecordCrm, $expiryDate,
+                VALUES ('$orgId', '$name', '$phone', '$joinDate', 'active', $callTrack, $callRecordCrm,
                     $allowPersonalExclusion, $allowChangeStart, $allowUpdateSims, $defaultStartDate)";
         
         $employeeId = Database::insert($sql);
@@ -97,7 +105,7 @@ switch ($method) {
         }
         
         // Check if employee belongs to organization
-        $employee = Database::getOne("SELECT id FROM employees WHERE id = $id AND org_id = '$orgId'");
+        $employee = Database::getOne("SELECT status FROM employees WHERE id = $id AND org_id = '$orgId'");
         if (!$employee) {
             Response::error('Employee not found', 404);
         }
@@ -106,14 +114,34 @@ switch ($method) {
         $updates = [];
         if (isset($data['name'])) $updates[] = "name = '" . Database::escape($data['name']) . "'";
         if (isset($data['phone'])) $updates[] = "phone = '" . Database::escape($data['phone']) . "'";
-        if (isset($data['status'])) $updates[] = "status = '" . Database::escape($data['status']) . "'";
+        
+        if (isset($data['status'])) {
+            $newStatus = $data['status'];
+            // If activating, check limit
+            if ($newStatus === 'active' && $employee['status'] !== 'active') {
+                $userStats = Database::getOne("SELECT allowed_users_count FROM users WHERE id = " . $currentUser['id']);
+                $currentCount = Database::getOne("SELECT COUNT(*) as count FROM employees WHERE org_id = '$orgId' AND status = 'active'")['count'];
+                $allowed = (int)($userStats['allowed_users_count'] ?? 0);
+                if ($currentCount >= $allowed) {
+                    Response::error("Cannot activate. Employee limit reached ($allowed). Please upgrade your plan.");
+                }
+            }
+            $updates[] = "status = '" . Database::escape($newStatus) . "'";
+        }
         
         // Update fields
         if (isset($data['track_calls'])) $updates[] = "call_track = " . (int)$data['track_calls'];
-        if (isset($data['track_recordings'])) $updates[] = "call_record_crm = " . (int)$data['track_recordings'];
-        if (isset($data['expiry_date'])) {
-             $ed = Database::escape($data['expiry_date']);
-             $updates[] = "expiry_date = " . ($ed ? "'$ed'" : "NULL");
+        
+        if (isset($data['track_recordings'])) {
+            $isEnabling = (int)$data['track_recordings'] === 1;
+            if ($isEnabling) {
+                $userStats = Database::getOne("SELECT allowed_storage_gb FROM users WHERE id = " . $currentUser['id']);
+                $allowedStorage = (float)($userStats['allowed_storage_gb'] ?? 0);
+                if ($allowedStorage <= 0) {
+                    Response::error("No storage space available to enable recordings. Please upgrade your storage plan.");
+                }
+            }
+            $updates[] = "call_record_crm = " . (int)$data['track_recordings'];
         }
         if (isset($data['last_sync'])) $updates[] = "last_sync = '" . Database::escape($data['last_sync']) . "'";
         

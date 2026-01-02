@@ -32,10 +32,9 @@ export default function PersonDetailDrawer() {
 
     // Person labels
     const [personLabels, setPersonLabels] = useState([]);
-    const [showLabelModal, setShowLabelModal] = useState(false);
-    const [labelSearch, setLabelSearch] = useState('');
+    const [isAddingLabel, setIsAddingLabel] = useState(false);
+    const [labelInputValue, setLabelInputValue] = useState('');
     const [labelSuggestions, setLabelSuggestions] = useState([]);
-    const [pendingLabels, setPendingLabels] = useState([]); // Labels being selected in modal
 
     // Exclude list
     const [isExcluded, setIsExcluded] = useState(false);
@@ -60,7 +59,6 @@ export default function PersonDetailDrawer() {
             setPersonNote(personData.person_note || '');
             const labels = personData.person_labels ? personData.person_labels.split(',').filter(Boolean) : [];
             setPersonLabels(labels);
-            setPendingLabels(labels);
             setIsExcluded(Boolean(Number(personData.is_excluded)));
             fetchPersonHistory(personData.phone_number);
             fetchLabelSuggestions();
@@ -70,8 +68,8 @@ export default function PersonDetailDrawer() {
             setEditingCallNote(null);
             setEditingField(null);
             setPersonLabels([]);
-            setPendingLabels([]);
-            setShowLabelModal(false);
+            setIsAddingLabel(false);
+            setLabelInputValue('');
             setIsExcluded(false);
         }
     }, [isOpen, personData]);
@@ -221,39 +219,18 @@ export default function PersonDetailDrawer() {
         }
     };
 
-    const handleAddLabel = async () => {
-        if (!labelSearch.trim()) return;
-        const label = labelSearch.trim();
-        if (!pendingLabels.includes(label)) {
-            setPendingLabels([...pendingLabels, label]);
-        }
-        setLabelSearch('');
-    };
-
-    const toggleLabelSelection = (label) => {
-        if (pendingLabels.includes(label)) {
-            setPendingLabels(pendingLabels.filter(l => l !== label));
-        } else {
-            setPendingLabels([...pendingLabels, label]);
-        }
-    };
-
-    const handleSaveLabels = async () => {
+    const saveLabelsToApi = async (newLabels) => {
         if (!personData?.phone_number) return;
-        setPersonLabels(pendingLabels);
-        setShowLabelModal(false);
-
         try {
             const callId = personData.id || (calls.length > 0 ? calls[0].id : null);
             if (callId) {
                 await api.post(`/calls.php?action=update&id=${callId}`, {
-                    person_labels: pendingLabels.join(',')
+                    person_labels: newLabels.join(',')
                 });
                 toast.success('Labels updated');
             }
         } catch (err) {
             console.error('Failed to save labels', err);
-            setPersonLabels(personLabels); // revert
             toast.error('Failed to save labels');
         }
     };
@@ -261,7 +238,6 @@ export default function PersonDetailDrawer() {
     const handleRemoveLabel = async (labelToRemove) => {
         const updatedLabels = personLabels.filter(l => l !== labelToRemove);
         setPersonLabels(updatedLabels);
-        setPendingLabels(updatedLabels);
 
         try {
             const callId = personData.id || (calls.length > 0 ? calls[0].id : null);
@@ -275,16 +251,6 @@ export default function PersonDetailDrawer() {
             setPersonLabels([...personLabels, labelToRemove]); // revert
         }
     };
-
-    const openLabelModal = () => {
-        setPendingLabels([...personLabels]);
-        setLabelSearch('');
-        setShowLabelModal(true);
-    };
-
-    const filteredSuggestions = labelSuggestions.filter(label =>
-        label.toLowerCase().includes(labelSearch.toLowerCase())
-    );
 
     const handleToggleExclude = async () => {
         if (!personData?.phone_number) return;
@@ -488,37 +454,96 @@ export default function PersonDetailDrawer() {
                         </div>
                     </div>
 
-                    {/* Labels - Quick Access in Header */}
+                    {/* Labels - Inline Control */}
                     <div className="mt-3 flex items-center gap-2 flex-wrap">
-                        {personLabels.length === 0 ? (
+                        {personLabels.map(label => (
+                            <span key={label} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-100 text-purple-700 text-xs font-bold border border-purple-200 shadow-sm transition-all hover:scale-105">
+                                {label}
+                                <button
+                                    onClick={() => handleRemoveLabel(label)}
+                                    className="hover:text-red-500 transition-colors"
+                                >
+                                    <X size={12} />
+                                </button>
+                            </span>
+                        ))}
+
+                        {isAddingLabel ? (
+                            <div className="relative">
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    value={labelInputValue}
+                                    onChange={(e) => setLabelInputValue(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            const val = labelInputValue.trim();
+                                            if (val && !personLabels.includes(val)) {
+                                                const newLabels = [...personLabels, val];
+                                                setPersonLabels(newLabels);
+                                                saveLabelsToApi(newLabels);
+                                            }
+                                            setLabelInputValue('');
+                                            setIsAddingLabel(false);
+                                        } else if (e.key === 'Escape') {
+                                            setIsAddingLabel(false);
+                                            setLabelInputValue('');
+                                        }
+                                    }}
+                                    onBlur={() => {
+                                        setTimeout(() => {
+                                            setIsAddingLabel(false);
+                                            setLabelInputValue('');
+                                        }, 200);
+                                    }}
+                                    placeholder="Type label..."
+                                    className="text-xs px-3 py-1.5 border border-purple-400 rounded-full outline-none w-32 bg-white shadow-sm"
+                                />
+                                <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-gray-100 rounded-lg shadow-xl z-50 max-h-72 overflow-y-auto p-1 flex flex-col gap-0.5">
+                                    {labelSuggestions
+                                        .filter(s => s.toLowerCase().includes(labelInputValue.toLowerCase()) && !personLabels.includes(s))
+                                        .map(s => (
+                                            <button
+                                                key={s}
+                                                onMouseDown={(e) => {
+                                                    e.preventDefault();
+                                                    const newLabels = [...personLabels, s];
+                                                    setPersonLabels(newLabels);
+                                                    saveLabelsToApi(newLabels);
+                                                    setLabelInputValue('');
+                                                    setIsAddingLabel(false);
+                                                }}
+                                                className="w-full text-left px-3 py-1.5 text-xs hover:bg-purple-50 rounded transition-colors font-semibold text-gray-700 whitespace-nowrap"
+                                            >
+                                                {s}
+                                            </button>
+                                        ))}
+                                    {labelInputValue.trim() && !labelSuggestions.some(s => s.toLowerCase() === labelInputValue.toLowerCase()) && (
+                                        <button
+                                            onMouseDown={(e) => {
+                                                e.preventDefault();
+                                                const val = labelInputValue.trim();
+                                                const newLabels = [...personLabels, val];
+                                                setPersonLabels(newLabels);
+                                                saveLabelsToApi(newLabels);
+                                                setLabelInputValue('');
+                                                setIsAddingLabel(false);
+                                            }}
+                                            className="w-full text-left px-3 py-1.5 text-xs hover:bg-green-50 text-green-700 rounded transition-colors font-bold border-t border-gray-50 mt-1 pt-1"
+                                        >
+                                            + Add "{labelInputValue.trim()}"
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
                             <button
-                                onClick={openLabelModal}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 text-purple-600 text-xs font-medium border border-purple-200 hover:bg-purple-100 transition-colors"
+                                onClick={() => setIsAddingLabel(true)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 text-purple-600 text-xs font-bold border border-purple-200 hover:bg-purple-100 transition-all shadow-sm active:scale-95"
                             >
-                                <Plus size={12} />
+                                <Plus size={14} />
                                 Add Label
                             </button>
-                        ) : (
-                            <>
-                                {personLabels.map(label => (
-                                    <span key={label} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-medium border border-purple-200">
-                                        {label}
-                                        <button
-                                            onClick={() => handleRemoveLabel(label)}
-                                            className="hover:text-red-500 transition-colors"
-                                        >
-                                            <X size={12} />
-                                        </button>
-                                    </span>
-                                ))}
-                                <button
-                                    onClick={openLabelModal}
-                                    className="p-1.5 rounded-full text-purple-500 hover:bg-purple-50 transition-colors"
-                                    title="Add more labels"
-                                >
-                                    <Plus size={14} />
-                                </button>
-                            </>
                         )}
                     </div>
                 </div>
@@ -573,107 +598,7 @@ export default function PersonDetailDrawer() {
 
 
 
-                    {/* Label Picker Modal */}
-                    {showLabelModal && createPortal(
-                        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/30 backdrop-blur-[2px]" onClick={() => setShowLabelModal(false)}>
-                            <div
-                                className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-150"
-                                onClick={e => e.stopPropagation()}
-                            >
-                                <div className="px-4 py-3 bg-purple-50 border-b border-purple-100 flex justify-between items-center">
-                                    <h3 className="font-semibold text-purple-900 text-sm">Select Labels</h3>
-                                    <button onClick={() => setShowLabelModal(false)} className="text-purple-400 hover:text-purple-600">
-                                        <X size={18} />
-                                    </button>
-                                </div>
 
-                                <div className="p-4">
-                                    {/* Search Input */}
-                                    <div className="relative mb-3">
-                                        <input
-                                            type="text"
-                                            value={labelSearch}
-                                            onChange={(e) => setLabelSearch(e.target.value)}
-                                            placeholder="Search or add new label..."
-                                            className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-300"
-                                            autoFocus
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && labelSearch.trim()) {
-                                                    handleAddLabel();
-                                                }
-                                            }}
-                                        />
-                                        {labelSearch.trim() && !filteredSuggestions.includes(labelSearch.trim()) && (
-                                            <button
-                                                onClick={handleAddLabel}
-                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-xs bg-purple-600 text-white px-2 py-1 rounded font-medium hover:bg-purple-700"
-                                            >
-                                                Add "{labelSearch.trim()}"
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    {/* Selected Labels */}
-                                    {pendingLabels.length > 0 && (
-                                        <div className="mb-3">
-                                            <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">Selected</p>
-                                            <div className="flex flex-wrap gap-1.5">
-                                                {pendingLabels.map(label => (
-                                                    <span
-                                                        key={label}
-                                                        onClick={() => toggleLabelSelection(label)}
-                                                        className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-purple-600 text-white text-xs font-medium cursor-pointer hover:bg-purple-700 transition-colors"
-                                                    >
-                                                        {label}
-                                                        <X size={12} />
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Suggestions */}
-                                    <div>
-                                        <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">Suggestions</p>
-                                        <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
-                                            {filteredSuggestions.length === 0 ? (
-                                                <span className="text-xs text-gray-400 italic">No suggestions found</span>
-                                            ) : (
-                                                filteredSuggestions.map(label => (
-                                                    <button
-                                                        key={label}
-                                                        onClick={() => toggleLabelSelection(label)}
-                                                        className={`px-2 py-1 rounded-full text-xs font-medium border transition-all ${pendingLabels.includes(label)
-                                                            ? 'bg-purple-100 text-purple-700 border-purple-300'
-                                                            : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-purple-300 hover:text-purple-600'
-                                                            }`}
-                                                    >
-                                                        {label}
-                                                    </button>
-                                                ))
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex justify-end gap-2">
-                                    <button
-                                        onClick={() => setShowLabelModal(false)}
-                                        className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleSaveLabels}
-                                        className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
-                                    >
-                                        Done
-                                    </button>
-                                </div>
-                            </div>
-                        </div>,
-                        document.body
-                    )}
 
                     {/* Call History */}
                     <div>

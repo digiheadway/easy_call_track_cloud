@@ -55,8 +55,29 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
+    const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+
+    useEffect(() => {
+        if (user) {
+            fetchUnreadCount();
+            const interval = setInterval(fetchUnreadCount, 60000); // Check every minute
+            return () => clearInterval(interval);
+        }
+    }, [user]);
+
+    const fetchUnreadCount = async () => {
+        try {
+            const res = await api.get('/notifications.php?action=get');
+            if (res.status) {
+                setUnreadNotificationsCount(res.data.unread_count);
+            }
+        } catch (err) {
+            console.error('Failed to fetch unread count', err);
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+        <AuthContext.Provider value={{ user, loading, login, signup, logout, unreadNotificationsCount, fetchUnreadCount }}>
             {children}
         </AuthContext.Provider>
     );

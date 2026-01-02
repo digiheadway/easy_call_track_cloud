@@ -241,28 +241,12 @@ try {
     // Reverse to show latest date first
     $breakdown = array_reverse($fullBreakdown);
 
-    // 3. Fetch Recent Activities (Limit 20)
-    $recent = Database::select("
-        SELECT 
-            c.*, 
-            IFNULL(c_info.name, c.caller_name) as contact_name,
-            c.caller_phone as phone_number,
-            e.name as employee_name
-        FROM calls c
-        LEFT JOIN employees e ON c.employee_id = e.id
-        LEFT JOIN contacts c_info ON (c.caller_phone = c_info.phone AND c.org_id = c_info.org_id)
-        WHERE $whereClause 
-        ORDER BY c.call_time DESC
-        LIMIT 20
-    ");
-
-    // 4. Fetch Active Employees for Dropdown
+    // 3. Fetch Active Employees for Dropdown
     $employees = Database::select("SELECT id, name FROM employees WHERE org_id = '$orgId' AND status = 'active'");
 
     Response::success([
         'metrics' => $metrics,
         'breakdown' => $breakdown,
-        'recent_activities' => $recent,
         'employees' => $employees
     ], 'Dashboard data retrieved');
 

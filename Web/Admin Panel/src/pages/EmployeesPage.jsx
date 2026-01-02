@@ -12,6 +12,7 @@ import {
     Mic,
     PhoneCall,
     Settings,
+    RefreshCw,
     ToggleLeft,
     ToggleRight,
     Calendar,
@@ -31,19 +32,10 @@ export default function EmployeesPage() {
     const [search, setSearch] = useState('');
 
     // Modal State
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingEmployee, setEditingEmployee] = useState(null);
-    const [formData, setFormData] = useState({
-        name: '',
-        track_calls: true,
-        track_recordings: true,
-        allow_personal_exclusion: false,
-        allow_changing_tracking_start_date: false,
-        allow_updating_tracking_sims: false,
-        default_tracking_starting_date: ''
-    });
-    const [saving, setSaving] = useState(false);
-    const [copiedCode, setCopiedCode] = useState(null);
+    const [isControlsModalOpen, setIsControlsModalOpen] = useState(false);
+    const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
+    const [isDeviceModalOpen, setIsDeviceModalOpen] = useState(false);
+    const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
     // Confirmation Modal State
@@ -71,7 +63,7 @@ export default function EmployeesPage() {
                     allow_personal_exclusion: e.allow_personal_exclusion == 1 || e.allow_personal_exclusion === true,
                     allow_changing_tracking_start_date: e.allow_changing_tracking_start_date == 1 || e.allow_changing_tracking_start_date === true,
                     allow_updating_tracking_sims: e.allow_updating_tracking_sims == 1 || e.allow_updating_tracking_sims === true,
-                    plan_expiry: e.plan_expiry ? new Date(e.plan_expiry) : null,
+                    last_sync: e.last_sync ? new Date(e.last_sync.replace(' ', 'T') + 'Z') : null,
                     tracking_started: e.created_at ? new Date(e.created_at) : null
                 }));
                 setEmployees(formatted);
@@ -84,11 +76,27 @@ export default function EmployeesPage() {
         }
     };
 
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingEmployee, setEditingEmployee] = useState(null);
+    const [formData, setFormData] = useState({
+        name: '',
+        phone: '',
+        track_calls: true,
+        track_recordings: true,
+        allow_personal_exclusion: false,
+        allow_changing_tracking_start_date: false,
+        allow_updating_tracking_sims: false,
+        default_tracking_starting_date: ''
+    });
+    const [saving, setSaving] = useState(false);
+    const [copiedCode, setCopiedCode] = useState(null);
+
     const handleOpenModal = (employee = null) => {
         if (employee) {
             setEditingEmployee(employee);
             setFormData({
                 name: employee.name || '',
+                phone: employee.phone || '',
                 track_calls: employee.track_calls,
                 track_recordings: employee.track_recordings,
                 allow_personal_exclusion: employee.allow_personal_exclusion,
@@ -100,6 +108,7 @@ export default function EmployeesPage() {
             setEditingEmployee(null);
             setFormData({
                 name: '',
+                phone: '',
                 track_calls: true,
                 track_recordings: true,
                 allow_personal_exclusion: false,
@@ -111,6 +120,25 @@ export default function EmployeesPage() {
         setIsModalOpen(true);
     };
 
+    const toggleTracking = async (employee, type) => {
+        try {
+            const key = type === 'calls' ? 'track_calls' : 'track_recordings';
+            const newValue = !employee[key];
+
+            // Update local state first for instant feedback
+            setEmployees(prev => prev.map(e => e.id === employee.id ? { ...e, [key]: newValue } : e));
+
+            await api.put(`/employees.php?id=${employee.id}`, {
+                [key]: newValue
+            });
+            toast.success(`${type === 'calls' ? 'Call' : 'Recording'} tracking updated`);
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to update tracking');
+            fetchEmployees(); // Rollback
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
@@ -118,6 +146,7 @@ export default function EmployeesPage() {
             if (editingEmployee) {
                 await api.put(`/employees.php?id=${editingEmployee.id}`, {
                     name: formData.name,
+                    phone: formData.phone,
                     track_calls: formData.track_calls,
                     track_recordings: formData.track_recordings,
                     allow_personal_exclusion: formData.allow_personal_exclusion ? 1 : 0,
@@ -127,7 +156,10 @@ export default function EmployeesPage() {
                 });
                 toast.success('Employee updated successfully');
             } else {
-                await api.post('/employees.php', formData);
+                await api.post('/employees.php', {
+                    ...formData,
+                    phone: formData.phone
+                });
                 toast.success('Employee created successfully');
             }
             setIsModalOpen(false);
@@ -185,7 +217,12 @@ export default function EmployeesPage() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Employees</h1>
+                    <h1 className="text-2xl font-bold tracking-tight flex items-center gap-3">
+                        Employees
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-[10px] font-black rounded-full uppercase tracking-tighter">
+                            {employees.length} / {user?.allowed_users_count || 0} Slots
+                        </span>
+                    </h1>
                     <p className="text-gray-500 text-sm mt-1">Manage pairing codes and tracking configurations.</p>
                 </div>
 
@@ -217,10 +254,9 @@ export default function EmployeesPage() {
                             <tr>
                                 <th className="px-6 py-4">Employee</th>
                                 <th className="px-6 py-4">Pairing Code</th>
-                                <th className="px-6 py-4">Plan Expiry</th>
-                                <th className="px-6 py-4">Tracking Started</th>
-                                <th className="px-6 py-4">Device Info</th>
-                                <th className="px-6 py-4">Configuration</th>
+                                <th className="px-6 py-4">Last Sync</th>
+                                <th className="px-6 py-4">Tracking</th>
+                                <th className="px-6 py-4">Other</th>
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
@@ -230,92 +266,90 @@ export default function EmployeesPage() {
                                 return (
                                     <tr key={emp.id} className="hover:bg-gray-50 transition-colors group">
                                         <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
+                                            <div
+                                                className="flex items-center gap-3 cursor-pointer hover:opacity-70 transition-opacity"
+                                                onClick={() => handleOpenModal(emp)}
+                                            >
+                                                <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm shadow-sm">
                                                     {emp.name?.substring(0, 2).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <div className="font-medium text-gray-900">{emp.name}</div>
+                                                    <div className="font-bold text-gray-900 flex items-center gap-1.5">
+                                                        {emp.name}
+                                                        <Settings size={12} className="text-gray-300 group-hover:text-blue-400" />
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Click to Edit</div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
-                                                <code className="bg-gray-100 px-2.5 py-1 rounded-md text-sm font-mono font-bold text-gray-700 tracking-wide border border-gray-200">
+                                                <code className="bg-gray-50 px-2 py-1 rounded-md text-sm font-mono font-black text-gray-600 tracking-wider border border-gray-100 shadow-sm">
                                                     {pairingCode}
                                                 </code>
                                                 <button
                                                     onClick={() => copyToClipboard(pairingCode)}
-                                                    className="p-1.5 hover:bg-gray-200 rounded-md text-gray-400 hover:text-blue-600 transition-colors"
-                                                    title="Copy Code"
+                                                    className="p-1.5 hover:bg-gray-100 rounded-md text-gray-400 hover:text-blue-600 transition-colors"
                                                 >
                                                     {copiedCode === pairingCode ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
                                                 </button>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            {emp.plan_expiry ? (
-                                                <div className="flex items-center gap-2 text-gray-600">
-                                                    <Calendar size={14} className="text-gray-400" />
-                                                    <span>{format(emp.plan_expiry, 'MMM d, yyyy')}</span>
+                                            {emp.last_sync ? (
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center gap-2 text-gray-900 font-bold whitespace-nowrap">
+                                                        <RefreshCw size={12} className="text-blue-500" />
+                                                        <span>{format(emp.last_sync, 'h:mm a')}</span>
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-400 font-medium whitespace-nowrap">
+                                                        {format(emp.last_sync, 'MMM d, yyyy')}
+                                                    </div>
                                                 </div>
                                             ) : (
-                                                <span className="text-xs text-gray-400 italic">No plan active</span>
+                                                <span className="text-xs text-gray-400 italic">Never synced</span>
                                             )}
                                         </td>
                                         <td className="px-6 py-4">
-                                            {emp.tracking_started ? (
-                                                <div className="text-gray-600 text-xs">
-                                                    {format(emp.tracking_started, 'MMM d, yyyy')}
-                                                </div>
-                                            ) : (
-                                                <span className="text-xs text-gray-400">-</span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex flex-col gap-1">
-                                                <div className="flex items-center gap-2 text-gray-700">
-                                                    <Smartphone size={14} className="text-gray-400" />
-                                                    <span>{emp.device_phone || 'No phone'}</span>
-                                                </div>
-                                                {emp.device_model && (
-                                                    <span className="text-xs text-gray-400 pl-6">{emp.device_model}</span>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <div title="Call Tracking" className={`w-8 h-8 rounded-full flex items-center justify-center border ${emp.track_calls
-                                                    ? 'bg-blue-50 text-blue-600 border-blue-200'
-                                                    : 'bg-gray-50 text-gray-400 border-gray-200'
-                                                    }`}>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setSelectedEmployee(emp); setIsTrackingModalOpen(true); }}
+                                                className="group/track flex items-center gap-2 p-2 hover:bg-gray-50 rounded-xl transition-all border border-transparent hover:border-gray-100"
+                                            >
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${emp.track_calls ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-400'}`}>
                                                     <PhoneCall size={14} />
                                                 </div>
-                                                <div title="Recording Tracking" className={`w-8 h-8 rounded-full flex items-center justify-center border ${emp.track_recordings
-                                                    ? 'bg-purple-50 text-purple-600 border-purple-200'
-                                                    : 'bg-gray-50 text-gray-400 border-gray-200'
-                                                    }`}>
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${emp.track_recordings ? 'bg-purple-600 text-white shadow-sm' : 'bg-gray-100 text-gray-400'}`}>
                                                     <Mic size={14} />
                                                 </div>
+                                                <Settings size={12} className="text-gray-300 group-hover/track:text-blue-500 transition-colors ml-1" />
+                                            </button>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setSelectedEmployee(emp); setIsDeviceModalOpen(true); }}
+                                                    className="px-3 py-1.5 bg-gray-50 border border-gray-100 text-gray-600 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100 transition-all shadow-sm active:scale-95 flex items-center gap-1.5"
+                                                >
+                                                    <Smartphone size={14} />
+                                                    Device
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setSelectedEmployee(emp); setIsControlsModalOpen(true); }}
+                                                    className="px-3 py-1.5 bg-gray-50 border border-gray-100 text-gray-600 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-orange-50 hover:text-orange-600 hover:border-orange-100 transition-all shadow-sm active:scale-95 flex items-center gap-1.5"
+                                                >
+                                                    <Settings size={14} />
+                                                    Controls
+                                                </button>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={() => handleOpenModal(emp)}
-                                                    className="p-2 hover:bg-gray-100 rounded-lg hover:text-blue-600 transition-colors"
-                                                    title="Configure"
-                                                >
-                                                    <Settings size={18} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(emp.id)}
-                                                    className="p-2 hover:bg-gray-100 rounded-lg hover:text-red-600 transition-colors"
-                                                    title="Delete"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </div>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleDelete(emp.id); }}
+                                                className="p-2 hover:bg-red-50 rounded-lg text-gray-300 hover:text-red-500 transition-all active:scale-95"
+                                                title="Delete"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
                                         </td>
                                     </tr>
                                 )
@@ -355,122 +389,7 @@ export default function EmployeesPage() {
                             />
                         </div>
 
-                        {editingEmployee && (
-                            <div className="space-y-4 pt-2 border-t border-gray-100">
-                                <h4 className="text-sm font-medium text-gray-900">App Configuration</h4>
 
-                                <label className="flex items-center justify-between cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-md ${formData.track_calls ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
-                                            <PhoneCall size={20} />
-                                        </div>
-                                        <div>
-                                            <div className="text-sm font-medium text-gray-900">Track Calls</div>
-                                            <div className="text-xs text-gray-500">Sync call logs from this device</div>
-                                        </div>
-                                    </div>
-                                    <div onClick={() => setFormData(p => ({ ...p, track_calls: !p.track_calls }))}>
-                                        {formData.track_calls ?
-                                            <ToggleRight size={28} className="text-blue-600" /> :
-                                            <ToggleLeft size={28} className="text-gray-400" />
-                                        }
-                                    </div>
-                                </label>
-
-                                <label className="flex items-center justify-between cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-md ${formData.track_recordings ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-500'}`}>
-                                            <Mic size={20} />
-                                        </div>
-                                        <div>
-                                            <div className="text-sm font-medium text-gray-900">Track Recordings</div>
-                                            <div className="text-xs text-gray-500">Upload audio recordings (if available)</div>
-                                        </div>
-                                    </div>
-                                    <div onClick={() => setFormData(p => ({ ...p, track_recordings: !p.track_recordings }))}>
-                                        {formData.track_recordings ?
-                                            <ToggleRight size={28} className="text-purple-600" /> :
-                                            <ToggleLeft size={28} className="text-gray-400" />
-                                        }
-                                    </div>
-                                </label>
-
-                                <div className="pt-4 border-t border-gray-100">
-                                    <h4 className="text-sm font-medium text-gray-900 mb-4">Enterprise Controls</h4>
-
-                                    <div className="space-y-3">
-                                        <label className="flex items-center justify-between cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`p-2 rounded-md ${formData.allow_personal_exclusion ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-500'}`}>
-                                                    <UserX size={18} />
-                                                </div>
-                                                <div>
-                                                    <div className="text-sm font-medium text-gray-900">Personal Exclusion</div>
-                                                    <div className="text-xs text-gray-500">Allow employee to exclude personal contacts</div>
-                                                </div>
-                                            </div>
-                                            <div onClick={() => setFormData(p => ({ ...p, allow_personal_exclusion: !p.allow_personal_exclusion }))}>
-                                                {formData.allow_personal_exclusion ?
-                                                    <ToggleRight size={24} className="text-orange-600" /> :
-                                                    <ToggleLeft size={24} className="text-gray-400" />
-                                                }
-                                            </div>
-                                        </label>
-
-                                        <label className="flex items-center justify-between cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`p-2 rounded-md ${formData.allow_changing_tracking_start_date ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
-                                                    <CalendarClock size={18} />
-                                                </div>
-                                                <div>
-                                                    <div className="text-sm font-medium text-gray-900">Change Start Date</div>
-                                                    <div className="text-xs text-gray-500">Allow employee to change tracking start date</div>
-                                                </div>
-                                            </div>
-                                            <div onClick={() => setFormData(p => ({ ...p, allow_changing_tracking_start_date: !p.allow_changing_tracking_start_date }))}>
-                                                {formData.allow_changing_tracking_start_date ?
-                                                    <ToggleRight size={24} className="text-green-600" /> :
-                                                    <ToggleLeft size={24} className="text-gray-400" />
-                                                }
-                                            </div>
-                                        </label>
-
-                                        <label className="flex items-center justify-between cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`p-2 rounded-md ${formData.allow_updating_tracking_sims ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
-                                                    <SmartphoneNfc size={18} />
-                                                </div>
-                                                <div>
-                                                    <div className="text-sm font-medium text-gray-900">Update Tracked SIMs</div>
-                                                    <div className="text-xs text-gray-500">Allow employee to change which SIMs are tracked</div>
-                                                </div>
-                                            </div>
-                                            <div onClick={() => setFormData(p => ({ ...p, allow_updating_tracking_sims: !p.allow_updating_tracking_sims }))}>
-                                                {formData.allow_updating_tracking_sims ?
-                                                    <ToggleRight size={24} className="text-indigo-600" /> :
-                                                    <ToggleLeft size={24} className="text-gray-400" />
-                                                }
-                                            </div>
-                                        </label>
-
-                                        <div className="p-3 rounded-lg border border-gray-200 bg-gray-50">
-                                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Default Tracking Start Date</label>
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-white rounded border border-gray-200 text-gray-400">
-                                                    <Calendar size={18} />
-                                                </div>
-                                                <input
-                                                    type="date"
-                                                    className="bg-transparent border-none text-sm font-medium focus:ring-0 outline-none w-full"
-                                                    value={formData.default_tracking_starting_date}
-                                                    onChange={e => setFormData(p => ({ ...p, default_tracking_starting_date: e.target.value }))}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
 
                         {!editingEmployee && (
                             <div className="bg-blue-50 text-blue-700 p-4 rounded-lg text-sm">
@@ -532,6 +451,239 @@ export default function EmployeesPage() {
                             {isProcessing ? 'Processing...' : 'Confirm'}
                         </button>
                     </div>
+                </div>
+            </Modal>
+
+            {/* Device Info Modal */}
+            <Modal
+                isOpen={isDeviceModalOpen}
+                onClose={() => setIsDeviceModalOpen(false)}
+                title="Device Information"
+            >
+                <div className="space-y-6">
+                    <div className="flex items-center gap-4 p-5 bg-blue-50 rounded-[2rem] border border-blue-100">
+                        <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm border border-blue-100">
+                            <Smartphone size={32} />
+                        </div>
+                        <div>
+                            <h4 className="font-black text-gray-900">{selectedEmployee?.device_model || 'Unknown Device'}</h4>
+                            <p className="text-xs text-blue-600 font-bold uppercase tracking-wider">Device Linked</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Phone Number</p>
+                            <p className="text-sm font-bold text-gray-900">{selectedEmployee?.device_phone || 'N/A'}</p>
+                        </div>
+                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Device ID</p>
+                            <p className="text-[10px] font-mono font-bold text-gray-900 break-all">{selectedEmployee?.device_id || 'N/A'}</p>
+                        </div>
+                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 col-span-2">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Last Synchronization</p>
+                            <p className="text-sm font-bold text-gray-900">
+                                {selectedEmployee?.last_sync ? format(selectedEmployee.last_sync, 'MMM d, yyyy h:mm a') : 'Never'}
+                            </p>
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={() => setIsDeviceModalOpen(false)}
+                        className="w-full btn btn-primary mt-4"
+                    >
+                        Close Details
+                    </button>
+                </div>
+            </Modal>
+
+            {/* App Controls Modal */}
+            <Modal
+                isOpen={isControlsModalOpen}
+                onClose={() => setIsControlsModalOpen(false)}
+                title="App & Enterprise Controls"
+            >
+                <div className="space-y-6">
+                    <p className="text-xs text-gray-500 font-medium bg-orange-50 p-3 rounded-xl border border-orange-100 text-orange-700">
+                        Configure advanced tracking permissions for <strong>{selectedEmployee?.name}</strong>.
+                    </p>
+
+                    <div className="space-y-3">
+                        <label className="flex items-center justify-between cursor-pointer p-4 rounded-2xl border border-gray-100 hover:bg-gray-50 transition-all group">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2.5 rounded-xl ${selectedEmployee?.allow_personal_exclusion ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-400'} group-hover:scale-110 transition-transform`}>
+                                    <UserX size={20} />
+                                </div>
+                                <div>
+                                    <div className="text-sm font-black text-gray-900">Personal Exclusion</div>
+                                    <div className="text-[10px] text-gray-500 font-medium">Allow manual contact exclusion</div>
+                                </div>
+                            </div>
+                            <button
+                                onClick={async () => {
+                                    const val = !selectedEmployee.allow_personal_exclusion;
+                                    setEmployees(prev => prev.map(e => e.id === selectedEmployee.id ? { ...e, allow_personal_exclusion: val } : e));
+                                    setSelectedEmployee({ ...selectedEmployee, allow_personal_exclusion: val });
+                                    await api.put(`/employees.php?id=${selectedEmployee.id}`, { allow_personal_exclusion: val ? 1 : 0 });
+                                    toast.success('Exclusion permission updated');
+                                }}
+                            >
+                                {selectedEmployee?.allow_personal_exclusion ?
+                                    <ToggleRight size={32} className="text-orange-600" /> :
+                                    <ToggleLeft size={32} className="text-gray-400" />
+                                }
+                            </button>
+                        </label>
+
+                        <label className="flex items-center justify-between cursor-pointer p-4 rounded-2xl border border-gray-100 hover:bg-gray-50 transition-all group">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2.5 rounded-xl ${selectedEmployee?.allow_changing_tracking_start_date ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'} group-hover:scale-110 transition-transform`}>
+                                    <CalendarClock size={20} />
+                                </div>
+                                <div>
+                                    <div className="text-sm font-black text-gray-900">Change Start Date</div>
+                                    <div className="text-[10px] text-gray-500 font-medium">Manual tracking start control</div>
+                                </div>
+                            </div>
+                            <button
+                                onClick={async () => {
+                                    const val = !selectedEmployee.allow_changing_tracking_start_date;
+                                    setEmployees(prev => prev.map(e => e.id === selectedEmployee.id ? { ...e, allow_changing_tracking_start_date: val } : e));
+                                    setSelectedEmployee({ ...selectedEmployee, allow_changing_tracking_start_date: val });
+                                    await api.put(`/employees.php?id=${selectedEmployee.id}`, { allow_changing_tracking_start_date: val ? 1 : 0 });
+                                    toast.success('Start date permission updated');
+                                }}
+                            >
+                                {selectedEmployee?.allow_changing_tracking_start_date ?
+                                    <ToggleRight size={32} className="text-green-600" /> :
+                                    <ToggleLeft size={32} className="text-gray-400" />
+                                }
+                            </button>
+                        </label>
+
+                        <label className="flex items-center justify-between cursor-pointer p-4 rounded-2xl border border-gray-100 hover:bg-gray-50 transition-all group">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2.5 rounded-xl ${selectedEmployee?.allow_updating_tracking_sims ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-400'} group-hover:scale-110 transition-transform`}>
+                                    <SmartphoneNfc size={20} />
+                                </div>
+                                <div>
+                                    <div className="text-sm font-black text-gray-900">Update Tracked SIMs</div>
+                                    <div className="text-[10px] text-gray-500 font-medium">SIM management from device</div>
+                                </div>
+                            </div>
+                            <button
+                                onClick={async () => {
+                                    const val = !selectedEmployee.allow_updating_tracking_sims;
+                                    setEmployees(prev => prev.map(e => e.id === selectedEmployee.id ? { ...e, allow_updating_tracking_sims: val } : e));
+                                    setSelectedEmployee({ ...selectedEmployee, allow_updating_tracking_sims: val });
+                                    await api.put(`/employees.php?id=${selectedEmployee.id}`, { allow_updating_tracking_sims: val ? 1 : 0 });
+                                    toast.success('SIM update permission updated');
+                                }}
+                            >
+                                {selectedEmployee?.allow_updating_tracking_sims ?
+                                    <ToggleRight size={32} className="text-indigo-600" /> :
+                                    <ToggleLeft size={32} className="text-gray-400" />
+                                }
+                            </button>
+                        </label>
+                    </div>
+
+                    <button
+                        onClick={() => setIsControlsModalOpen(false)}
+                        className="w-full btn btn-primary mt-4"
+                    >
+                        Save & Close
+                    </button>
+                </div>
+            </Modal>
+
+            {/* Tracking Configuration Modal */}
+            <Modal
+                isOpen={isTrackingModalOpen}
+                onClose={() => setIsTrackingModalOpen(false)}
+                title="Tracking Configuration"
+            >
+                <div className="space-y-6">
+                    <p className="text-xs text-gray-500 font-medium bg-blue-50 p-3 rounded-xl border border-blue-100 text-blue-700">
+                        Select which activities to track for <strong>{selectedEmployee?.name}</strong>.
+                    </p>
+
+                    <div className="space-y-3">
+                        <label className="flex items-center justify-between cursor-pointer p-4 rounded-2xl border border-gray-100 hover:bg-gray-50 transition-all group">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2.5 rounded-xl ${selectedEmployee?.track_calls ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'} group-hover:scale-110 transition-transform`}>
+                                    <PhoneCall size={20} />
+                                </div>
+                                <div>
+                                    <div className="text-sm font-black text-gray-900">Track Calls</div>
+                                    <div className="text-[10px] text-gray-500 font-medium">Sync call logs from this device</div>
+                                </div>
+                            </div>
+                            <button
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const val = !selectedEmployee.track_calls;
+                                    setEmployees(prev => prev.map(e => e.id === selectedEmployee.id ? { ...e, track_calls: val } : e));
+                                    setSelectedEmployee({ ...selectedEmployee, track_calls: val });
+                                    await api.put(`/employees.php?id=${selectedEmployee.id}`, { track_calls: val ? 1 : 0 });
+                                    toast.success('Call tracking updated');
+                                }}
+                            >
+                                {selectedEmployee?.track_calls ?
+                                    <ToggleRight size={32} className="text-blue-600" /> :
+                                    <ToggleLeft size={32} className="text-gray-400" />
+                                }
+                            </button>
+                        </label>
+
+                        <label className="flex items-center justify-between cursor-pointer p-4 rounded-2xl border border-gray-100 hover:bg-gray-50 transition-all group">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2.5 rounded-xl ${selectedEmployee?.track_recordings ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400'} group-hover:scale-110 transition-transform`}>
+                                    <Mic size={20} />
+                                </div>
+                                <div>
+                                    <div className="text-sm font-black text-gray-900">Track Recordings</div>
+                                    <div className="text-[10px] text-gray-500 font-medium">Upload audio logs (if available)</div>
+                                </div>
+                            </div>
+                            <button
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const val = !selectedEmployee.track_recordings;
+
+                                    // Check for storage if enabling
+                                    if (val && (!user?.allowed_storage_gb || user.allowed_storage_gb <= 0)) {
+                                        toast.error('No storage space available. Please upgrade your storage plan to enable recordings.');
+                                        return;
+                                    }
+
+                                    setEmployees(prev => prev.map(e => e.id === selectedEmployee.id ? { ...e, track_recordings: val } : e));
+                                    setSelectedEmployee({ ...selectedEmployee, track_recordings: val });
+                                    try {
+                                        await api.put(`/employees.php?id=${selectedEmployee.id}`, { track_recordings: val ? 1 : 0 });
+                                        toast.success('Recording tracking updated');
+                                    } catch (err) {
+                                        // Rollback on error
+                                        setEmployees(prev => prev.map(e => e.id === selectedEmployee.id ? { ...e, track_recordings: !val } : e));
+                                        setSelectedEmployee({ ...selectedEmployee, track_recordings: !val });
+                                        toast.error(err.response?.data?.message || 'Failed to update tracking');
+                                    }
+                                }}
+                            >
+                                {selectedEmployee?.track_recordings ?
+                                    <ToggleRight size={32} className="text-purple-600" /> :
+                                    <ToggleLeft size={32} className="text-gray-400" />
+                                }
+                            </button>
+                        </label>
+                    </div>
+
+                    <button
+                        onClick={() => setIsTrackingModalOpen(false)}
+                        className="w-full btn btn-primary mt-4"
+                    >
+                        Apply Tracking
+                    </button>
                 </div>
             </Modal>
         </div>

@@ -10,6 +10,9 @@ import CallsPage from './pages/CallsPage';
 import ReportsPage from './pages/ReportsPage';
 import EmployeesPage from './pages/EmployeesPage';
 import ExcludedPage from './pages/ExcludedPage';
+import PlansPage from './pages/PlansPage';
+import StoragePage from './pages/StoragePage';
+import NotificationsPage from './pages/NotificationsPage';
 import { AudioPlayerProvider } from './context/AudioPlayerContext';
 import FloatingAudioPlayer from './components/FloatingAudioPlayer';
 import { Toaster } from 'sonner';
@@ -46,6 +49,9 @@ function App() {
               <Route path="/calls" element={<PrivateRoute><CallsPage /></PrivateRoute>} />
               <Route path="/employees" element={<PrivateRoute><EmployeesPage /></PrivateRoute>} />
               <Route path="/excluded" element={<PrivateRoute><ExcludedPage /></PrivateRoute>} />
+              <Route path="/plans" element={<PrivateRoute><PlansPage /></PrivateRoute>} />
+              <Route path="/storage" element={<PrivateRoute><StoragePage /></PrivateRoute>} />
+              <Route path="/notifications" element={<PrivateRoute><NotificationsPage /></PrivateRoute>} />
               <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
 
               <Route path="*" element={<Navigate to="/" />} />
