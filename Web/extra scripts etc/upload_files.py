@@ -21,6 +21,21 @@ files_to_sync = [
         "local_path": "utils.php",
         "remote_path": "utils.php",
         "action": "update_file"
+    },
+    {
+        "local_path": "api/notifications.php",
+        "remote_path": "api/notifications.php",
+        "action": "update_file"
+    },
+    {
+        "local_path": "api/contacts.php",
+        "remote_path": "api/contacts.php",
+        "action": "update_file"
+    },
+    {
+        "local_path": "api/calls.php",
+        "remote_path": "api/calls.php",
+        "action": "update_file"
     }
 ]
 

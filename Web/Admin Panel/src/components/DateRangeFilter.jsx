@@ -109,7 +109,7 @@ export default function DateRangeFilter({
                     </button>
                 </div>
             ) : (
-                <div className="flex bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-1 gap-1 overflow-x-auto">
+                <div className={`flex bg-white dark:bg-gray-800 transition-all rounded-lg p-1 gap-1 overflow-x-auto border ${value !== '7days' && value !== 'all_time' ? 'border-blue-500 ring-4 ring-blue-500/5' : 'border-gray-200 dark:border-gray-700'}`}>
                     {visibleOptions.map((opt) => (
                         <button
                             key={opt.id}

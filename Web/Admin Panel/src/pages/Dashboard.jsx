@@ -60,11 +60,79 @@ export default function Dashboard() {
     };
 
     const statCards = [
-        { label: 'Total Calls', value: data.metrics.total_calls || 0, icon: PhoneCall, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-600/10' },
-        { label: 'Total Persons', value: data.metrics.total_persons || 0, icon: Users, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-600/10' },
-        { label: 'Total Duration', value: data.metrics.formatted_duration || '0m 0s', icon: Clock, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-600/10' },
-        { label: 'Connected', value: data.metrics.connected || 0, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-600/10' },
-        { label: 'Not Connected', value: data.metrics.not_connected || 0, icon: XCircle, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-600/10' },
+        {
+            label: 'Total Calls',
+            value: data.metrics.total_calls || 0,
+            icon: PhoneCall,
+            color: 'text-blue-600',
+            bg: 'bg-blue-50 dark:bg-blue-600/10',
+            onClick: () => navigate('/calls', {
+                state: {
+                    dateRange,
+                    customRange,
+                    selectedEmployee
+                }
+            })
+        },
+        {
+            label: 'Total Persons',
+            value: data.metrics.total_persons || 0,
+            icon: Users,
+            color: 'text-purple-600',
+            bg: 'bg-purple-50 dark:bg-purple-600/10',
+            onClick: () => navigate('/calls', {
+                state: {
+                    dateRange,
+                    customRange,
+                    selectedEmployee
+                }
+            })
+        },
+        {
+            label: 'Total Duration',
+            value: data.metrics.formatted_duration || '0m 0s',
+            icon: Clock,
+            color: 'text-orange-600',
+            bg: 'bg-orange-50 dark:bg-orange-600/10',
+            onClick: () => navigate('/calls', {
+                state: {
+                    dateRange,
+                    customRange,
+                    selectedEmployee,
+                    sortConfig: { key: 'duration', direction: 'DESC' }
+                }
+            })
+        },
+        {
+            label: 'Connected',
+            value: data.metrics.connected || 0,
+            icon: CheckCircle2,
+            color: 'text-green-600',
+            bg: 'bg-green-50 dark:bg-green-600/10',
+            onClick: () => navigate('/calls', {
+                state: {
+                    dateRange,
+                    customRange,
+                    selectedEmployee,
+                    connectedFilter: 'connected'
+                }
+            })
+        },
+        {
+            label: 'Not Connected',
+            value: data.metrics.not_connected || 0,
+            icon: XCircle,
+            color: 'text-red-600',
+            bg: 'bg-red-50 dark:bg-red-600/10',
+            onClick: () => navigate('/calls', {
+                state: {
+                    dateRange,
+                    customRange,
+                    selectedEmployee,
+                    connectedFilter: 'not_connected'
+                }
+            })
+        },
     ];
 
     if (loading && !data.employees.length) {
@@ -108,8 +176,12 @@ export default function Dashboard() {
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     {statCards.map((card) => (
-                        <div key={card.label} className="card p-4 flex flex-col items-start gap-3 hover:shadow-md transition-shadow">
-                            <div className={`${card.bg} ${card.color} p-2.5 rounded-lg`}>
+                        <div
+                            key={card.label}
+                            className="card p-4 flex flex-col items-start gap-3 hover:shadow-md transition-shadow cursor-pointer group"
+                            onClick={card.onClick}
+                        >
+                            <div className={`${card.bg} ${card.color} p-2.5 rounded-lg group-hover:scale-110 transition-transform`}>
                                 <card.icon size={20} />
                             </div>
                             <div>
@@ -143,7 +215,7 @@ export default function Dashboard() {
                                         <tr
                                             key={idx}
                                             className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
-                                            onClick={() => navigate('/calls', { state: { date: row.date } })}
+                                            onClick={() => navigate('/calls', { state: { date: row.date, selectedEmployee } })}
                                         >
                                             <td className="px-6 py-3 font-medium text-gray-900 dark:text-gray-100">
                                                 {format(parseISO(row.date), 'MMM d, yyyy')}

@@ -51,6 +51,7 @@ export default function Sidebar({
         { name: 'Dashboard', icon: LayoutDashboard, path: '/' },
         { name: 'Reports', icon: BarChart2, path: '/reports' },
         { name: 'Calls', icon: Phone, path: '/calls' },
+        { name: 'Callers', icon: Users, path: '/callers' },
     ];
 
     const manageItems = [

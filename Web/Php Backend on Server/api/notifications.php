@@ -43,7 +43,9 @@ $createTableSql = "CREATE TABLE IF NOT EXISTS notifications (
 )";
 Database::execute($createTableSql);
 
-$action = $_GET['action'] ?? $_POST['action'] ?? 'get';
+// Get request data
+$data = json_decode(file_get_contents('php://input'), true);
+$action = $_GET['action'] ?? $data['action'] ?? 'get';
 
 if ($action === 'get') {
     $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
@@ -85,7 +87,7 @@ if (empty($notifications) && $offset === 0) {
 }
 
 if ($action === 'mark_read') {
-    $id = $_POST['id'] ?? null;
+    $id = $data['id'] ?? null;
     
     if ($id === 'all') {
         Database::execute("UPDATE notifications SET is_read = 1 WHERE org_id = '$orgId'");
@@ -100,7 +102,7 @@ if ($action === 'mark_read') {
 }
 
 if ($action === 'delete') {
-    $id = $_POST['id'] ?? null;
+    $id = $data['id'] ?? null;
     
     if (!$id) {
         Response::error("Notification ID required");

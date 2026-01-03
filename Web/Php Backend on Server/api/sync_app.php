@@ -93,8 +93,33 @@ if ($action === "verify_pairing_code") {
         errorOut("Device ID required");
     }
 
-    // Check if employee exists
-    $stmt = $conn->prepare("SELECT id, org_id, device_id, name, allow_personal_exclusion, allow_changing_tracking_start_date, allow_updating_tracking_sims, default_tracking_starting_date FROM employees WHERE id = ? AND org_id = ?");
+    // Capture device info
+    $device_model = trim($_POST['device_model'] ?? '');
+    $os_version = trim($_POST['os_version'] ?? '');
+    $battery_level = isset($_POST['battery_level']) ? intval($_POST['battery_level']) : null;
+    $device_phone = trim($_POST['device_phone'] ?? '');
+
+    // Check if employee exists and get organization plan info
+    $stmt = $conn->prepare("
+        SELECT 
+            e.id, 
+            e.org_id, 
+            e.device_id, 
+            e.name, 
+            e.allow_personal_exclusion, 
+            e.allow_changing_tracking_start_date, 
+            e.allow_updating_tracking_sims, 
+            e.default_tracking_starting_date,
+            e.call_track,
+            e.call_record_crm,
+            u.plan_expiry_date,
+            u.allowed_storage_gb,
+            u.storage_used_bytes
+        FROM employees e
+        JOIN users u ON e.org_id = u.org_id
+        WHERE e.id = ? AND e.org_id = ?
+        LIMIT 1
+    ");
     $stmt->bind_param("is", $employee_id, $org_id);
     $stmt->execute();
     $res = $stmt->get_result();
@@ -120,8 +145,9 @@ if ($action === "verify_pairing_code") {
         }
 
         // Link the device to this employee
-        $upd = $conn->prepare("UPDATE employees SET device_id = ?, updated_at = NOW() WHERE id = ?");
-        $upd->bind_param("si", $device_id, $employee_id);
+        $upd = $conn->prepare("UPDATE employees SET device_id = ?, device_model = ?, os_version = ?, battery_level = ?, updated_at = NOW() WHERE id = ?");
+        if (!$upd) errorOut("DB Error (Link Device): " . $conn->error, 500);
+        $upd->bind_param("sssii", $device_id, $device_model, $os_version, $battery_level, $employee_id);
         if (!$upd->execute()) {
             errorOut("Failed to link device: " . $conn->error, 500);
         }
@@ -133,13 +159,27 @@ if ($action === "verify_pairing_code") {
                 "allow_personal_exclusion" => (int)$employee['allow_personal_exclusion'],
                 "allow_changing_tracking_start_date" => (int)$employee['allow_changing_tracking_start_date'],
                 "allow_updating_tracking_sims" => (int)$employee['allow_updating_tracking_sims'],
-                "default_tracking_starting_date" => $employee['default_tracking_starting_date']
+                "default_tracking_starting_date" => $employee['default_tracking_starting_date'],
+                "call_track" => (int)$employee['call_track'],
+                "call_record_crm" => (int)$employee['call_record_crm']
+            ],
+            "plan" => [
+                "expiry_date" => $employee['plan_expiry_date'] ?? null,
+                "allowed_storage_gb" => (float)($employee['allowed_storage_gb'] ?? 0),
+                "storage_used_bytes" => (int)($employee['storage_used_bytes'] ?? 0)
             ]
         ]);
-    } else {
-        // Employee already has a linked device
-        if ($employee['device_id'] === $device_id) {
-            out([
+    }
+    
+    // Employee already has a linked device
+    if ($employee['device_id'] === $device_id) {
+        // Update device info even if already linked
+        $upd = $conn->prepare("UPDATE employees SET device_model = ?, os_version = ?, battery_level = ?, updated_at = NOW() WHERE id = ?");
+        if (!$upd) errorOut("DB Error (Update Device Info): " . $conn->error, 500);
+        $upd->bind_param("ssii", $device_model, $os_version, $battery_level, $employee_id);
+        $upd->execute();
+
+        out([
                 "success" => true,
                 "message" => "Device already verified",
                 "employee_name" => $employee['name'],
@@ -147,7 +187,14 @@ if ($action === "verify_pairing_code") {
                     "allow_personal_exclusion" => (int)$employee['allow_personal_exclusion'],
                     "allow_changing_tracking_start_date" => (int)$employee['allow_changing_tracking_start_date'],
                     "allow_updating_tracking_sims" => (int)$employee['allow_updating_tracking_sims'],
-                    "default_tracking_starting_date" => $employee['default_tracking_starting_date']
+                    "default_tracking_starting_date" => $employee['default_tracking_starting_date'],
+                    "call_track" => (int)$employee['call_track'],
+                    "call_record_crm" => (int)$employee['call_record_crm']
+                ],
+                "plan" => [
+                    "expiry_date" => $employee['plan_expiry_date'] ?? null,
+                    "allowed_storage_gb" => (float)($employee['allowed_storage_gb'] ?? 0),
+                    "storage_used_bytes" => (int)($employee['storage_used_bytes'] ?? 0)
                 ]
             ]);
         } else {
@@ -166,8 +213,10 @@ if ($action === "verify_pairing_code") {
             }
 
             // Switch device - unlink old, link new
-            $upd = $conn->prepare("UPDATE employees SET device_id = ?, updated_at = NOW() WHERE id = ?");
-            $upd->bind_param("si", $device_id, $employee_id);
+            // Switch device - unlink old, link new
+            $upd = $conn->prepare("UPDATE employees SET device_id = ?, device_model = ?, os_version = ?, battery_level = ?, updated_at = NOW() WHERE id = ?");
+            if (!$upd) errorOut("DB Error (Switch Device): " . $conn->error, 500);
+            $upd->bind_param("sssii", $device_id, $device_model, $os_version, $battery_level, $employee_id);
             if (!$upd->execute()) {
                 errorOut("Failed to switch device: " . $conn->error, 500);
             }
@@ -184,7 +233,6 @@ if ($action === "verify_pairing_code") {
             ]);
         }
     }
-}
 
 /* =====================================================
    1️⃣ START CALL
@@ -236,6 +284,7 @@ if ($action === "start_call") {
     
     // Update last_sync for the employee
     $updSync = $conn->prepare("UPDATE employees SET last_sync = NOW() WHERE id = ?");
+    if (!$updSync) errorOut("DB Error (Update Sync): " . $conn->error, 500);
     $updSync->bind_param("i", $employee_id);
     $updSync->execute();
 
@@ -567,6 +616,7 @@ if ($action === "fetch_updates") {
     // Update last_sync for the employee
     if ($user_id !== '') {
         $updSync = $conn->prepare("UPDATE employees SET last_sync = NOW() WHERE id = ? AND org_id = ?");
+        if (!$updSync) errorOut("DB Error (Fetch Updates Sync): " . $conn->error, 500);
         $updSync->bind_param("is", $user_id, $org_id);
         $updSync->execute();
     }
@@ -675,9 +725,8 @@ if ($action === "update_call") {
     
     $sql = "UPDATE calls SET " . implode(", ", $updates) . " WHERE unique_id = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param($types, ...$params);
-    
-    if ($stmt->execute()) {
+    // Use execute with array instead of bind_param for dynamic args
+    if ($stmt->execute($params)) {
         out([
             "success" => true, 
             "message" => "Call updated",
@@ -742,8 +791,7 @@ if ($action === "update_person") {
             
             $sql = "UPDATE contacts SET " . implode(", ", $updates) . " WHERE phone = ? AND org_id = ?";
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param($types, ...$params);
-            $stmt->execute();
+            $stmt->execute($params);
         }
     } else {
         // Insert new contact
@@ -778,6 +826,29 @@ if ($action === "fetch_config") {
     
     if ($org_id === '' || $user_id === '') errorOut("org_id and user_id required");
 
+    // Optional: Update device info during config fetch (heartbeat)
+    $battery_level = isset($_POST['battery_level']) ? intval($_POST['battery_level']) : null;
+    $os_version = trim($_POST['os_version'] ?? '');
+    $device_model = trim($_POST['device_model'] ?? '');
+    
+    if ($battery_level !== null || $os_version !== '' || $device_model !== '') {
+        $updParts = [];
+        $updP = [];
+        $updT = "";
+        if ($battery_level !== null) { $updParts[] = "battery_level = ?"; $updP[] = $battery_level; $updT .= "i"; }
+        if ($os_version !== '') { $updParts[] = "os_version = ?"; $updP[] = $os_version; $updT .= "s"; }
+        if ($device_model !== '') { $updParts[] = "device_model = ?"; $updP[] = $device_model; $updT .= "s"; }
+        
+        if (!empty($updParts)) {
+            $updP[] = $user_id;
+            $updT .= "i";
+            $sql = "UPDATE employees SET " . implode(", ", $updParts) . ", last_sync = NOW() WHERE id = ?";
+            $upd = $conn->prepare($sql);
+            if (!$upd) errorOut("DB Error (Config Update): " . $conn->error, 500);
+            $upd->execute($updP);
+        }
+    }
+
     // 1. Get Excluded Contacts
     $stmt = $conn->prepare("SELECT phone FROM excluded_contacts WHERE org_id = ? AND is_active = 1");
     $stmt->bind_param("s", $org_id);
@@ -789,8 +860,23 @@ if ($action === "fetch_config") {
         $excluded[] = $row['phone'];
     }
 
-    // 2. Get Employee Settings
-    $stmt2 = $conn->prepare("SELECT allow_personal_exclusion, allow_changing_tracking_start_date, allow_updating_tracking_sims, default_tracking_starting_date FROM employees WHERE id = ? AND org_id = ?");
+    // 2. Get Employee Settings and Organization Plan Info
+    $stmt2 = $conn->prepare("
+        SELECT 
+            e.allow_personal_exclusion, 
+            e.allow_changing_tracking_start_date, 
+            e.allow_updating_tracking_sims, 
+            e.default_tracking_starting_date,
+            e.call_track,
+            e.call_record_crm,
+            u.plan_expiry_date,
+            u.allowed_storage_gb,
+            u.storage_used_bytes
+        FROM employees e
+        JOIN users u ON e.org_id = u.org_id
+        WHERE e.id = ? AND e.org_id = ?
+        LIMIT 1
+    ");
     $stmt2->bind_param("is", $user_id, $org_id);
     $stmt2->execute();
     $res2 = $stmt2->get_result();
@@ -801,9 +887,16 @@ if ($action === "fetch_config") {
         "excluded_contacts" => $excluded,
         "settings" => [
             "allow_personal_exclusion" => (int)($settings['allow_personal_exclusion'] ?? 0),
-            "allow_changing_tracking_start_date" => (int)($settings['allow_changing_tracking_start_date'] ?? 1), // Default to allowed if not set
+            "allow_changing_tracking_start_date" => (int)($settings['allow_changing_tracking_start_date'] ?? 1),
             "allow_updating_tracking_sims" => (int)($settings['allow_updating_tracking_sims'] ?? 0),
-            "default_tracking_starting_date" => $settings['default_tracking_starting_date'] ?: null
+            "default_tracking_starting_date" => $settings['default_tracking_starting_date'] ?: null,
+            "call_track" => (int)($settings['call_track'] ?? 1),
+            "call_record_crm" => (int)($settings['call_record_crm'] ?? 1)
+        ],
+        "plan" => [
+            "expiry_date" => $settings['plan_expiry_date'] ?? null,
+            "allowed_storage_gb" => (float)($settings['allowed_storage_gb'] ?? 0),
+            "storage_used_bytes" => (int)($settings['storage_used_bytes'] ?? 0)
         ]
     ]);
 }
@@ -837,6 +930,85 @@ if ($action === "check_recordings_status") {
     
     out(["success" => true, "completed_ids" => $completed]);
 }
+/* =====================================================
+   ADD DEMO CALL (For testing - bypasses device verification)
+===================================================== */
+if ($action === "add_demo_call") {
+    // Simple secret for demo calls (change in production)
+    $demo_secret = $_POST['demo_secret'] ?? '';
+    if ($demo_secret !== 'demo123') {
+        errorOut("Invalid demo secret");
+    }
+
+    $org_id       = trim($_POST['org_id'] ?? '');
+    $employee_id  = trim($_POST['user_id'] ?? ''); 
+    $caller_phone = isset($_POST['caller']) ? preg_replace('/[^\d]/', '', $_POST['caller']) : null;
+    $caller_name  = $_POST['caller_name'] ?? 'Demo Caller';
+    $duration     = intval($_POST['duration'] ?? 60);
+    $type         = $_POST['type'] ?? 'Incoming';
+    $call_time    = $_POST['call_time'] ?? date("Y-m-d H:i:s");
+    
+    if ($org_id === '' || $employee_id === '') {
+        errorOut("org_id and user_id required");
+    }
+    
+    // Verify employee exists (without device check)
+    $stmtVerify = $conn->prepare("SELECT id, name FROM employees WHERE id = ? AND org_id = ?");
+    $stmtVerify->bind_param("is", $employee_id, $org_id);
+    $stmtVerify->execute();
+    $resVerify = $stmtVerify->get_result();
+    
+    if ($resVerify->num_rows === 0) {
+        errorOut("Invalid employee or organization");
+    }
+    
+    // Generate unique ID
+    $unique_id = "demo_" . time() . "_" . rand(1000, 9999);
+    
+    // Map type
+    $type = ucfirst(strtolower($type));
+    
+    // Upload status
+    $upload_status = 'completed'; // Demo calls don't have recordings
+    
+    // Insert call
+    $stmt = $conn->prepare("
+        INSERT INTO calls
+        (unique_id, org_id, employee_id, caller_name, caller_phone, duration, type, upload_status, call_time)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+    
+    $stmt->bind_param(
+        "sssssisss",
+        $unique_id,
+        $org_id,
+        $employee_id,
+        $caller_name,
+        $caller_phone,
+        $duration,
+        $type,
+        $upload_status,
+        $call_time
+    );
+    
+    if (!$stmt->execute()) {
+        errorOut("DB Error: " . $stmt->error, 500);
+    }
+    
+    out([
+        "success" => true,
+        "message" => "Demo call added successfully",
+        "unique_id" => $unique_id,
+        "org_id" => $org_id,
+        "employee_id" => $employee_id,
+        "caller_phone" => $caller_phone,
+        "caller_name" => $caller_name,
+        "duration" => $duration,
+        "type" => $type,
+        "call_time" => $call_time
+    ]);
+}
+
 /* ============================
    INVALID ACTION
 ============================ */

@@ -6,6 +6,8 @@ import { format } from 'date-fns';
 import { usePersonModal } from '../context/PersonModalContext';
 import DateRangeFilter from '../components/DateRangeFilter';
 import EmployeeDropdown from '../components/EmployeeDropdown';
+import CustomizeViewModal from '../components/CustomizeViewModal';
+import SimpleNoteModal from '../components/SimpleNoteModal';
 import { Toaster, toast } from 'sonner';
 import {
     Search,
@@ -450,7 +452,7 @@ export default function CallsPage() {
     });
 
     // Calculate active filter count
-    const activeFilterCount = useMemo(() => {
+    const otherFiltersCount = useMemo(() => {
         let count = 0;
         if (direction !== 'all') count++;
         if (reviewedFilter !== 'all') count++;
@@ -461,10 +463,12 @@ export default function CallsPage() {
         if (labelFilter !== 'all') count++;
         if (nameFilter !== 'all') count++;
         if (selectedEmployee) count++;
-        if (dateRange !== '7days') count++;
         if (customFilters.length > 0) count += customFilters.length;
         return count;
-    }, [direction, reviewedFilter, connectedFilter, noteFilter, recordingFilter, durationFilter, labelFilter, nameFilter, selectedEmployee, dateRange, customFilters]);
+    }, [direction, reviewedFilter, connectedFilter, noteFilter, recordingFilter, durationFilter, labelFilter, nameFilter, selectedEmployee, customFilters]);
+
+    const isDateFiltered = dateRange !== '7days';
+    const hasAnyFilter = otherFiltersCount > 0 || isDateFiltered;
 
     const [segmentsMenuPosition, setSegmentsMenuPosition] = useState({ top: 0, left: 0 });
     const segmentsButtonRef = useRef(null);
@@ -505,14 +509,24 @@ export default function CallsPage() {
     };
 
     useEffect(() => {
-        if (location.state?.date) {
-            setDateRange('custom');
-            setCustomRange({
-                startDate: location.state.date,
-                endDate: location.state.date
-            });
-            // Ensure the UI reflects the custom date picker is active/relevant if needed
-            // But 'dateRange' state handles the filter logic. 
+        if (location.state) {
+            const s = location.state;
+            if (s.date) {
+                setDateRange('custom');
+                setCustomRange({
+                    startDate: s.date,
+                    endDate: s.date
+                });
+            }
+            if (s.dateRange) setDateRange(s.dateRange);
+            if (s.customRange) setCustomRange(s.customRange);
+            if (s.selectedEmployee) setSelectedEmployee(s.selectedEmployee);
+            if (s.connectedFilter) setConnectedFilter(s.connectedFilter);
+            if (s.sortConfig) setSortConfig(s.sortConfig);
+            if (s.direction) setDirection(s.direction);
+
+            // Clear state to avoid re-applying on every render/navigation
+            window.history.replaceState({}, document.title);
         }
     }, [location.state]);
 
@@ -1222,9 +1236,9 @@ export default function CallsPage() {
                                 title={showFilterBar ? "Hide Filters" : "Show Filters"}
                             >
                                 <Filter size={18} />
-                                {activeFilterCount > 0 && (
+                                {otherFiltersCount > 0 && (
                                     <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold rounded-full px-1 ${showFilterBar ? 'bg-white text-blue-600' : 'bg-blue-600 text-white'}`}>
-                                        {activeFilterCount}
+                                        {otherFiltersCount}
                                     </span>
                                 )}
                             </button>
@@ -1543,7 +1557,7 @@ export default function CallsPage() {
                                 >
                                     <X size={18} />
                                 </button>
-                                {activeFilterCount > 0 && (
+                                {hasAnyFilter && (
                                     <button
                                         onClick={clearAllFilters}
                                         className="whitespace-nowrap flex-shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-all border border-red-100 shadow-sm"
@@ -1698,7 +1712,7 @@ export default function CallsPage() {
                                             const isResizing = resizingRef.current?.columnId === id;
 
                                             const commonProps = {
-                                                key: id,
+
                                                 className: `relative px-6 py-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none ${draggedColumn === id ? 'opacity-50 bg-gray-100 dark:bg-gray-800' : ''}`,
                                                 style: { width: `${width}px`, minWidth: `${width}px`, maxWidth: `${width}px` },
                                                 draggable: true,
@@ -1716,7 +1730,7 @@ export default function CallsPage() {
                                             );
 
                                             if (id === 'time') return (
-                                                <th {...commonProps} onClick={() => handleSort('call_time')}>
+                                                <th key={id} {...commonProps} onClick={() => handleSort('call_time')}>
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-2 overflow-hidden"><Clock size={12} className="text-gray-400 dark:text-gray-500 shrink-0" /> Time {getSortIcon('call_time')}</div>
                                                     </div>
@@ -1724,7 +1738,7 @@ export default function CallsPage() {
                                                 </th>
                                             );
                                             if (id === 'contact') return (
-                                                <th {...commonProps} onClick={() => handleSort('contact_name')}>
+                                                <th key={id} {...commonProps} onClick={() => handleSort('contact_name')}>
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-2 overflow-hidden"><User size={12} className="text-gray-400 shrink-0" /> Contact {getSortIcon('contact_name')}</div>
                                                     </div>
@@ -1732,7 +1746,7 @@ export default function CallsPage() {
                                                 </th>
                                             );
                                             if (id === 'type') return (
-                                                <th {...commonProps} onClick={() => handleSort('type')}>
+                                                <th key={id} {...commonProps} onClick={() => handleSort('type')}>
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-2 overflow-hidden"><Activity size={12} className="text-gray-400 shrink-0" /> Type {getSortIcon('type')}</div>
                                                     </div>
@@ -1740,7 +1754,7 @@ export default function CallsPage() {
                                                 </th>
                                             );
                                             if (id === 'person_note') return (
-                                                <th {...commonProps} className={`${commonProps.className} !cursor-default`} onClick={undefined}>
+                                                <th key={id} {...commonProps} className={`${commonProps.className} !cursor-default`} onClick={undefined}>
                                                     <div className="flex items-center justify-between">
                                                         <span className="overflow-hidden flex items-center gap-2"><Edit3 size={12} className="text-gray-400 shrink-0" /> Person Note</span>
                                                     </div>
@@ -1748,7 +1762,7 @@ export default function CallsPage() {
                                                 </th>
                                             );
                                             if (id === 'note') return (
-                                                <th {...commonProps} className={`${commonProps.className} !cursor-default`} onClick={undefined}>
+                                                <th key={id} {...commonProps} className={`${commonProps.className} !cursor-default`} onClick={undefined}>
                                                     <div className="flex items-center justify-between">
                                                         <span className="overflow-hidden flex items-center gap-2"><Tag size={12} className="text-gray-400 shrink-0" /> Call Note</span>
                                                     </div>
@@ -1756,7 +1770,7 @@ export default function CallsPage() {
                                                 </th>
                                             );
                                             if (id === 'recording') return (
-                                                <th {...commonProps} onClick={() => handleSort('duration')}>
+                                                <th key={id} {...commonProps} onClick={() => handleSort('duration')}>
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-2 overflow-hidden"><PlayCircle size={12} className="text-gray-400 shrink-0" /> Recording {getSortIcon('duration')}</div>
                                                     </div>
@@ -1764,7 +1778,7 @@ export default function CallsPage() {
                                                 </th>
                                             );
                                             if (id === 'labels') return (
-                                                <th {...commonProps} className={`${commonProps.className} !cursor-default`} onClick={undefined}>
+                                                <th key={id} {...commonProps} className={`${commonProps.className} !cursor-default`} onClick={undefined}>
                                                     <div className="flex items-center justify-between">
                                                         <span className="overflow-hidden flex items-center gap-2"><Layers size={12} className="text-gray-400 shrink-0" /> Labels</span>
                                                     </div>
@@ -1772,7 +1786,7 @@ export default function CallsPage() {
                                                 </th>
                                             );
                                             if (id === 'employee') return (
-                                                <th {...commonProps} onClick={() => handleSort('employee_name')}>
+                                                <th key={id} {...commonProps} onClick={() => handleSort('employee_name')}>
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-2 overflow-hidden"><Briefcase size={12} className="text-gray-400 shrink-0" /> Employee {getSortIcon('employee_name')}</div>
                                                     </div>
@@ -1780,7 +1794,7 @@ export default function CallsPage() {
                                                 </th>
                                             );
                                             if (id === 'device_phone') return (
-                                                <th {...commonProps} onClick={() => handleSort('phone_number')}>
+                                                <th key={id} {...commonProps} onClick={() => handleSort('phone_number')}>
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-2 overflow-hidden"><Smartphone size={12} className="text-gray-400 shrink-0" /> Device Phone {getSortIcon('phone_number')}</div>
                                                     </div>
@@ -1986,9 +2000,12 @@ export default function CallsPage() {
                     {
                         editingNote && (
                             <SimpleNoteModal
-                                noteData={editingNote}
+                                title={editingNote.call.contact_name || 'Unknown Contact'}
+                                subTitle={editingNote.call.phone_number}
+                                initialValue={editingNote.call[editingNote.field]}
+                                label={editingNote.field === 'person_note' ? 'Person Note' : 'Call Note'}
                                 onClose={() => setEditingNote(null)}
-                                onUpdate={handleUpdateCall}
+                                onSave={(val) => handleUpdateCall(editingNote.call.id, { [editingNote.field]: val })}
                             />
                         )
                     }
@@ -2158,259 +2175,4 @@ const filterLabels = {
     name: 'Name',
 };
 
-function CustomizeViewModal({
-    onClose,
-    initialTab = 'columns',
-    hideTabs = false,
-    columnOrder, setColumnOrder, visibleColumns, setVisibleColumns, defaultColumnOrder, columnLabels,
-    filterOrder, setFilterOrder, visibleFilters, setVisibleFilters, defaultFilterOrder, filterLabels,
-    handleColumnDragStart, handleColumnDragOver, handleColumnDragEnd,
-    handleFilterDragStart, handleFilterDragOver, handleFilterDragEnd,
-    toggleColumn, toggleFilter, draggedColumn, draggedFilter,
-    contactColumnOptions, setContactColumnOptions
-}) {
-    const [activeTab, setActiveTab] = useState(initialTab);
 
-    return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
-            <div
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200"
-                onClick={e => e.stopPropagation()}
-            >
-                <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-                    <div>
-                        <h3 className="font-bold text-gray-900 text-lg">Customize {activeTab === 'columns' ? 'Columns' : 'Filters'}</h3>
-                        <p className="text-sm text-gray-500">{activeTab === 'columns' ? 'Configure table column visibility and order' : 'Configure filters bar visibility and order'}</p>
-                    </div>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
-                        <X size={20} className="text-gray-500" />
-                    </button>
-                </div>
-
-                {!hideTabs && (
-                    <div className="flex border-b border-gray-100">
-                        <button
-                            onClick={() => setActiveTab('columns')}
-                            className={`flex-1 py-3 text-sm font-semibold transition-all border-b-2 ${activeTab === 'columns' ? 'text-blue-600 border-blue-600' : 'text-gray-500 border-transparent hover:text-gray-700'}`}
-                        >
-                            Columns
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('filters')}
-                            className={`flex-1 py-3 text-sm font-semibold transition-all border-b-2 ${activeTab === 'filters' ? 'text-blue-600 border-blue-600' : 'text-gray-500 border-transparent hover:text-gray-700'}`}
-                        >
-                            Filters Bar
-                        </button>
-                    </div>
-                )}
-
-                <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                    {activeTab === 'columns' ? (
-                        <div className="space-y-1">
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Drag to reorder • Toggle visibility</p>
-                            {columnOrder.map((id) => (
-                                <div key={id} className="flex flex-col">
-                                    <div
-                                        draggable
-                                        onDragStart={(e) => handleColumnDragStart(e, id)}
-                                        onDragOver={(e) => handleColumnDragOver(e, id)}
-                                        onDragEnd={handleColumnDragEnd}
-                                        className={`flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-all group ${draggedColumn === id ? 'opacity-40 bg-gray-100' : ''}`}
-                                    >
-                                        <div className="cursor-grab active:cursor-grabbing text-gray-300 group-hover:text-gray-500 transition-colors">
-                                            <GripVertical size={18} />
-                                        </div>
-                                        <div className="flex-1 flex items-center justify-between">
-                                            <span className="text-sm font-semibold text-gray-700">{columnLabels[id]}</span>
-                                            <button
-                                                onClick={() => toggleColumn(id)}
-                                                className={`p-1.5 rounded-lg transition-all ${visibleColumns.includes(id) ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-400'}`}
-                                                title={visibleColumns.includes(id) ? "Hide Column" : "Show Column"}
-                                            >
-                                                {visibleColumns.includes(id) ? <Eye size={18} /> : <EyeOff size={18} />}
-                                            </button>
-                                        </div>
-                                    </div>
-                                    {id === 'contact' && visibleColumns.includes('contact') && (
-                                        <div className="ml-12 mr-3 my-1 space-y-2 border-l-2 border-gray-100 pl-4 py-1">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs font-medium text-gray-500">Show Phone Number</span>
-                                                <button
-                                                    onClick={() => setContactColumnOptions(prev => ({ ...prev, showPhone: !prev.showPhone }))}
-                                                    className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors focus:outline-none ${contactColumnOptions?.showPhone ? 'bg-blue-600' : 'bg-gray-200'}`}
-                                                >
-                                                    <span
-                                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${contactColumnOptions?.showPhone ? 'translate-x-[14px]' : 'translate-x-[2px]'}`}
-                                                    />
-                                                </button>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs font-medium text-gray-500">Show Review Status</span>
-                                                <button
-                                                    onClick={() => setContactColumnOptions(prev => ({ ...prev, showReview: !prev.showReview }))}
-                                                    className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors focus:outline-none ${contactColumnOptions?.showReview ? 'bg-blue-600' : 'bg-gray-200'}`}
-                                                >
-                                                    <span
-                                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${contactColumnOptions?.showReview ? 'translate-x-[14px]' : 'translate-x-[2px]'}`}
-                                                    />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {id === 'type' && visibleColumns.includes('type') && (
-                                        <div className="ml-12 mr-3 my-1 space-y-2 border-l-2 border-gray-100 pl-4 py-1">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs font-medium text-gray-500">Show Duration</span>
-                                                <button
-                                                    onClick={() => setContactColumnOptions(prev => ({ ...prev, showDuration: !prev.showDuration }))}
-                                                    className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors focus:outline-none ${contactColumnOptions?.showDuration ? 'bg-blue-600' : 'bg-gray-200'}`}
-                                                >
-                                                    <span
-                                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${contactColumnOptions?.showDuration ? 'translate-x-[14px]' : 'translate-x-[2px]'}`}
-                                                    />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="space-y-1">
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Drag to reorder • Toggle visibility</p>
-                            {filterOrder.filter(id => id !== 'date').map((id) => (
-                                <div
-                                    key={id}
-                                    draggable
-                                    onDragStart={(e) => handleFilterDragStart(e, id)}
-                                    onDragOver={(e) => handleFilterDragOver(e, id)}
-                                    onDragEnd={handleFilterDragEnd}
-                                    className={`flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 rounded-xl transition-all group ${draggedFilter === id ? 'opacity-40 bg-gray-100' : ''}`}
-                                >
-                                    <div className="cursor-grab active:cursor-grabbing text-gray-300 group-hover:text-gray-500 transition-colors">
-                                        <GripVertical size={18} />
-                                    </div>
-                                    <div className="flex-1 flex items-center justify-between">
-                                        <span className="text-sm font-semibold text-gray-700">{filterLabels[id]}</span>
-                                        <button
-                                            onClick={() => toggleFilter(id)}
-                                            className={`p-1.5 rounded-lg transition-all ${visibleFilters.includes(id) ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-400'}`}
-                                            title={visibleFilters.includes(id) ? "Hide Filter" : "Show Filter"}
-                                        >
-                                            {visibleFilters.includes(id) ? <Eye size={18} /> : <EyeOff size={18} />}
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
-                    <button
-                        onClick={() => {
-                            if (activeTab === 'columns') {
-                                setColumnOrder(defaultColumnOrder);
-                                setVisibleColumns(defaultColumnOrder);
-                            } else {
-                                setFilterOrder(defaultFilterOrder);
-                                setVisibleFilters(defaultFilterOrder);
-                            }
-                            toast.success("Reset to defaults");
-                        }}
-                        className="text-xs font-bold text-gray-400 hover:text-gray-600 uppercase tracking-widest hover:underline"
-                    >
-                        Reset Defaults
-                    </button>
-                    <button
-                        onClick={onClose}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg shadow-blue-200 transition-all active:scale-95"
-                    >
-                        Save Changes
-                    </button>
-                </div>
-            </div>
-        </div >,
-        document.body
-    );
-}
-
-function SimpleNoteModal({ noteData, onClose, onUpdate }) {
-    const { call, field } = noteData;
-    const [value, setValue] = useState(call[field] || '');
-    const [isSaving, setIsSaving] = useState(false);
-    const inputRef = useRef(null);
-
-    useEffect(() => {
-        if (inputRef.current) {
-            inputRef.current.focus();
-            const len = inputRef.current.value.length;
-            inputRef.current.setSelectionRange(len, len);
-        }
-    }, []);
-
-    const handleSave = async () => {
-        if (isSaving) return;
-        setIsSaving(true);
-        console.log('SimpleNoteModal: Saving note...', { callId: call.id, field, value });
-        try {
-            await onUpdate(call.id, { [field]: value });
-            console.log('SimpleNoteModal: Saved successfully');
-            onClose();
-        } catch (error) {
-            console.error('SimpleNoteModal: Save failed', error);
-            // Error handling is likely done in onUpdate (handleUpdateCall) with toast
-            setIsSaving(false);
-        }
-    };
-
-    const handleKeyDown = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSave();
-        }
-        if (e.key === 'Escape') onClose();
-    };
-
-    const label = field === 'person_note' ? 'Person Note' : 'Call Note';
-
-    return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/20 backdrop-blur-[1px]" onClick={onClose}>
-            <div
-                className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-100"
-                onClick={e => e.stopPropagation()}
-            >
-                <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex justify-between items-center">
-                    <div>
-                        <h3 className="font-semibold text-gray-900 text-sm truncate max-w-[180px]">{call.contact_name || 'Unknown Contact'}</h3>
-                        <p className="text-xs text-gray-500 font-mono">{call.phone_number}</p>
-                    </div>
-                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider bg-blue-50 px-2 py-1 rounded-full">{label}</span>
-                </div>
-                <div className="p-4">
-                    <textarea
-                        ref={inputRef}
-                        className="w-full text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3 min-h-[100px] outline-none resize-none disabled:bg-gray-50 disabled:text-gray-500"
-                        value={value}
-                        onChange={e => setValue(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder={`Enter ${label.toLowerCase()}...`}
-                        disabled={isSaving}
-                    />
-                    <div className="mt-2 text-xs text-gray-400 flex justify-between items-center">
-                        <span>Press <strong>Enter</strong> to save</span>
-                        <button
-                            onClick={handleSave}
-                            disabled={isSaving}
-                            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${isSaving ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
-                        >
-                            {isSaving ? 'Saving...' : 'Save'}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>,
-        document.body
-    );
-}

@@ -31,6 +31,186 @@ switch ($method) {
     
     /* ===== GET CONTACTS ===== */
     case 'GET':
+        // Return unique callers with stats
+        if ($action === 'callers') {
+            $search = $_GET['search'] ?? '';
+            $label = $_GET['label'] ?? '';
+            $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
+            $offset = ($page - 1) * $limit;
+
+            $dateFilter = $_GET['dateRange'] ?? 'all';
+            $timezoneOffset = isset($_GET['tzOffset']) ? (int)$_GET['tzOffset'] : 0; 
+            $dbOffsetMinutes = -1 * $timezoneOffset;
+            $sqlLocalTime = "DATE_ADD(c.call_time, INTERVAL $dbOffsetMinutes MINUTE)";
+            $sqlLocalNow = "DATE_ADD(UTC_TIMESTAMP(), INTERVAL $dbOffsetMinutes MINUTE)";
+
+            $where = ["c.org_id = '$orgId'"];
+            
+            // Build WHERE Clause (Basic filters)
+            $where = ["c.org_id = '$orgId'"];
+            
+            // Date Filter
+            $dateClause = "";
+            switch ($dateFilter) {
+                case 'today': $dateClause = "DATE($sqlLocalTime) = DATE($sqlLocalNow)"; break;
+                case 'yesterday': $dateClause = "DATE($sqlLocalTime) = DATE(DATE_SUB($sqlLocalNow, INTERVAL 1 DAY))"; break;
+                case '3days': $dateClause = "$sqlLocalTime >= DATE_SUB($sqlLocalNow, INTERVAL 3 DAY)"; break;
+                case '7days': $dateClause = "$sqlLocalTime >= DATE_SUB($sqlLocalNow, INTERVAL 7 DAY)"; break;
+                case '14days': $dateClause = "$sqlLocalTime >= DATE_SUB($sqlLocalNow, INTERVAL 14 DAY)"; break;
+                case '30days': $dateClause = "$sqlLocalTime >= DATE_SUB($sqlLocalNow, INTERVAL 30 DAY)"; break;
+                case 'this_month': $dateClause = "DATE_FORMAT($sqlLocalTime, '%Y-%m') = DATE_FORMAT($sqlLocalNow, '%Y-%m')"; break;
+                case 'last_month': $dateClause = "DATE_FORMAT($sqlLocalTime, '%Y-%m') = DATE_FORMAT(DATE_SUB($sqlLocalNow, INTERVAL 1 MONTH), '%Y-%m')"; break;
+                case 'custom':
+                    if (isset($_GET['startDate']) && isset($_GET['endDate'])) {
+                        $s = Database::escape($_GET['startDate']);
+                        $e = Database::escape($_GET['endDate']);
+                        $dateClause = "DATE($sqlLocalTime) BETWEEN '$s' AND '$e'";
+                    }
+                    break;
+            }
+            if ($dateClause) $where[] = $dateClause;
+
+            if ($search) {
+                $search = Database::escape($search);
+                $where[] = "(c.caller_phone LIKE '%$search%' OR c.caller_name LIKE '%$search%' OR co.name LIKE '%$search%')";
+            }
+            if ($label && $label !== 'all') {
+                $label = Database::escape($label);
+                $where[] = "co.label LIKE '%$label%'";
+            }
+
+            // Simple status filters (at WHERE level if possible)
+            $noteStatus = $_GET['noteStatus'] ?? 'all';
+            if ($noteStatus === 'has_note') $where[] = "(co.notes IS NOT NULL AND co.notes != '')";
+            if ($noteStatus === 'no_note') $where[] = "(co.notes IS NULL OR co.notes = '')";
+
+            $whereClause = implode(' AND ', $where);
+
+            // HAVING Clause (Filters on Aggregates)
+            $having = [];
+            
+            $connectStatus = $_GET['connectStatus'] ?? 'all';
+            if ($connectStatus === 'connected') $having[] = "connected_calls > 0";
+            if ($connectStatus === 'never_connected') $having[] = "connected_calls = 0";
+
+            $reviewStatus = $_GET['reviewStatus'] ?? 'all';
+            if ($reviewStatus === 'all_reviewed') $having[] = "unreviewed_count = 0";
+            if ($reviewStatus === 'pending') $having[] = "unreviewed_count > 0";
+
+            $recordingStatus = $_GET['recordingStatus'] ?? 'all';
+            if ($recordingStatus === 'has_recordings') $having[] = "recordings_count > 0";
+            if ($recordingStatus === 'no_recordings') $having[] = "recordings_count = 0";
+
+            $minDuration = isset($_GET['minDuration']) ? (int)$_GET['minDuration'] : null;
+            if ($minDuration !== null) $having[] = "total_duration >= $minDuration";
+
+            $minInteractions = isset($_GET['minInteractions']) ? (int)$_GET['minInteractions'] : null;
+            if ($minInteractions !== null) $having[] = "total_calls >= $minInteractions";
+
+            // New filters for Callers2
+            $durationFilter = $_GET['durationFilter'] ?? 'all';
+            if ($durationFilter === 'short') $having[] = "total_duration < 60";
+            if ($durationFilter === 'medium') $having[] = "total_duration >= 60 AND total_duration <= 600";
+            if ($durationFilter === 'long') $having[] = "total_duration > 600";
+
+            $interactionFilter = $_GET['interactionFilter'] ?? 'all';
+            if ($interactionFilter === 'frequent') $having[] = "total_calls > 10";
+            if ($interactionFilter === 'rare') $having[] = "total_calls >= 1 AND total_calls <= 3";
+
+            $lastCallTypeFilter = $_GET['lastCallType'] ?? 'all';
+            if ($lastCallTypeFilter === 'inbound') $having[] = "(LOWER(last_call_type) LIKE '%inbound%' OR LOWER(last_call_type) LIKE '%in%')";
+            if ($lastCallTypeFilter === 'outbound') $having[] = "(LOWER(last_call_type) LIKE '%outbound%' OR LOWER(last_call_type) LIKE '%out%')";
+
+            $firstCallTypeFilter = $_GET['firstCallType'] ?? 'all';
+            if ($firstCallTypeFilter === 'inbound') $having[] = "(LOWER(first_call_type) LIKE '%inbound%' OR LOWER(first_call_type) LIKE '%in%')";
+            if ($firstCallTypeFilter === 'outbound') $having[] = "(LOWER(first_call_type) LIKE '%outbound%' OR LOWER(first_call_type) LIKE '%out%')";
+
+            $ratioFilter = $_GET['inOutRatioFilter'] ?? 'all';
+            if ($ratioFilter === 'more_in') $having[] = "in_out_ratio > 1";
+            if ($ratioFilter === 'more_out') $having[] = "in_out_ratio < 1";
+            if ($ratioFilter === 'equal') $having[] = "ABS(in_out_ratio - 1) < 0.01";
+
+            $lastByFilter = $_GET['lastCallBy'] ?? 'all';
+            if ($lastByFilter === 'caller') $having[] = "(LOWER(last_call_type) LIKE '%inbound%' OR LOWER(last_call_type) LIKE '%in%')";
+            if ($lastByFilter === 'employee') $having[] = "(LOWER(last_call_type) LIKE '%outbound%' OR LOWER(last_call_type) LIKE '%out%')";
+
+            $havingClause = !empty($having) ? "HAVING " . implode(' AND ', $having) : "";
+
+            // Sorting
+            $sortBy = $_GET['sortBy'] ?? 'last_call';
+            $sortOrder = $_GET['sortOrder'] ?? 'DESC';
+            
+            $allowedSort = [
+                'name' => 'name',
+                'phone' => 'phone',
+                'total_calls' => 'total_calls',
+                'total_duration' => 'total_duration',
+                'last_call' => 'last_call',
+                'first_call' => 'first_call',
+                'avg_duration' => 'avg_duration',
+                'in_out_ratio' => 'in_out_ratio'
+            ];
+            $sortColumn = $allowedSort[$sortBy] ?? 'last_call';
+            $sortOrder = ($sortOrder === 'ASC') ? 'ASC' : 'DESC';
+
+            // Total count for pagination (requires subquery because of HAVING)
+            $countQuery = "SELECT COUNT(*) as total FROM (
+                SELECT c.caller_phone
+                FROM calls c 
+                LEFT JOIN contacts co ON (c.caller_phone = co.phone AND c.org_id = co.org_id)
+                WHERE $whereClause
+                GROUP BY c.caller_phone
+                $havingClause
+            ) as t";
+            $countRes = Database::getOne($countQuery);
+            $total = $countRes['total'] ?? 0;
+
+            $query = "
+                SELECT 
+                    c.caller_phone as phone,
+                    IFNULL(co.name, MAX(c.caller_name)) as name,
+                    co.label,
+                    co.notes,
+                    SUBSTRING_INDEX(GROUP_CONCAT(COALESCE(c.labels, '') ORDER BY c.call_time DESC SEPARATOR '||'), '||', 1) as call_labels,
+                    COUNT(c.id) as total_calls,
+                    SUM(c.duration) as total_duration,
+                    MIN(c.call_time) as first_call,
+                    MAX(c.call_time) as last_call,
+                    AVG(NULLIF(c.duration, 0)) as avg_duration,
+                    COUNT(CASE WHEN c.duration > 0 THEN 1 END) as connected_calls,
+                    COUNT(CASE WHEN c.duration = 0 THEN 1 ELSE NULL END) as missed_calls,
+                    COUNT(CASE WHEN (c.reviewed = 0 OR c.reviewed IS NULL) THEN 1 END) as unreviewed_count,
+                    COUNT(CASE WHEN (c.recording_url IS NOT NULL AND c.recording_url != '') THEN 1 END) as recordings_count,
+                    COUNT(CASE WHEN (LOWER(c.type) LIKE '%inbound%' OR LOWER(c.type) LIKE '%in%') THEN 1 END) / NULLIF(COUNT(CASE WHEN (LOWER(c.type) LIKE '%outbound%' OR LOWER(c.type) LIKE '%out%') THEN 1 END), 0) as in_out_ratio,
+                    SUBSTRING_INDEX(GROUP_CONCAT(c.type ORDER BY c.call_time DESC SEPARATOR '||'), '||', 1) as last_call_type,
+                    SUBSTRING_INDEX(GROUP_CONCAT(c.type ORDER BY c.call_time ASC SEPARATOR '||'), '||', 1) as first_call_type,
+                    SUBSTRING_INDEX(GROUP_CONCAT(c.duration ORDER BY c.call_time DESC SEPARATOR '||'), '||', 1) as last_call_duration,
+                    SUBSTRING_INDEX(GROUP_CONCAT(c.id ORDER BY c.call_time DESC SEPARATOR '||'), '||', 1) as last_call_id,
+                    SUBSTRING_INDEX(GROUP_CONCAT(COALESCE(e.name, 'Unknown') ORDER BY c.call_time DESC SEPARATOR '||'), '||', 1) as last_call_by
+                FROM calls c
+                LEFT JOIN contacts co ON (c.caller_phone = co.phone AND c.org_id = co.org_id)
+                LEFT JOIN employees e ON c.employee_id = e.id
+                WHERE $whereClause
+                GROUP BY c.caller_phone
+                $havingClause
+                ORDER BY $sortColumn $sortOrder
+                LIMIT $limit OFFSET $offset
+            ";
+            
+            $callers = Database::select($query);
+            Response::success([
+                'data' => $callers,
+                'pagination' => [
+                    'total' => (int)$total,
+                    'page' => $page,
+                    'limit' => $limit,
+                    'total_pages' => ceil($total / $limit)
+                ]
+            ], 'Callers retrieved successfully');
+            break;
+        }
+
         // Return unique labels
         if ($action === 'labels') {
             $labelsRows = Database::select("

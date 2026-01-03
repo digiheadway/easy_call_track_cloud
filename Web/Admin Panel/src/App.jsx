@@ -14,6 +14,7 @@ import ExcludedPage from './pages/ExcludedPage';
 import PlansPage from './pages/PlansPage';
 import StoragePage from './pages/StoragePage';
 import NotificationsPage from './pages/NotificationsPage';
+import CallersPage from './pages/CallersPage';
 import { AudioPlayerProvider } from './context/AudioPlayerContext';
 import FloatingAudioPlayer from './components/FloatingAudioPlayer';
 import { Toaster } from 'sonner';
@@ -49,6 +50,7 @@ function App() {
                 <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
                 <Route path="/reports" element={<PrivateRoute><ReportsPage /></PrivateRoute>} />
                 <Route path="/calls" element={<PrivateRoute><CallsPage /></PrivateRoute>} />
+                <Route path="/callers" element={<PrivateRoute><CallersPage /></PrivateRoute>} />
                 <Route path="/employees" element={<PrivateRoute><EmployeesPage /></PrivateRoute>} />
                 <Route path="/excluded" element={<PrivateRoute><ExcludedPage /></PrivateRoute>} />
                 <Route path="/plans" element={<PrivateRoute><PlansPage /></PrivateRoute>} />

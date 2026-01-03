@@ -477,6 +477,24 @@ export default function EmployeesPage() {
                             <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{selectedEmployee?.device_phone || 'N/A'}</p>
                         </div>
                         <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">OS Version</p>
+                            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Android {selectedEmployee?.os_version || 'N/A'}</p>
+                        </div>
+                        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Battery Level</p>
+                            <div className="flex items-center gap-2">
+                                <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{selectedEmployee?.battery_level != null ? `${selectedEmployee.battery_level}%` : 'N/A'}</p>
+                                {selectedEmployee?.battery_level != null && (
+                                    <div className="w-8 h-4 bg-gray-200 dark:bg-gray-700 rounded-sm p-0.5 relative">
+                                        <div
+                                            className={`h-full rounded-sm ${selectedEmployee.battery_level > 20 ? 'bg-green-500' : 'bg-red-500'}`}
+                                            style={{ width: `${selectedEmployee.battery_level}%` }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 col-span-2">
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Device ID</p>
                             <p className="text-[10px] font-mono font-bold text-gray-900 dark:text-gray-100 break-all">{selectedEmployee?.device_id || 'N/A'}</p>
                         </div>
@@ -505,7 +523,7 @@ export default function EmployeesPage() {
             >
                 <div className="space-y-6">
                     <p className="text-xs text-gray-500 dark:text-gray-400 font-medium bg-orange-50 dark:bg-orange-900/20 p-3 rounded-xl border border-orange-100 dark:border-orange-900/30 text-orange-700 dark:text-orange-300">
-                        Configure advanced tracking permissions for <strong>{selectedEmployee?.name}</strong>.
+                        Configure advanced tracking permissions for <strong>{selectedEmployee?.name || 'Employee'}</strong>.
                     </p>
 
                     <div className="space-y-3">
@@ -521,10 +539,10 @@ export default function EmployeesPage() {
                             </div>
                             <button
                                 onClick={async () => {
-                                    const val = !selectedEmployee.allow_personal_exclusion;
-                                    setEmployees(prev => prev.map(e => e.id === selectedEmployee.id ? { ...e, allow_personal_exclusion: val } : e));
-                                    setSelectedEmployee({ ...selectedEmployee, allow_personal_exclusion: val });
-                                    await api.put(`/employees.php?id=${selectedEmployee.id}`, { allow_personal_exclusion: val ? 1 : 0 });
+                                    const val = !selectedEmployee?.allow_personal_exclusion;
+                                    setEmployees(prev => prev.map(e => e.id === selectedEmployee?.id ? { ...e, allow_personal_exclusion: val } : e));
+                                    setSelectedEmployee(selectedEmployee ? { ...selectedEmployee, allow_personal_exclusion: val } : null);
+                                    await api.put(`/employees.php?id=${selectedEmployee?.id}`, { allow_personal_exclusion: val ? 1 : 0 });
                                     toast.success('Exclusion permission updated');
                                 }}
                             >
@@ -547,10 +565,10 @@ export default function EmployeesPage() {
                             </div>
                             <button
                                 onClick={async () => {
-                                    const val = !selectedEmployee.allow_changing_tracking_start_date;
-                                    setEmployees(prev => prev.map(e => e.id === selectedEmployee.id ? { ...e, allow_changing_tracking_start_date: val } : e));
-                                    setSelectedEmployee({ ...selectedEmployee, allow_changing_tracking_start_date: val });
-                                    await api.put(`/employees.php?id=${selectedEmployee.id}`, { allow_changing_tracking_start_date: val ? 1 : 0 });
+                                    const val = !selectedEmployee?.allow_changing_tracking_start_date;
+                                    setEmployees(prev => prev.map(e => e.id === selectedEmployee?.id ? { ...e, allow_changing_tracking_start_date: val } : e));
+                                    setSelectedEmployee(selectedEmployee ? { ...selectedEmployee, allow_changing_tracking_start_date: val } : null);
+                                    await api.put(`/employees.php?id=${selectedEmployee?.id}`, { allow_changing_tracking_start_date: val ? 1 : 0 });
                                     toast.success('Start date permission updated');
                                 }}
                             >
@@ -573,10 +591,10 @@ export default function EmployeesPage() {
                             </div>
                             <button
                                 onClick={async () => {
-                                    const val = !selectedEmployee.allow_updating_tracking_sims;
-                                    setEmployees(prev => prev.map(e => e.id === selectedEmployee.id ? { ...e, allow_updating_tracking_sims: val } : e));
-                                    setSelectedEmployee({ ...selectedEmployee, allow_updating_tracking_sims: val });
-                                    await api.put(`/employees.php?id=${selectedEmployee.id}`, { allow_updating_tracking_sims: val ? 1 : 0 });
+                                    const val = !selectedEmployee?.allow_updating_tracking_sims;
+                                    setEmployees(prev => prev.map(e => e.id === selectedEmployee?.id ? { ...e, allow_updating_tracking_sims: val } : e));
+                                    setSelectedEmployee(selectedEmployee ? { ...selectedEmployee, allow_updating_tracking_sims: val } : null);
+                                    await api.put(`/employees.php?id=${selectedEmployee?.id}`, { allow_updating_tracking_sims: val ? 1 : 0 });
                                     toast.success('SIM update permission updated');
                                 }}
                             >
@@ -605,7 +623,7 @@ export default function EmployeesPage() {
             >
                 <div className="space-y-6">
                     <p className="text-xs text-gray-500 dark:text-gray-400 font-medium bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-900/30 text-blue-700 dark:text-blue-300">
-                        Select which activities to track for <strong>{selectedEmployee?.name}</strong>.
+                        Select which activities to track for <strong>{selectedEmployee?.name || 'Employee'}</strong>.
                     </p>
 
                     <div className="space-y-3">
@@ -622,10 +640,10 @@ export default function EmployeesPage() {
                             <button
                                 onClick={async (e) => {
                                     e.stopPropagation();
-                                    const val = !selectedEmployee.track_calls;
-                                    setEmployees(prev => prev.map(e => e.id === selectedEmployee.id ? { ...e, track_calls: val } : e));
-                                    setSelectedEmployee({ ...selectedEmployee, track_calls: val });
-                                    await api.put(`/employees.php?id=${selectedEmployee.id}`, { track_calls: val ? 1 : 0 });
+                                    const val = !selectedEmployee?.track_calls;
+                                    setEmployees(prev => prev.map(e => e.id === selectedEmployee?.id ? { ...e, track_calls: val } : e));
+                                    setSelectedEmployee(selectedEmployee ? { ...selectedEmployee, track_calls: val } : null);
+                                    await api.put(`/employees.php?id=${selectedEmployee?.id}`, { track_calls: val ? 1 : 0 });
                                     toast.success('Call tracking updated');
                                 }}
                             >
@@ -649,7 +667,7 @@ export default function EmployeesPage() {
                             <button
                                 onClick={async (e) => {
                                     e.stopPropagation();
-                                    const val = !selectedEmployee.track_recordings;
+                                    const val = !selectedEmployee?.track_recordings;
 
                                     // Check for storage if enabling
                                     if (val && (!user?.allowed_storage_gb || user.allowed_storage_gb <= 0)) {
@@ -657,10 +675,10 @@ export default function EmployeesPage() {
                                         return;
                                     }
 
-                                    setEmployees(prev => prev.map(e => e.id === selectedEmployee.id ? { ...e, track_recordings: val } : e));
-                                    setSelectedEmployee({ ...selectedEmployee, track_recordings: val });
+                                    setEmployees(prev => prev.map(e => e.id === selectedEmployee?.id ? { ...e, track_recordings: val } : e));
+                                    setSelectedEmployee(selectedEmployee ? { ...selectedEmployee, track_recordings: val } : null);
                                     try {
-                                        await api.put(`/employees.php?id=${selectedEmployee.id}`, { track_recordings: val ? 1 : 0 });
+                                        await api.put(`/employees.php?id=${selectedEmployee?.id}`, { track_recordings: val ? 1 : 0 });
                                         toast.success('Recording tracking updated');
                                     } catch (err) {
                                         // Rollback on error

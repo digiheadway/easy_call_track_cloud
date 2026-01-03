@@ -54,6 +54,20 @@ export default function PersonDetailDrawer() {
     ];
 
     useEffect(() => {
+        // Reset ALL UI interaction states whenever drawer opens, closes, or person changes
+        setEditingField(null);
+        setEditingCallNote(null);
+        setIsAddingLabel(false);
+        setShowManagement(false);
+        setShowDeleteConfirm(false);
+        setLabelInputValue('');
+        setCallNoteValue('');
+        setEditValue('');
+        setSaving(false);
+        setExcludeLoading(false);
+        setIsArchiving(false);
+        setIsDeleting(false);
+
         if (isOpen && personData?.phone_number) {
             setContactName(personData.contact_name || '');
             setPersonNote(personData.person_note || '');
@@ -62,14 +76,10 @@ export default function PersonDetailDrawer() {
             setIsExcluded(Boolean(Number(personData.is_excluded)));
             fetchPersonHistory(personData.phone_number);
             fetchLabelSuggestions();
-        } else {
+        } else if (!isOpen) {
             setCalls([]);
             setLoading(false);
-            setEditingCallNote(null);
-            setEditingField(null);
             setPersonLabels([]);
-            setIsAddingLabel(false);
-            setLabelInputValue('');
             setIsExcluded(false);
         }
     }, [isOpen, personData]);
