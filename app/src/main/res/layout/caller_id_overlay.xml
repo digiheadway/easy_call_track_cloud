@@ -171,6 +171,39 @@
                     android:ellipsize="end" />
 
             </LinearLayout>
+            
+            <!-- Row 5: Custom Lookup -->
+            <LinearLayout
+                android:id="@+id/lookupContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal"
+                android:gravity="top"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/lookupIcon"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_marginTop="2dp"
+                    android:src="@android:drawable/ic_menu_search"
+                    android:tint="#AEB7C0"
+                    android:contentDescription="Lookup" />
+
+                <TextView
+                    android:id="@+id/lookupText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:textColor="#C9D1D9"
+                    android:textSize="12sp"
+                    android:textStyle="italic"
+                    android:text="Lookup data..."
+                    android:maxLines="2"
+                    android:ellipsize="end" />
+
+            </LinearLayout>
 
         </LinearLayout>
 

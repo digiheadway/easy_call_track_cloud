@@ -59,6 +59,9 @@ object CallerIdManager {
         val callDataRepository = CallDataRepository.getInstance(appContext)
         val normalizedPhone = callDataRepository.normalizePhoneNumber(phoneNumber)
         
+        val customLookupEnabled = settingsRepository.isCustomLookupEnabled()
+        val customLookupCallerIdEnabled = settingsRepository.isCustomLookupCallerIdEnabled()
+        
         // Avoid duplicate overlays for same number
         if (overlayView != null && currentPhoneNumber == normalizedPhone) {
             Log.d(TAG, "Overlay already showing for $normalizedPhone")
@@ -67,19 +70,57 @@ object CallerIdManager {
         
         currentPhoneNumber = normalizedPhone
         
-        // Fetch person data from repository
+        // Fetch data
         scope.launch {
             val personData = withContext(Dispatchers.IO) {
                 callDataRepository.getPersonData(normalizedPhone)
             }
             
-            // Only show overlay if we have meaningful data (note, label, or call history)
-            if (personData != null && hasRelevantData(personData)) {
-                createAndShowOverlay(appContext, phoneNumber, personData)
+            var customData: String? = null
+            if (customLookupEnabled && customLookupCallerIdEnabled) {
+                customData = withContext(Dispatchers.IO) {
+                    fetchCustomLookupSnippet(appContext, normalizedPhone)
+                }
+            }
+            
+            // Only show overlay if we have meaningful data (note, label, call history, or custom lookup)
+            if ((personData != null && hasRelevantData(personData)) || !customData.isNullOrBlank()) {
+                createAndShowOverlay(appContext, phoneNumber, personData, customData)
             } else {
                 Log.d(TAG, "No relevant data for $normalizedPhone, skipping overlay")
             }
         }
+    }
+
+    private suspend fun fetchCustomLookupSnippet(context: Context, phoneNumber: String): String? {
+        try {
+            val settingsRepository = SettingsRepository.getInstance(context)
+            val baseUrl = settingsRepository.getCustomLookupUrl().ifEmpty { 
+                "https://prop.digiheadway.in/api/calls/caller_id.php?phone={phone}"
+            }
+            
+            val url = if (baseUrl.contains("{phone}")) {
+                baseUrl.replace("{phone}", phoneNumber)
+            } else {
+                val separator = if (baseUrl.contains("?")) "&" else "?"
+                "${baseUrl}${separator}phone=${phoneNumber}"
+            }
+
+            val response = com.miniclick.calltrackmanage.network.NetworkClient.api.fetchData(url)
+            if (response.isSuccessful) {
+                val body = response.body() ?: return null
+                // Create a small snippet from the JSON
+                val entries = body.entries.take(3).filter { it.value != null && it.value.toString().isNotBlank() }
+                return if (entries.isNotEmpty()) {
+                    entries.joinToString(", ") { "${it.key}: ${it.value}" }
+                } else {
+                    "Data found"
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to fetch custom lookup for overlay", e)
+        }
+        return null
     }
 
     private fun hasRelevantData(person: PersonDataEntity): Boolean {
@@ -91,7 +132,7 @@ object CallerIdManager {
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun createAndShowOverlay(context: Context, phoneNumber: String, person: PersonDataEntity) {
+    private fun createAndShowOverlay(context: Context, phoneNumber: String, person: PersonDataEntity?, customData: String? = null) {
         try {
             // Remove previous if exists
             hide(context)
@@ -120,30 +161,30 @@ object CallerIdManager {
             layoutParams.gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
 
             // Populate the overlay with data
-            populateOverlay(view, phoneNumber, person)
+            populateOverlay(view, phoneNumber, person, customData)
 
             // Set up touch listener for dragging
             setupDragListener(view, layoutParams)
 
             // Add view to window
             windowManager?.addView(view, layoutParams)
-            Log.d(TAG, "Overlay shown for ${person.contactName ?: phoneNumber}")
+            Log.d(TAG, "Overlay shown for ${person?.contactName ?: phoneNumber}")
 
         } catch (e: Exception) {
             Log.e(TAG, "Failed to show overlay", e)
         }
     }
 
-    private fun populateOverlay(view: View, phoneNumber: String, person: PersonDataEntity) {
+    private fun populateOverlay(view: View, phoneNumber: String, person: PersonDataEntity?, customData: String? = null) {
         // Name
-        view.findViewById<TextView>(R.id.nameText).text = person.contactName ?: phoneNumber
+        view.findViewById<TextView>(R.id.nameText).text = person?.contactName ?: phoneNumber
 
         // Phone number
         view.findViewById<TextView>(R.id.phoneText).text = formatPhoneNumber(phoneNumber)
 
         // Label
         val labelText = view.findViewById<TextView>(R.id.labelText)
-        if (!person.label.isNullOrBlank()) {
+        if (person != null && !person.label.isNullOrBlank()) {
             labelText.text = person.label
             labelText.visibility = View.VISIBLE
         } else {
@@ -152,7 +193,7 @@ object CallerIdManager {
 
         // Stats row
         val statsRow = view.findViewById<LinearLayout>(R.id.statsRow)
-        if (person.totalCalls > 0) {
+        if (person != null && person.totalCalls > 0) {
             statsRow.visibility = View.VISIBLE
             view.findViewById<TextView>(R.id.callsText).text = "${person.totalCalls} calls"
             view.findViewById<TextView>(R.id.durationText).text = formatDuration(person.totalDuration)
@@ -162,16 +203,45 @@ object CallerIdManager {
 
         // Note
         val noteContainer = view.findViewById<LinearLayout>(R.id.noteContainer)
-        if (!person.personNote.isNullOrBlank()) {
+        if (person != null && !person.personNote.isNullOrBlank()) {
             noteContainer.visibility = View.VISIBLE
             view.findViewById<TextView>(R.id.noteText).text = person.personNote
         } else {
             noteContainer.visibility = View.GONE
         }
 
+        // Custom Lookup
+        val lookupContainer = view.findViewById<LinearLayout>(R.id.lookupContainer)
+        if (!customData.isNullOrBlank()) {
+            lookupContainer.visibility = View.VISIBLE
+            view.findViewById<TextView>(R.id.lookupText).text = customData
+        } else {
+            lookupContainer.visibility = View.GONE
+        }
+
+        // Card click to open app
+        view.findViewById<LinearLayout>(R.id.cardContainer).setOnClickListener {
+            openAppWithLookup(view.context, phoneNumber)
+            hide(view.context)
+        }
+
         // Close button
         view.findViewById<ImageButton>(R.id.closeButton).setOnClickListener {
             hide(view.context)
+        }
+    }
+
+    private fun openAppWithLookup(context: Context, phoneNumber: String) {
+        try {
+            val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            intent?.apply {
+                putExtra("phone_lookup", phoneNumber)
+                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                context.startActivity(this)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to open app with lookup", e)
         }
     }
 

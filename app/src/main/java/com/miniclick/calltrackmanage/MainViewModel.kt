@@ -16,6 +16,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _themeMode = MutableStateFlow("System") // "System", "Light", "Dark"
     val themeMode: StateFlow<String> = _themeMode.asStateFlow()
 
+    private val _lookupPhoneNumber = MutableStateFlow<String?>(null)
+    val lookupPhoneNumber: StateFlow<String?> = _lookupPhoneNumber.asStateFlow()
+
     init {
         loadSettings()
     }
@@ -34,5 +37,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (_themeMode.value != current) {
             _themeMode.value = current
         }
+    }
+
+    fun setLookupPhoneNumber(phone: String) {
+        _lookupPhoneNumber.value = phone
+    }
+
+    fun clearLookupPhoneNumber() {
+        _lookupPhoneNumber.value = null
     }
 }

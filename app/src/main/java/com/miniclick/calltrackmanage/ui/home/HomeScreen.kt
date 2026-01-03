@@ -60,6 +60,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import com.miniclick.calltrackmanage.ui.common.SyncQueueModal
 import com.miniclick.calltrackmanage.ui.common.SyncQueueItem
+import com.miniclick.calltrackmanage.ui.common.PhoneLookupResultModal
 
 // ============================================
 // CALLS SCREEN (Individual call logs)
@@ -76,12 +77,22 @@ fun CallsScreen(
     val context = LocalContext.current
     
     var showTrackSimModal by remember { mutableStateOf(false) }
+    var lookupPhoneNumber by remember { mutableStateOf<String?>(null) }
 
     if (showTrackSimModal) {
         TrackSimModal(
             uiState = settingsState,
             viewModel = settingsViewModel,
             onDismiss = { showTrackSimModal = false }
+        )
+    }
+
+    if (lookupPhoneNumber != null) {
+        PhoneLookupResultModal(
+            phoneNumber = lookupPhoneNumber!!,
+            uiState = settingsState,
+            viewModel = settingsViewModel,
+            onDismiss = { lookupPhoneNumber = null }
         )
     }
 
@@ -182,7 +193,8 @@ fun CallsScreen(
             onAttachRecording = { 
                 attachTarget = it
                 audioPickerLauncher.launch(arrayOf("audio/*"))
-            }
+            },
+            onCustomLookup = { lookupPhoneNumber = it }
         )
     }
 
@@ -309,7 +321,8 @@ fun CallsScreen(
                         attachTarget = it
                         audioPickerLauncher.launch(arrayOf("audio/*"))
                     },
-                    canExclude = uiState.allowPersonalExclusion || !uiState.isSyncSetup
+                    canExclude = uiState.allowPersonalExclusion || !uiState.isSyncSetup,
+                    onCustomLookup = { lookupPhoneNumber = it }
                 )
             }
         }
@@ -397,12 +410,22 @@ fun PersonsScreen(
     val context = LocalContext.current
     
     var showTrackSimModal by remember { mutableStateOf(false) }
+    var lookupPhoneNumber by remember { mutableStateOf<String?>(null) }
 
     if (showTrackSimModal) {
         TrackSimModal(
             uiState = settingsState,
             viewModel = settingsViewModel,
             onDismiss = { showTrackSimModal = false }
+        )
+    }
+
+    if (lookupPhoneNumber != null) {
+        PhoneLookupResultModal(
+            phoneNumber = lookupPhoneNumber!!,
+            uiState = settingsState,
+            viewModel = settingsViewModel,
+            onDismiss = { lookupPhoneNumber = null }
         )
     }
 
@@ -492,7 +515,8 @@ fun PersonsScreen(
             onAttachRecording = { 
                 attachTarget = it
                 audioPickerLauncher.launch(arrayOf("audio/*"))
-            }
+            },
+            onCustomLookup = { lookupPhoneNumber = it }
         )
     }
 
@@ -616,7 +640,8 @@ fun PersonsScreen(
                         attachTarget = it
                         audioPickerLauncher.launch(arrayOf("audio/*"))
                     },
-                    canExclude = uiState.allowPersonalExclusion || !uiState.isSyncSetup
+                    canExclude = uiState.allowPersonalExclusion || !uiState.isSyncSetup,
+                    onCustomLookup = { lookupPhoneNumber = it }
                 )
             }
         }
@@ -684,7 +709,8 @@ fun PersonsList(
     onExclude: (String) -> Unit,
     onViewMoreClick: (PersonGroup) -> Unit,
     onAttachRecording: (CallDataEntity) -> Unit,
-    canExclude: Boolean = true
+    canExclude: Boolean = true,
+    onCustomLookup: (String) -> Unit
 ) {
     var expandedNumber by remember { mutableStateOf<String?>(null) }
     var excludeTarget by remember { mutableStateOf<PersonGroup?>(null) }
@@ -775,6 +801,29 @@ fun PersonsList(
                         )
                         Spacer(Modifier.width(8.dp))
                         Text("Set Name", modifier = Modifier.weight(1f), textAlign = TextAlign.Start)
+                    }
+
+                    // Custom Lookup Option
+                    TextButton(
+                        onClick = {
+                            onCustomLookup(longPressTarget!!.number)
+                            longPressTarget = null
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            Icons.Default.ManageSearch,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Custom Lookup", 
+                            modifier = Modifier.weight(1f), 
+                            textAlign = TextAlign.Start,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                     
                     // Exclude Option
@@ -1851,7 +1900,8 @@ fun PersonInteractionBottomSheet(
     audioPlayer: AudioPlayer,
     viewModel: HomeViewModel,
     onDismiss: () -> Unit,
-    onAttachRecording: (CallDataEntity) -> Unit
+    onAttachRecording: (CallDataEntity) -> Unit,
+    onCustomLookup: (String) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     
@@ -1909,13 +1959,21 @@ fun PersonInteractionBottomSheet(
                 
                 Spacer(modifier = Modifier.width(16.dp))
                 
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = person.name ?: cleanNumber(person.number),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                     // No separate number display if name exists as per request
+                }
+
+                IconButton(onClick = { onCustomLookup(person.number) }) {
+                    Icon(
+                        imageVector = Icons.Default.ManageSearch,
+                        contentDescription = "Custom Lookup",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
             
@@ -2287,7 +2345,8 @@ fun CallLogList(
     context: Context,
     onViewMoreClick: (PersonGroup) -> Unit,
     onAttachRecording: (CallDataEntity) -> Unit,
-    canExclude: Boolean = true
+    canExclude: Boolean = true,
+    onCustomLookup: (String) -> Unit
 ) {
     // Note Dialog States
     var callNoteTarget by remember { mutableStateOf<CallDataEntity?>(null) }
@@ -2376,6 +2435,29 @@ fun CallLogList(
                         )
                         Spacer(Modifier.width(8.dp))
                         Text("Set Name", modifier = Modifier.weight(1f), textAlign = TextAlign.Start)
+                    }
+
+                    // Custom Lookup Option
+                    TextButton(
+                        onClick = {
+                            onCustomLookup(longPressTarget!!.phoneNumber)
+                            longPressTarget = null
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            Icons.Default.ManageSearch,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Custom Lookup", 
+                            modifier = Modifier.weight(1f), 
+                            textAlign = TextAlign.Start,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                     
                     // Exclude Option

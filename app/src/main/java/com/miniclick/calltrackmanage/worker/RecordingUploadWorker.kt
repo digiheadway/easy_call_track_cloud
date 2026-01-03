@@ -8,7 +8,6 @@ import com.miniclick.calltrackmanage.data.RecordingRepository
 import com.miniclick.calltrackmanage.data.SettingsRepository
 import com.miniclick.calltrackmanage.data.db.RecordingSyncStatus
 import com.miniclick.calltrackmanage.network.NetworkClient
-import com.miniclick.calltrackmanage.util.AudioCompressor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -20,19 +19,16 @@ import java.util.concurrent.TimeUnit
 import com.google.gson.Gson
 
 /**
- * RecordingUploadWorker - Slow sync worker for recording uploads
+ * RecordingUploadWorker - Background worker for recording uploads
  * 
  * Handles:
- * - Compressing audio recordings
- * - Uploading recordings in chunks
+ * - Uploading recordings in chunks (1MB per chunk)
  * 
  * This worker runs separately from metadata sync because:
- * 1. Compression is CPU intensive
- * 2. Upload is network intensive and slow
- * 3. Should not block fast metadata sync
+ * 1. Upload is network intensive
+ * 2. Should not block fast metadata sync
  * 
- * Runs less frequently and handles one recording at a time to avoid
- * overwhelming resources.
+ * Runs every 15 minutes and processes recordings in batches of 10.
  */
 class RecordingUploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
@@ -49,6 +45,35 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
         if (orgId.isEmpty() || userId.isEmpty()) {
             Log.w(TAG, "Required settings missing. Skipping recording upload.")
             return@withContext Result.success()
+        }
+
+        if (!settingsRepository.isCallRecordEnabled()) {
+            Log.d(TAG, "Recording tracking disabled by organisation. Skipping uploads.")
+            return@withContext Result.success()
+        }
+
+        // Check for plan expiry
+        val expiry = settingsRepository.getPlanExpiryDate()
+        if (expiry != null) {
+            try {
+                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                val expiryDate = sdf.parse(expiry)
+                if (expiryDate != null && expiryDate.before(java.util.Date())) {
+                    Log.w(TAG, "Plan expired on $expiry. Skipping recording uploads.")
+                    return@withContext Result.success()
+                }
+            } catch (e: Exception) {}
+        }
+
+        // Check if storage is full
+        val allowedGb = settingsRepository.getAllowedStorageGb()
+        val usedBytes = settingsRepository.getStorageUsedBytes()
+        if (allowedGb > 0f) {
+            val usedGb = usedBytes.toDouble() / (1024 * 1024 * 1024)
+            if (usedGb >= allowedGb) {
+                Log.w(TAG, "Organization storage is full (${String.format("%.2f", usedGb)} GB / $allowedGb GB). Skipping recording uploads.")
+                return@withContext Result.success()
+            }
         }
 
         try {
@@ -151,48 +176,11 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                         continue
                     }
                     
-                    // Compress audio before upload (with timeout and fallback protection)
-                    callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.COMPRESSING)
-                    
-                    val compressedFile = File(applicationContext.cacheDir, "compressed_${call.compositeId}.m4a")
-                    val compressionStats = AudioCompressor.compressAudioWithStats(originalFile, compressedFile)
-                    
-                    val fileToUpload = when (compressionStats.result) {
-                        AudioCompressor.CompressionResult.SUCCESS -> {
-                            Log.i(TAG, "Compression successful: ${compressionStats.originalSize/1024}KB -> ${compressionStats.finalSize/1024}KB (saved ${compressionStats.savingsPercent}%, took ${compressionStats.durationMs}ms)")
-                            compressedFile
-                        }
-                        AudioCompressor.CompressionResult.SKIPPED_TOO_SMALL,
-                        AudioCompressor.CompressionResult.SKIPPED_TOO_LARGE,
-                        AudioCompressor.CompressionResult.SKIPPED_ALREADY_COMPRESSED -> {
-                            Log.i(TAG, "Compression skipped (${compressionStats.result}), uploading original: ${originalFile.length()/1024}KB")
-                            compressedFile // AudioCompressor copies original to this path
-                        }
-                        AudioCompressor.CompressionResult.FAILED_TIMEOUT,
-                        AudioCompressor.CompressionResult.COPIED_FALLBACK -> {
-                            Log.w(TAG, "Compression had issues (${compressionStats.result}), uploading original copy")
-                            compressedFile // Falls back to copy of original
-                        }
-                        AudioCompressor.CompressionResult.FAILED_ERROR -> {
-                            Log.e(TAG, "Compression completely failed, uploading original")
-                            originalFile
-                        }
-                    }
-                    
-                    // Upload
+                    // Upload original file directly (no compression for faster queue clearing)
                     callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.UPLOADING)
-                    Log.d(TAG, "Uploading recording for ${call.compositeId} (${fileToUpload.length()/1024}KB)")
+                    Log.d(TAG, "Uploading recording for ${call.compositeId} (${originalFile.length()/1024}KB)")
                     
-                    val uploadSuccess = uploadFileInChunks(fileToUpload, call.compositeId)
-                    
-                    // Cleanup compressed file after upload
-                    if (compressedFile.exists() && compressedFile != originalFile) {
-                        try {
-                            compressedFile.delete()
-                        } catch (e: Exception) {
-                            Log.w(TAG, "Failed to cleanup compressed file", e)
-                        }
-                    }
+                    val uploadSuccess = uploadFileInChunks(originalFile, call.compositeId)
                     
                     if (uploadSuccess) {
                         callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.COMPLETED)
@@ -275,13 +263,14 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                     
                     if (!resp.isSuccessful) {
                         val errorBody = resp.errorBody()?.string() ?: "Unknown error"
-                        Log.e(TAG, "Chunk $i upload failed: $errorBody")
-
+                        
                         // If server says it's already completed or not expected, treat as success
                         if (errorBody.contains("No recording expected") || errorBody.contains("already completed")) {
-                            Log.i(TAG, "Server indicated recording is already complete. Marking local status as COMPLETED.")
+                            Log.i(TAG, "Server indicated recording is already complete for $uniqueId. Skipping remaining chunks.")
                             return@use true
                         }
+                        
+                        Log.e(TAG, "Chunk $i upload failed for $uniqueId: $errorBody")
                         return@use false
                     }
                     
@@ -349,7 +338,7 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
 
             WorkManager.getInstance(context).enqueueUniqueWork(
                 "RecordingUploadWorker",
-                ExistingWorkPolicy.REPLACE,
+                ExistingWorkPolicy.KEEP,
                 request
             )
         }

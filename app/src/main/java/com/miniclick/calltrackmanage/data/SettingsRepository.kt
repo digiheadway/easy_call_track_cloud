@@ -28,6 +28,14 @@ class SettingsRepository private constructor(private val context: Context) {
     private val KEY_ALLOW_UPDATING_TRACK_SIMS = "allow_updating_track_sims"
     private val KEY_DEFAULT_TRACK_START_DATE = "default_track_start_date"
     private val KEY_EXCLUDED_CONTACTS = "excluded_contacts"
+    private val KEY_CUSTOM_LOOKUP_URL = "custom_lookup_url"
+    private val KEY_CUSTOM_LOOKUP_ENABLED = "custom_lookup_enabled"
+    private val KEY_CUSTOM_LOOKUP_CALLER_ID_ENABLED = "custom_lookup_caller_id_enabled"
+    private val KEY_CALL_TRACK_ENABLED = "call_track_enabled"
+    private val KEY_CALL_RECORD_ENABLED = "call_record_enabled"
+    private val KEY_PLAN_EXPIRY_DATE = "plan_expiry_date"
+    private val KEY_ALLOWED_STORAGE_GB = "allowed_storage_gb"
+    private val KEY_STORAGE_USED_BYTES = "storage_used_bytes"
 
     private val prefs by lazy {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -125,6 +133,17 @@ class SettingsRepository private constructor(private val context: Context) {
         prefs.edit().putString(KEY_ORGANISATION_ID, id).apply()
     }
 
+    fun getOrganisationIdFlow(): Flow<String> = callbackFlow {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
+            if (key == KEY_ORGANISATION_ID) {
+                trySend(getOrganisationId())
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(getOrganisationId())
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
     fun getUserId(): String {
         return prefs.getString(KEY_USER_ID, "") ?: ""
     }
@@ -172,7 +191,7 @@ class SettingsRepository private constructor(private val context: Context) {
     }
 
     fun setOnboardingCompleted(completed: Boolean) {
-        prefs.edit().putBoolean(KEY_ONBOARDING_COMPLETED, completed).commit()
+        prefs.edit().putBoolean(KEY_ONBOARDING_COMPLETED, completed).apply()
     }
 
     fun getSim1CalibrationHint(): String? {
@@ -219,7 +238,31 @@ class SettingsRepository private constructor(private val context: Context) {
     fun isCallerIdEnabled(): Boolean = prefs.getBoolean(KEY_CALLER_ID_ENABLED, true)
     fun setCallerIdEnabled(enabled: Boolean) = prefs.edit().putBoolean(KEY_CALLER_ID_ENABLED, enabled).apply()
 
+    fun getCustomLookupUrl(): String = prefs.getString(KEY_CUSTOM_LOOKUP_URL, "") ?: ""
+    fun setCustomLookupUrl(url: String) = prefs.edit().putString(KEY_CUSTOM_LOOKUP_URL, url).apply()
+
+    fun isCustomLookupEnabled(): Boolean = prefs.getBoolean(KEY_CUSTOM_LOOKUP_ENABLED, false)
+    fun setCustomLookupEnabled(enabled: Boolean) = prefs.edit().putBoolean(KEY_CUSTOM_LOOKUP_ENABLED, enabled).apply()
+
+    fun isCustomLookupCallerIdEnabled(): Boolean = prefs.getBoolean(KEY_CUSTOM_LOOKUP_CALLER_ID_ENABLED, false)
+    fun setCustomLookupCallerIdEnabled(enabled: Boolean) = prefs.edit().putBoolean(KEY_CUSTOM_LOOKUP_CALLER_ID_ENABLED, enabled).apply()
+
     fun clearAllSettings() {
         prefs.edit().clear().apply()
     }
+
+    fun isCallTrackEnabled(): Boolean = prefs.getBoolean(KEY_CALL_TRACK_ENABLED, true)
+    fun setCallTrackEnabled(enabled: Boolean) = prefs.edit().putBoolean(KEY_CALL_TRACK_ENABLED, enabled).apply()
+
+    fun isCallRecordEnabled(): Boolean = prefs.getBoolean(KEY_CALL_RECORD_ENABLED, true)
+    fun setCallRecordEnabled(enabled: Boolean) = prefs.edit().putBoolean(KEY_CALL_RECORD_ENABLED, enabled).apply()
+
+    fun getPlanExpiryDate(): String? = prefs.getString(KEY_PLAN_EXPIRY_DATE, null)
+    fun setPlanExpiryDate(date: String?) = prefs.edit().putString(KEY_PLAN_EXPIRY_DATE, date).apply()
+
+    fun getAllowedStorageGb(): Float = prefs.getFloat(KEY_ALLOWED_STORAGE_GB, 0f)
+    fun setAllowedStorageGb(gb: Float) = prefs.edit().putFloat(KEY_ALLOWED_STORAGE_GB, gb).apply()
+
+    fun getStorageUsedBytes(): Long = prefs.getLong(KEY_STORAGE_USED_BYTES, 0L)
+    fun setStorageUsedBytes(bytes: Long) = prefs.edit().putLong(KEY_STORAGE_USED_BYTES, bytes).apply()
 }

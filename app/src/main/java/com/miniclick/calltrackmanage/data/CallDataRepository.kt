@@ -243,8 +243,17 @@ class CallDataRepository private constructor(private val context: Context) {
      */
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun getPendingMetadataSyncCountFlow(): Flow<Int> = 
-        settingsRepository.getTrackStartDateFlow().flatMapLatest { minDate ->
-            callDataDao.getPendingMetadataSyncCountFlow(minDate)
+        combine(
+            settingsRepository.getTrackStartDateFlow(),
+            settingsRepository.getOrganisationIdFlow()
+        ) { minDate, orgId ->
+            minDate to orgId
+        }.flatMapLatest { (minDate, orgId) ->
+            if (orgId.isEmpty()) {
+                kotlinx.coroutines.flow.flowOf(0)
+            } else {
+                callDataDao.getPendingMetadataSyncCountFlow(minDate)
+            }
         }
     
     /**
@@ -252,8 +261,17 @@ class CallDataRepository private constructor(private val context: Context) {
      */
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun getPendingRecordingSyncCountFlow(): Flow<Int> = 
-        settingsRepository.getTrackStartDateFlow().flatMapLatest { minDate ->
-            callDataDao.getPendingRecordingSyncCountFlow(minDate)
+        combine(
+            settingsRepository.getTrackStartDateFlow(),
+            settingsRepository.getOrganisationIdFlow()
+        ) { minDate, orgId ->
+            minDate to orgId
+        }.flatMapLatest { (minDate, orgId) ->
+            if (orgId.isEmpty()) {
+                kotlinx.coroutines.flow.flowOf(0)
+            } else {
+                callDataDao.getPendingRecordingSyncCountFlow(minDate)
+            }
         }
     
     /**
@@ -261,8 +279,17 @@ class CallDataRepository private constructor(private val context: Context) {
      */
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun getPendingNewCallsCountFlow(): Flow<Int> = 
-        settingsRepository.getTrackStartDateFlow().flatMapLatest { minDate ->
-            callDataDao.getPendingNewCallsCountFlow(minDate)
+        combine(
+            settingsRepository.getTrackStartDateFlow(),
+            settingsRepository.getOrganisationIdFlow()
+        ) { minDate, orgId ->
+            minDate to orgId
+        }.flatMapLatest { (minDate, orgId) ->
+            if (orgId.isEmpty()) {
+                kotlinx.coroutines.flow.flowOf(0)
+            } else {
+                callDataDao.getPendingNewCallsCountFlow(minDate)
+            }
         }
 
     /**
@@ -270,19 +297,42 @@ class CallDataRepository private constructor(private val context: Context) {
      */
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun getPendingMetadataUpdatesCountFlow(): Flow<Int> = 
-        settingsRepository.getTrackStartDateFlow().flatMapLatest { minDate ->
-            callDataDao.getPendingMetadataUpdatesCountFlow(minDate)
+        combine(
+            settingsRepository.getTrackStartDateFlow(),
+            settingsRepository.getOrganisationIdFlow()
+        ) { minDate, orgId ->
+            minDate to orgId
+        }.flatMapLatest { (minDate, orgId) ->
+            if (orgId.isEmpty()) {
+                kotlinx.coroutines.flow.flowOf(0)
+            } else {
+                callDataDao.getPendingMetadataUpdatesCountFlow(minDate)
+            }
         }
 
     /**
      * Get pending person updates count as Flow
      */
-    fun getPendingPersonUpdatesCountFlow(): Flow<Int> = personDataDao.getPendingSyncPersonsCountFlow()
+    fun getPendingPersonUpdatesCountFlow(): Flow<Int> = 
+        settingsRepository.getOrganisationIdFlow().flatMapLatest { orgId ->
+            if (orgId.isEmpty()) {
+                kotlinx.coroutines.flow.flowOf(0)
+            } else {
+                personDataDao.getPendingSyncPersonsCountFlow()
+            }
+        }
 
     /**
      * Get active recording syncs as Flow (for monitoring progress)
      */
-    fun getActiveRecordingSyncsFlow(): Flow<List<CallDataEntity>> = callDataDao.getActiveRecordingSyncsFlow()
+    fun getActiveRecordingSyncsFlow(): Flow<List<CallDataEntity>> = 
+        settingsRepository.getOrganisationIdFlow().flatMapLatest { orgId ->
+            if (orgId.isEmpty()) {
+                kotlinx.coroutines.flow.flowOf(emptyList())
+            } else {
+                callDataDao.getActiveRecordingSyncsFlow()
+            }
+        }
     
     // ============================================
     // PERSON DATA - READ OPERATIONS

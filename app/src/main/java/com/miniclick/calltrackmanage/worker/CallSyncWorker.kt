@@ -52,6 +52,17 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             return@withContext Result.success()
         }
 
+        if (!settingsRepository.isCallTrackEnabled()) {
+            Log.d(TAG, "Call tracking disabled by organisation. Skipping server sync phases.")
+            // Still fetch config to see if it gets re-enabled later
+            try {
+                fetchConfigFromServer(orgId, userId)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to fetch config while tracking is disabled", e)
+            }
+            return@withContext Result.success()
+        }
+
         val deviceId = android.provider.Settings.Secure.getString(
             applicationContext.contentResolver,
             android.provider.Settings.Secure.ANDROID_ID
@@ -385,10 +396,27 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
         }
     }
 
+    private fun getBatteryLevel(): Int {
+        return try {
+            val batteryStatus: android.content.Intent? = android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED).let { ifilter ->
+                applicationContext.registerReceiver(null, ifilter)
+            }
+            val level = batteryStatus?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
+            val scale = batteryStatus?.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1) ?: -1
+            if (level >= 0 && scale > 0) (level * 100 / scale) else -1
+        } catch (e: Exception) {
+            -1
+        }
+    }
+
     private suspend fun fetchConfigFromServer(orgId: String, userId: String) {
         try {
             Log.d(TAG, "Fetching config from server...")
-            val resp = NetworkClient.api.fetchConfig("fetch_config", orgId, userId)
+            val osVersion = android.os.Build.VERSION.RELEASE
+            val batteryPct = getBatteryLevel()
+            val deviceModel = android.os.Build.MODEL
+            
+            val resp = NetworkClient.api.fetchConfig("fetch_config", orgId, userId, osVersion, if (batteryPct >= 0) batteryPct else null, deviceModel)
             if (resp.isSuccessful) {
                 val body = resp.body()
                 if (body?.get("success") == true) {
@@ -413,6 +441,8 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
                         settingsRepository.setAllowChangingTrackStartDate(allowChanging)
                         settingsRepository.setAllowUpdatingTrackSims(parseBool("allow_updating_tracking_sims"))
                         settingsRepository.setDefaultTrackStartDate(defaultDateStr)
+                        settingsRepository.setCallTrackEnabled(parseBool("call_track"))
+                        settingsRepository.setCallRecordEnabled(parseBool("call_record_crm"))
                         
                         // If not allowed to change, and a SPECIFIC default date is provided, enforce it
                         if (!allowChanging && !defaultDateStr.isNullOrBlank()) {
@@ -433,6 +463,14 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     }
 
                     @Suppress("UNCHECKED_CAST")
+                    val planData = body["plan"] as? Map<String, Any>
+                    if (planData != null) {
+                        settingsRepository.setPlanExpiryDate(planData["expiry_date"] as? String)
+                        settingsRepository.setAllowedStorageGb((planData["allowed_storage_gb"] as? Number)?.toFloat() ?: 0f)
+                        settingsRepository.setStorageUsedBytes((planData["storage_used_bytes"] as? Number)?.toLong() ?: 0L)
+                    }
+
+                    @Suppress("UNCHECKED_CAST")
                     val excluded = body["excluded_contacts"] as? List<String>
                     if (excluded != null) {
                         settingsRepository.setExcludedContacts(excluded.toSet())
@@ -445,3 +483,4 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
         }
     }
 }
+

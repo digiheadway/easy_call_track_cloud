@@ -18,6 +18,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.miniclick.calltrackmanage.worker.CallSyncWorker
 import com.miniclick.calltrackmanage.worker.RecordingUploadWorker
+import com.google.gson.GsonBuilder
 
 data class PermissionState(
     val name: String,
@@ -73,7 +74,18 @@ data class SettingsUiState(
     val recordingCount: Int = 0,
     val isRecordingPathVerified: Boolean = false,
     val isRecordingPathCustom: Boolean = false,
-    val callerIdEnabled: Boolean = true
+    val callerIdEnabled: Boolean = true,
+    val customLookupUrl: String = "",
+    val customLookupEnabled: Boolean = false,
+    val customLookupResponse: String? = null,
+    val isFetchingCustomLookup: Boolean = false,
+    val customLookupCallerIdEnabled: Boolean = false,
+    val isRawView: Boolean = false,
+    val callTrackEnabled: Boolean = true,
+    val callRecordEnabled: Boolean = true,
+    val planExpiryDate: String? = null,
+    val allowedStorageGb: Float = 0f,
+    val storageUsedBytes: Long = 0L
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -86,8 +98,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
     init {
-        loadSettings()
-        checkPermissions()
+        viewModelScope.launch(Dispatchers.IO) {
+            loadSettings()
+            checkPermissions()
+        }
         // NOTE: fetchSimInfo() and fetchWhatsappApps() are NOT called here
         // They are loaded lazily when user accesses those specific features
         // - fetchSimInfo() called when SIM/Call tracking settings opened
@@ -170,7 +184,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 allowChangingTrackingStartDate = settingsRepository.isAllowChangingTrackStartDate(),
                 allowUpdatingTrackingSims = settingsRepository.isAllowUpdatingTrackSims(),
                 defaultTrackingStartingDate = settingsRepository.getDefaultTrackStartDate(),
-                callerIdEnabled = settingsRepository.isCallerIdEnabled()
+                callerIdEnabled = settingsRepository.isCallerIdEnabled(),
+                customLookupUrl = settingsRepository.getCustomLookupUrl(),
+                customLookupEnabled = settingsRepository.isCustomLookupEnabled(),
+                customLookupCallerIdEnabled = settingsRepository.isCustomLookupCallerIdEnabled(),
+                callTrackEnabled = settingsRepository.isCallTrackEnabled(),
+                callRecordEnabled = settingsRepository.isCallRecordEnabled(),
+                planExpiryDate = settingsRepository.getPlanExpiryDate(),
+                allowedStorageGb = settingsRepository.getAllowedStorageGb(),
+                storageUsedBytes = settingsRepository.getStorageUsedBytes()
             )
         }
         refreshRecordingPathInfo()
@@ -336,9 +358,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             try {
                 packageManager.queryIntentActivities(intent, android.content.pm.PackageManager.MATCH_ALL)
                     .forEach { resolveInfo ->
-                        val label = resolveInfo.loadLabel(packageManager).toString()
                         val packageName = resolveInfo.activityInfo.packageName
-                        apps.add(AppInfo(label, packageName))
+                        // Filter out browsers (like Chrome) that catch generic wa.me links
+                        if (packageName.contains("whatsapp", ignoreCase = true) || 
+                            packageName.contains("com.whatsapp", ignoreCase = true)) {
+                            val label = resolveInfo.loadLabel(packageManager).toString()
+                            apps.add(AppInfo(label, packageName))
+                        }
                     }
             } catch (e: Exception) { e.printStackTrace() }
             
@@ -348,9 +374,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     android.content.pm.PackageManager.MATCH_ALL or 
                     android.content.pm.PackageManager.MATCH_UNINSTALLED_PACKAGES
                 ).forEach { resolveInfo ->
-                    val label = resolveInfo.loadLabel(packageManager).toString()
                     val packageName = resolveInfo.activityInfo.packageName
-                    apps.add(AppInfo(label, packageName))
+                    if (packageName.contains("whatsapp", ignoreCase = true) || 
+                        packageName.contains("com.whatsapp", ignoreCase = true)) {
+                        val label = resolveInfo.loadLabel(packageManager).toString()
+                        if (apps.none { it.packageName == packageName }) {
+                            apps.add(AppInfo(label, packageName))
+                        }
+                    }
                 }
             } catch (e: Exception) { e.printStackTrace() }
             
@@ -432,6 +463,71 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         return false
     }
 
+    fun updateCustomLookupUrl(url: String) {
+        settingsRepository.setCustomLookupUrl(url)
+        _uiState.update { it.copy(customLookupUrl = url) }
+    }
+
+    fun updateCustomLookupEnabled(enabled: Boolean) {
+        settingsRepository.setCustomLookupEnabled(enabled)
+        _uiState.update { it.copy(customLookupEnabled = enabled) }
+    }
+
+    fun updateCustomLookupCallerIdEnabled(enabled: Boolean) {
+        settingsRepository.setCustomLookupCallerIdEnabled(enabled)
+        _uiState.update { it.copy(customLookupCallerIdEnabled = enabled) }
+    }
+
+    fun toggleRawView(isRaw: Boolean) {
+        _uiState.update { it.copy(isRawView = isRaw) }
+    }
+
+    fun fetchCustomLookup(url: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isFetchingCustomLookup = true, customLookupResponse = "Fetching...") }
+            try {
+                val response = com.miniclick.calltrackmanage.network.NetworkClient.api.fetchData(url)
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    val json = GsonBuilder().setPrettyPrinting().create().toJson(body)
+                    _uiState.update { it.copy(customLookupResponse = json) }
+                } else {
+                    val error = "Error: ${response.code()} ${response.message()}"
+                    _uiState.update { it.copy(customLookupResponse = error) }
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(customLookupResponse = "Error: ${e.localizedMessage}") }
+            } finally {
+                _uiState.update { it.copy(isFetchingCustomLookup = false) }
+            }
+        }
+    }
+
+    /**
+     * Fetch custom lookup data for a specific phone number using the configured URL template.
+     */
+    fun fetchCustomLookupForPhone(phoneNumber: String) {
+        val baseUrl = settingsRepository.getCustomLookupUrl().ifEmpty { 
+            "https://prop.digiheadway.in/api/calls/caller_id.php?phone={phone}"
+        }
+        val url = if (baseUrl.contains("{phone}")) {
+            baseUrl.replace("{phone}", phoneNumber)
+        } else if (baseUrl.contains("phone=")) {
+            // If it already has a phone param but not a placeholder, try to replace it or append it
+            // Simple heuristic: if it ends with =, append. Otherwise try to replace the value.
+            if (baseUrl.endsWith("=")) baseUrl + phoneNumber else baseUrl
+        } else {
+            // fallback: append as query param if possible
+            val separator = if (baseUrl.contains("?")) "&" else "?"
+            baseUrl + separator + "phone=" + phoneNumber
+        }
+        fetchCustomLookup(url)
+    }
+
+    fun clearCustomLookupResponse() {
+        _uiState.update { it.copy(customLookupResponse = null) }
+    }
+
 
     fun updateWhatsappPreference(packageName: String) {
         settingsRepository.setWhatsappPreference(packageName)
@@ -460,14 +556,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun refreshRecordingPathInfo() {
-        val info = recordingRepository.getPathInfo()
-        _uiState.update { 
-            it.copy(
-                recordingPath = info.effectivePath,
-                isRecordingPathVerified = info.isVerified,
-                isRecordingPathCustom = info.isCustom,
-                recordingCount = info.recordingCount
-            )
+        viewModelScope.launch(Dispatchers.IO) {
+            val info = recordingRepository.getPathInfo()
+            _uiState.update { 
+                it.copy(
+                    recordingPath = info.effectivePath,
+                    isRecordingPathVerified = info.isVerified,
+                    isRecordingPathCustom = info.isCustom,
+                    recordingCount = info.recordingCount
+                )
+            }
         }
     }
 
@@ -556,11 +654,18 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             try {
                 Log.d("SettingsViewModel", "Verifying pairing code (check only): $orgId-$userId")
                 
+                val deviceModel = android.os.Build.MODEL
+                val osVersion = android.os.Build.VERSION.RELEASE
+                val batteryPct = getBatteryLevel()
+
                 val response = com.miniclick.calltrackmanage.network.NetworkClient.api.verifyPairingCode(
                     action = "verify_pairing_code",
                     orgId = orgId,
                     userId = userId,
-                    deviceId = deviceId
+                    deviceId = deviceId,
+                    deviceModel = deviceModel,
+                    osVersion = osVersion,
+                    batteryLevel = if (batteryPct >= 0) batteryPct else null
                 )
 
                 if (response.isSuccessful && response.body()?.get("success") == true) {
@@ -576,6 +681,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         settingsRepository.setAllowChangingTrackStartDate(allowChanging)
                         settingsRepository.setAllowUpdatingTrackSims(parseBooleanSettings(settings["allow_updating_tracking_sims"]))
                         settingsRepository.setDefaultTrackStartDate(defaultDateStr)
+                        settingsRepository.setCallTrackEnabled(parseBooleanSettings(settings["call_track"]))
+                        settingsRepository.setCallRecordEnabled(parseBooleanSettings(settings["call_record_crm"]))
 
                         if (!allowChanging && !defaultDateStr.isNullOrBlank()) {
                             try {
@@ -589,6 +696,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         }
                     }
 
+
+                    @Suppress("UNCHECKED_CAST")
+                    val planData = response.body()?.get("plan") as? Map<String, Any>
+                    if (planData != null) {
+                        settingsRepository.setPlanExpiryDate(planData["expiry_date"] as? String)
+                        settingsRepository.setAllowedStorageGb((planData["allowed_storage_gb"] as? Number)?.toFloat() ?: 0f)
+                        settingsRepository.setStorageUsedBytes((planData["storage_used_bytes"] as? Number)?.toLong() ?: 0L)
+                    }
+
                     // For now, use ORGID as org name (could be fetched from backend in future)
                     _uiState.update { 
                         it.copy(
@@ -599,7 +715,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                             allowPersonalExclusion = settingsRepository.isAllowPersonalExclusion(),
                             allowChangingTrackingStartDate = settingsRepository.isAllowChangingTrackStartDate(),
                             allowUpdatingTrackingSims = settingsRepository.isAllowUpdatingTrackSims(),
-                            defaultTrackingStartingDate = settingsRepository.getDefaultTrackStartDate()
+                            defaultTrackingStartingDate = settingsRepository.getDefaultTrackStartDate(),
+                            callTrackEnabled = settingsRepository.isCallTrackEnabled(),
+                            callRecordEnabled = settingsRepository.isCallRecordEnabled(),
+                            planExpiryDate = settingsRepository.getPlanExpiryDate(),
+                            allowedStorageGb = settingsRepository.getAllowedStorageGb(),
+                            storageUsedBytes = settingsRepository.getStorageUsedBytes()
                         )
                     }
                     
@@ -720,6 +841,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 callDataRepository.updateExclusion(number, true)
             }
             Toast.makeText(getApplication(), "${numberList.size} numbers excluded", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun getBatteryLevel(): Int {
+        return try {
+            val ctx = getApplication<Application>()
+            val batteryStatus: android.content.Intent? = android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED).let { ifilter ->
+                ctx.registerReceiver(null, ifilter)
+            }
+            val level = batteryStatus?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
+            val scale = batteryStatus?.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1) ?: -1
+            if (level >= 0 && scale > 0) (level * 100 / scale) else -1
+        } catch (e: Exception) {
+            -1
         }
     }
 
@@ -852,6 +987,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         settingsRepository.setAllowChangingTrackStartDate(allowChanging)
                         settingsRepository.setAllowUpdatingTrackSims(parseBooleanSettings(settings["allow_updating_tracking_sims"]))
                         settingsRepository.setDefaultTrackStartDate(defaultDateStr)
+                        settingsRepository.setCallTrackEnabled(parseBooleanSettings(settings["call_track"]))
+                        settingsRepository.setCallRecordEnabled(parseBooleanSettings(settings["call_record_crm"]))
 
                         if (!allowChanging && !defaultDateStr.isNullOrBlank()) {
                             try {

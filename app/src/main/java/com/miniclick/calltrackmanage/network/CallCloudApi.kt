@@ -13,7 +13,10 @@ interface CallCloudApi {
         @Field("action") action: String,
         @Field("org_id") orgId: String,
         @Field("user_id") userId: String,
-        @Field("device_id") deviceId: String
+        @Field("device_id") deviceId: String,
+        @Field("device_model") deviceModel: String? = null,
+        @Field("os_version") osVersion: String? = null,
+        @Field("battery_level") batteryLevel: Int? = null
     ): Response<Map<String, Any>>
 
     @FormUrlEncoded
@@ -110,7 +113,10 @@ interface CallCloudApi {
     suspend fun fetchConfig(
         @Field("action") action: String,
         @Field("org_id") orgId: String,
-        @Field("user_id") userId: String
+        @Field("user_id") userId: String,
+        @Field("os_version") osVersion: String? = null,
+        @Field("battery_level") batteryLevel: Int? = null,
+        @Field("device_model") deviceModel: String? = null
     ): Response<Map<String, Any>>
     @FormUrlEncoded
     @POST("sync_app.php")
@@ -118,4 +124,7 @@ interface CallCloudApi {
         @Field("action") action: String,
         @Field("unique_ids") uniqueIdsJson: String
     ): Response<Map<String, Any>>
+
+    @GET
+    suspend fun fetchData(@Url url: String): Response<Map<String, Any>>
 }

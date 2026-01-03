@@ -192,39 +192,48 @@ fun PermissionsDialog(
     // State to track which permissions are currently granted in the system
     var permissionStatuses by remember { mutableStateOf(mapOf<String, Boolean>()) }
     // State to track which permissions we are currently showing in the UI
-    var visiblePermissions by remember { mutableStateOf(allPages.mapNotNull { it.permission }) }
+    var visiblePermissions by remember {
+        mutableStateOf(allPages.mapNotNull { it.permission }.filter { 
+            androidx.core.content.ContextCompat.checkSelfPermission(context, it) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        })
+    }
     // State to track permissions that just got granted to show the "Done" animation
     var recentlyGranted by remember { mutableStateOf(setOf<String>()) }
 
-    val updateStatuses = {
-        val newStatuses = mutableMapOf<String, Boolean>()
-        allPages.forEach { page ->
-            page.permission?.let { perm ->
-                val granted = androidx.core.content.ContextCompat.checkSelfPermission(
-                    context, perm
-                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                newStatuses[perm] = granted
-                
-                // If it was just granted and wasn't in our statuses before
-                if (granted && permissionStatuses[perm] == false && perm !in recentlyGranted) {
-                    recentlyGranted = recentlyGranted + perm
-                    // Trigger removal animation after a short delay to show the checkmark
-                    scope.launch {
-                        kotlinx.coroutines.delay(800)
-                        visiblePermissions = visiblePermissions - perm
+    val updateStatuses = remember(allPages, context, scope, recentlyGranted) {
+        {
+            val newStatuses = mutableMapOf<String, Boolean>()
+            val currentlyVisible = mutableListOf<String>()
+            allPages.forEach { page ->
+                page.permission?.let { perm ->
+                    val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+                        context, perm
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    newStatuses[perm] = granted
+                    
+                    if (!granted) {
+                        currentlyVisible.add(perm)
+                    }
+                    
+                    // If it was just granted and wasn't in our statuses before
+                    if (granted && permissionStatuses[perm] == false && perm !in recentlyGranted) {
+                        recentlyGranted = recentlyGranted + perm
+                        // Trigger removal animation after a short delay to show the checkmark
+                        scope.launch {
+                            kotlinx.coroutines.delay(800)
+                            visiblePermissions = visiblePermissions - perm
+                        }
                     }
                 }
             }
+            permissionStatuses = newStatuses
+            // Initialize visiblePermissions based on current system status
+            visiblePermissions = currentlyVisible
         }
-        permissionStatuses = newStatuses
     }
 
     LaunchedEffect(Unit) { 
         updateStatuses() 
-        // Sync visible permissions with current system state initially
-        visiblePermissions = allPages.mapNotNull { it.permission }.filter { 
-            androidx.core.content.ContextCompat.checkSelfPermission(context, it) != android.content.pm.PackageManager.PERMISSION_GRANTED
-        }
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(

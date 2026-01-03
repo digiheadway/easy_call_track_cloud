@@ -91,8 +91,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
-        refreshSettings()
-        loadRecordingPath()
+        viewModelScope.launch(Dispatchers.IO) {
+            refreshSettings()
+            loadRecordingPath()
+        }
         
         // Trigger immediate sync from system CallLog on app open
         syncFromSystem()

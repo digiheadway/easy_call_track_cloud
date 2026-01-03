@@ -8,6 +8,8 @@ import android.net.Uri
 import android.provider.Settings
 import com.miniclick.calltrackmanage.ui.common.SyncQueueModal
 import com.miniclick.calltrackmanage.ui.common.RecordingQueueModal
+import com.miniclick.calltrackmanage.ui.common.JsonTableView
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -58,6 +60,7 @@ fun SettingsScreen(
     var accountEditField by remember { mutableStateOf<String?>(null) } // "pairing", "phone1", "phone2", null for all
     var showSyncQueue by remember { mutableStateOf(false) }
     var showRecordingQueue by remember { mutableStateOf(false) }
+    var showCustomLookupModal by remember { mutableStateOf(false) }
 
     if (onBack != null) {
         androidx.activity.compose.BackHandler {
@@ -133,6 +136,15 @@ fun SettingsScreen(
         )
     }
 
+    // Custom Lookup Modal
+    if (showCustomLookupModal) {
+        CustomLookupModal(
+            uiState = uiState,
+            viewModel = viewModel,
+            onDismiss = { showCustomLookupModal = false }
+        )
+    }
+
     // Contact Modal
     if (showContactModal) {
         ContactModal(
@@ -176,7 +188,11 @@ fun SettingsScreen(
             pendingRelatedData = uiState.pendingMetadataUpdatesCount + uiState.pendingPersonUpdatesCount,
             pendingRecordings = uiState.pendingRecordingCount,
             onSyncAll = viewModel::syncCallManually,
-            onDismiss = { showSyncQueue = false }
+            onDismiss = { showSyncQueue = false },
+            onRecordingClick = {
+                showSyncQueue = false
+                showRecordingQueue = true
+            }
         )
     }
 
@@ -236,12 +252,14 @@ fun SettingsScreen(
                     {}
                 },
                 actions = {
-                    IconButton(onClick = { showRecordingQueue = true }) {
-                        Icon(
-                            imageVector = Icons.Default.CloudUpload,
-                            contentDescription = "Recording Queue",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                    if (uiState.pairingCode.isNotEmpty()) {
+                        IconButton(onClick = { showRecordingQueue = true }) {
+                            Icon(
+                                imageVector = Icons.Default.CloudUpload,
+                                contentDescription = "Recording Queue",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
             )
@@ -256,6 +274,59 @@ fun SettingsScreen(
             // ===============================================
             // 0. SUPPORT CATEGORY
             // ===============================================
+            // ===============================================
+            // 0. Plan Warnings
+            // ===============================================
+            val isPlanExpired = remember(uiState.planExpiryDate) {
+                uiState.planExpiryDate?.let { expiry ->
+                    try {
+                        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                        val expiryDate = sdf.parse(expiry)
+                        expiryDate != null && expiryDate.before(Date())
+                    } catch (e: Exception) { false }
+                } ?: false
+            }
+
+            val isStorageFull = remember(uiState.allowedStorageGb, uiState.storageUsedBytes) {
+                if (uiState.allowedStorageGb <= 0f) false
+                else {
+                    val usedGb = uiState.storageUsedBytes.toDouble() / (1024 * 1024 * 1024)
+                    usedGb >= uiState.allowedStorageGb
+                }
+            }
+
+            if (isPlanExpired || isStorageFull) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            text = when {
+                                isPlanExpired && isStorageFull -> "Plan expired and storage is full. Syncing is disabled."
+                                isPlanExpired -> "Your plan has expired. Please renew to continue syncing."
+                                isStorageFull -> "Organization storage is full. Recordings will not be synced."
+                                else -> ""
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+            }
+
             // ===============================================
             // 0. SYNC TO CLOUD (Card)
             // ===============================================
@@ -308,7 +379,28 @@ fun SettingsScreen(
                     }
                     
                     Spacer(Modifier.height(8.dp))
-                    val descriptionText = if (uiState.pairingCode.isNotEmpty()) "Syncing Calls, Notes, and Recordings" else "Sync calls, recordings, note to cloud to access from any device."
+                    val descriptionText = if (uiState.pairingCode.isNotEmpty()) {
+                        val enabledFeatures = mutableListOf<String>()
+                        if (uiState.callTrackEnabled) enabledFeatures.add("Calls")
+                        if (uiState.callRecordEnabled) enabledFeatures.add("Recordings")
+                        enabledFeatures.add("Notes")
+                        
+                        val featuresStr = if (enabledFeatures.size > 1) {
+                            val last = enabledFeatures.removeAt(enabledFeatures.size - 1)
+                            "Syncing ${enabledFeatures.joinToString(", ")} and $last"
+                        } else {
+                            "Syncing ${enabledFeatures.firstOrNull() ?: "nothing"}"
+                        }
+                        
+                        val statusSuffix = when {
+                            !uiState.callTrackEnabled && !uiState.callRecordEnabled -> " (Tracking Disabled)"
+                            !uiState.callTrackEnabled -> " (Call Tracking Off)"
+                            !uiState.callRecordEnabled -> " (Recordings Off)"
+                            else -> ""
+                        }
+                        featuresStr + statusSuffix
+                    } else "Sync calls, recordings, note to cloud to access from any device."
+                    
                     Text(
                         text = descriptionText,
                         style = MaterialTheme.typography.bodyMedium,
@@ -923,6 +1015,22 @@ fun SettingsScreen(
                             folderLauncher.launch(null)
                         }
                     }
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                ListItem(
+                    headlineContent = { Text("Custom Lookup") },
+                    supportingContent = { 
+                        Text(if (uiState.customLookupEnabled) "Custom data lookup active" else "Configure custom phone data lookup")
+                    },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.ManageSearch, MaterialTheme.colorScheme.primary) 
+                    },
+                    trailingContent = {
+                        Icon(Icons.Default.ChevronRight, contentDescription = null)
+                    },
+                    modifier = Modifier.clickable { showCustomLookupModal = true }
                 )
             }
 
@@ -2055,4 +2163,178 @@ fun showDatePicker(context: Context, initialDate: Long, onDateSelected: (Long) -
         calendar.get(Calendar.MONTH),
         calendar.get(Calendar.DAY_OF_MONTH)
     ).show()
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomLookupModal(
+    uiState: SettingsUiState,
+    viewModel: SettingsViewModel,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var urlInput by remember { mutableStateOf(uiState.customLookupUrl.ifEmpty { "" }) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 48.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(
+                text = "Custom Lookup",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Configure an external URL to fetch additional data for phone numbers during calls and in history.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            // Enable Toggles
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Enable Custom Lookup",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Switch(
+                    checked = uiState.customLookupEnabled,
+                    onCheckedChange = { viewModel.updateCustomLookupEnabled(it) }
+                )
+            }
+            
+            Spacer(Modifier.height(12.dp))
+
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Enable for Caller ID",
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Switch(
+                        checked = uiState.customLookupCallerIdEnabled,
+                        onCheckedChange = { viewModel.updateCustomLookupCallerIdEnabled(it) }
+                    )
+                }
+                Text(
+                    text = "Shows custom data in the caller ID overlay. Clicking the overlay will open detailed lookup if no other local data exists.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            OutlinedTextField(
+                value = urlInput,
+                onValueChange = { urlInput = it },
+                label = { Text("Lookup URL template") },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("https://example.com/api?phone={phone}") },
+                supportingText = { Text("Use {phone} as placeholder for the number") },
+                singleLine = false,
+                maxLines = 3
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Button(
+                    onClick = {
+                        viewModel.updateCustomLookupUrl(urlInput)
+                        viewModel.fetchCustomLookup(urlInput)
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = urlInput.isNotBlank() && !uiState.isFetchingCustomLookup,
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    if (uiState.isFetchingCustomLookup) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text("Fetch")
+                }
+                
+                OutlinedButton(
+                    onClick = { viewModel.updateCustomLookupUrl(urlInput) },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Save")
+                }
+            }
+
+            if (uiState.customLookupResponse != null) {
+                Spacer(Modifier.height(32.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(16.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Results",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    SingleChoiceSegmentedButtonRow {
+                        SegmentedButton(
+                            selected = !uiState.isRawView,
+                            onClick = { viewModel.toggleRawView(false) },
+                            shape = RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp)
+                        ) {
+                            Text("Formated", fontSize = 12.sp)
+                        }
+                        SegmentedButton(
+                            selected = uiState.isRawView,
+                            onClick = { viewModel.toggleRawView(true) },
+                            shape = RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp)
+                        ) {
+                            Text("Raw", fontSize = 12.sp)
+                        }
+                    }
+                }
+                
+                Spacer(Modifier.height(16.dp))
+
+                if (uiState.isRawView) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = uiState.customLookupResponse ?: "",
+                            modifier = Modifier.padding(12.dp),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                        )
+                    }
+                } else {
+                    JsonTableView(json = uiState.customLookupResponse ?: "{}")
+                }
+            }
+        }
+    }
 }

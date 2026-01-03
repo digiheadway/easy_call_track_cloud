@@ -23,6 +23,9 @@ import com.miniclick.calltrackmanage.ui.utils.AudioPlayer
 import com.miniclick.calltrackmanage.ui.onboarding.OnboardingScreen
 import com.miniclick.calltrackmanage.data.SettingsRepository
 import com.miniclick.calltrackmanage.worker.CallSyncWorker
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.miniclick.calltrackmanage.ui.common.PhoneLookupResultModal
+import com.miniclick.calltrackmanage.ui.settings.SettingsViewModel
 
 // Navigation tabs
 enum class AppTab(
@@ -46,6 +49,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         viewModel = androidx.lifecycle.ViewModelProvider(this)[MainViewModel::class.java]
         audioPlayer = AudioPlayer(context = this)
+        
+        handleIntent(intent)
         
         enableEdgeToEdge()
         setContent {
@@ -102,10 +107,24 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         viewModel.refreshTheme()
     }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: android.content.Intent?) {
+        intent?.getStringExtra("phone_lookup")?.let { phoneNumber ->
+            viewModel.setLookupPhoneNumber(phoneNumber)
+        }
+    }
 }
 
 @Composable
-fun MainScreen(audioPlayer: AudioPlayer) {
+fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel()) {
+    val lookupPhoneNumber by viewModel.lookupPhoneNumber.collectAsState()
+    val settingsViewModel: SettingsViewModel = viewModel()
+    val settingsState by settingsViewModel.uiState.collectAsState()
     var selectedTab by remember { mutableStateOf(AppTab.CALLS) }
     
     Scaffold(
@@ -146,6 +165,15 @@ fun MainScreen(audioPlayer: AudioPlayer) {
                 AppTab.PERSONS -> PersonsScreen(audioPlayer = audioPlayer)
                 AppTab.REPORTS -> ReportsScreen()
                 AppTab.SETTINGS -> SettingsScreen()
+            }
+
+            if (lookupPhoneNumber != null) {
+                PhoneLookupResultModal(
+                    phoneNumber = lookupPhoneNumber!!,
+                    uiState = settingsState,
+                    viewModel = settingsViewModel,
+                    onDismiss = { viewModel.clearLookupPhoneNumber() }
+                )
             }
         }
     }
