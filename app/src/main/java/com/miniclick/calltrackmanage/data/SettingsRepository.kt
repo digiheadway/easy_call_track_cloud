@@ -71,9 +71,10 @@ class SettingsRepository private constructor(private val context: Context) {
         prefs.edit().putString(KEY_WHATSAPP_PREFERENCE, preference).apply()
     }
 
-    // Sim Selection: "Both", "Anyone"
+    // Sim Selection: "Both", "Sim1", "Sim2", "Off"
+    // Default is "Both" so app works out-of-box without calibration
     fun getSimSelection(): String {
-        return prefs.getString(KEY_SIM_SELECTION, "Off") ?: "Off"
+        return prefs.getString(KEY_SIM_SELECTION, "Both") ?: "Both"
     }
 
     fun setSimSelection(selection: String) {
@@ -211,6 +212,12 @@ class SettingsRepository private constructor(private val context: Context) {
         val cleanNumber = number.replace("[^\\d]".toRegex(), "")
         return excluded.any { it.replace("[^\\d]".toRegex(), "") == cleanNumber }
     }
+
+    // Caller ID Overlay Settings
+    private val KEY_CALLER_ID_ENABLED = "caller_id_enabled"
+    
+    fun isCallerIdEnabled(): Boolean = prefs.getBoolean(KEY_CALLER_ID_ENABLED, true)
+    fun setCallerIdEnabled(enabled: Boolean) = prefs.edit().putBoolean(KEY_CALLER_ID_ENABLED, enabled).apply()
 
     fun clearAllSettings() {
         prefs.edit().clear().apply()

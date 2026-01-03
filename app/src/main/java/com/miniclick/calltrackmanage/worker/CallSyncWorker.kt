@@ -29,8 +29,18 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
     private val settingsRepository = SettingsRepository.getInstance(context)
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        Log.d(TAG, "Starting metadata sync pass...")
+        Log.d(TAG, "Starting sync pass...")
         
+        // PHASE 0: ALWAYS sync from system call log to local Room DB (OFFLINE-FIRST)
+        // This ensures calls are visible in the app even without server sync configured
+        try {
+            callDataRepository.syncFromSystemCallLog()
+            Log.d(TAG, "Local call import completed")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to import calls from system", e)
+        }
+        
+        // Check if server sync is configured
         val orgId = settingsRepository.getOrganisationId()
         val userId = settingsRepository.getUserId()
         val phone1 = settingsRepository.getCallerPhoneSim1()
@@ -38,7 +48,7 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
         val simSelection = settingsRepository.getSimSelection()
 
         if (orgId.isEmpty() || userId.isEmpty()) {
-            Log.w(TAG, "Required settings missing: orgId='$orgId', userId='$userId'. Skipping sync.")
+            Log.d(TAG, "Server sync not configured (no pairing). Local import done.")
             return@withContext Result.success()
         }
 
@@ -48,15 +58,12 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
         ) ?: "unknown_device"
 
         try {
-            // Phase 0: Fetch Config FROM server (Excluded contacts, Settings)
+            // Phase 1: Fetch Config FROM server (Excluded contacts, Settings)
             fetchConfigFromServer(orgId, userId)
 
-            // Phase 1: PULL - Fetch updates from server (delta sync)
+            // Phase 2: PULL - Fetch updates from server (delta sync)
             val lastSyncTime = settingsRepository.getLastSyncTime()
             pullServerUpdates(orgId, userId, deviceId, lastSyncTime)
-            
-            // Phase 2: Sync new calls from system log to Room
-            callDataRepository.syncFromSystemCallLog()
             
             // Phase 3: PUSH - Sync pending calls to server (metadata only)
             val pendingCalls = callDataRepository.getCallsNeedingMetadataSync()

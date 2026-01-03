@@ -34,8 +34,8 @@ switch ($action) {
         
         // Generate Org ID (random 6 char alphanumeric)
         $orgId = strtoupper(substr(md5(uniqid($email, true)), 0, 6));
-        $orgName = explode('@', $email)[0] . "'s Organization";
-        $adminName = explode('@', $email)[0];
+        $orgName = Database::escape(explode('@', $email)[0] . "'s Organization");
+        $adminName = Database::escape(explode('@', $email)[0]);
         
         // EMAIL CHECK
         $existingUser = Database::getOne("SELECT id FROM users WHERE email = '$email'");
@@ -57,7 +57,7 @@ switch ($action) {
         }
         
         // Send Verification Email
-        $subject = "Verify your email - CallTrack";
+        $subject = "Verify your email - CallTrack by MiniClick";
         $message = "Your verification code is: $otp";
         Mailer::send($email, $subject, $message);
 
@@ -126,7 +126,7 @@ switch ($action) {
         
         Database::execute("UPDATE users SET otp = '$otp', otp_expiry = '$otpExpiry' WHERE id = {$user['id']}");
         
-        $subject = "Verify your email - CallTrack";
+        $subject = "Verify your email - CallTrack by MiniClick";
         $message = "Your new verification code is: $otp";
         Mailer::send($email, $subject, $message);
         
@@ -147,7 +147,7 @@ switch ($action) {
 
             Database::execute("UPDATE users SET otp = '$otp', otp_expiry = '$otpExpiry' WHERE id = {$user['id']}");
 
-            $subject = "Reset Password - CallTrack";
+            $subject = "Reset Password - CallTrack by MiniClick";
             $message = "Your password reset code is: $otp";
             Mailer::send($email, $subject, $message);
         }

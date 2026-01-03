@@ -320,6 +320,14 @@ class CallDataRepository private constructor(private val context: Context) {
         val normalized = normalizePhoneNumber(phoneNumber)
         personDataDao.getByPhoneNumber(normalized)?.personNote
     }
+    
+    /**
+     * Get person data by phone number (for Caller ID overlay)
+     */
+    suspend fun getPersonData(phoneNumber: String): PersonDataEntity? = withContext(Dispatchers.IO) {
+        val normalized = normalizePhoneNumber(phoneNumber)
+        personDataDao.getByPhoneNumber(normalized)
+    }
 
     suspend fun getPendingSyncPersons(): List<PersonDataEntity> = withContext(Dispatchers.IO) {
         personDataDao.getPendingSyncPersons()

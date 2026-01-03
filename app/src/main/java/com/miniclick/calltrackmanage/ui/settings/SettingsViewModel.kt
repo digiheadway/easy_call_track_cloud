@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
 import android.widget.Toast
 import android.util.Log
 import androidx.work.OneTimeWorkRequestBuilder
@@ -71,7 +72,8 @@ data class SettingsUiState(
     val defaultTrackingStartingDate: String? = null,
     val recordingCount: Int = 0,
     val isRecordingPathVerified: Boolean = false,
-    val isRecordingPathCustom: Boolean = false
+    val isRecordingPathCustom: Boolean = false,
+    val callerIdEnabled: Boolean = true
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -86,8 +88,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     init {
         loadSettings()
         checkPermissions()
-        fetchSimInfo()
-        fetchWhatsappApps()
+        // NOTE: fetchSimInfo() and fetchWhatsappApps() are NOT called here
+        // They are loaded lazily when user accesses those specific features
+        // - fetchSimInfo() called when SIM/Call tracking settings opened
+        // - fetchWhatsappApps() called when WhatsApp preference UI shown
         observeExcludedPersons()
         observeSyncCounts()
     }
@@ -165,7 +169,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 allowPersonalExclusion = settingsRepository.isAllowPersonalExclusion(),
                 allowChangingTrackingStartDate = settingsRepository.isAllowChangingTrackStartDate(),
                 allowUpdatingTrackingSims = settingsRepository.isAllowUpdatingTrackSims(),
-                defaultTrackingStartingDate = settingsRepository.getDefaultTrackStartDate()
+                defaultTrackingStartingDate = settingsRepository.getDefaultTrackStartDate(),
+                callerIdEnabled = settingsRepository.isCallerIdEnabled()
             )
         }
         refreshRecordingPathInfo()
@@ -175,6 +180,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         settingsRepository.setThemeMode(mode)
         _uiState.update { it.copy(themeMode = mode) }
     }
+
 
     private fun checkPermissions() {
         val ctx = getApplication<Application>()
@@ -208,56 +214,60 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun fetchSimInfo() {
-        val ctx = getApplication<Application>()
-        if (androidx.core.app.ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_PHONE_STATE) 
-            != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            return
-        }
-
-        try {
-            val subscriptionManager = androidx.core.content.ContextCompat.getSystemService(ctx, android.telephony.SubscriptionManager::class.java)
-            val infoList = subscriptionManager?.activeSubscriptionInfoList
-            if (infoList != null) {
-                val sims = infoList.map { 
-                    SimInfo(
-                        slotIndex = it.simSlotIndex, 
-                        displayName = it.displayName.toString(), 
-                        carrierName = it.carrierName.toString(),
-                        subscriptionId = it.subscriptionId
-                    )
-                }.sortedBy { it.slotIndex }
-                
-                _uiState.update { it.copy(availableSims = sims) }
-                
-                // Update UI state with detected IDs, but DON'T save to repository yet
-                // User must manually "Identify/Calibrate" to confirm the mapping
-                sims.find { it.slotIndex == 0 }?.let { sim ->
-                    _uiState.update { state -> state.copy(sim1SubId = settingsRepository.getSim1SubscriptionId()) }
-                    
-                    // Try to auto-access phone number if not already set (this is safe to auto-populate)
-                    if (settingsRepository.getCallerPhoneSim1().isBlank()) {
-                        val number = getSimNumber(ctx, sim.subscriptionId)
-                        if (!number.isNullOrBlank()) {
-                            settingsRepository.setCallerPhoneSim1(number)
-                            _uiState.update { it.copy(callerPhoneSim1 = number) }
-                        }
-                    }
-                }
-                sims.find { it.slotIndex == 1 }?.let { sim ->
-                    _uiState.update { state -> state.copy(sim2SubId = settingsRepository.getSim2SubscriptionId()) }
-                    
-                    // Try to auto-access phone number if not already set
-                    if (settingsRepository.getCallerPhoneSim2().isBlank()) {
-                        val number = getSimNumber(ctx, sim.subscriptionId)
-                        if (!number.isNullOrBlank()) {
-                            settingsRepository.setCallerPhoneSim2(number)
-                            _uiState.update { it.copy(callerPhoneSim2 = number) }
-                        }
-                    }
-                }
+        viewModelScope.launch(Dispatchers.IO) {
+            val ctx = getApplication<Application>()
+            if (androidx.core.app.ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_PHONE_STATE) 
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                return@launch
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
+
+            try {
+                val subscriptionManager = androidx.core.content.ContextCompat.getSystemService(ctx, android.telephony.SubscriptionManager::class.java)
+                val infoList = subscriptionManager?.activeSubscriptionInfoList
+                if (infoList != null) {
+                    val sims = infoList.map { 
+                        SimInfo(
+                            slotIndex = it.simSlotIndex, 
+                            displayName = it.displayName.toString(), 
+                            carrierName = it.carrierName.toString(),
+                            subscriptionId = it.subscriptionId
+                        )
+                    }.sortedBy { it.slotIndex }
+                    
+                    _uiState.update { it.copy(availableSims = sims) }
+                    
+                    // Update UI state with detected IDs, but DON'T save to repository yet
+                    // User must manually "Identify/Calibrate" to confirm the mapping
+                    sims.find { it.slotIndex == 0 }?.let { sim ->
+                        val currentSim1Id = settingsRepository.getSim1SubscriptionId()
+                        _uiState.update { state -> state.copy(sim1SubId = currentSim1Id) }
+                        
+                        // Try to auto-access phone number if not already set (this is safe to auto-populate)
+                        if (settingsRepository.getCallerPhoneSim1().isBlank()) {
+                            val number = getSimNumber(ctx, sim.subscriptionId)
+                            if (!number.isNullOrBlank()) {
+                                settingsRepository.setCallerPhoneSim1(number)
+                                _uiState.update { it.copy(callerPhoneSim1 = number) }
+                            }
+                        }
+                    }
+                    sims.find { it.slotIndex == 1 }?.let { sim ->
+                        val currentSim2Id = settingsRepository.getSim2SubscriptionId()
+                        _uiState.update { state -> state.copy(sim2SubId = currentSim2Id) }
+                        
+                        // Try to auto-access phone number if not already set
+                        if (settingsRepository.getCallerPhoneSim2().isBlank()) {
+                            val number = getSimNumber(ctx, sim.subscriptionId)
+                            if (!number.isNullOrBlank()) {
+                                settingsRepository.setCallerPhoneSim2(number)
+                                _uiState.update { it.copy(callerPhoneSim2 = number) }
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -286,116 +296,142 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun fetchWhatsappApps() {
-        val ctx = getApplication<Application>()
-        val packageManager = ctx.packageManager
-        
-        // Known WhatsApp package names (including common clones)
-        val knownWhatsappPackages = listOf(
-            "com.whatsapp",                    // Regular WhatsApp
-            "com.whatsapp.w4b",                // WhatsApp Business
-            "com.whatsapp.w4b.clone",          // Cloned Business
-            "com.whatsapp.clone",              // Cloned WhatsApp
-            "com.gbwhatsapp",                  // GB WhatsApp
-            "com.whatsapp1",                   // Dual WhatsApp
-            "com.whatsapp2",                   // Dual WhatsApp 2
-            "com.dual.whatsapp",               // Dual Space WhatsApp
-            "com.parallel.space.pro",          // Parallel Space
-            "com.lbe.parallel.intl",           // Parallel Space International
-            "com.ludashi.dualspace",           // Dual Space
-            // OnePlus Parallel Apps patterns
-            "com.oneplus.clone.whatsapp",
-            "com.oneplus.clone.com.whatsapp",
-            "com.oneplus.clone.com.whatsapp.w4b",
-            // Xiaomi Second Space / Dual Apps
-            "com.miui.securitycore.whatsapp",
-            "com.miui.clone.whatsapp",
-            // Samsung Dual Messenger
-            "com.samsung.android.game.cloudgame.whatsapp",
-            // Huawei App Twin
-            "com.huawei.clone.whatsapp"
-        )
-        
-        val apps = mutableListOf<AppInfo>()
-        
-        // Method 1: Query by intent with MATCH_ALL to get all handlers
-        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-            data = android.net.Uri.parse("https://wa.me/")
-        }
-        
-        try {
-            packageManager.queryIntentActivities(intent, android.content.pm.PackageManager.MATCH_ALL)
-                .forEach { resolveInfo ->
+        viewModelScope.launch(Dispatchers.IO) {
+            val ctx = getApplication<Application>()
+            val packageManager = ctx.packageManager
+            
+            // Known WhatsApp package names (including common clones)
+            val knownWhatsappPackages = listOf(
+                "com.whatsapp",                    // Regular WhatsApp
+                "com.whatsapp.w4b",                // WhatsApp Business
+                "com.whatsapp.w4b.clone",          // Cloned Business
+                "com.whatsapp.clone",              // Cloned WhatsApp
+                "com.gbwhatsapp",                  // GB WhatsApp
+                "com.whatsapp1",                   // Dual WhatsApp
+                "com.whatsapp2",                   // Dual WhatsApp 2
+                "com.dual.whatsapp",               // Dual Space WhatsApp
+                "com.parallel.space.pro",          // Parallel Space
+                "com.lbe.parallel.intl",           // Parallel Space International
+                "com.ludashi.dualspace",           // Dual Space
+                // OnePlus Parallel Apps patterns
+                "com.oneplus.clone.whatsapp",
+                "com.oneplus.clone.com.whatsapp",
+                "com.oneplus.clone.com.whatsapp.w4b",
+                // Xiaomi Second Space / Dual Apps
+                "com.miui.securitycore.whatsapp",
+                "com.miui.clone.whatsapp",
+                // Samsung Dual Messenger
+                "com.samsung.android.game.cloudgame.whatsapp",
+                // Huawei App Twin
+                "com.huawei.clone.whatsapp"
+            )
+            
+            val apps = mutableListOf<AppInfo>()
+            
+            // Method 1: Query by intent with MATCH_ALL to get all handlers
+            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                data = android.net.Uri.parse("https://wa.me/")
+            }
+            
+            try {
+                packageManager.queryIntentActivities(intent, android.content.pm.PackageManager.MATCH_ALL)
+                    .forEach { resolveInfo ->
+                        val label = resolveInfo.loadLabel(packageManager).toString()
+                        val packageName = resolveInfo.activityInfo.packageName
+                        apps.add(AppInfo(label, packageName))
+                    }
+            } catch (e: Exception) { e.printStackTrace() }
+            
+            // Method 2: Query with MATCH_UNINSTALLED_PACKAGES to catch clones in other profiles
+            try {
+                packageManager.queryIntentActivities(intent, 
+                    android.content.pm.PackageManager.MATCH_ALL or 
+                    android.content.pm.PackageManager.MATCH_UNINSTALLED_PACKAGES
+                ).forEach { resolveInfo ->
                     val label = resolveInfo.loadLabel(packageManager).toString()
                     val packageName = resolveInfo.activityInfo.packageName
                     apps.add(AppInfo(label, packageName))
                 }
-        } catch (e: Exception) { e.printStackTrace() }
-        
-        // Method 2: Query with MATCH_UNINSTALLED_PACKAGES to catch clones in other profiles
-        try {
-            packageManager.queryIntentActivities(intent, 
-                android.content.pm.PackageManager.MATCH_ALL or 
-                android.content.pm.PackageManager.MATCH_UNINSTALLED_PACKAGES
-            ).forEach { resolveInfo ->
-                val label = resolveInfo.loadLabel(packageManager).toString()
-                val packageName = resolveInfo.activityInfo.packageName
-                apps.add(AppInfo(label, packageName))
+            } catch (e: Exception) { e.printStackTrace() }
+            
+            // Method 3: Check known package names directly
+            knownWhatsappPackages.forEach { packageName ->
+                try {
+                    val appInfo = packageManager.getApplicationInfo(packageName, 0)
+                    val label = packageManager.getApplicationLabel(appInfo).toString()
+                    apps.add(AppInfo(label, packageName))
+                } catch (e: android.content.pm.PackageManager.NameNotFoundException) {
+                    // Package not installed, skip
+                }
             }
-        } catch (e: Exception) { e.printStackTrace() }
-        
-        // Method 3: Check known package names directly
-        knownWhatsappPackages.forEach { packageName ->
+            
+            // Method 4: Search ALL installed apps for WhatsApp (catches OnePlus clones)
+            @Suppress("DEPRECATION")
             try {
-                val appInfo = packageManager.getApplicationInfo(packageName, 0)
-                val label = packageManager.getApplicationLabel(appInfo).toString()
-                apps.add(AppInfo(label, packageName))
-            } catch (e: android.content.pm.PackageManager.NameNotFoundException) {
-                // Package not installed, skip
+                packageManager.getInstalledApplications(
+                    android.content.pm.PackageManager.GET_META_DATA or
+                    android.content.pm.PackageManager.MATCH_UNINSTALLED_PACKAGES
+                ).filter { 
+                    it.packageName.contains("whatsapp", ignoreCase = true) ||
+                    (it.packageName.contains("clone", ignoreCase = true) && 
+                     packageManager.getApplicationLabel(it).toString().contains("whatsapp", ignoreCase = true))
+                }.forEach { appInfo ->
+                    val label = packageManager.getApplicationLabel(appInfo).toString()
+                    apps.add(AppInfo(label, appInfo.packageName))
+                }
+            } catch (e: Exception) { e.printStackTrace() }
+            
+            // Method 5: Check for apps in work profile / managed profiles
+            try {
+                val userManager = androidx.core.content.ContextCompat.getSystemService(ctx, android.os.UserManager::class.java)
+                val launcherApps = androidx.core.content.ContextCompat.getSystemService(ctx, android.content.pm.LauncherApps::class.java)
+                
+                userManager?.userProfiles?.forEach { userHandle ->
+                    listOf("com.whatsapp", "com.whatsapp.w4b").forEach { pkg ->
+                        try {
+                            val activityList = launcherApps?.getActivityList(pkg, userHandle)
+                            activityList?.forEach { launcherActivity ->
+                                val label = launcherActivity.label.toString()
+                                val suffix = if (userHandle != android.os.Process.myUserHandle()) " (Clone)" else ""
+                                apps.add(AppInfo("$label$suffix", "${pkg}#${userHandle.hashCode()}"))
+                            }
+                        } catch (e: Exception) { /* Skip */ }
+                    }
+                }
+            } catch (e: Exception) { e.printStackTrace() }
+            
+            val uniqueApps = apps
+                .distinctBy { it.packageName }
+                .sortedBy { it.label }
+
+            android.util.Log.d("SettingsViewModel", "Found WhatsApp apps: ${uniqueApps.map { "${it.label} (${it.packageName})" }}")
+            _uiState.update { it.copy(availableWhatsappApps = uniqueApps) }
+        }
+    }
+
+    /**
+     * Update Caller ID setting.
+     * Returns true if overlay permission is needed (caller should open settings).
+     */
+    fun updateCallerIdEnabled(enabled: Boolean): Boolean {
+        val ctx = getApplication<Application>()
+        
+        if (enabled && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            // Check if overlay permission is granted
+            val hasOverlayPermission = android.provider.Settings.canDrawOverlays(ctx)
+            
+            if (!hasOverlayPermission) {
+                // Permission not granted - return true to signal that caller should open settings
+                return true
             }
         }
         
-        // Method 4: Search ALL installed apps for WhatsApp (catches OnePlus clones)
-        @Suppress("DEPRECATION")
-        try {
-            packageManager.getInstalledApplications(
-                android.content.pm.PackageManager.GET_META_DATA or
-                android.content.pm.PackageManager.MATCH_UNINSTALLED_PACKAGES
-            ).filter { 
-                it.packageName.contains("whatsapp", ignoreCase = true) ||
-                (it.packageName.contains("clone", ignoreCase = true) && 
-                 packageManager.getApplicationLabel(it).toString().contains("whatsapp", ignoreCase = true))
-            }.forEach { appInfo ->
-                val label = packageManager.getApplicationLabel(appInfo).toString()
-                apps.add(AppInfo(label, appInfo.packageName))
-            }
-        } catch (e: Exception) { e.printStackTrace() }
-        
-        // Method 5: Check for apps in work profile / managed profiles
-        try {
-            val userManager = androidx.core.content.ContextCompat.getSystemService(ctx, android.os.UserManager::class.java)
-            val launcherApps = androidx.core.content.ContextCompat.getSystemService(ctx, android.content.pm.LauncherApps::class.java)
-            
-            userManager?.userProfiles?.forEach { userHandle ->
-                listOf("com.whatsapp", "com.whatsapp.w4b").forEach { pkg ->
-                    try {
-                        val activityList = launcherApps?.getActivityList(pkg, userHandle)
-                        activityList?.forEach { launcherActivity ->
-                            val label = launcherActivity.label.toString()
-                            val suffix = if (userHandle != android.os.Process.myUserHandle()) " (Clone)" else ""
-                            apps.add(AppInfo("$label$suffix", "${pkg}#${userHandle.hashCode()}"))
-                        }
-                    } catch (e: Exception) { /* Skip */ }
-                }
-            }
-        } catch (e: Exception) { e.printStackTrace() }
-        
-        val uniqueApps = apps
-            .distinctBy { it.packageName }
-            .sortedBy { it.label }
-
-        android.util.Log.d("SettingsViewModel", "Found WhatsApp apps: ${uniqueApps.map { "${it.label} (${it.packageName})" }}")
-        _uiState.update { it.copy(availableWhatsappApps = uniqueApps) }
+        // Permission is granted (or we're disabling, or old Android) - save the setting
+        settingsRepository.setCallerIdEnabled(enabled)
+        _uiState.update { it.copy(callerIdEnabled = enabled) }
+        return false
     }
+
 
     fun updateWhatsappPreference(packageName: String) {
         settingsRepository.setWhatsappPreference(packageName)

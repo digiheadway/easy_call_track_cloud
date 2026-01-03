@@ -468,6 +468,7 @@ fun SettingsScreen(
             // ===============================================
             var showThemeDropdown by remember { mutableStateOf(false) }
 
+
             SettingsSection(title = "Appearance") {
                 ListItem(
                     headlineContent = { Text("App Theme") },
@@ -510,7 +511,6 @@ fun SettingsScreen(
                 )
             }
             
-
 
             Spacer(Modifier.height(16.dp))
 
@@ -752,6 +752,51 @@ fun SettingsScreen(
                                 }
                             }
                         }
+                    }
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                
+                // Caller ID Overlay Toggle
+                val hasOverlayPermission = remember {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                        Settings.canDrawOverlays(context)
+                    } else {
+                        true
+                    }
+                }
+                
+                ListItem(
+                    headlineContent = { Text("Caller ID Overlay") },
+                    supportingContent = { 
+                        if (!hasOverlayPermission && uiState.callerIdEnabled) {
+                            Text(
+                                "Tap to grant overlay permission",
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        } else {
+                            Text("Show contact info during calls")
+                        }
+                    },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.ContactPhone, MaterialTheme.colorScheme.primary) 
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = uiState.callerIdEnabled,
+                            onCheckedChange = { enabled ->
+                                val needsOverlayPermission = viewModel.updateCallerIdEnabled(enabled)
+                                if (needsOverlayPermission && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                                    // Request overlay permission via Settings
+                                    val intent = Intent(
+                                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                        Uri.parse("package:${context.packageName}")
+                                    )
+                                    context.startActivity(intent)
+                                    Toast.makeText(context, "Please grant overlay permission, then return and enable Caller ID", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        )
                     }
                 )
 

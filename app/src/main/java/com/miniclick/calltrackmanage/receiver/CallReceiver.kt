@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.telephony.TelephonyManager
 import android.util.Log
+import com.miniclick.calltrackmanage.service.CallerIdService
 import com.miniclick.calltrackmanage.worker.CallSyncWorker
 import com.miniclick.calltrackmanage.worker.RecordingUploadWorker
 
@@ -13,18 +14,33 @@ class CallReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == TelephonyManager.ACTION_PHONE_STATE_CHANGED) {
             val state = intent.getStringExtra(TelephonyManager.EXTRA_STATE)
+            val phoneNumber = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER)
             
-            if (TelephonyManager.EXTRA_STATE_IDLE == state) {
-                Log.d(TAG, "Call ended (IDLE state). Triggering immediate sync.")
-                
-                // Trigger immediate sync for metadata
-                CallSyncWorker.runNow(context)
-                
-                // Also trigger recording upload check, though it might take a moment 
-                // for the file to be saved by the system/recorder.
-                // CallSyncWorker also triggers RecordingUpload checks internally if it finds new calls,
-                // but explicit trigger doesn't hurt.
-                RecordingUploadWorker.runNow(context)
+            when (state) {
+                TelephonyManager.EXTRA_STATE_RINGING -> {
+                    // Incoming call - show caller ID overlay
+                    if (!phoneNumber.isNullOrBlank()) {
+                        Log.d(TAG, "Incoming call from $phoneNumber - showing caller ID")
+                        CallerIdService.show(context, phoneNumber)
+                    }
+                }
+                TelephonyManager.EXTRA_STATE_OFFHOOK -> {
+                    // Call answered or outgoing call started
+                    // Keep overlay visible during call if it was showing
+                    Log.d(TAG, "Call in progress (OFFHOOK state)")
+                }
+                TelephonyManager.EXTRA_STATE_IDLE -> {
+                    Log.d(TAG, "Call ended (IDLE state). Triggering immediate sync.")
+                    
+                    // Hide caller ID overlay
+                    CallerIdService.hide(context)
+                    
+                    // Trigger immediate sync for metadata
+                    CallSyncWorker.runNow(context)
+                    
+                    // Also trigger recording upload check
+                    RecordingUploadWorker.runNow(context)
+                }
             }
         }
     }

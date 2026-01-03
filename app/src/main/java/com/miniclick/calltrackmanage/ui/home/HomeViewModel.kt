@@ -60,7 +60,7 @@ data class HomeUiState(
     val attendedFilter: AttendedFilter = AttendedFilter.ALL,
     val labelFilter: String = "",
 
-    val dateRange: DateRange = DateRange.LAST_3_DAYS,
+    val dateRange: DateRange = DateRange.ALL,
     val customStartDate: Long? = null,
     val customEndDate: Long? = null,
 
@@ -93,6 +93,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     init {
         refreshSettings()
         loadRecordingPath()
+        
+        // Trigger immediate sync from system CallLog on app open
+        syncFromSystem()
         
         // Observe Room DB for real-time updates
         viewModelScope.launch {

@@ -1,5 +1,6 @@
 package com.miniclick.calltrackmanage.service
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -144,18 +145,102 @@ class SyncService : Service() {
     private fun handleCallStateChange(state: Int) {
         Log.d(TAG, "Call state changed: $lastState -> $state")
         
-        // When call ends (transition to IDLE from RINGING or OFFHOOK)
-        if (state == TelephonyManager.CALL_STATE_IDLE && lastState != TelephonyManager.CALL_STATE_IDLE) {
-            Log.d(TAG, "Call ended - triggering sync")
-            
-            // Delay slightly to allow call log to be updated
-            serviceScope.launch {
-                delay(2000) // Wait 2 seconds for call log to update
-                triggerSync()
+        when (state) {
+            TelephonyManager.CALL_STATE_RINGING,
+            TelephonyManager.CALL_STATE_OFFHOOK -> {
+                // Call started (incoming: RINGING, outgoing: OFFHOOK)
+                // Only show overlay when transitioning from IDLE
+                if (lastState == TelephonyManager.CALL_STATE_IDLE) {
+                    Log.d(TAG, "Call started - showing caller ID")
+                    showCallerIdOverlay()
+                }
+            }
+            TelephonyManager.CALL_STATE_IDLE -> {
+                // Call ended
+                if (lastState != TelephonyManager.CALL_STATE_IDLE) {
+                    Log.d(TAG, "Call ended - hiding caller ID and triggering sync")
+                    
+                    // Hide caller ID overlay
+                    CallerIdService.hide(this)
+                    
+                    // Delay slightly to allow call log to be updated
+                    serviceScope.launch {
+                        delay(2000) // Wait 2 seconds for call log to update
+                        triggerSync()
+                    }
+                }
             }
         }
         
         lastState = state
+    }
+    
+    private fun showCallerIdOverlay() {
+        // Query call log to get the most recent/active call's phone number
+        // We retry a few times because the call log might not update instantly
+        serviceScope.launch {
+            var phoneNumber: String? = null
+            repeat(3) { attempt ->
+                try {
+                    phoneNumber = getActiveCallNumber()
+                    if (!phoneNumber.isNullOrBlank()) {
+                        Log.d(TAG, "Found active call number: $phoneNumber (attempt ${attempt + 1})")
+                        CallerIdService.show(this@SyncService, phoneNumber!!)
+                        return@launch
+                    }
+                    if (attempt < 2) delay(500) // Wait before retry
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error getting active call number", e)
+                }
+            }
+            Log.d(TAG, "Could not determine active call number after retries")
+        }
+    }
+    
+    @SuppressLint("MissingPermission")
+    private suspend fun getActiveCallNumber(): String? = withContext(Dispatchers.IO) {
+        try {
+            // Query call log for the most recent call (within last 10 seconds)
+            val tenSecondsAgo = System.currentTimeMillis() - 10_000
+            
+            val cursor = contentResolver.query(
+                android.provider.CallLog.Calls.CONTENT_URI,
+                arrayOf(android.provider.CallLog.Calls.NUMBER),
+                "${android.provider.CallLog.Calls.DATE} > ?",
+                arrayOf(tenSecondsAgo.toString()),
+                "${android.provider.CallLog.Calls.DATE} DESC"
+            )
+            
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val numberIndex = it.getColumnIndex(android.provider.CallLog.Calls.NUMBER)
+                    if (numberIndex >= 0) {
+                        return@withContext it.getString(numberIndex)
+                    }
+                }
+            }
+            
+            // Fallback: get the most recent call regardless of time
+            val fallbackCursor = contentResolver.query(
+                android.provider.CallLog.Calls.CONTENT_URI,
+                arrayOf(android.provider.CallLog.Calls.NUMBER),
+                null,
+                null,
+                "${android.provider.CallLog.Calls.DATE} DESC LIMIT 1"
+            )
+            
+            fallbackCursor?.use {
+                if (it.moveToFirst()) {
+                    val numberIndex = it.getColumnIndex(android.provider.CallLog.Calls.NUMBER)
+                    if (numberIndex >= 0) {
+                        return@withContext it.getString(numberIndex)
+                    }
+                }
+            }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Permission denied to read call log", e)
+        }
+        null
     }
 
     private fun stopPhoneStateMonitoring() {

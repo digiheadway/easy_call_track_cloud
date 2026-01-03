@@ -22,6 +22,7 @@ import com.miniclick.calltrackmanage.ui.theme.CallCloudTheme
 import com.miniclick.calltrackmanage.ui.utils.AudioPlayer
 import com.miniclick.calltrackmanage.ui.onboarding.OnboardingScreen
 import com.miniclick.calltrackmanage.data.SettingsRepository
+import com.miniclick.calltrackmanage.worker.CallSyncWorker
 
 // Navigation tabs
 enum class AppTab(
@@ -79,6 +80,8 @@ class MainActivity : ComponentActivity() {
                         onComplete = {
                             settingsRepository.setOnboardingCompleted(true)
                             showOnboarding = false
+                            // Trigger initial sync immediately after onboarding
+                            CallSyncWorker.runNow(this@MainActivity)
                         }
                     )
                 } else {

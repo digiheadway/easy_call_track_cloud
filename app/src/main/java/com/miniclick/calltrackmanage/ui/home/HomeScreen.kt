@@ -207,15 +207,17 @@ fun CallsScreen(
             )
         }
 
-        // Sync Status Strip
-        SyncStatusStrip(
-            pendingCount = uiState.pendingSyncCount,
-            pendingMetadata = uiState.pendingMetadataCount,
-            pendingRecordings = uiState.pendingRecordingCount,
-            isNetworkAvailable = uiState.isNetworkAvailable,
-            onSyncNow = viewModel::syncNow,
-            onShowQueue = { showSyncQueue = true }
-        )
+        // Sync Status Strip - only show when sync is configured
+        if (uiState.isSyncSetup) {
+            SyncStatusStrip(
+                pendingCount = uiState.pendingSyncCount,
+                pendingMetadata = uiState.pendingMetadataCount,
+                pendingRecordings = uiState.pendingRecordingCount,
+                isNetworkAvailable = uiState.isNetworkAvailable,
+                onSyncNow = viewModel::syncNow,
+                onShowQueue = { showSyncQueue = true }
+            )
+        }
         
         // Expandable Search Row
         AnimatedVisibility(
@@ -515,15 +517,17 @@ fun PersonsScreen(
             )
         }
 
-        // Sync Status Strip
-        SyncStatusStrip(
-            pendingCount = uiState.pendingSyncCount,
-            pendingMetadata = uiState.pendingMetadataCount,
-            pendingRecordings = uiState.pendingRecordingCount,
-            isNetworkAvailable = uiState.isNetworkAvailable,
-            onSyncNow = viewModel::syncNow,
-            onShowQueue = { showSyncQueue = true }
-        )
+        // Sync Status Strip - only show when sync is configured
+        if (uiState.isSyncSetup) {
+            SyncStatusStrip(
+                pendingCount = uiState.pendingSyncCount,
+                pendingMetadata = uiState.pendingMetadataCount,
+                pendingRecordings = uiState.pendingRecordingCount,
+                isNetworkAvailable = uiState.isNetworkAvailable,
+                onSyncNow = viewModel::syncNow,
+                onShowQueue = { showSyncQueue = true }
+            )
+        }
         
         // Expandable Search Row
         AnimatedVisibility(
@@ -2705,12 +2709,21 @@ fun CallLogItem(
                     .height(IntrinsicSize.Max),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // COLUMN 1: Call Type Icon (Centered)
+                // COLUMN 1: Call Type Icon (Centered) - Colors match Persons screen
+                val (iconColor, bgColor) = when (log.callType) {
+                    android.provider.CallLog.Calls.INCOMING_TYPE -> Color(0xFF4CAF50) to Color(0xFFE8F5E9) // Green
+                    android.provider.CallLog.Calls.OUTGOING_TYPE -> Color(0xFF2196F3) to Color(0xFFE3F2FD) // Blue
+                    android.provider.CallLog.Calls.MISSED_TYPE -> Color(0xFFF44336) to Color(0xFFFFEBEE) // Red
+                    5 -> Color(0xFFFF9800) to Color(0xFFFFF3E0) // Orange for Rejected
+                    6 -> Color(0xFF757575) to Color(0xFFEEEEEE) // Gray for Blocked
+                    else -> MaterialTheme.colorScheme.primary to MaterialTheme.colorScheme.primaryContainer
+                }
+                
                 Box(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
+                        .background(bgColor),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -2723,7 +2736,7 @@ fun CallLogItem(
                             else -> Icons.Default.Phone
                         },
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = iconColor
                     )
                 }
 
