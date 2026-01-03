@@ -235,7 +235,7 @@ class SettingsRepository private constructor(private val context: Context) {
     // Caller ID Overlay Settings
     private val KEY_CALLER_ID_ENABLED = "caller_id_enabled"
     
-    fun isCallerIdEnabled(): Boolean = prefs.getBoolean(KEY_CALLER_ID_ENABLED, true)
+    fun isCallerIdEnabled(): Boolean = prefs.getBoolean(KEY_CALLER_ID_ENABLED, false)
     fun setCallerIdEnabled(enabled: Boolean) = prefs.edit().putBoolean(KEY_CALLER_ID_ENABLED, enabled).apply()
 
     fun getCustomLookupUrl(): String = prefs.getString(KEY_CUSTOM_LOOKUP_URL, "") ?: ""

@@ -74,13 +74,14 @@ data class SettingsUiState(
     val recordingCount: Int = 0,
     val isRecordingPathVerified: Boolean = false,
     val isRecordingPathCustom: Boolean = false,
-    val callerIdEnabled: Boolean = true,
+    val callerIdEnabled: Boolean = false,
     val customLookupUrl: String = "",
     val customLookupEnabled: Boolean = false,
     val customLookupResponse: String? = null,
     val isFetchingCustomLookup: Boolean = false,
     val customLookupCallerIdEnabled: Boolean = false,
     val isRawView: Boolean = false,
+    val isOverlayPermissionGranted: Boolean = false,
     val callTrackEnabled: Boolean = true,
     val callRecordEnabled: Boolean = true,
     val planExpiryDate: String? = null,
@@ -232,7 +233,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                           android.content.pm.PackageManager.PERMISSION_GRANTED
             PermissionState(name, granted, perm)
         }
-        _uiState.update { it.copy(permissions = states) }
+        
+        val hasOverlay = if (sdkInt >= android.os.Build.VERSION_CODES.M) {
+            android.provider.Settings.canDrawOverlays(ctx)
+        } else {
+            true
+        }
+
+        _uiState.update { it.copy(permissions = states, isOverlayPermissionGranted = hasOverlay) }
     }
 
     fun fetchSimInfo() {

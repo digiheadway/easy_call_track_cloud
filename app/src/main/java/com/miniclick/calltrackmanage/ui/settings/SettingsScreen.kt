@@ -1,40 +1,39 @@
 package com.miniclick.calltrackmanage.ui.settings
 
-import android.app.DatePickerDialog
-import android.content.Context
-import android.widget.Toast
 import android.content.Intent
+import android.widget.Toast
 import android.net.Uri
 import android.provider.Settings
-import com.miniclick.calltrackmanage.ui.common.SyncQueueModal
-import com.miniclick.calltrackmanage.ui.common.RecordingQueueModal
-import com.miniclick.calltrackmanage.ui.common.JsonTableView
-import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import com.miniclick.calltrackmanage.ui.common.SyncQueueModal
+import com.miniclick.calltrackmanage.ui.common.RecordingQueueModal
+import com.miniclick.calltrackmanage.ui.common.JsonTableView
+import androidx.compose.ui.text.style.TextAlign
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.lifecycle.Lifecycle
+import androidx.compose.ui.graphics.Color
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,6 +60,18 @@ fun SettingsScreen(
     var showSyncQueue by remember { mutableStateOf(false) }
     var showRecordingQueue by remember { mutableStateOf(false) }
     var showCustomLookupModal by remember { mutableStateOf(false) }
+
+    val folderLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        uri?.let {
+            try {
+                 context.contentResolver.takePersistableUriPermission(it, 
+                     Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+            } catch (e: Exception) { e.printStackTrace() }
+            viewModel.updateRecordingPath(it.toString())
+        }
+    }
 
     if (onBack != null) {
         androidx.activity.compose.BackHandler {
@@ -272,262 +283,13 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             // ===============================================
-            // 0. SUPPORT CATEGORY
+            // 1. CLOUD & ACCOUNT
             // ===============================================
-            // ===============================================
-            // 0. Plan Warnings
-            // ===============================================
-            val isPlanExpired = remember(uiState.planExpiryDate) {
-                uiState.planExpiryDate?.let { expiry ->
-                    try {
-                        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                        val expiryDate = sdf.parse(expiry)
-                        expiryDate != null && expiryDate.before(Date())
-                    } catch (e: Exception) { false }
-                } ?: false
+            SettingsSection(title = "Cloud & Account") {
+                // The Sync Card is technically part of this section but we keep its distinctive Card look
+                SyncCloudCard(uiState, viewModel, { showSyncQueue = true }, { showCloudSyncModal = true }, { showResetConfirmDialog = true })
             }
 
-            val isStorageFull = remember(uiState.allowedStorageGb, uiState.storageUsedBytes) {
-                if (uiState.allowedStorageGb <= 0f) false
-                else {
-                    val usedGb = uiState.storageUsedBytes.toDouble() / (1024 * 1024 * 1024)
-                    usedGb >= uiState.allowedStorageGb
-                }
-            }
-
-            if (isPlanExpired || isStorageFull) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    color = MaterialTheme.colorScheme.errorContainer,
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Warning,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Text(
-                            text = when {
-                                isPlanExpired && isStorageFull -> "Plan expired and storage is full. Syncing is disabled."
-                                isPlanExpired -> "Your plan has expired. Please renew to continue syncing."
-                                isStorageFull -> "Organization storage is full. Recordings will not be synced."
-                                else -> ""
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                    }
-                }
-            }
-
-            // ===============================================
-            // 0. SYNC TO CLOUD (Card)
-            // ===============================================
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.CloudSync,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Column(
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(
-                                text = "Sync to Cloud",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            val statusText = if (uiState.pairingCode.isNotEmpty()) "Linked to : ${uiState.pairingCode}" else "linked to : Not linked yet"
-                            Text(
-                                text = statusText,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                            )
-                        }
-                        
-                        if (uiState.pairingCode.isNotEmpty()) {
-                            IconButton(onClick = { showSyncQueue = true }) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.List,
-                                    contentDescription = "Show Sync Queue",
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            }
-                        }
-                    }
-                    
-                    Spacer(Modifier.height(8.dp))
-                    val descriptionText = if (uiState.pairingCode.isNotEmpty()) {
-                        val enabledFeatures = mutableListOf<String>()
-                        if (uiState.callTrackEnabled) enabledFeatures.add("Calls")
-                        if (uiState.callRecordEnabled) enabledFeatures.add("Recordings")
-                        enabledFeatures.add("Notes")
-                        
-                        val featuresStr = if (enabledFeatures.size > 1) {
-                            val last = enabledFeatures.removeAt(enabledFeatures.size - 1)
-                            "Syncing ${enabledFeatures.joinToString(", ")} and $last"
-                        } else {
-                            "Syncing ${enabledFeatures.firstOrNull() ?: "nothing"}"
-                        }
-                        
-                        val statusSuffix = when {
-                            !uiState.callTrackEnabled && !uiState.callRecordEnabled -> " (Tracking Disabled)"
-                            !uiState.callTrackEnabled -> " (Call Tracking Off)"
-                            !uiState.callRecordEnabled -> " (Recordings Off)"
-                            else -> ""
-                        }
-                        featuresStr + statusSuffix
-                    } else "Sync calls, recordings, note to cloud to access from any device."
-                    
-                    Text(
-                        text = descriptionText,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f)
-                    )
-                    
-                    Spacer(Modifier.height(16.dp))
-                    
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        Button(
-                            onClick = { 
-                                if (uiState.pairingCode.isNotEmpty()) {
-                                    viewModel.syncCallManually()
-                                } else {
-                                    showCloudSyncModal = true
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            )
-                        ) {
-                            if (uiState.pairingCode.isNotEmpty()) {
-                                if (uiState.isSyncing) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(20.dp),
-                                        color = MaterialTheme.colorScheme.onPrimary,
-                                        strokeWidth = 2.dp
-                                    )
-                                    Spacer(Modifier.width(12.dp))
-                                    Text("Syncing...")
-                                } else {
-                                    Icon(Icons.Default.Sync, null, Modifier.size(18.dp))
-                                    Spacer(Modifier.width(8.dp))
-                                    Text("Sync Now")
-                                }
-                            } else {
-                                Text("Setup Cloud Sync")
-                            }
-                        }
-
-                        if (uiState.pairingCode.isNotEmpty()) {
-                            Spacer(Modifier.width(8.dp))
-                            var showCardMenu by remember { mutableStateOf(false) }
-                            Box {
-                                FilledTonalIconButton(
-                                    onClick = { showCardMenu = true },
-                                    modifier = Modifier.size(48.dp),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Icon(Icons.Default.Settings, "Sync Settings")
-                                }
-                                DropdownMenu(
-                                    expanded = showCardMenu,
-                                    onDismissRequest = { showCardMenu = false }
-                                ) {
-                                    DropdownMenuItem(
-                                        text = { Text("Reset Sync Data") },
-                                        onClick = { 
-                                            showCardMenu = false
-                                            showResetConfirmDialog = true
-                                        },
-                                        leadingIcon = { Icon(Icons.Default.Restore, null) }
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text("Leave Organisation") },
-                                        onClick = { 
-                                            showCardMenu = false
-                                            viewModel.leaveOrganisation()
-                                        },
-                                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, null) }
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-
-                    // Sync Progress & Status
-                    if (uiState.pairingCode.isNotEmpty()) {
-                        if (uiState.isSyncing) {
-                            // Show progress bar when syncing
-                            Spacer(Modifier.height(12.dp))
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                LinearProgressIndicator(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(4.dp)
-                                        .clip(RoundedCornerShape(2.dp)),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                                )
-                                
-                                uiState.lastSyncStats?.let { stats ->
-                                    Spacer(Modifier.height(8.dp))
-                                    Text(
-                                        text = stats,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                            }
-                        } else {
-                            // Show static status when not syncing
-                            uiState.lastSyncStats?.let { stats ->
-                                Text(
-                                    text = stats,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 12.dp),
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // External Last Sync Footer
             if (uiState.pairingCode.isNotEmpty()) {
                 val lastSyncText = remember(uiState.lastSyncTime) {
                     if (uiState.lastSyncTime == 0L) "never synced"
@@ -548,130 +310,20 @@ fun SettingsScreen(
                     text = lastSyncText,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                     textAlign = TextAlign.Center
                 )
             }
 
-            Spacer(Modifier.height(8.dp))
-
-            // ===============================================
-            // 1. APPEARANCE (Theme)
-            // ===============================================
-            var showThemeDropdown by remember { mutableStateOf(false) }
-
-
-            SettingsSection(title = "Appearance") {
-                ListItem(
-                    headlineContent = { Text("App Theme") },
-                    supportingContent = { Text(uiState.themeMode) },
-                    leadingContent = { 
-                        SettingsIcon(Icons.Default.DarkMode, MaterialTheme.colorScheme.primary) 
-                    },
-                    trailingContent = {
-                         Box {
-                            IconButton(onClick = { showThemeDropdown = true }) {
-                                Icon(Icons.Default.ExpandMore, contentDescription = "Select Theme")
-                            }
-                            DropdownMenu(
-                                expanded = showThemeDropdown,
-                                onDismissRequest = { showThemeDropdown = false }
-                            ) {
-                                listOf("System", "Light", "Dark").forEach { mode ->
-                                    DropdownMenuItem(
-                                        text = { Text(mode) },
-                                        onClick = { 
-                                            viewModel.updateThemeMode(mode)
-                                            showThemeDropdown = false 
-                                        },
-                                        leadingIcon = { 
-                                            Icon(
-                                                imageVector = when(mode) {
-                                                    "Light" -> Icons.Default.LightMode
-                                                    "Dark" -> Icons.Default.DarkMode
-                                                    else -> Icons.Default.SettingsSystemDaydream
-                                                }, 
-                                                null
-                                            ) 
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    },
-                    modifier = Modifier.clickable { showThemeDropdown = true }
-                )
-            }
-            
-
             Spacer(Modifier.height(16.dp))
 
             // ===============================================
-            // 1. SUPPORT CATEGORY
-            // ===============================================
-            SettingsSection(title = "Support") {
-                ListItem(
-                    headlineContent = { Text("Report Bug") },
-                    supportingContent = { Text("Something not working? Let us know") },
-                    leadingContent = { 
-                        SettingsIcon(Icons.Default.BugReport, MaterialTheme.colorScheme.error) 
-                    },
-                    modifier = Modifier.clickable { 
-                        contactSubject = "Bug Report"
-                        showContactModal = true 
-                    }
-                )
-                
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                
-                ListItem(
-                    headlineContent = { Text("Request Feature/Improvement") },
-                    supportingContent = { Text("Have an idea? We'd love to hear it") },
-                    leadingContent = { 
-                        SettingsIcon(Icons.Default.Lightbulb, Color(0xFFEAB308)) 
-                    },
-                    modifier = Modifier.clickable { 
-                        contactSubject = "Feature Request"
-                        showContactModal = true 
-                    }
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                ListItem(
-                    headlineContent = { Text("Export Session Logs") },
-                    supportingContent = { Text("Download and share app logs for support") },
-                    leadingContent = { 
-                        SettingsIcon(Icons.Default.HistoryEdu, MaterialTheme.colorScheme.primary) 
-                    },
-                    modifier = Modifier.clickable { 
-                        viewModel.exportLogs()
-                    }
-                )
-                
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                
-                ListItem(
-                    headlineContent = { Text("Reset Onboarding") },
-                    supportingContent = { Text("View the initial app setup tutorial again") },
-                    leadingContent = { 
-                        SettingsIcon(Icons.Default.Replay, MaterialTheme.colorScheme.secondary) 
-                    },
-                    modifier = Modifier.clickable { 
-                        viewModel.resetOnboarding()
-                    }
-                )
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            // ===============================================
-            // 1. CALL TRACKING STARTING DATE
+            // 2. TRACKING RULES
             // ===============================================
             val dateString = if (uiState.trackStartDate == 0L) "Default (Yesterday)" else 
                 SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(uiState.trackStartDate))
 
-            SettingsSection(title = "Call Tracking") {
+            SettingsSection(title = "Tracking Rules") {
                 val isDateLocked = !uiState.allowChangingTrackingStartDate && uiState.pairingCode.isNotEmpty()
                 ListItem(
                     headlineContent = { Text("Call Tracking Starting Date") },
@@ -699,9 +351,6 @@ fun SettingsScreen(
 
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-                // ===============================================
-                // 2. TRACK CALLS (Modal)
-                // ===============================================
                 val isSimLocked = !uiState.allowUpdatingTrackingSims && uiState.pairingCode.isNotEmpty()
                 ListItem(
                     headlineContent = { Text("Track Calls") },
@@ -746,16 +395,10 @@ fun SettingsScreen(
                         }
                     }
                 )
-            }
 
-            Spacer(Modifier.height(16.dp))
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-            // ===============================================
-            // 3. EXCLUDED CONTACTS (Card -> Modal)
-            // ===============================================
-            val excludedCount = uiState.excludedPersons.size
-
-            SettingsSection(title = "Exclusions") {
+                val excludedCount = uiState.excludedPersons.size
                 val isExclusionLocked = !uiState.allowPersonalExclusion && uiState.pairingCode.isNotEmpty()
                 ListItem(
                     headlineContent = { Text("Excluded Contacts") },
@@ -786,21 +429,10 @@ fun SettingsScreen(
 
 
             // ===============================================
-            // 5. LOCAL SETTINGS (WhatsApp + Recording Path)
+            // 3. FEATURES
             // ===============================================
-            val folderLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-                androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree()
-            ) { uri ->
-                uri?.let {
-                    try {
-                         context.contentResolver.takePersistableUriPermission(it, 
-                             Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-                    } catch (e: Exception) { e.printStackTrace() }
-                    viewModel.updateRecordingPath(it.toString())
-                }
-            }
+            SettingsSection(title = "Features") {
 
-            SettingsSection(title = "Local Settings") {
                 // WhatsApp Preference
                 var showWhatsappDropdown by remember { mutableStateOf(false) }
                 
@@ -850,18 +482,13 @@ fun SettingsScreen(
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 
                 // Caller ID Overlay Toggle
-                val hasOverlayPermission = remember {
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                        Settings.canDrawOverlays(context)
-                    } else {
-                        true
-                    }
-                }
                 
+                
+                // Caller ID Overlay Toggle
                 ListItem(
                     headlineContent = { Text("Caller ID Overlay") },
                     supportingContent = { 
-                        if (!hasOverlayPermission && uiState.callerIdEnabled) {
+                        if (!uiState.isOverlayPermissionGranted && uiState.callerIdEnabled) {
                             Text(
                                 "Tap to grant overlay permission",
                                 color = MaterialTheme.colorScheme.error
@@ -875,7 +502,7 @@ fun SettingsScreen(
                     },
                     trailingContent = {
                         Switch(
-                            checked = uiState.callerIdEnabled,
+                            checked = uiState.callerIdEnabled && uiState.isOverlayPermissionGranted,
                             onCheckedChange = { enabled ->
                                 val needsOverlayPermission = viewModel.updateCallerIdEnabled(enabled)
                                 if (needsOverlayPermission && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
@@ -1034,15 +661,57 @@ fun SettingsScreen(
                 )
             }
 
-            Spacer(Modifier.height(16.dp))
-
             // ===============================================
-            // 6. PERMISSIONS (Card -> Modal)
+            // 4. DEVICE & SUPPORT
             // ===============================================
-            val grantedCount = uiState.permissions.count { it.isGranted }
-            val totalCount = uiState.permissions.size
+            SettingsSection(title = "Device & Support") {
+                // Theme moved here
+                var showThemeDropdown by remember { mutableStateOf(false) }
+                ListItem(
+                    headlineContent = { Text("App Theme") },
+                    supportingContent = { Text(uiState.themeMode) },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.DarkMode, MaterialTheme.colorScheme.primary) 
+                    },
+                    trailingContent = {
+                         Box {
+                            IconButton(onClick = { showThemeDropdown = true }) {
+                                Icon(Icons.Default.ExpandMore, contentDescription = "Select Theme")
+                            }
+                            DropdownMenu(
+                                expanded = showThemeDropdown,
+                                onDismissRequest = { showThemeDropdown = false }
+                            ) {
+                                listOf("System", "Light", "Dark").forEach { mode ->
+                                    DropdownMenuItem(
+                                        text = { Text(mode) },
+                                        onClick = { 
+                                            viewModel.updateThemeMode(mode)
+                                            showThemeDropdown = false 
+                                        },
+                                        leadingIcon = { 
+                                            Icon(
+                                                imageVector = when(mode) {
+                                                    "Light" -> Icons.Default.LightMode
+                                                    "Dark" -> Icons.Default.DarkMode
+                                                    else -> Icons.Default.SettingsSystemDaydream
+                                                }, 
+                                                null
+                                            ) 
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    modifier = Modifier.clickable { showThemeDropdown = true }
+                )
 
-            SettingsSection(title = "Permissions") {
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                // Permissions moved here
+                val grantedCount = uiState.permissions.count { it.isGranted }
+                val totalCount = uiState.permissions.size
                 ListItem(
                     headlineContent = { Text("App Permissions") },
                     supportingContent = { 
@@ -1065,17 +734,65 @@ fun SettingsScreen(
                     },
                     modifier = Modifier.clickable { showPermissionsModal = true }
                 )
-            }
 
-            Spacer(Modifier.height(16.dp))
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-            // ===============================================
-            // 7. DANGER ZONE
-            // ===============================================
-            SettingsSection(
-                title = "Danger Zone",
-                titleColor = MaterialTheme.colorScheme.error
-            ) {
+                // Support items moved here
+                ListItem(
+                    headlineContent = { Text("Report Bug") },
+                    supportingContent = { Text("Something not working? Let us know") },
+                   leadingContent = { 
+                        SettingsIcon(Icons.Default.BugReport, MaterialTheme.colorScheme.error) 
+                    },
+                    modifier = Modifier.clickable { 
+                        contactSubject = "Bug Report"
+                        showContactModal = true 
+                    }
+                )
+                
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                
+                ListItem(
+                    headlineContent = { Text("Request Feature/Improvement") },
+                    supportingContent = { Text("Have an idea? We'd love to hear it") },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.Lightbulb, Color(0xFFEAB308)) 
+                    },
+                    modifier = Modifier.clickable { 
+                        contactSubject = "Feature Request"
+                        showContactModal = true 
+                    }
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                ListItem(
+                    headlineContent = { Text("Export Session Logs") },
+                    supportingContent = { Text("Download and share app logs for support") },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.HistoryEdu, MaterialTheme.colorScheme.primary) 
+                    },
+                    modifier = Modifier.clickable { 
+                        viewModel.exportLogs()
+                    }
+                )
+                
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                
+                ListItem(
+                    headlineContent = { Text("Reset Onboarding") },
+                    supportingContent = { Text("View the initial app setup tutorial again") },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.Replay, MaterialTheme.colorScheme.secondary) 
+                    },
+                    modifier = Modifier.clickable { 
+                        viewModel.resetOnboarding()
+                    }
+                )
+
+                // Danger zone moved inside this section as a sub-group or just separated by a divider
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
                 ListItem(
                     headlineContent = { 
                         Text("Clear All App Data", color = MaterialTheme.colorScheme.error) 
@@ -2077,264 +1794,3 @@ fun JoinOrgModal(
 // HELPER COMPOSABLES
 // ===============================================
 
-@Composable
-fun SettingsSection(
-    title: String,
-    titleColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.primary,
-    content: @Composable () -> Unit
-) {
-    Column {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = titleColor,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp)
-        ) {
-            content()
-        }
-    }
-}
-
-@Composable
-fun SettingsIcon(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    tint: androidx.compose.ui.graphics.Color
-) {
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        color = tint.copy(alpha = 0.15f),
-        modifier = Modifier.size(40.dp)
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = tint,
-                modifier = Modifier.size(22.dp)
-            )
-        }
-    }
-}
-
-@Composable
-fun LifecycleEventEffect(
-    event: androidx.lifecycle.Lifecycle.Event,
-    onEvent: () -> Unit
-) {
-    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = androidx.lifecycle.LifecycleEventObserver { _, e ->
-            if (e == event) {
-                onEvent()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
-}
-
-fun showDatePicker(context: Context, initialDate: Long, onDateSelected: (Long) -> Unit) {
-    val calendar = Calendar.getInstance()
-    if (initialDate != 0L) {
-        calendar.timeInMillis = initialDate
-    }
-    
-    DatePickerDialog(
-        context,
-        { _, year, month, dayOfMonth ->
-            val newDate = Calendar.getInstance().apply {
-                set(year, month, dayOfMonth, 0, 0, 0)
-                set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
-            onDateSelected(newDate)
-        },
-        calendar.get(Calendar.YEAR),
-        calendar.get(Calendar.MONTH),
-        calendar.get(Calendar.DAY_OF_MONTH)
-    ).show()
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CustomLookupModal(
-    uiState: SettingsUiState,
-    viewModel: SettingsViewModel,
-    onDismiss: () -> Unit
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var urlInput by remember { mutableStateOf(uiState.customLookupUrl.ifEmpty { "" }) }
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 48.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
-            Text(
-                text = "Custom Lookup",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = "Configure an external URL to fetch additional data for phone numbers during calls and in history.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(Modifier.height(24.dp))
-
-            // Enable Toggles
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Enable Custom Lookup",
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Switch(
-                    checked = uiState.customLookupEnabled,
-                    onCheckedChange = { viewModel.updateCustomLookupEnabled(it) }
-                )
-            }
-            
-            Spacer(Modifier.height(12.dp))
-
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "Enable for Caller ID",
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Switch(
-                        checked = uiState.customLookupCallerIdEnabled,
-                        onCheckedChange = { viewModel.updateCustomLookupCallerIdEnabled(it) }
-                    )
-                }
-                Text(
-                    text = "Shows custom data in the caller ID overlay. Clicking the overlay will open detailed lookup if no other local data exists.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Spacer(Modifier.height(24.dp))
-
-            OutlinedTextField(
-                value = urlInput,
-                onValueChange = { urlInput = it },
-                label = { Text("Lookup URL template") },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("https://example.com/api?phone={phone}") },
-                supportingText = { Text("Use {phone} as placeholder for the number") },
-                singleLine = false,
-                maxLines = 3
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Button(
-                    onClick = {
-                        viewModel.updateCustomLookupUrl(urlInput)
-                        viewModel.fetchCustomLookup(urlInput)
-                    },
-                    modifier = Modifier.weight(1f),
-                    enabled = urlInput.isNotBlank() && !uiState.isFetchingCustomLookup,
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    if (uiState.isFetchingCustomLookup) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(Modifier.width(8.dp))
-                    }
-                    Text("Fetch")
-                }
-                
-                OutlinedButton(
-                    onClick = { viewModel.updateCustomLookupUrl(urlInput) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Save")
-                }
-            }
-
-            if (uiState.customLookupResponse != null) {
-                Spacer(Modifier.height(32.dp))
-                HorizontalDivider()
-                Spacer(Modifier.height(16.dp))
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Results",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    
-                    SingleChoiceSegmentedButtonRow {
-                        SegmentedButton(
-                            selected = !uiState.isRawView,
-                            onClick = { viewModel.toggleRawView(false) },
-                            shape = RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp)
-                        ) {
-                            Text("Formated", fontSize = 12.sp)
-                        }
-                        SegmentedButton(
-                            selected = uiState.isRawView,
-                            onClick = { viewModel.toggleRawView(true) },
-                            shape = RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp)
-                        ) {
-                            Text("Raw", fontSize = 12.sp)
-                        }
-                    }
-                }
-                
-                Spacer(Modifier.height(16.dp))
-
-                if (uiState.isRawView) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = uiState.customLookupResponse ?: "",
-                            modifier = Modifier.padding(12.dp),
-                            style = MaterialTheme.typography.bodySmall,
-                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-                        )
-                    }
-                } else {
-                    JsonTableView(json = uiState.customLookupResponse ?: "{}")
-                }
-            }
-        }
-    }
-}
