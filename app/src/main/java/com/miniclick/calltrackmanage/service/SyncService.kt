@@ -130,7 +130,7 @@ class SyncService : Service() {
         phoneStateListener = object : PhoneStateListener() {
             @Deprecated("Deprecated in Java")
             override fun onCallStateChanged(state: Int, phoneNumber: String?) {
-                handleCallStateChange(state)
+                handleCallStateChange(state, phoneNumber)
             }
         }
         
@@ -142,17 +142,22 @@ class SyncService : Service() {
         }
     }
 
-    private fun handleCallStateChange(state: Int) {
-        Log.d(TAG, "Call state changed: $lastState -> $state")
+    private fun handleCallStateChange(state: Int, phoneNumber: String? = null) {
+        Log.d(TAG, "Call state changed: $lastState -> $state (Number: $phoneNumber)")
         
         when (state) {
-            TelephonyManager.CALL_STATE_RINGING,
-            TelephonyManager.CALL_STATE_OFFHOOK -> {
-                // Call started (incoming: RINGING, outgoing: OFFHOOK)
-                // Only show overlay when transitioning from IDLE
+            TelephonyManager.CALL_STATE_RINGING -> {
+                // Incoming call
                 if (lastState == TelephonyManager.CALL_STATE_IDLE) {
-                    Log.d(TAG, "Call started - showing caller ID")
-                    showCallerIdOverlay()
+                    Log.d(TAG, "Incoming call started - showing caller ID")
+                    showCallerIdOverlay(phoneNumber)
+                }
+            }
+            TelephonyManager.CALL_STATE_OFFHOOK -> {
+                // Outgoing call started or incoming call answered
+                if (lastState == TelephonyManager.CALL_STATE_IDLE) {
+                    Log.d(TAG, "Outgoing call started - showing caller ID")
+                    showCallerIdOverlay(phoneNumber)
                 }
             }
             TelephonyManager.CALL_STATE_IDLE -> {
@@ -161,7 +166,7 @@ class SyncService : Service() {
                     Log.d(TAG, "Call ended - hiding caller ID and triggering sync")
                     
                     // Hide caller ID overlay
-                    CallerIdService.hide(this)
+                    CallerIdManager.hide(this)
                     
                     // Delay slightly to allow call log to be updated
                     serviceScope.launch {
@@ -175,7 +180,14 @@ class SyncService : Service() {
         lastState = state
     }
     
-    private fun showCallerIdOverlay() {
+    private fun showCallerIdOverlay(initialPhoneNumber: String? = null) {
+        // If we already have the number, show it immediately
+        if (!initialPhoneNumber.isNullOrBlank()) {
+            Log.d(TAG, "Already have number, showing caller ID: $initialPhoneNumber")
+            CallerIdManager.show(this, initialPhoneNumber)
+            return
+        }
+
         // Query call log to get the most recent/active call's phone number
         // We retry a few times because the call log might not update instantly
         serviceScope.launch {
@@ -184,11 +196,11 @@ class SyncService : Service() {
                 try {
                     phoneNumber = getActiveCallNumber()
                     if (!phoneNumber.isNullOrBlank()) {
-                        Log.d(TAG, "Found active call number: $phoneNumber (attempt ${attempt + 1})")
-                        CallerIdService.show(this@SyncService, phoneNumber!!)
+                        Log.d(TAG, "Found active call number from log: $phoneNumber (attempt ${attempt + 1})")
+                        CallerIdManager.show(this@SyncService, phoneNumber!!)
                         return@launch
                     }
-                    if (attempt < 2) delay(500) // Wait before retry
+                    if (attempt < 2) delay(1000) // Wait longer between retries
                 } catch (e: Exception) {
                     Log.e(TAG, "Error getting active call number", e)
                 }

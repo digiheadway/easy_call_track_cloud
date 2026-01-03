@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.telephony.TelephonyManager
 import android.util.Log
-import com.miniclick.calltrackmanage.service.CallerIdService
+import com.miniclick.calltrackmanage.service.CallerIdManager
 import com.miniclick.calltrackmanage.worker.CallSyncWorker
 import com.miniclick.calltrackmanage.worker.RecordingUploadWorker
 
@@ -21,7 +21,7 @@ class CallReceiver : BroadcastReceiver() {
                     // Incoming call - show caller ID overlay
                     if (!phoneNumber.isNullOrBlank()) {
                         Log.d(TAG, "Incoming call from $phoneNumber - showing caller ID")
-                        CallerIdService.show(context, phoneNumber)
+                        CallerIdManager.show(context, phoneNumber)
                     }
                 }
                 TelephonyManager.EXTRA_STATE_OFFHOOK -> {
@@ -33,7 +33,7 @@ class CallReceiver : BroadcastReceiver() {
                     Log.d(TAG, "Call ended (IDLE state). Triggering immediate sync.")
                     
                     // Hide caller ID overlay
-                    CallerIdService.hide(context)
+                    CallerIdManager.hide(context)
                     
                     // Trigger immediate sync for metadata
                     CallSyncWorker.runNow(context)
