@@ -1,4 +1,4 @@
-Endpoint - https://calltrack.mylistings.in/ai_mysql_manager.php
+Endpoint - https://api.miniclickcrm.com/ai_mysql_manager.php
 
 # AI Server Management Guide
 

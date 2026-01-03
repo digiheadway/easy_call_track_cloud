@@ -23,18 +23,18 @@ export default function Layout({ children }) {
     }, []);
 
     return (
-        <div className="flex bg-[#f8fafc] min-h-screen">
+        <div className="flex bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-300">
             {/* Mobile Header */}
             {isMobile && (
-                <div className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-30 px-4 flex items-center justify-between lg:hidden">
+                <div className="fixed top-0 left-0 right-0 h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-30 px-4 flex items-center justify-between lg:hidden">
                     <button
                         onClick={() => setIsMobileOpen(true)}
-                        className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                        className="p-2 -ml-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                     >
                         <Menu size={24} />
                     </button>
                     <span className="font-bold text-xl text-blue-600">CallCloud</span>
-                    <div className="w-8"></div> {/* Spacer for centering if needed, or user avatar */}
+                    <div className="w-8"></div>
                 </div>
             )}
 

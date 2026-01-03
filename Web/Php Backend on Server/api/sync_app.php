@@ -30,7 +30,7 @@ $DB = [
 ];
 
 // Updated Base URL for the new server/domain
-$BASE_URL = "https://calltrack.mylistings.in/public"; 
+$BASE_URL = "https://api.miniclickcrm.com/public"; 
 
 // Directory Setup
 // Go up one level from 'api' to root, then 'public'

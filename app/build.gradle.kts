@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.calltracker.manager"
+    namespace = "com.miniclick.calltrackmanage"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.calltracker.manager"
+        applicationId = "com.miniclick.calltrackmanage"
         minSdk = 22
         targetSdk = 35
         versionCode = 3
@@ -21,7 +21,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true      // Enable R8 code shrinking
+            isShrinkResources = true    // Remove unused resources
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -37,6 +38,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true  // Enable BuildConfig generation for DEBUG flag access
     }
 }
 

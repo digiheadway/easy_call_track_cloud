@@ -16,8 +16,10 @@ import {
     X,
     Bell,
     ChevronDown,
-    LayoutGrid
+    Sun,
+    Moon
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -34,10 +36,10 @@ export default function Sidebar({
     isMobile
 }) {
     const { user, logout, unreadNotificationsCount } = useAuth();
+    const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Manage Section Collapse State
     const [isManageOpen, setIsManageOpen] = useState(true);
 
     const handleLogout = () => {
@@ -63,60 +65,57 @@ export default function Sidebar({
         { name: 'Settings', icon: Settings, path: '/settings' },
     ];
 
-    // Open manage section automatically if we are on a manage page
     useEffect(() => {
         if (manageItems.some(item => location.pathname === item.path)) {
             setIsManageOpen(true);
         }
     }, [location.pathname]);
 
+    // Unified nav link styling
     const navLinkClass = ({ isActive }) => cn(
-        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+        "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
         isActive
-            ? "bg-blue-50 text-blue-600"
-            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+            ? "bg-blue-50 text-blue-600 dark:bg-blue-600/10 dark:text-blue-400"
+            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100",
         isCollapsed && "justify-center px-2"
     );
 
     const sidebarContent = (
-        <div className="flex flex-col h-full bg-white border-r border-gray-200">
+        <div className="flex flex-col h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-colors duration-200">
             {/* Header */}
-            <div className={cn("p-6 flex items-center h-20 transition-all duration-300", isCollapsed ? "justify-center px-2" : "justify-between")}>
-                {/* Logo Area */}
-                <div className={cn("flex items-center gap-2 text-blue-600 font-bold text-xl transition-all duration-300",
+            <div className={cn("p-5 flex items-center h-16 transition-all duration-300", isCollapsed ? "justify-center px-2" : "justify-between")}>
+                <div className={cn("flex items-center gap-2.5 text-blue-600 font-bold text-lg transition-all duration-300",
                     (isCollapsed && !isMobile) ? "w-0 opacity-0 hidden" : "flex")}>
-                    <Cloud size={24} className="flex-shrink-0" />
+                    <Cloud size={22} className="flex-shrink-0" />
                     <span className="whitespace-nowrap">CallCloud</span>
                 </div>
 
-                {/* Desktop Toggle Button */}
                 {!isMobile && (
                     <button
                         onClick={toggleCollapse}
-                        className={cn("p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors",
+                        className={cn("p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors",
                             isCollapsed ? "mx-auto" : "ml-auto"
                         )}
                         title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
                     >
-                        {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+                        {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
                     </button>
                 )}
 
-                {/* Mobile Close Button */}
                 {isMobile && (
                     <button
                         onClick={() => setIsMobileOpen(false)}
-                        className="p-1 rounded-md hover:bg-gray-100 text-gray-500 ml-auto"
+                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-auto transition-colors"
                     >
-                        <X size={20} />
+                        <X size={18} />
                     </button>
                 )}
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 px-3 space-y-1 overflow-y-auto pt-4 scrollbar-hide">
+            <nav className="flex-1 px-3 space-y-1 overflow-y-auto pt-2 scrollbar-hide">
                 {/* Main Section */}
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                     {mainItems.map((item) => (
                         <NavLink
                             key={item.name}
@@ -128,7 +127,7 @@ export default function Sidebar({
                             <div className="relative">
                                 <item.icon size={18} className="flex-shrink-0" />
                                 {item.name === 'Notifications' && unreadNotificationsCount > 0 && (
-                                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800">
                                         {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
                                     </span>
                                 )}
@@ -141,27 +140,27 @@ export default function Sidebar({
                 </div>
 
                 {/* Manage Section */}
-                <div className="pt-4 mt-4 border-t border-gray-50">
+                <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
                     {!isCollapsed && (
                         <div
                             className="flex items-center justify-between px-3 mb-2 cursor-pointer group"
                             onClick={() => setIsManageOpen(!isManageOpen)}
                         >
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-blue-500 transition-colors">Manage</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 group-hover:text-blue-500 transition-colors">Manage</span>
                             <ChevronDown
                                 size={12}
-                                className={cn("text-gray-400 transition-transform duration-300", isManageOpen ? "rotate-0" : "-rotate-90")}
+                                className={cn("text-gray-400 transition-transform duration-200", isManageOpen ? "rotate-0" : "-rotate-90")}
                             />
                         </div>
                     )}
                     {isCollapsed && (
                         <div className="flex justify-center mb-2">
-                            <div className="w-6 h-[1px] bg-gray-100" />
+                            <div className="w-6 h-[1px] bg-gray-200 dark:bg-gray-700" />
                         </div>
                     )}
 
                     {(isManageOpen || isCollapsed) && (
-                        <div className="space-y-1">
+                        <div className="space-y-0.5">
                             {manageItems.map((item) => (
                                 <NavLink
                                     key={item.name}
@@ -182,7 +181,7 @@ export default function Sidebar({
             </nav>
 
             {/* Bottom Utilities */}
-            <div className="px-3 py-4 space-y-1 border-t border-gray-100">
+            <div className="px-3 py-3 space-y-0.5 border-t border-gray-200 dark:border-gray-700">
                 {bottomItems.map((item) => (
                     <NavLink
                         key={item.name}
@@ -194,7 +193,7 @@ export default function Sidebar({
                         <div className="relative">
                             <item.icon size={18} className="flex-shrink-0" />
                             {item.name === 'Notifications' && unreadNotificationsCount > 0 && (
-                                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800">
                                     {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
                                 </span>
                             )}
@@ -207,25 +206,43 @@ export default function Sidebar({
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-gray-100 mt-auto">
-                <div className={cn("flex items-center gap-3 mb-4 px-2", isCollapsed && "justify-center flex-col")}>
-                    <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+            <div className="p-3 border-t border-gray-200 dark:border-gray-700 mt-auto space-y-2">
+                {/* Theme Toggle */}
+                <button
+                    onClick={toggleTheme}
+                    className={cn(
+                        "flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 transition-colors",
+                        isCollapsed && "justify-center"
+                    )}
+                    title={isCollapsed ? (theme === 'dark' ? "Light Mode" : "Dark Mode") : undefined}
+                >
+                    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                    <span className={cn("whitespace-nowrap transition-all duration-300", isCollapsed ? "w-0 opacity-0 hidden" : "block")}>
+                        {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                    </span>
+                </button>
+
+                {/* User Info */}
+                <div className={cn("flex items-center gap-3 px-2 py-2", isCollapsed && "justify-center flex-col")}>
+                    <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
                         {user?.name?.substring(0, 2).toUpperCase() || 'AD'}
                     </div>
                     <div className={cn("flex-1 min-w-0 transition-opacity duration-300", isCollapsed ? "opacity-0 w-0 hidden" : "opacity-100")}>
-                        <p className="text-sm font-semibold truncate">{user?.name || 'Admin'}</p>
-                        <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{user?.name || 'Admin'}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
                     </div>
                 </div>
+
+                {/* Logout */}
                 <button
                     onClick={handleLogout}
                     className={cn(
-                        "flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors border border-transparent hover:border-red-100",
+                        "flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 transition-colors",
                         isCollapsed && "justify-center"
                     )}
                     title={isCollapsed ? "Logout" : undefined}
                 >
-                    <LogOut size={20} />
+                    <LogOut size={18} />
                     <span className={cn("whitespace-nowrap transition-all duration-300", isCollapsed ? "w-0 opacity-0 hidden" : "block")}>Logout</span>
                 </button>
             </div>
@@ -245,7 +262,7 @@ export default function Sidebar({
             {/* Sidebar */}
             <aside
                 className={cn(
-                    "fixed top-0 bottom-0 left-0 z-40 bg-white transition-all duration-300 shadow-xl lg:shadow-none border-r border-gray-200",
+                    "fixed top-0 bottom-0 left-0 z-40 bg-white dark:bg-gray-800 transition-all duration-300 shadow-lg lg:shadow-none border-r border-gray-200 dark:border-gray-700",
                     isMobile
                         ? (isMobileOpen ? "translate-x-0 w-64" : "-translate-x-full w-64")
                         : (isCollapsed ? "w-20" : "w-64")

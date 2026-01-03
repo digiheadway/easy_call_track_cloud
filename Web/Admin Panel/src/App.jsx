@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { PersonModalProvider } from './context/PersonModalContext';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
@@ -35,33 +36,35 @@ const PrivateRoute = ({ children }) => {
 
 function App() {
   return (
-    <AuthProvider>
-      <PersonModalProvider>
-        <AudioPlayerProvider>
-          <Toaster position="bottom-right" richColors closeButton />
-          <Router basename="/dashboard">
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
+    <ThemeProvider>
+      <AuthProvider>
+        <PersonModalProvider>
+          <AudioPlayerProvider>
+            <Toaster position="bottom-right" richColors closeButton />
+            <Router basename="/dashboard">
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
 
-              <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-              <Route path="/reports" element={<PrivateRoute><ReportsPage /></PrivateRoute>} />
-              <Route path="/calls" element={<PrivateRoute><CallsPage /></PrivateRoute>} />
-              <Route path="/employees" element={<PrivateRoute><EmployeesPage /></PrivateRoute>} />
-              <Route path="/excluded" element={<PrivateRoute><ExcludedPage /></PrivateRoute>} />
-              <Route path="/plans" element={<PrivateRoute><PlansPage /></PrivateRoute>} />
-              <Route path="/storage" element={<PrivateRoute><StoragePage /></PrivateRoute>} />
-              <Route path="/notifications" element={<PrivateRoute><NotificationsPage /></PrivateRoute>} />
-              <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+                <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+                <Route path="/reports" element={<PrivateRoute><ReportsPage /></PrivateRoute>} />
+                <Route path="/calls" element={<PrivateRoute><CallsPage /></PrivateRoute>} />
+                <Route path="/employees" element={<PrivateRoute><EmployeesPage /></PrivateRoute>} />
+                <Route path="/excluded" element={<PrivateRoute><ExcludedPage /></PrivateRoute>} />
+                <Route path="/plans" element={<PrivateRoute><PlansPage /></PrivateRoute>} />
+                <Route path="/storage" element={<PrivateRoute><StoragePage /></PrivateRoute>} />
+                <Route path="/notifications" element={<PrivateRoute><NotificationsPage /></PrivateRoute>} />
+                <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
 
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-            {/* Global Player */}
-            <FloatingAudioPlayer />
-          </Router>
-        </AudioPlayerProvider>
-      </PersonModalProvider>
-    </AuthProvider>
+                <Route path="*" element={<Navigate to="/" />} />
+              </Routes>
+              {/* Global Player */}
+              <FloatingAudioPlayer />
+            </Router>
+          </AudioPlayerProvider>
+        </PersonModalProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

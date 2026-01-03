@@ -69,13 +69,13 @@ const LabelCell = ({ call, onUpdate }) => {
 
     const getLabelColor = (label) => {
         const l = label.toLowerCase();
-        if (l.includes('important')) return 'bg-rose-100 text-rose-700 border-rose-200';
-        if (l.includes('follow')) return 'bg-amber-100 text-amber-700 border-amber-200';
-        if (l.includes('resolved')) return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-        if (l.includes('callback')) return 'bg-indigo-100 text-indigo-700 border-indigo-200';
-        if (l.includes('lead')) return 'bg-blue-100 text-blue-700 border-blue-200';
-        if (l.includes('hot')) return 'bg-orange-100 text-orange-700 border-orange-200';
-        return 'bg-slate-100 text-slate-700 border-slate-200';
+        if (l.includes('important')) return 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-900/50';
+        if (l.includes('follow')) return 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-900/50';
+        if (l.includes('resolved')) return 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-900/50';
+        if (l.includes('callback')) return 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-900/50';
+        if (l.includes('lead')) return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-900/50';
+        if (l.includes('hot')) return 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-900/50';
+        return 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
     };
 
     const openModal = async () => {
@@ -221,18 +221,18 @@ const LabelCell = ({ call, onUpdate }) => {
 const CallTypeBadge = ({ type, duration, showDuration = true }) => {
     const t = type?.toLowerCase() || '';
     let icon = <PhoneIncoming size={14} />;
-    let colors = 'bg-emerald-50 text-emerald-700 border-emerald-100';
+    let colors = 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/30';
     let label = type;
 
     if (t.includes('missed')) {
         icon = <PhoneMissed size={14} />;
-        colors = 'bg-rose-50 text-rose-700 border-rose-100';
+        colors = 'bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-900/30';
     } else if (t.includes('outgoing') || t.includes('out')) {
         icon = <PhoneOutgoing size={14} />;
-        colors = 'bg-blue-50 text-blue-700 border-blue-100';
+        colors = 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-900/30';
     } else if (t.includes('reject') || t.includes('block')) {
         icon = <PhoneMissed size={14} className="rotate-45" />;
-        colors = 'bg-amber-50 text-amber-700 border-amber-100';
+        colors = 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-900/30';
     }
 
     return (
@@ -1183,9 +1183,9 @@ export default function CallsPage() {
             {/* Floating Loading Indicator */}
             {loading && calls.length > 0 && (
                 <div className="absolute inset-x-0 top-12 z-10 flex justify-center pointer-events-none">
-                    <div className="bg-white shadow-md border px-4 py-2 rounded-full flex items-center gap-2">
+                    <div className="bg-white dark:bg-gray-800 shadow-md border dark:border-gray-700 px-4 py-2 rounded-full flex items-center gap-2">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                        <span className="text-sm font-medium text-gray-600">Updating...</span>
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Updating...</span>
                     </div>
                 </div>
             )}
@@ -1204,7 +1204,7 @@ export default function CallsPage() {
 
                     {/* Right side: Search + Filter Toggle + Employee + Stats */}
                     <div className="flex items-center gap-3 w-full lg:w-auto ml-auto">
-                        <div className="flex items-center bg-white border border-gray-200 rounded-xl p-1.5 shadow-sm w-full lg:w-auto">
+                        <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-1.5 shadow-sm w-full lg:w-auto">
                             <div className="relative flex-1 lg:flex-initial">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                                 <input
@@ -1212,13 +1212,13 @@ export default function CallsPage() {
                                     placeholder="Search calls..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    className="pl-10 pr-4 py-2.5 text-base bg-transparent border-none outline-none w-full lg:w-72 font-medium"
+                                    className="pl-10 pr-4 py-2.5 text-base bg-transparent border-none outline-none w-full lg:w-72 font-medium text-gray-900 dark:text-gray-100 placeholder-gray-400"
                                 />
                             </div>
-                            <div className="w-px h-6 bg-gray-200 mx-2"></div>
+                            <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-2"></div>
                             <button
                                 onClick={() => setShowFilterBar(!showFilterBar)}
-                                className={`relative p-2 rounded-lg transition-all ${showFilterBar ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
+                                className={`relative p-2 rounded-lg transition-all ${showFilterBar ? 'bg-blue-600 text-white shadow-lg shadow-blue-100 dark:shadow-blue-900/20' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
                                 title={showFilterBar ? "Hide Filters" : "Show Filters"}
                             >
                                 <Filter size={18} />
@@ -1230,10 +1230,10 @@ export default function CallsPage() {
                             </button>
                         </div>
 
-                        <div className="flex items-center bg-white border border-gray-200 rounded-xl p-1.5 shadow-sm">
+                        <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-1.5 shadow-sm">
                             <button
                                 onClick={() => setShowColumnCustomization(true)}
-                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
                                 title="Customize Table Columns"
                             >
                                 <Columns size={18} />
@@ -1253,7 +1253,7 @@ export default function CallsPage() {
                                     markCallClicked(call.id);
                                     openPersonModal(call);
                                 }}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-full hover:bg-blue-100 transition-all group"
+                                className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all group"
                             >
                                 <span className="flex h-2 w-2 rounded-full bg-blue-600 animate-pulse"></span>
                                 <span className="text-xs font-bold text-blue-700">NEW:</span>
@@ -1269,12 +1269,12 @@ export default function CallsPage() {
                 {/* Filters Bar & Table Container */}
                 <div className="space-y-6">
                     {showFilterBar && (
-                        <div className="relative group bg-white rounded-2xl border border-gray-100 shadow-md animate-in fade-in slide-in-from-top-4 duration-300">
+                        <div className="relative group bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-md animate-in fade-in slide-in-from-top-4 duration-300">
                             <div className="flex items-center overflow-x-auto scrollbar-thin py-5 px-5 gap-3 pr-[180px]"> {/* pr-[180px] for sticky button space */}
                                 {/* Filter Label Indicator */}
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg mr-2 border border-gray-100 flex-shrink-0">
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-900 rounded-lg mr-2 border border-gray-100 dark:border-gray-700 flex-shrink-0">
                                     <Filter size={14} className="text-gray-400" />
-                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Filters</span>
+                                    <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Filters</span>
                                 </div>
 
 
@@ -1284,7 +1284,7 @@ export default function CallsPage() {
                                             <select
                                                 value={selectedEmployee || ''}
                                                 onChange={(e) => setSelectedEmployee(e.target.value)}
-                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none transition-all cursor-pointer w-full min-w-[150px] ${selectedEmployee ? 'border-2 border-blue-400 bg-blue-50 text-blue-700 font-bold shadow-sm' : 'border border-gray-200 text-gray-700 font-medium hover:bg-gray-100'}`}
+                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 dark:bg-gray-900 outline-none transition-all cursor-pointer w-full min-w-[150px] ${selectedEmployee ? 'border-2 border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-bold shadow-sm' : 'border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                                             >
                                                 <option value="">All Employees</option>
                                                 {employees.map(emp => (
@@ -1299,7 +1299,7 @@ export default function CallsPage() {
                                             <select
                                                 value={direction}
                                                 onChange={(e) => setDirection(e.target.value)}
-                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none transition-all cursor-pointer ${direction !== 'all' ? 'border-2 border-blue-400 bg-blue-50 text-blue-700 font-bold shadow-sm' : 'border border-gray-200 text-gray-700 font-medium hover:bg-gray-100'}`}
+                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 dark:bg-gray-900 outline-none transition-all cursor-pointer ${direction !== 'all' ? 'border-2 border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-bold shadow-sm' : 'border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                                             >
                                                 <option value="all">All Types</option>
                                                 <option value="inbound">Inbound</option>
@@ -1316,7 +1316,7 @@ export default function CallsPage() {
                                             <select
                                                 value={connectedFilter}
                                                 onChange={(e) => setConnectedFilter(e.target.value)}
-                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none transition-all cursor-pointer ${connectedFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 text-blue-700 font-bold shadow-sm' : 'border border-gray-200 text-gray-700 font-medium hover:bg-gray-100'}`}
+                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 dark:bg-gray-900 outline-none transition-all cursor-pointer ${connectedFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-bold shadow-sm' : 'border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                                             >
                                                 <option value="all">All Connections</option>
                                                 <option value="connected">Connected</option>
@@ -1330,7 +1330,7 @@ export default function CallsPage() {
                                             <select
                                                 value={nameFilter}
                                                 onChange={(e) => setNameFilter(e.target.value)}
-                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none transition-all cursor-pointer ${nameFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 text-blue-700 font-bold shadow-sm' : 'border border-gray-200 text-gray-700 font-medium hover:bg-gray-100'}`}
+                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 dark:bg-gray-900 outline-none transition-all cursor-pointer ${nameFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-bold shadow-sm' : 'border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                                             >
                                                 <option value="all">All Names</option>
                                                 <option value="has_name">Has Name</option>
@@ -1344,7 +1344,7 @@ export default function CallsPage() {
                                             <select
                                                 value={reviewedFilter}
                                                 onChange={(e) => setReviewedFilter(e.target.value)}
-                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none transition-all cursor-pointer ${reviewedFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 text-blue-700 font-bold shadow-sm' : 'border border-gray-200 text-gray-700 font-medium hover:bg-gray-100'}`}
+                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 dark:bg-gray-900 outline-none transition-all cursor-pointer ${reviewedFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-bold shadow-sm' : 'border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                                             >
                                                 <option value="all">All Status</option>
                                                 <option value="reviewed">Reviewed</option>
@@ -1358,7 +1358,7 @@ export default function CallsPage() {
                                             <select
                                                 value={noteFilter}
                                                 onChange={(e) => setNoteFilter(e.target.value)}
-                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none transition-all cursor-pointer ${noteFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 text-blue-700 font-bold shadow-sm' : 'border border-gray-200 text-gray-700 font-medium hover:bg-gray-100'}`}
+                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 dark:bg-gray-900 outline-none transition-all cursor-pointer ${noteFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-bold shadow-sm' : 'border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                                             >
                                                 <option value="all">All Notes</option>
                                                 <option value="has_call_note">Has Call Note</option>
@@ -1375,7 +1375,7 @@ export default function CallsPage() {
                                             <select
                                                 value={recordingFilter}
                                                 onChange={(e) => setRecordingFilter(e.target.value)}
-                                                className={`appearance-none text-base rounded-xl py-2.5 pl-4 pr-10 bg-gray-50 outline-none transition-all cursor-pointer ${recordingFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 text-blue-700 font-bold shadow-sm' : 'border border-gray-200 text-gray-700 font-medium hover:bg-gray-100'}`}
+                                                className={`appearance-none text-base rounded-xl py-2.5 pl-4 pr-10 bg-gray-50 dark:bg-gray-900 outline-none transition-all cursor-pointer ${recordingFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-bold shadow-sm' : 'border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                                             >
                                                 <option value="all">All Recording</option>
                                                 <option value="has_recording">Has Recording</option>
@@ -1390,7 +1390,7 @@ export default function CallsPage() {
                                             <select
                                                 value={durationFilter}
                                                 onChange={(e) => setDurationFilter(e.target.value)}
-                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none transition-all cursor-pointer ${durationFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 text-blue-700 font-bold shadow-sm' : 'border border-gray-200 text-gray-700 font-medium hover:bg-gray-100'}`}
+                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 dark:bg-gray-900 outline-none transition-all cursor-pointer ${durationFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-bold shadow-sm' : 'border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                                             >
                                                 <option value="all">Any Duration</option>
                                                 <option value="under_30s">Under 30s</option>
@@ -1406,7 +1406,7 @@ export default function CallsPage() {
                                             <select
                                                 value={labelFilter}
                                                 onChange={(e) => setLabelFilter(e.target.value)}
-                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 outline-none transition-all cursor-pointer ${labelFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 text-blue-700 font-bold shadow-sm' : 'border border-gray-200 text-gray-700 font-medium hover:bg-gray-100'}`}
+                                                className={`appearance-none text-sm rounded-xl py-2 pl-4 pr-10 bg-gray-50 dark:bg-gray-900 outline-none transition-all cursor-pointer ${labelFilter !== 'all' ? 'border-2 border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-bold shadow-sm' : 'border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                                             >
                                                 <option value="all">All Labels</option>
                                                 {availableLabels.map(label => (
@@ -1527,17 +1527,18 @@ export default function CallsPage() {
 
                             {/* Sticky Filter Settings Button */}
                             {/* Sticky Filter Settings Button + Clear Filters */}
-                            <div className="absolute right-0 top-0 bottom-0 flex items-center gap-2 pr-5 pl-10 bg-gradient-to-l from-white via-white to-transparent pointer-events-auto">
+                            {/* Sticky Filter Settings Button + Clear Filters */}
+                            <div className="absolute right-0 top-0 bottom-0 flex items-center gap-2 pr-5 pl-10 bg-gradient-to-l from-white dark:from-gray-800 via-white dark:via-gray-800 to-transparent pointer-events-auto">
                                 <button
                                     onClick={() => setShowFilterCustomization(true)}
-                                    className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-white bg-gray-50 rounded-xl transition-all shadow-sm border border-gray-100 group"
+                                    className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-white dark:hover:bg-gray-700 bg-gray-50 dark:bg-gray-900 rounded-xl transition-all shadow-sm border border-gray-100 dark:border-gray-700 group"
                                     title="Filter Settings"
                                 >
                                     <Settings size={18} className="group-hover:rotate-90 transition-transform" />
                                 </button>
                                 <button
                                     onClick={() => setShowFilterBar(false)}
-                                    className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 bg-gray-50 rounded-xl transition-all shadow-sm border border-gray-100 group"
+                                    className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 bg-gray-50 dark:bg-gray-900 rounded-xl transition-all shadow-sm border border-gray-100 dark:border-gray-700 group"
                                     title="Close Filters"
                                 >
                                     <X size={18} />
@@ -1687,10 +1688,10 @@ export default function CallsPage() {
                         {/* This button was moved to the main header */}
                     </div>
 
-                    <div className="card !p-0 overflow-hidden border border-gray-200 shadow-sm w-full max-w-full">
+                    <div className="card !p-0 overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm w-full max-w-full">
                         <div className="overflow-x-auto w-full">
                             <table className="w-full text-sm text-left table-fixed">
-                                <thead className="bg-[#f8fafc] border-b-2 border-gray-100 text-gray-500 font-bold uppercase tracking-widest text-[11px] whitespace-nowrap sticky top-0 z-20 shadow-sm transition-all">
+                                <thead className="bg-[#f8fafc] dark:bg-gray-900/50 border-b-2 border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest text-[11px] whitespace-nowrap sticky top-0 z-20 shadow-sm transition-all">
                                     <tr>
                                         {columnOrder.filter(id => visibleColumns.includes(id)).map(id => {
                                             const width = columnWidths[id] || 150;
@@ -1698,7 +1699,7 @@ export default function CallsPage() {
 
                                             const commonProps = {
                                                 key: id,
-                                                className: `relative px-6 py-4 cursor-pointer hover:bg-gray-100 transition-colors group select-none ${draggedColumn === id ? 'opacity-50 bg-gray-100' : ''}`,
+                                                className: `relative px-6 py-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none ${draggedColumn === id ? 'opacity-50 bg-gray-100 dark:bg-gray-800' : ''}`,
                                                 style: { width: `${width}px`, minWidth: `${width}px`, maxWidth: `${width}px` },
                                                 draggable: true,
                                                 onDragStart: (e) => handleColumnDragStart(e, id),
@@ -1717,7 +1718,7 @@ export default function CallsPage() {
                                             if (id === 'time') return (
                                                 <th {...commonProps} onClick={() => handleSort('call_time')}>
                                                     <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-2 overflow-hidden"><Clock size={12} className="text-gray-400 shrink-0" /> Time {getSortIcon('call_time')}</div>
+                                                        <div className="flex items-center gap-2 overflow-hidden"><Clock size={12} className="text-gray-400 dark:text-gray-500 shrink-0" /> Time {getSortIcon('call_time')}</div>
                                                     </div>
                                                     <ResizeHandle />
                                                 </th>
@@ -1790,11 +1791,11 @@ export default function CallsPage() {
                                         })}
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                                     {calls.map((call, index) => (
                                         <tr
                                             key={call.id}
-                                            className="hover:bg-blue-50/40 transition-all group cursor-pointer border-l-4 border-l-transparent hover:border-l-blue-500 py-6"
+                                            className="hover:bg-blue-50/40 dark:hover:bg-blue-900/10 transition-all group cursor-pointer border-l-4 border-l-transparent hover:border-l-blue-500 py-6"
                                             onClick={() => {
                                                 markCallClicked(call.id);
                                                 openPersonModal(call);
@@ -1804,10 +1805,10 @@ export default function CallsPage() {
                                                 if (id === 'time') return (
                                                     <td key="time" className="px-6 py-5 whitespace-nowrap">
                                                         <div className="flex flex-col gap-0.5">
-                                                            <span className="text-sm font-semibold text-slate-700 leading-tight">
+                                                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 leading-tight">
                                                                 {format(new Date(call.call_time + (call.call_time.endsWith('Z') ? '' : 'Z')), 'h:mm a')}
                                                             </span>
-                                                            <span className="text-xs text-gray-400 font-medium">
+                                                            <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">
                                                                 {format(new Date(call.call_time + (call.call_time.endsWith('Z') ? '' : 'Z')), 'MMM d, yyyy')}
                                                             </span>
                                                         </div>
@@ -1823,7 +1824,7 @@ export default function CallsPage() {
                                                                     title={Number(call.reviewed) ? "Mark as unreviewed" : "Mark as reviewed"}
                                                                 >
                                                                     {Number(call.reviewed) ? (
-                                                                        <div className="p-1 rounded-full bg-green-50 text-green-600 border border-green-100 shadow-sm">
+                                                                        <div className="p-1 rounded-full bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border border-green-100 dark:border-green-800 shadow-sm">
                                                                             <CheckCircle2 size={16} fill="currentColor" fillOpacity={0.2} />
                                                                         </div>
                                                                     ) : (
@@ -1834,14 +1835,14 @@ export default function CallsPage() {
                                                                 </button>
                                                             )}
                                                             <div className="min-w-0 flex-1">
-                                                                <div className="font-semibold text-slate-700 truncate flex items-center gap-2 group-hover:text-blue-600 transition-colors text-sm" title={call.contact_name || call.phone_number}>
+                                                                <div className="font-semibold text-slate-700 dark:text-slate-300 truncate flex items-center gap-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors text-sm" title={call.contact_name || call.phone_number}>
                                                                     <span className="truncate">{call.contact_name || ((!contactColumnOptions.showPhone && !call.contact_name) ? call.phone_number : (contactColumnOptions.showPhone ? (call.contact_name ? call.contact_name : call.phone_number) : 'Unknown'))}</span>
                                                                     {newArrivals.some(n => n.id === call.id) && (
                                                                         <span className="px-2 py-0.5 bg-blue-600 text-white text-[11px] font-bold rounded shadow-lg shadow-blue-200 uppercase tracking-tighter animate-pulse shrink-0">New</span>
                                                                     )}
                                                                 </div>
                                                                 {contactColumnOptions.showPhone && call.contact_name && (
-                                                                    <div className="text-xs font-semibold text-gray-400 mt-1 tracking-tight group-hover:text-gray-500">{call.phone_number}</div>
+                                                                    <div className="text-xs font-semibold text-gray-400 dark:text-gray-500 mt-1 tracking-tight group-hover:text-gray-500 dark:group-hover:text-gray-400">{call.phone_number}</div>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -1859,7 +1860,7 @@ export default function CallsPage() {
                                                         onClick={(e) => { e.stopPropagation(); setEditingNote({ call, field: 'person_note' }); }}
                                                     >
                                                         {call.person_note ? (
-                                                            <span className="text-gray-700 block max-w-[150px] truncate" title={call.person_note}>{call.person_note}</span>
+                                                            <span className="text-gray-700 dark:text-gray-300 block max-w-[150px] truncate" title={call.person_note}>{call.person_note}</span>
                                                         ) : (
                                                             <span className="text-gray-400 italic text-xs hover:text-blue-500 transition-colors">Add note...</span>
                                                         )}
@@ -1872,7 +1873,7 @@ export default function CallsPage() {
                                                         onClick={(e) => { e.stopPropagation(); setEditingNote({ call, field: 'note' }); }}
                                                     >
                                                         {call.note ? (
-                                                            <span className="text-gray-700 block max-w-[150px] truncate" title={call.note}>{call.note}</span>
+                                                            <span className="text-gray-700 dark:text-gray-300 block max-w-[150px] truncate" title={call.note}>{call.note}</span>
                                                         ) : (
                                                             <span className="text-gray-400 italic text-xs hover:text-blue-500 transition-colors">Add note...</span>
                                                         )}
@@ -1883,7 +1884,7 @@ export default function CallsPage() {
                                                         {call.recording_url ? (
                                                             <button
                                                                 onClick={() => playRecording(call)}
-                                                                className={`flex items-center gap-3 px-4 py-2 rounded-xl border transition-all group/player shadow-sm ${currentCall?.id === call.id ? 'bg-blue-600 border-blue-600 text-white shadow-blue-200 scale-105' : 'bg-white border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-700 hover:shadow-md'}`}
+                                                                className={`flex items-center gap-3 px-4 py-2 rounded-xl border transition-all group/player shadow-sm ${currentCall?.id === call.id ? 'bg-blue-600 border-blue-600 text-white shadow-blue-200 scale-105' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-700 dark:text-gray-300 hover:shadow-md'}`}
                                                                 title="Play Recording"
                                                             >
                                                                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${currentCall?.id === call.id ? 'bg-white/20' : 'bg-blue-100 text-blue-600 group-hover/player:bg-blue-600 group-hover/player:text-white'}`}>
@@ -1924,14 +1925,14 @@ export default function CallsPage() {
                                                             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center text-xs font-extrabold text-blue-600 border border-blue-200 uppercase shadow-sm">
                                                                 {(call.employee_name || 'S')[0]}
                                                             </div>
-                                                            <span className="text-sm font-bold text-gray-700">{call.employee_name || 'System'}</span>
+                                                            <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{call.employee_name || 'System'}</span>
                                                         </div>
                                                     </td>
                                                 );
                                                 if (id === 'device_phone') return (
                                                     <td key="device_phone" className="px-6 py-4 whitespace-nowrap">
                                                         <div className="flex items-center gap-2 text-gray-500 font-bold text-xs tracking-tight">
-                                                            <div className="p-1 rounded-md bg-gray-50 border border-gray-100">
+                                                            <div className="p-1 rounded-md bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
                                                                 <Smartphone size={12} className="text-gray-400" />
                                                             </div>
                                                             {call.device_phone || '-'}
@@ -1955,7 +1956,7 @@ export default function CallsPage() {
                         </div>
 
                         {/* Pagination */}
-                        <div className="flex items-center justify-between p-4 border-t border-gray-100 bg-[#f8fafc]">
+                        <div className="flex items-center justify-between p-4 border-t border-gray-100 dark:border-gray-700 bg-[#f8fafc] dark:bg-gray-900/50">
                             <div className="text-sm text-gray-500">
                                 Showing <span className="font-medium">{calls.length}</span> of <span className="font-medium">{pagination.total}</span> results
                             </div>
@@ -1963,7 +1964,7 @@ export default function CallsPage() {
                                 <button
                                     onClick={() => handlePageChange(pagination.page - 1)}
                                     disabled={pagination.page === 1}
-                                    className="p-2 rounded-lg hover:bg-white border border-transparent hover:border-gray-200 disabled:opacity-50 transition-all text-gray-500"
+                                    className="p-2 rounded-lg hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 disabled:opacity-50 transition-all text-gray-500"
                                 >
                                     <ChevronLeft size={18} />
                                 </button>
@@ -1973,7 +1974,7 @@ export default function CallsPage() {
                                 <button
                                     onClick={() => handlePageChange(pagination.page + 1)}
                                     disabled={pagination.page === pagination.total_pages}
-                                    className="p-2 rounded-lg hover:bg-white border border-transparent hover:border-gray-200 disabled:opacity-50 transition-all text-gray-500"
+                                    className="p-2 rounded-lg hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 disabled:opacity-50 transition-all text-gray-500"
                                 >
                                     <ChevronRight size={18} />
                                 </button>

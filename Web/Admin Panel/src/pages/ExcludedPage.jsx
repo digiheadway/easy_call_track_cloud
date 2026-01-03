@@ -160,19 +160,19 @@ export default function ExcludedPage() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-gray-900">Excluded Contacts</h1>
-                    <p className="text-gray-500 text-sm mt-1">Numbers in this list will not be synced or tracked across the organization.</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Excluded Contacts</h1>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Numbers in this list will not be synced or tracked across the organization.</p>
                 </div>
 
                 <div className="flex items-center gap-3 w-full sm:w-auto">
                     <div className="relative flex-1 sm:w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={16} />
                         <input
                             type="text"
                             placeholder="Search numbers..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg w-full focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg w-full focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
                         />
                     </div>
                     {contacts.length > 0 && (
@@ -180,7 +180,7 @@ export default function ExcludedPage() {
                             type="button"
                             onClick={(e) => handleDeleteAllData(e)}
                             disabled={deleting}
-                            className="btn bg-red-50 text-red-600 border-red-100 hover:bg-red-100 whitespace-nowrap gap-2"
+                            className="btn bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/40 whitespace-nowrap gap-2"
                             title="Erase all history for all excluded numbers"
                         >
                             <Database size={18} />
@@ -198,10 +198,10 @@ export default function ExcludedPage() {
                 </div>
             </div>
 
-            <div className="card !p-0 overflow-hidden border border-gray-200 shadow-sm">
+            <div className="card !p-0 overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-800">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
-                        <thead className="bg-gray-50 border-b border-gray-100 text-gray-500 font-medium">
+                        <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400 font-medium">
                             <tr>
                                 <th className="px-6 py-4">Contact</th>
                                 <th className="px-6 py-4">Phone Number</th>
@@ -210,20 +210,20 @@ export default function ExcludedPage() {
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                             {filtered.map((c) => (
-                                <tr key={c.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 font-medium text-gray-900">
+                                <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
+                                            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400">
                                                 <User size={14} />
                                             </div>
-                                            {c.name || <span className="text-gray-400 italic">No name</span>}
+                                            {c.name || <span className="text-gray-400 dark:text-gray-500 italic">No name</span>}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2 text-gray-600">
-                                            <Phone size={14} className="text-gray-400" />
+                                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                                            <Phone size={14} className="text-gray-400 dark:text-gray-500" />
                                             {c.phone}
                                         </div>
                                     </td>
@@ -232,15 +232,15 @@ export default function ExcludedPage() {
                                             type="button"
                                             onClick={(e) => toggleStatus(e, c)}
                                             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${c.is_active == 1
-                                                ? 'bg-green-50 text-green-700 border border-green-100'
-                                                : 'bg-gray-50 text-gray-500 border border-gray-100'
+                                                ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-100 dark:border-green-900/30'
+                                                : 'bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 border border-gray-100 dark:border-gray-600'
                                                 }`}
                                         >
                                             {c.is_active == 1 ? <CheckCircle size={12} /> : <XCircle size={12} />}
                                             {c.is_active == 1 ? 'Active' : 'Disabled'}
                                         </button>
                                     </td>
-                                    <td className="px-6 py-4 text-gray-500">
+                                    <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
                                         {new Date(c.created_at).toLocaleDateString()}
                                     </td>
                                     <td className="px-6 py-4 text-right">
@@ -249,7 +249,7 @@ export default function ExcludedPage() {
                                                 type="button"
                                                 onClick={(e) => handleDeleteContactData(e, c.phone)}
                                                 disabled={deleting}
-                                                className="p-2 hover:bg-orange-50 text-gray-400 hover:text-orange-600 rounded-lg transition-colors"
+                                                className="p-2 hover:bg-orange-50 dark:hover:bg-orange-900/20 text-gray-400 dark:text-gray-500 hover:text-orange-600 dark:hover:text-orange-400 rounded-lg transition-colors"
                                                 title="Erase all history for this contact"
                                             >
                                                 <RotateCcw size={18} />
@@ -257,7 +257,7 @@ export default function ExcludedPage() {
                                             <button
                                                 type="button"
                                                 onClick={(e) => handleDelete(e, c.id)}
-                                                className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-lg transition-colors"
+                                                className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-colors"
                                                 title="Remove from exclusion list"
                                             >
                                                 <Trash2 size={18} />
@@ -286,22 +286,22 @@ export default function ExcludedPage() {
             >
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
                         <input
                             type="text"
                             required
                             placeholder="e.g. +919876543210"
-                            className="input"
+                            className="input bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                             value={formData.phone}
                             onChange={e => setFormData({ ...formData, phone: e.target.value })}
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Display Name (Optional)</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Display Name (Optional)</label>
                         <input
                             type="text"
                             placeholder="e.g. Personal Phone"
-                            className="input"
+                            className="input bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                             value={formData.name}
                             onChange={e => setFormData({ ...formData, name: e.target.value })}
                         />
@@ -312,12 +312,12 @@ export default function ExcludedPage() {
                             id="is_active"
                             checked={formData.is_active}
                             onChange={e => setFormData({ ...formData, is_active: e.target.checked })}
-                            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                            className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-blue-500 bg-white dark:bg-gray-700"
                         />
-                        <label htmlFor="is_active" className="text-sm text-gray-700">Enable this exclusion immediately</label>
+                        <label htmlFor="is_active" className="text-sm text-gray-700 dark:text-gray-300">Enable this exclusion immediately</label>
                     </div>
                     <div className="pt-4 flex gap-3">
-                        <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 btn bg-gray-100 text-gray-700">Cancel</button>
+                        <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 btn bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">Cancel</button>
                         <button type="submit" disabled={saving} className="flex-1 btn btn-primary">
                             {saving ? 'Saving...' : 'Add Exclusion'}
                         </button>
@@ -332,7 +332,7 @@ export default function ExcludedPage() {
                 title={confirmModal.title}
             >
                 <div className="space-y-4">
-                    <div className="flex items-start gap-3 p-3 bg-orange-50 rounded-lg text-orange-800 border border-orange-100">
+                    <div className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-orange-800 dark:text-orange-200 border border-orange-100 dark:border-orange-900/30">
                         <AlertTriangle className="shrink-0 mt-0.5" size={18} />
                         <p className="text-sm font-medium">{confirmModal.message}</p>
                     </div>
@@ -340,7 +340,7 @@ export default function ExcludedPage() {
                         <button
                             type="button"
                             onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
-                            className="flex-1 btn bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            className="flex-1 btn bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                         >
                             Cancel
                         </button>

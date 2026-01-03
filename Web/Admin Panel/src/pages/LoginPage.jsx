@@ -33,7 +33,7 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col relative overflow-hidden bg-dark-bg text-white font-sans">
+        <div className="min-h-screen flex flex-col relative overflow-hidden bg-gray-50 dark:bg-dark-bg text-gray-900 dark:text-white font-sans">
             {/* Background Glows */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
                 <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand-500/20 rounded-full blur-[128px]"></div>
@@ -44,25 +44,25 @@ export default function LoginPage() {
             <nav className="absolute top-0 w-full p-6 z-20">
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
                     <a href="/" className="flex items-center gap-2 group">
-                        <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                            <ArrowLeft className="text-white w-4 h-4" />
+                        <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center group-hover:bg-gray-200 dark:group-hover:bg-white/10 transition-colors">
+                            <ArrowLeft className="text-gray-600 dark:text-white w-4 h-4" />
                         </div>
-                        <span className="font-medium text-gray-300 hover:text-white transition-colors">Back to Home</span>
+                        <span className="font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">Back to Home</span>
                     </a>
                 </div>
             </nav>
 
             <main className="flex-grow flex items-center justify-center px-4 py-20 relative z-10">
-                <div className="w-full max-w-md p-8 sm:p-10 rounded-3xl shadow-2xl relative bg-[#111827]/70 backdrop-blur-md border border-white/10">
-                    <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-dark-bg p-2 rounded-2xl border border-white/10 shadow-xl">
+                <div className="w-full max-w-md p-8 sm:p-10 rounded-3xl shadow-2xl relative bg-white dark:bg-[#111827]/70 backdrop-blur-md border border-gray-100 dark:border-white/10">
+                    <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-white dark:bg-dark-bg p-2 rounded-2xl border border-gray-100 dark:border-white/10 shadow-xl">
                         <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center">
                             <PhoneCall className="text-white w-8 h-8" />
                         </div>
                     </div>
 
                     <div className="text-center mt-8 mb-8">
-                        <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
-                        <p className="text-gray-400">Sign in to access your dashboard</p>
+                        <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">Welcome Back</h1>
+                        <p className="text-gray-500 dark:text-gray-400">Sign in to access your dashboard</p>
                     </div>
 
                     {error && (
@@ -73,15 +73,15 @@ export default function LoginPage() {
 
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Mail className="text-gray-500 w-5 h-5" />
+                                    <Mail className="text-gray-400 dark:text-gray-500 w-5 h-5" />
                                 </div>
                                 <input
                                     type="email"
                                     required
-                                    className="w-full rounded-xl py-3 pl-10 pr-4 placeholder-gray-500 bg-white/5 border border-white/10 text-white focus:bg-white/10 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition-all"
+                                    className="w-full rounded-xl py-3 pl-10 pr-4 placeholder-gray-400 dark:placeholder-gray-500 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:bg-white dark:focus:bg-white/10 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition-all"
                                     placeholder="name@company.com"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
@@ -91,17 +91,17 @@ export default function LoginPage() {
 
                         <div>
                             <div className="flex justify-between items-center mb-2">
-                                <label className="block text-sm font-medium text-gray-300">Password</label>
-                                <a href="#" className="text-sm text-brand-400 hover:text-brand-300 transition-colors">Forgot password?</a>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+                                <a href="#" className="text-sm text-brand-600 dark:text-brand-400 hover:text-brand-500 dark:hover:text-brand-300 transition-colors">Forgot password?</a>
                             </div>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Lock className="text-gray-500 w-5 h-5" />
+                                    <Lock className="text-gray-400 dark:text-gray-500 w-5 h-5" />
                                 </div>
                                 <input
                                     type="password"
                                     required
-                                    className="w-full rounded-xl py-3 pl-10 pr-4 placeholder-gray-500 bg-white/5 border border-white/10 text-white focus:bg-white/10 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition-all"
+                                    className="w-full rounded-xl py-3 pl-10 pr-4 placeholder-gray-400 dark:placeholder-gray-500 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:bg-white dark:focus:bg-white/10 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/50 transition-all"
                                     placeholder="••••••••"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
@@ -122,10 +122,10 @@ export default function LoginPage() {
                         </button>
                     </form>
 
-                    <div className="mt-8 pt-6 border-t border-white/10 text-center">
-                        <p className="text-gray-400 text-sm">
+                    <div className="mt-8 pt-6 border-t border-gray-100 dark:border-white/10 text-center">
+                        <p className="text-gray-500 dark:text-gray-400 text-sm">
                             Don't have an account?{' '}
-                            <Link to="/signup" className="text-brand-400 font-semibold hover:text-brand-300 transition-colors">
+                            <Link to="/signup" className="text-brand-600 dark:text-brand-400 font-semibold hover:text-brand-500 dark:hover:text-brand-300 transition-colors">
                                 Sign up for free
                             </Link>
                         </p>
@@ -133,7 +133,7 @@ export default function LoginPage() {
                 </div>
             </main>
 
-            <footer className="absolute bottom-4 w-full text-center text-gray-600 text-xs">
+            <footer className="absolute bottom-4 w-full text-center text-gray-500 dark:text-gray-600 text-xs">
                 &copy; 2024 MiniClick. Secure Login.
             </footer>
         </div>

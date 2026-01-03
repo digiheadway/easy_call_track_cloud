@@ -7,10 +7,10 @@
 define('API_SECRET_TOKEN', '567898765678'); // Must match the token in mysql/file managers
 
 // MySQL Manager Endpoint
-define('MYSQL_MANAGER_URL', 'https://calltrack.mylistings.in/ai_mysql_manager.php');
+define('MYSQL_MANAGER_URL', 'https://api.miniclickcrm.com/ai_mysql_manager.php');
 
 // File Manager Endpoint
-define('FILE_MANAGER_URL', 'https://calltrack.mylistings.in/ai_file_manager.php');
+define('FILE_MANAGER_URL', 'https://api.miniclickcrm.com/ai_file_manager.php');
 
 // Database Configuration (for reference - actual connection via MySQL Manager)
 define('DB_HOST', 'localhost');

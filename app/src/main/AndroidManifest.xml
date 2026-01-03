@@ -68,7 +68,7 @@
 
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.calltracker.manager.fileprovider"
+            android:authorities="com.miniclick.calltrackmanage.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data

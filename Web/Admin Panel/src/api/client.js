@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'https://calltrack.mylistings.in/api';
+const BASE_URL = 'https://api.miniclickcrm.com/api';
 
 const api = axios.create({
     baseURL: BASE_URL,

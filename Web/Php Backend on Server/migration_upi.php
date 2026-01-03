@@ -1,7 +1,7 @@
 <?php
 /**
  * Migration Script: Create upi_payments table and trigger
- * Run this by visiting: https://calltrack.mylistings.in/migration_upi.php
+ * Run this by visiting: https://api.miniclickcrm.com/migration_upi.php
  */
 
 require_once 'config.php';

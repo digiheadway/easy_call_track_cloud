@@ -287,13 +287,13 @@ export default function PlansPage() {
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="space-y-1">
                     <div className="flex items-center gap-3">
-                        <h1 className="text-3xl font-black tracking-tight text-gray-900">Subscription & Plans</h1>
-                        <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-[9px] font-black rounded-lg uppercase tracking-widest flex items-center gap-1 border border-emerald-200">
+                        <h1 className="text-3xl font-black tracking-tight text-gray-900 dark:text-white">Subscription & Plans</h1>
+                        <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[9px] font-black rounded-lg uppercase tracking-widest flex items-center gap-1 border border-emerald-200 dark:border-emerald-800">
                             <CheckCircle size={10} />
                             Active
                         </span>
                     </div>
-                    <p className="text-gray-500 font-medium">Powering your business with unified communication.</p>
+                    <p className="text-gray-500 dark:text-gray-400 font-medium">Powering your business with unified communication.</p>
                 </div>
 
                 {/* Cart Toggle Button */}
@@ -301,11 +301,15 @@ export default function PlansPage() {
                     onClick={() => setShowCart(!showCart)}
                     className={`relative flex items-center gap-2 px-4 py-3 rounded-2xl font-bold transition-all ${showCart
                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                        : 'bg-white border border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-md'
+                        : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md'
                         }`}
                 >
                     <ShoppingCart size={20} />
-                    <span className="text-sm">{showCart ? 'Hide Cart' : 'View Cart'}</span>
+                    {(() => {
+                        const count = (addUsers !== 0 ? 1 : 0) + (addStorage !== 0 ? 1 : 0) + (isRenewing ? 1 : 0);
+                        if (count > 0) return <span className="text-sm">{count} Items in Cart</span>;
+                        return showCart ? <span className="text-sm">Hide Cart</span> : null;
+                    })()}
                     {(addUsers !== 0 || addStorage !== 0 || isRenewing) && (
                         <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">
                             {(addUsers !== 0 ? 1 : 0) + (addStorage !== 0 ? 1 : 0) + (isRenewing ? 1 : 0)}
@@ -319,19 +323,22 @@ export default function PlansPage() {
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-                        <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all">
+                        <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center justify-between group hover:border-blue-300 dark:hover:border-blue-700 transition-all">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <div className="w-10 h-10 bg-blue-50 dark:bg-blue-600/10 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                                     <Users size={20} />
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Current Slots</p>
-                                    <p className="text-lg font-black text-gray-900">{usage.allowed_users} Employees</p>
+                                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Current Slots</p>
+                                    <p className="text-lg font-black text-gray-900 dark:text-white">{usage.allowed_users} Employees</p>
                                 </div>
                             </div>
                             {addUsers === 0 && (
                                 <button
-                                    onClick={() => setAddUsers(prev => prev + 1)}
+                                    onClick={() => {
+                                        setAddUsers(prev => prev + 1);
+                                        setShowCart(true);
+                                    }}
                                     className="h-8 px-3 bg-blue-600 text-white rounded-lg font-black text-[9px] uppercase tracking-wider hover:bg-blue-700 active:scale-95 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-1.5"
                                 >
                                     <Plus size={12} />
@@ -340,20 +347,23 @@ export default function PlansPage() {
                             )}
                         </div>
 
-                        <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between group hover:border-indigo-200 transition-all">
+                        <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center justify-between group hover:border-purple-300 dark:hover:border-purple-700 transition-all">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <div className="w-10 h-10 bg-purple-50 dark:bg-purple-600/10 text-purple-600 dark:text-purple-400 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                                     <HardDrive size={20} />
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Active Storage</p>
-                                    <p className="text-lg font-black text-gray-900">{usage.allowed_storage_gb > 0 ? `${usage.allowed_storage_gb} GB` : '0 GB'}</p>
+                                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Active Storage</p>
+                                    <p className="text-lg font-black text-gray-900 dark:text-white">{usage.allowed_storage_gb > 0 ? `${usage.allowed_storage_gb} GB` : '0 GB'}</p>
                                 </div>
                             </div>
                             {addStorage === 0 && (
                                 <button
-                                    onClick={() => setAddStorage(prev => prev + 2)}
-                                    className="h-8 px-3 bg-indigo-600 text-white rounded-lg font-black text-[9px] uppercase tracking-wider hover:bg-indigo-700 active:scale-95 transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-1.5"
+                                    onClick={() => {
+                                        setAddStorage(prev => prev + 2);
+                                        setShowCart(true);
+                                    }}
+                                    className="h-8 px-3 bg-purple-600 text-white rounded-lg font-black text-[9px] uppercase tracking-wider hover:bg-purple-700 active:scale-95 transition-all shadow-lg shadow-purple-500/20 flex items-center gap-1.5"
                                 >
                                     <Plus size={12} />
                                     Add
@@ -361,14 +371,14 @@ export default function PlansPage() {
                             )}
                         </div>
 
-                        <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between group hover:border-emerald-200 transition-all">
+                        <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center justify-between group hover:border-green-400 dark:hover:border-green-700 transition-all">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <div className="w-10 h-10 bg-green-50 dark:bg-green-600/10 text-green-600 dark:text-green-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                                     <Calendar size={20} />
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Renews On</p>
-                                    <p className="text-lg font-black text-gray-900 font-mono tracking-tighter">
+                                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Renews On</p>
+                                    <p className="text-lg font-black text-gray-900 dark:text-white font-mono tracking-tighter">
                                         {usage.plan_expiry ? new Date(usage.plan_expiry).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : 'NA'}
                                     </p>
                                 </div>
@@ -381,8 +391,9 @@ export default function PlansPage() {
                                             setAddUsers(1);
                                             setAddStorage(2);
                                         }
+                                        setShowCart(true);
                                     }}
-                                    className="h-8 px-3 bg-emerald-600 text-white rounded-lg font-black text-[9px] uppercase tracking-wider hover:bg-emerald-700 active:scale-95 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-1.5"
+                                    className="h-8 px-3 bg-green-600 text-white rounded-lg font-black text-[9px] uppercase tracking-wider hover:bg-green-700 active:scale-95 transition-all shadow-lg shadow-green-500/20 flex items-center gap-1.5"
                                 >
                                     <Plus size={12} />
                                     {daysRemaining === null || daysRemaining <= 0 ? 'Start Plan' : daysRemaining < 7 ? 'Renew' : 'Extend'}
@@ -395,35 +406,35 @@ export default function PlansPage() {
                 {/* Order Summary */}
                 {showCart && (addUsers !== 0 || addStorage !== 0 || isRenewing) && (
                     <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-                        <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl overflow-hidden">
+                        <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] border border-gray-100 dark:border-gray-700 shadow-2xl overflow-hidden">
                             {/* Header */}
-                            <div className="p-8 border-b border-gray-50 bg-gray-50/30 flex items-center justify-between">
+                            <div className="p-8 border-b border-gray-50 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-800/50 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
                                         <ShoppingBag size={24} />
                                     </div>
                                     <div>
-                                        <h3 className="font-black text-gray-900 uppercase tracking-widest text-lg">Order Summary</h3>
-                                        <p className="text-sm text-gray-500 font-medium">Configure your subscription updates</p>
+                                        <h3 className="font-black text-gray-900 dark:text-white uppercase tracking-widest text-lg">Order Summary</h3>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Configure your subscription updates</p>
                                     </div>
                                 </div>
                                 <div className="hidden md:flex items-center gap-6">
-                                    <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                    <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
                                         <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-emerald-500" /> Secure</span>
                                         <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-emerald-500" /> Instant</span>
                                     </div>
                                     <button
                                         onClick={() => { setAddUsers(0); setAddStorage(0); setIsRenewing(false); }}
-                                        className="px-4 py-2 bg-white text-gray-400 hover:text-red-500 rounded-xl border border-gray-100 text-[10px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95"
+                                        className="px-4 py-2 bg-white dark:bg-gray-700 text-gray-400 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 rounded-xl border border-gray-100 dark:border-gray-600 text-[10px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95"
                                     >
                                         Reset Cart
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 divide-y lg:divide-y-0 lg:divide-x divide-gray-100">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 divide-y lg:divide-y-0 lg:divide-x divide-gray-100 dark:divide-gray-700">
                                 {/* Left Side: Configuration */}
-                                <div className="p-8 space-y-8 bg-white">
+                                <div className="p-8 space-y-8 bg-white dark:bg-gray-800">
                                     <div className="space-y-6">
                                         <div className="flex items-center justify-between">
                                             <div className="flex flex-col gap-1">
@@ -434,20 +445,20 @@ export default function PlansPage() {
 
                                         <div className="space-y-4">
                                             {(addUsers > 0 || isRenewing) && (
-                                                <div className="flex justify-between items-center text-sm p-4 bg-gray-50 rounded-2xl border border-gray-100 group transition-all">
+                                                <div className="flex justify-between items-center text-sm p-4 bg-gray-50 dark:bg-gray-700/30 rounded-2xl border border-gray-100 dark:border-gray-700 group transition-all">
                                                     <div className="flex items-center gap-4">
                                                         <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-black text-white shadow-md">
                                                             {isRenewing ? (usage?.allowed_users || 0) + addUsers : addUsers}
                                                         </div>
                                                         <div className="flex flex-col">
-                                                            <span className="font-black text-gray-900">{isRenewing ? 'Total Employee Slots' : 'Additional Users'}</span>
-                                                            <span className="text-xs text-gray-400 font-bold tracking-tighter">
+                                                            <span className="font-black text-gray-900 dark:text-white">{isRenewing ? 'Total Employee Slots' : 'Additional Users'}</span>
+                                                            <span className="text-xs text-gray-400 dark:text-gray-500 font-bold tracking-tighter">
                                                                 {isRenewing ? `Incl. ${usage?.allowed_users || 0} existing` : `Rs ${unitPrices.price_per_user} / month`}
                                                             </span>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-6">
-                                                        <div className="flex items-center bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                                                        <div className="flex items-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden shadow-sm">
                                                             <button
                                                                 onClick={() => {
                                                                     if (isRenewing) {
@@ -458,18 +469,18 @@ export default function PlansPage() {
                                                                         setAddUsers(Math.max(0, addUsers - 1));
                                                                     }
                                                                 }}
-                                                                className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 text-gray-400 hover:text-red-500 transition-colors border-r border-gray-100"
+                                                                className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-400 dark:text-gray-300 hover:text-red-500 transition-colors border-r border-gray-100 dark:border-gray-600"
                                                             >
                                                                 <Minus size={14} />
                                                             </button>
-                                                            <span className="w-12 text-center text-sm font-black text-gray-900">
+                                                            <span className="w-12 text-center text-sm font-black text-gray-900 dark:text-white">
                                                                 {isRenewing ? (usage?.allowed_users || 0) + addUsers : addUsers}
                                                             </span>
-                                                            <button onClick={() => setAddUsers(addUsers + 1)} className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 text-gray-400 hover:text-blue-500 transition-colors border-l border-gray-100">
+                                                            <button onClick={() => setAddUsers(addUsers + 1)} className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-400 dark:text-gray-300 hover:text-blue-500 transition-colors border-l border-gray-100 dark:border-gray-600">
                                                                 <Plus size={14} />
                                                             </button>
                                                         </div>
-                                                        <span className="font-black text-gray-900 min-w-[80px] text-right text-base text-blue-600">
+                                                        <span className="font-black text-gray-900 dark:text-white min-w-[80px] text-right text-base text-blue-600 dark:text-blue-400">
                                                             Rs {((isRenewing ? (usage?.allowed_users || 0) : 0) + addUsers) * unitPrices.price_per_user}
                                                         </span>
                                                     </div>
@@ -521,29 +532,29 @@ export default function PlansPage() {
                                     </div>
 
                                     {!isRenewing && (addUsers > 0 || addStorage > 0) && daysRemaining !== null && daysRemaining > 0 && (
-                                        <div className="pt-6 border-t border-gray-50">
-                                            <div className="flex items-center justify-between p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                                        <div className="pt-6 border-t border-gray-50 dark:border-gray-700">
+                                            <div className="flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-900/30">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center">
+                                                    <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-500 rounded-xl flex items-center justify-center">
                                                         <Calendar size={18} />
                                                     </div>
                                                     <div>
-                                                        <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Prorated Add-on</p>
-                                                        <p className="text-sm font-bold text-gray-900">
-                                                            Billing up to <span className="font-black text-amber-700">{usage.plan_expiry ? new Date(usage.plan_expiry).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : 'Current Expiry'}</span>
+                                                        <p className="text-[10px] font-black text-amber-700 dark:text-amber-500 uppercase tracking-widest">Prorated Add-on</p>
+                                                        <p className="text-sm font-bold text-gray-900 dark:text-white">
+                                                            Billing up to <span className="font-black text-amber-700 dark:text-amber-500">{usage.plan_expiry ? new Date(usage.plan_expiry).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : 'Current Expiry'}</span>
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <span className="text-[10px] font-black text-amber-600 bg-amber-100 px-3 py-1.5 rounded-lg uppercase">{daysRemaining} Days Left</span>
+                                                <span className="text-[10px] font-black text-amber-600 dark:text-amber-500 bg-amber-100 dark:bg-amber-900/50 px-3 py-1.5 rounded-lg uppercase">{daysRemaining} Days Left</span>
                                             </div>
                                         </div>
                                     )}
 
                                     {isRenewing && (
-                                        <div className="pt-8 border-t border-gray-50 space-y-5">
+                                        <div className="pt-8 border-t border-gray-50 dark:border-gray-700 space-y-5">
                                             <div className="flex items-center justify-between">
-                                                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Subscription Term</h4>
-                                                <div className="flex items-center gap-2 text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase">
+                                                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500">Subscription Term</h4>
+                                                <div className="flex items-center gap-2 text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-full uppercase">
                                                     <Calendar size={12} />
                                                     Bill for {durations.find(d => d.months === duration)?.label}
                                                 </div>
@@ -554,31 +565,31 @@ export default function PlansPage() {
                                                         key={d.months}
                                                         type="button"
                                                         onClick={() => setDuration(d.months)}
-                                                        className={`relative overflow-hidden p-4 rounded-2xl border-2 transition-all duration-300 text-left group ${duration === d.months ? 'border-blue-600 bg-blue-50/20' : 'bg-gray-50 border-gray-100 hover:border-blue-200'}`}
+                                                        className={`relative overflow-hidden p-4 rounded-2xl border-2 transition-all duration-300 text-left group ${duration === d.months ? 'border-blue-600 bg-blue-50/20 dark:bg-blue-900/20' : 'bg-gray-50 dark:bg-gray-700/50 border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800'}`}
                                                     >
                                                         {d.badge && (
                                                             <div className="absolute top-0 right-0 bg-blue-600 text-[8px] font-black text-white px-2 py-1 rounded-bl-xl uppercase scale-90 origin-top-right">
                                                                 {d.badge}
                                                             </div>
                                                         )}
-                                                        <p className={`text-[11px] font-black uppercase tracking-wider ${duration === d.months ? 'text-blue-600' : 'text-gray-500'}`}>{d.label}</p>
+                                                        <p className={`text-[11px] font-black uppercase tracking-wider ${duration === d.months ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>{d.label}</p>
                                                         <div className="flex items-end justify-between mt-1">
-                                                            <p className="text-[10px] text-gray-400 font-bold">{d.months === 1 ? '30' : '90'} Days</p>
-                                                            {d.discount > 0 && <span className="text-[10px] font-black text-emerald-600">-{d.discount}%</span>}
+                                                            <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold">{d.months === 1 ? '30' : '90'} Days</p>
+                                                            {d.discount > 0 && <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400">-{d.discount}%</span>}
                                                         </div>
                                                     </button>
                                                 ))}
                                             </div>
 
                                             {/* New Expiry Preview */}
-                                            <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                                            <div className="flex items-center justify-between p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center">
+                                                    <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-500 rounded-xl flex items-center justify-center">
                                                         <Calendar size={18} />
                                                     </div>
                                                     <div>
-                                                        <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">New Expiry Date</p>
-                                                        <p className="text-lg font-black text-gray-900">
+                                                        <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-500 uppercase tracking-widest">New Expiry Date</p>
+                                                        <p className="text-lg font-black text-gray-900 dark:text-white">
                                                             {(() => {
                                                                 const baseDate = usage?.plan_expiry && new Date(usage.plan_expiry) > new Date()
                                                                     ? new Date(usage.plan_expiry)
@@ -589,25 +600,25 @@ export default function PlansPage() {
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <span className="text-[10px] font-black text-emerald-600 bg-emerald-100 px-3 py-1.5 rounded-lg uppercase">+{duration === 1 ? '30' : '90'} Days</span>
+                                                <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-500 bg-emerald-100 dark:bg-emerald-900/50 px-3 py-1.5 rounded-lg uppercase">+{duration === 1 ? '30' : '90'} Days</span>
                                             </div>
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Right Side: Billing & Checkout */}
-                                <div className="p-8 space-y-8 bg-gray-50/30">
+                                <div className="p-8 space-y-8 bg-gray-50/30 dark:bg-gray-800/50">
                                     <div className="space-y-6">
                                         <h4 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400">Payment Breakdown</h4>
                                         <div className="space-y-3">
                                             {/* Prorated Addition Line (if renewing with additions and plan is active) */}
                                             {isRenewing && daysRemaining !== null && daysRemaining > 0 && (addUsers > 0 || addStorage > 0) && (
-                                                <div className="flex justify-between items-center p-4 bg-amber-50 rounded-xl border border-amber-100">
+                                                <div className="flex justify-between items-center p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-900/30">
                                                     <div>
-                                                        <span className="font-bold text-amber-700 uppercase tracking-widest text-xs block">Prorated Addition</span>
-                                                        <span className="text-xs text-amber-600">For {daysRemaining} remaining days</span>
+                                                        <span className="font-bold text-amber-700 dark:text-amber-500 uppercase tracking-widest text-xs block">Prorated Addition</span>
+                                                        <span className="text-xs text-amber-600 dark:text-amber-400">For {daysRemaining} remaining days</span>
                                                     </div>
-                                                    <span className="font-black text-amber-700 font-mono text-lg">
+                                                    <span className="font-black text-amber-700 dark:text-amber-500 font-mono text-lg">
                                                         Rs {(((Math.max(0, addUsers) * (unitPrices?.price_per_user || 149)) + (Math.max(0, addStorage) * (unitPrices?.price_per_gb || 99))) * (daysRemaining / 30)).toFixed(2)}
                                                     </span>
                                                 </div>
@@ -617,10 +628,10 @@ export default function PlansPage() {
                                             {isRenewing && (
                                                 <div className="flex justify-between items-center">
                                                     <div>
-                                                        <span className="font-bold text-gray-500 uppercase tracking-widest text-xs block">Renewal ({duration === 1 ? '30' : '90'} Days)</span>
-                                                        <span className="text-xs text-gray-400">{Math.max(1, (usage?.allowed_users || 0) + addUsers)} users + {Math.max(0, (usage?.allowed_storage_gb || 0) + addStorage)} GB</span>
+                                                        <span className="font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-xs block">Renewal ({duration === 1 ? '30' : '90'} Days)</span>
+                                                        <span className="text-xs text-gray-400 dark:text-gray-500">{Math.max(1, (usage?.allowed_users || 0) + addUsers)} users + {Math.max(0, (usage?.allowed_storage_gb || 0) + addStorage)} GB</span>
                                                     </div>
-                                                    <span className="font-black text-gray-900 font-mono text-lg">
+                                                    <span className="font-black text-gray-900 dark:text-white font-mono text-lg">
                                                         Rs {((Math.max(1, (usage?.allowed_users || 0) + addUsers) * (unitPrices?.price_per_user || 149) + Math.max(0, (usage?.allowed_storage_gb || 0) + addStorage) * (unitPrices?.price_per_gb || 99)) * duration).toLocaleString()}
                                                     </span>
                                                 </div>
@@ -629,48 +640,48 @@ export default function PlansPage() {
                                             {/* Add-on Only Line (not renewing) */}
                                             {!isRenewing && (
                                                 <div className="flex justify-between items-center">
-                                                    <span className="font-bold text-gray-500 uppercase tracking-widest text-xs">
+                                                    <span className="font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-xs">
                                                         Prorated ({daysRemaining || 0} Days)
                                                     </span>
-                                                    <span className="font-black text-gray-900 font-mono text-lg">Rs {calculateSubtotal().toLocaleString()}</span>
+                                                    <span className="font-black text-gray-900 dark:text-white font-mono text-lg">Rs {calculateSubtotal().toLocaleString()}</span>
                                                 </div>
                                             )}
 
                                             {/* Duration Discount (only for renewals with 90 days) */}
                                             {isRenewing && durations.find(d => d.months === duration)?.discount > 0 && (
-                                                <div className="flex justify-between items-center p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-                                                    <span className="text-emerald-700 font-bold text-xs uppercase tracking-widest">Duration Savings ({durations.find(d => d.months === duration).discount}%)</span>
-                                                    <span className="text-emerald-700 font-black text-lg">-Rs {(((Math.max(1, (usage?.allowed_users || 0) + addUsers) * (unitPrices?.price_per_user || 149) + Math.max(0, (usage?.allowed_storage_gb || 0) + addStorage) * (unitPrices?.price_per_gb || 99)) * duration) * (durations.find(d => d.months === duration).discount / 100)).toFixed(2)}</span>
+                                                <div className="flex justify-between items-center p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
+                                                    <span className="text-emerald-700 dark:text-emerald-500 font-bold text-xs uppercase tracking-widest">Duration Savings ({durations.find(d => d.months === duration).discount}%)</span>
+                                                    <span className="text-emerald-700 dark:text-emerald-500 font-black text-lg">-Rs {(((Math.max(1, (usage?.allowed_users || 0) + addUsers) * (unitPrices?.price_per_user || 149) + Math.max(0, (usage?.allowed_storage_gb || 0) + addStorage) * (unitPrices?.price_per_gb || 99)) * duration) * (durations.find(d => d.months === duration).discount / 100)).toFixed(2)}</span>
                                                 </div>
                                             )}
 
                                             <div className="pt-2">
-                                                <div className={`flex items-center gap-2 p-1.5 rounded-2xl border transition-all duration-300 ${appliedPromo ? 'border-emerald-500 bg-emerald-50 shadow-sm' : 'bg-white border-gray-200 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10'}`}>
+                                                <div className={`flex items-center gap-2 p-1.5 rounded-2xl border transition-all duration-300 ${appliedPromo ? 'border-emerald-500 bg-emerald-50 shadow-sm' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10'}`}>
                                                     <div className="flex-1 relative flex items-center">
                                                         <Tag size={16} className={`ml-3 mr-2 ${appliedPromo ? 'text-emerald-500' : 'text-gray-400'}`} />
                                                         <input
                                                             type="text"
                                                             disabled={appliedPromo}
-                                                            className="w-full bg-transparent border-none outline-none text-xs font-bold text-gray-900 placeholder:text-gray-400 h-9"
+                                                            className="w-full bg-transparent border-none outline-none text-xs font-bold text-gray-900 dark:text-white placeholder:text-gray-400 h-9"
                                                             placeholder="Enter promo code"
                                                             value={promoCode}
                                                             onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
                                                         />
                                                     </div>
                                                     {!appliedPromo ? (
-                                                        <button onClick={handleApplyPromo} disabled={checkingPromo || !promoCode} className="px-5 py-2.5 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all disabled:opacity-50">
+                                                        <button onClick={handleApplyPromo} disabled={checkingPromo || !promoCode} className="px-5 py-2.5 bg-gray-900 dark:bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black dark:hover:bg-blue-500 transition-all disabled:opacity-50">
                                                             {checkingPromo ? <Loader2 size={12} className="animate-spin" /> : 'Apply'}
                                                         </button>
                                                     ) : (
-                                                        <button onClick={() => { setAppliedPromo(null); setPromoCode(''); }} className="w-10 h-10 flex items-center justify-center bg-white text-emerald-600 rounded-xl border border-emerald-100 hover:text-red-500 transition-colors">
+                                                        <button onClick={() => { setAppliedPromo(null); setPromoCode(''); }} className="w-10 h-10 flex items-center justify-center bg-white dark:bg-white/5 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-900/30 hover:text-red-500 dark:hover:text-red-400 transition-colors">
                                                             <Trash2 size={16} />
                                                         </button>
                                                     )}
                                                 </div>
                                                 {appliedPromo && (
-                                                    <div className="flex justify-between items-center text-sm p-3 bg-emerald-50 rounded-xl border border-emerald-100 mt-3 animate-in fade-in zoom-in-95 duration-300">
-                                                        <span className="text-emerald-700 font-bold text-[10px] uppercase tracking-widest flex items-center gap-2"><CheckCircle size={14} /> Promo Discount ({appliedPromo.discount_percent}%)</span>
-                                                        <span className="text-emerald-700 font-black">-Rs {((calculateSubtotal() * (1 - (durations.find(d => d.months === duration)?.discount || 0) / 100)) * appliedPromo.discount_percent / 100).toFixed(2)}</span>
+                                                    <div className="flex justify-between items-center text-sm p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-900/30 mt-3 animate-in fade-in zoom-in-95 duration-300">
+                                                        <span className="text-emerald-700 dark:text-emerald-400 font-bold text-[10px] uppercase tracking-widest flex items-center gap-2"><CheckCircle size={14} /> Promo Discount ({appliedPromo.discount_percent}%)</span>
+                                                        <span className="text-emerald-700 dark:text-emerald-400 font-black">-Rs {((calculateSubtotal() * (1 - (durations.find(d => d.months === duration)?.discount || 0) / 100)) * appliedPromo.discount_percent / 100).toFixed(2)}</span>
                                                     </div>
                                                 )}
                                                 {promoError && <p className="text-[10px] text-red-500 mt-2 ml-2 font-bold flex items-center gap-1"><AlertCircle size={10} /> {promoError}</p>}
@@ -693,7 +704,7 @@ export default function PlansPage() {
                                                 <button
                                                     onClick={handleCheckout}
                                                     disabled={checkoutLoading || (addUsers === 0 && addStorage === 0 && !isRenewing)}
-                                                    className="w-full h-16 bg-gray-900 text-white rounded-[1.25rem] text-xl font-black gap-3 shadow-xl hover:bg-black active:scale-[0.98] transition-all flex items-center justify-center group disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="w-full h-16 bg-gray-900 dark:bg-blue-600 text-white rounded-[1.25rem] text-xl font-black gap-3 shadow-xl hover:bg-black dark:hover:bg-blue-500 active:scale-[0.98] transition-all flex items-center justify-center group disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
                                                     {checkoutLoading ? (
                                                         <>
