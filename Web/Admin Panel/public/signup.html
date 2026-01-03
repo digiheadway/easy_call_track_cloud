@@ -12,6 +12,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
 
+    <script>
+        if (localStorage.getItem('cc_token')) {
+            window.location.href = '/dashboard/';
+        }
+    </script>
+
     <!-- Feather Icons -->
     <script src="https://unpkg.com/feather-icons"></script>
 
@@ -219,7 +225,8 @@
                 // Success
                 if (data.data && data.data.token) {
                     localStorage.setItem('cc_token', data.data.token);
-                    window.location.href = '/dashboard/';
+                    const emailParam = encodeURIComponent(email);
+                    window.location.href = `verify-email.html?email=${emailParam}`;
                 } else {
                     throw new Error('Invalid response from server');
                 }
