@@ -1296,9 +1296,9 @@ fun PersonCard(
                 }
             }
         }
+        }
     }
 }
-        }
 
 @Composable
 fun CallTypeSmallBadge(icon: ImageVector, count: Int, color: Color) {
@@ -3188,6 +3188,7 @@ fun CallLogItem(
                 }
             }
         }
+        }
     }
 }
 
@@ -3219,7 +3220,6 @@ fun ActionIconButton(
         )
     }
 }
-        }
 
 @Composable
 fun NoteDialog(
