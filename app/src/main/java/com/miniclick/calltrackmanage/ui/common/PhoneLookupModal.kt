@@ -51,12 +51,8 @@ fun PhoneLookupResultModal(
                 .padding(bottom = 48.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Column {
                     Text(
                         text = "Caller Data Lookup",
                         style = MaterialTheme.typography.headlineSmall,
@@ -71,7 +67,8 @@ fun PhoneLookupResultModal(
                 
                 // Raw vs Formatted Toggle
                 if (uiState.customLookupResponse != null && !uiState.isFetchingCustomLookup) {
-                    SingleChoiceSegmentedButtonRow {
+                    Spacer(Modifier.height(16.dp))
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                         SegmentedButton(
                             selected = !uiState.isRawView,
                             onClick = { viewModel.toggleRawView(false) },
@@ -192,17 +189,16 @@ fun RenderJsonElement(element: JsonElement, key: String, level: Int = 0) {
 @Composable
 fun JsonRow(key: String, value: String, level: Int, isHeader: Boolean = false) {
     Column {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(if (isHeader) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f) else Color.Transparent)
-                .padding(vertical = 8.dp, horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(vertical = 10.dp, horizontal = 12.dp)
         ) {
             Text(
                 text = key,
                 modifier = Modifier
-                    .weight(0.4f)
+                    .fillMaxWidth()
                     .padding(start = (level * 12).dp),
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Bold,
@@ -210,10 +206,10 @@ fun JsonRow(key: String, value: String, level: Int, isHeader: Boolean = false) {
             )
             
             if (!isHeader) {
-                VerticalDivider(modifier = Modifier.height(16.dp).padding(horizontal = 8.dp))
+                Spacer(Modifier.height(4.dp))
                 Text(
                     text = value,
-                    modifier = Modifier.weight(0.6f),
+                    modifier = Modifier.fillMaxWidth().padding(start = (level * 12).dp),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

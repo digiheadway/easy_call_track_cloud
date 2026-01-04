@@ -6,6 +6,7 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.animation.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
@@ -25,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.miniclick.calltrackmanage.MainViewModel
 import com.miniclick.calltrackmanage.ui.common.SyncQueueModal
 import com.miniclick.calltrackmanage.ui.common.RecordingQueueModal
 import com.miniclick.calltrackmanage.ui.common.JsonTableView
@@ -39,7 +41,8 @@ import androidx.compose.ui.graphics.Color
 @Composable
 fun SettingsScreen(
     onBack: (() -> Unit)? = null,
-    viewModel: SettingsViewModel = viewModel()
+    viewModel: SettingsViewModel = viewModel(),
+    mainViewModel: MainViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -318,12 +321,12 @@ fun SettingsScreen(
             Spacer(Modifier.height(16.dp))
 
             // ===============================================
-            // 2. TRACKING RULES
+            // 2. TRACKING CONFIGURATION
             // ===============================================
             val dateString = if (uiState.trackStartDate == 0L) "Default (Yesterday)" else 
                 SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(uiState.trackStartDate))
 
-            SettingsSection(title = "Tracking Rules") {
+            SettingsSection(title = "Tracking Configuration") {
                 val isDateLocked = !uiState.allowChangingTrackingStartDate && uiState.pairingCode.isNotEmpty()
                 ListItem(
                     headlineContent = { Text("Call Tracking Starting Date") },
@@ -422,6 +425,154 @@ fun SettingsScreen(
                     },
                     modifier = Modifier.clickable { showExcludedModal = true }
                 )
+
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                // Attach Recordings Toggle
+                ListItem(
+                    headlineContent = { Text("Attach Recordings") },
+                    supportingContent = { Text("Upload recordings to the cloud") },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.Mic, MaterialTheme.colorScheme.tertiary) 
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = uiState.callRecordEnabled,
+                            onCheckedChange = { viewModel.updateCallRecordEnabled(it) }
+                        )
+                    }
+                )
+
+                // Recording Path with verification
+                var showPathWarningDialog by remember { mutableStateOf(false) }
+                
+                // Warning Dialog for editing verified path
+                if (showPathWarningDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showPathWarningDialog = false },
+                        icon = { Icon(Icons.Default.Warning, null, tint = Color(0xFFEAB308)) },
+                        title = { Text("Change Recording Path?") },
+                        text = {
+                            Column {
+                                Text(
+                                    "Current path is verified with ${uiState.recordingCount} recordings found.",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    "Changing this may break recording detection. Only change if recordings are not being found correctly.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    showPathWarningDialog = false
+                                    folderLauncher.launch(null)
+                                }
+                            ) {
+                                Text("Change Anyway")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showPathWarningDialog = false }) {
+                                Text("Cancel")
+                            }
+                        }
+                    )
+                }
+                
+                AnimatedVisibility(
+                    visible = uiState.callRecordEnabled,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    ListItem(
+                        headlineContent = { 
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Recording Path")
+                                if (uiState.isRecordingPathVerified) {
+                                    Spacer(Modifier.width(8.dp))
+                                    Icon(
+                                        Icons.Default.CheckCircle,
+                                        contentDescription = "Verified",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        },
+                        supportingContent = { 
+                            Column {
+                                val displayPath = if (uiState.recordingPath.isNotEmpty()) {
+                                    try {
+                                        val decoded = Uri.decode(uiState.recordingPath)
+                                        // Show relative path from storage
+                                        if (decoded.contains("/storage/emulated/0/")) {
+                                            decoded.replace("/storage/emulated/0/", "")
+                                        } else {
+                                            decoded.takeLast(40)
+                                        }
+                                    } catch(e: Exception) { uiState.recordingPath.takeLast(40) }
+                                } else {
+                                    "Not detected"
+                                }
+                                
+                                Text(displayPath, maxLines = 1)
+                                
+                                // Status line
+                                val statusText = buildString {
+                                    if (uiState.isRecordingPathCustom) {
+                                        append("Custom")
+                                    } else {
+                                        append("Auto-detected")
+                                    }
+                                    if (uiState.recordingCount > 0) {
+                                        append(" • ${uiState.recordingCount} recordings")
+                                    }
+                                }
+                                
+                                Text(
+                                    statusText,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (uiState.isRecordingPathVerified) 
+                                        MaterialTheme.colorScheme.primary 
+                                    else 
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        },
+                        leadingContent = { 
+                            SettingsIcon(Icons.Default.FolderOpen, MaterialTheme.colorScheme.tertiary) 
+                        },
+                        trailingContent = {
+                            Row {
+                                if (uiState.isRecordingPathCustom) {
+                                    // Show reset button if custom path is set
+                                    IconButton(onClick = { viewModel.clearCustomRecordingPath() }) {
+                                        Icon(
+                                            Icons.Default.Refresh,
+                                            contentDescription = "Use Auto-Detected",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                                Icon(Icons.Default.ChevronRight, contentDescription = null)
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { 
+                                if (uiState.isRecordingPathVerified && uiState.recordingCount > 0) {
+                                    showPathWarningDialog = true
+                                } else {
+                                    folderLauncher.launch(null)
+                                }
+                            }
+                    )
+                }
             }
 
             Spacer(Modifier.height(16.dp))
@@ -434,7 +585,7 @@ fun SettingsScreen(
             SettingsSection(title = "Features") {
 
                 // WhatsApp Preference
-                var showWhatsappDropdown by remember { mutableStateOf(false) }
+                var showWhatsappModal by remember { mutableStateOf(false) }
                 
                 ListItem(
                     headlineContent = { Text("Default WhatsApp") },
@@ -448,36 +599,22 @@ fun SettingsScreen(
                         SettingsIcon(Icons.AutoMirrored.Filled.Message, MaterialTheme.colorScheme.secondary) 
                     },
                     trailingContent = {
-                        Box {
-                            IconButton(onClick = { showWhatsappDropdown = true }) {
-                                Icon(Icons.Default.ExpandMore, contentDescription = "Select WhatsApp")
-                            }
-                            DropdownMenu(
-                                expanded = showWhatsappDropdown,
-                                onDismissRequest = { showWhatsappDropdown = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("Always Ask") },
-                                    onClick = { 
-                                        viewModel.updateWhatsappPreference("Always Ask")
-                                        showWhatsappDropdown = false 
-                                    },
-                                    leadingIcon = { Icon(Icons.Default.QuestionMark, null) }
-                                )
-                                uiState.availableWhatsappApps.forEach { app ->
-                                    DropdownMenuItem(
-                                        text = { Text(app.label) },
-                                        onClick = { 
-                                            viewModel.updateWhatsappPreference(app.packageName)
-                                            showWhatsappDropdown = false 
-                                        },
-                                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.Message, null) }
-                                    )
-                                }
-                            }
-                        }
-                    }
+                        Icon(Icons.Default.ChevronRight, contentDescription = null)
+                    },
+                    modifier = Modifier.clickable { showWhatsappModal = true }
                 )
+                
+                if (showWhatsappModal) {
+                    WhatsAppSelectionModal(
+                        currentSelection = uiState.whatsappPreference,
+                        availableApps = uiState.availableWhatsappApps,
+                        onSelect = { selection ->
+                            viewModel.updateWhatsappPreference(selection)
+                            showWhatsappModal = false
+                        },
+                        onDismiss = { showWhatsappModal = false }
+                    )
+                }
 
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 
@@ -520,131 +657,6 @@ fun SettingsScreen(
                 )
 
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                
-                // Recording Path with verification
-                var showPathWarningDialog by remember { mutableStateOf(false) }
-                
-                // Warning Dialog for editing verified path
-                if (showPathWarningDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showPathWarningDialog = false },
-                        icon = { Icon(Icons.Default.Warning, null, tint = Color(0xFFEAB308)) },
-                        title = { Text("Change Recording Path?") },
-                        text = {
-                            Column {
-                                Text(
-                                    "Current path is verified with ${uiState.recordingCount} recordings found.",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Spacer(Modifier.height(8.dp))
-                                Text(
-                                    "Changing this may break recording detection. Only change if recordings are not being found correctly.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        },
-                        confirmButton = {
-                            Button(
-                                onClick = {
-                                    showPathWarningDialog = false
-                                    folderLauncher.launch(null)
-                                }
-                            ) {
-                                Text("Change Anyway")
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showPathWarningDialog = false }) {
-                                Text("Cancel")
-                            }
-                        }
-                    )
-                }
-                
-                ListItem(
-                    headlineContent = { 
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Recording Path")
-                            if (uiState.isRecordingPathVerified) {
-                                Spacer(Modifier.width(8.dp))
-                                Icon(
-                                    Icons.Default.CheckCircle,
-                                    contentDescription = "Verified",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    },
-                    supportingContent = { 
-                        Column {
-                            val displayPath = if (uiState.recordingPath.isNotEmpty()) {
-                                try {
-                                    val decoded = Uri.decode(uiState.recordingPath)
-                                    // Show relative path from storage
-                                    if (decoded.contains("/storage/emulated/0/")) {
-                                        decoded.replace("/storage/emulated/0/", "")
-                                    } else {
-                                        decoded.takeLast(40)
-                                    }
-                                } catch(e: Exception) { uiState.recordingPath.takeLast(40) }
-                            } else {
-                                "Not detected"
-                            }
-                            
-                            Text(displayPath, maxLines = 1)
-                            
-                            // Status line
-                            val statusText = buildString {
-                                if (uiState.isRecordingPathCustom) {
-                                    append("Custom")
-                                } else {
-                                    append("Auto-detected")
-                                }
-                                if (uiState.recordingCount > 0) {
-                                    append(" • ${uiState.recordingCount} recordings")
-                                }
-                            }
-                            
-                            Text(
-                                statusText,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (uiState.isRecordingPathVerified) 
-                                    MaterialTheme.colorScheme.primary 
-                                else 
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    },
-                    leadingContent = { 
-                        SettingsIcon(Icons.Default.FolderOpen, MaterialTheme.colorScheme.tertiary) 
-                    },
-                    trailingContent = {
-                        Row {
-                            if (uiState.isRecordingPathCustom) {
-                                // Show reset button if custom path is set
-                                IconButton(onClick = { viewModel.clearCustomRecordingPath() }) {
-                                    Icon(
-                                        Icons.Default.Refresh,
-                                        contentDescription = "Use Auto-Detected",
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-                            Icon(Icons.Default.ChevronRight, contentDescription = null)
-                        }
-                    },
-                    modifier = Modifier.clickable { 
-                        if (uiState.isRecordingPathVerified && uiState.recordingCount > 0) {
-                            showPathWarningDialog = true
-                        } else {
-                            folderLauncher.launch(null)
-                        }
-                    }
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
                 ListItem(
                     headlineContent = { Text("Custom Lookup") },
@@ -662,11 +674,11 @@ fun SettingsScreen(
             }
 
             // ===============================================
-            // 4. DEVICE & SUPPORT
+            // 4. DEVICE
             // ===============================================
-            SettingsSection(title = "Device & Support") {
-                // Theme moved here
-                var showThemeDropdown by remember { mutableStateOf(false) }
+            SettingsSection(title = "Device") {
+                // Theme
+                var showThemeModal by remember { mutableStateOf(false) }
                 ListItem(
                     headlineContent = { Text("App Theme") },
                     supportingContent = { Text(uiState.themeMode) },
@@ -674,38 +686,21 @@ fun SettingsScreen(
                         SettingsIcon(Icons.Default.DarkMode, MaterialTheme.colorScheme.primary) 
                     },
                     trailingContent = {
-                         Box {
-                            IconButton(onClick = { showThemeDropdown = true }) {
-                                Icon(Icons.Default.ExpandMore, contentDescription = "Select Theme")
-                            }
-                            DropdownMenu(
-                                expanded = showThemeDropdown,
-                                onDismissRequest = { showThemeDropdown = false }
-                            ) {
-                                listOf("System", "Light", "Dark").forEach { mode ->
-                                    DropdownMenuItem(
-                                        text = { Text(mode) },
-                                        onClick = { 
-                                            viewModel.updateThemeMode(mode)
-                                            showThemeDropdown = false 
-                                        },
-                                        leadingIcon = { 
-                                            Icon(
-                                                imageVector = when(mode) {
-                                                    "Light" -> Icons.Default.LightMode
-                                                    "Dark" -> Icons.Default.DarkMode
-                                                    else -> Icons.Default.SettingsSystemDaydream
-                                                }, 
-                                                null
-                                            ) 
-                                        }
-                                    )
-                                }
-                            }
-                        }
+                        Icon(Icons.Default.ChevronRight, contentDescription = null)
                     },
-                    modifier = Modifier.clickable { showThemeDropdown = true }
+                    modifier = Modifier.clickable { showThemeModal = true }
                 )
+                
+                if (showThemeModal) {
+                    ThemeSelectionModal(
+                        currentTheme = uiState.themeMode,
+                        onSelect = { mode ->
+                            viewModel.updateThemeMode(mode)
+                            showThemeModal = false
+                        },
+                        onDismiss = { showThemeModal = false }
+                    )
+                }
 
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
@@ -734,10 +729,15 @@ fun SettingsScreen(
                     },
                     modifier = Modifier.clickable { showPermissionsModal = true }
                 )
+            }
 
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            Spacer(Modifier.height(16.dp))
 
-                // Support items moved here
+            // ===============================================
+            // 5. SUPPORT
+            // ===============================================
+            SettingsSection(title = "Support") {
+                // Support items
                 ListItem(
                     headlineContent = { Text("Report Bug") },
                     supportingContent = { Text("Something not working? Let us know") },
@@ -786,11 +786,11 @@ fun SettingsScreen(
                         SettingsIcon(Icons.Default.Replay, MaterialTheme.colorScheme.secondary) 
                     },
                     modifier = Modifier.clickable { 
+                        mainViewModel.resetOnboardingSession()
                         viewModel.resetOnboarding()
                     }
                 )
 
-                // Danger zone moved inside this section as a sub-group or just separated by a divider
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
                 ListItem(

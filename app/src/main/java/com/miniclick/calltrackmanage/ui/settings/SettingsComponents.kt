@@ -24,6 +24,254 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import java.text.SimpleDateFormat
 import java.util.*
 
+enum class HealthStatus {
+    GOOD, WARNING, ERROR
+}
+
+data class HealthItem(
+    val title: String,
+    val status: HealthStatus,
+    val detail: String,
+    val icon: ImageVector
+)
+
+@Composable
+fun SystemHealthDashboard(
+    uiState: SettingsUiState,
+    onPermissionClick: () -> Unit,
+    onSyncClick: () -> Unit
+) {
+    // Calculate health items
+    val healthItems = remember(uiState) {
+        buildList {
+            // 1. Permissions Status
+            val grantedCount = uiState.permissions.count { it.isGranted }
+            val totalCount = uiState.permissions.size
+            val permStatus = when {
+                grantedCount == totalCount -> HealthStatus.GOOD
+                grantedCount >= totalCount - 1 -> HealthStatus.WARNING
+                else -> HealthStatus.ERROR
+            }
+            add(HealthItem(
+                "Permissions",
+                permStatus,
+                "$grantedCount/$totalCount granted",
+                Icons.Default.Security
+            ))
+            
+            // 2. Sync Status
+            val syncStatus = when {
+                uiState.pairingCode.isEmpty() -> HealthStatus.WARNING
+                uiState.isSyncing -> HealthStatus.GOOD
+                uiState.lastSyncTime > 0 && (System.currentTimeMillis() - uiState.lastSyncTime) < 24 * 60 * 60 * 1000 -> HealthStatus.GOOD
+                uiState.lastSyncTime > 0 -> HealthStatus.WARNING
+                else -> HealthStatus.ERROR
+            }
+            val syncDetail = when {
+                uiState.pairingCode.isEmpty() -> "Not linked"
+                uiState.isSyncing -> "Syncing now..."
+                uiState.lastSyncTime > 0 -> {
+                    val diff = System.currentTimeMillis() - uiState.lastSyncTime
+                    val hours = diff / (1000 * 60 * 60)
+                    if (hours < 1) "Recent" else "${hours}h ago"
+                }
+                else -> "Never synced"
+            }
+            add(HealthItem(
+                "Cloud Sync",
+                syncStatus,
+                syncDetail,
+                Icons.Default.CloudSync
+            ))
+            
+            // 3. Tracking Status
+            val trackingStatus = when {
+                uiState.simSelection == "Off" -> HealthStatus.WARNING
+                uiState.sim1SubId != null || uiState.sim2SubId != null -> HealthStatus.GOOD
+                else -> HealthStatus.WARNING
+            }
+            val trackingDetail = when {
+                uiState.simSelection == "Off" -> "Disabled"
+                uiState.simSelection == "Both" -> "Dual SIM"
+                uiState.simSelection.startsWith("Sim") -> uiState.simSelection.replace("Sim", "SIM ")
+                else -> "Not configured"
+            }
+            add(HealthItem(
+                "Call Tracking",
+                trackingStatus,
+                trackingDetail,
+                Icons.Default.PhoneInTalk
+            ))
+            
+            // 4. Overlay Permission (for Caller ID)
+            val overlayStatus = if (uiState.isOverlayPermissionGranted) HealthStatus.GOOD else HealthStatus.WARNING
+            add(HealthItem(
+                "Caller ID",
+                overlayStatus,
+                if (uiState.callerIdEnabled && uiState.isOverlayPermissionGranted) "Active" 
+                else if (!uiState.isOverlayPermissionGranted) "No permission"
+                else "Disabled",
+                Icons.Default.ContactPhone
+            ))
+        }
+    }
+    
+    val overallStatus = remember(healthItems) {
+        when {
+            healthItems.any { it.status == HealthStatus.ERROR } -> HealthStatus.ERROR
+            healthItems.any { it.status == HealthStatus.WARNING } -> HealthStatus.WARNING
+            else -> HealthStatus.GOOD
+        }
+    }
+    
+    val statusColor = when (overallStatus) {
+        HealthStatus.GOOD -> Color(0xFF10B981)
+        HealthStatus.WARNING -> Color(0xFFF59E0B)
+        HealthStatus.ERROR -> Color(0xFFEF4444)
+    }
+    
+    val statusText = when (overallStatus) {
+        HealthStatus.GOOD -> "All Systems Operational"
+        HealthStatus.WARNING -> "Needs Attention"
+        HealthStatus.ERROR -> "Action Required"
+    }
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = statusColor.copy(alpha = 0.1f)
+        ),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            // Header
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = statusColor.copy(alpha = 0.2f),
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            when (overallStatus) {
+                                HealthStatus.GOOD -> Icons.Default.CheckCircle
+                                HealthStatus.WARNING -> Icons.Default.Warning
+                                HealthStatus.ERROR -> Icons.Default.Error
+                            },
+                            contentDescription = null,
+                            tint = statusColor,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+                
+                Spacer(Modifier.width(12.dp))
+                
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "System Health",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        statusText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = statusColor
+                    )
+                }
+            }
+            
+            Spacer(Modifier.height(16.dp))
+            
+            // Health Items Grid
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                healthItems.take(2).forEach { item ->
+                    HealthStatusChip(
+                        item = item,
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            when (item.title) {
+                                "Permissions" -> onPermissionClick()
+                                "Cloud Sync" -> onSyncClick()
+                            }
+                        }
+                    )
+                }
+            }
+            
+            Spacer(Modifier.height(8.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                healthItems.drop(2).forEach { item ->
+                    HealthStatusChip(
+                        item = item,
+                        modifier = Modifier.weight(1f),
+                        onClick = {}
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun HealthStatusChip(
+    item: HealthItem,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val statusColor = when (item.status) {
+        HealthStatus.GOOD -> Color(0xFF10B981)
+        HealthStatus.WARNING -> Color(0xFFF59E0B)
+        HealthStatus.ERROR -> Color(0xFFEF4444)
+    }
+    
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface,
+        onClick = onClick
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                item.icon,
+                contentDescription = null,
+                tint = statusColor,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Column {
+                Text(
+                    item.title,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    item.detail,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+
 @Composable
 fun SettingsSection(
     title: String,
@@ -492,24 +740,22 @@ fun CustomLookupModal(
                 HorizontalDivider()
                 Spacer(Modifier.height(16.dp))
                 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
                         text = "Results",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     
-                    SingleChoiceSegmentedButtonRow {
+                    Spacer(Modifier.height(12.dp))
+                    
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                         SegmentedButton(
                             selected = !uiState.isRawView,
                             onClick = { viewModel.toggleRawView(false) },
                             shape = RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp)
                         ) {
-                            Text("Formated", fontSize = 12.sp)
+                            Text("Formatted", fontSize = 12.sp)
                         }
                         SegmentedButton(
                             selected = uiState.isRawView,
@@ -538,6 +784,186 @@ fun CustomLookupModal(
                     }
                 } else {
                     com.miniclick.calltrackmanage.ui.common.JsonTableView(json = uiState.customLookupResponse ?: "{}")
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun WhatsAppSelectionModal(
+    currentSelection: String,
+    availableApps: List<AppInfo>,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState()
+    
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                "Default WhatsApp",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "Choose which app to open when tapping WhatsApp links",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Spacer(Modifier.height(24.dp))
+            
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Always Ask option
+                SelectionChip(
+                    label = "Always Ask",
+                    isSelected = currentSelection == "Always Ask",
+                    onClick = { onSelect("Always Ask") }
+                )
+                
+                // Available WhatsApp apps
+                availableApps.forEach { app ->
+                    SelectionChip(
+                        label = app.label,
+                        isSelected = currentSelection == app.packageName,
+                        onClick = { onSelect(app.packageName) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ThemeSelectionModal(
+    currentTheme: String,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState()
+    
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                "App Theme",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "Choose your preferred color scheme",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Spacer(Modifier.height(24.dp))
+            
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SelectionChip(
+                    label = "System",
+                    subtitle = "Follow device theme",
+                    icon = Icons.Default.SettingsSystemDaydream,
+                    isSelected = currentTheme == "System",
+                    onClick = { onSelect("System") }
+                )
+                SelectionChip(
+                    label = "Light",
+                    subtitle = "Always use light mode",
+                    icon = Icons.Default.LightMode,
+                    isSelected = currentTheme == "Light",
+                    onClick = { onSelect("Light") }
+                )
+                SelectionChip(
+                    label = "Dark",
+                    subtitle = "Always use dark mode",
+                    icon = Icons.Default.DarkMode,
+                    isSelected = currentTheme == "Dark",
+                    onClick = { onSelect("Dark") }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SelectionChip(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    subtitle: String? = null,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer 
+               else MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(
+            1.dp, 
+            MaterialTheme.colorScheme.outlineVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                if (isSelected) Icons.Default.RadioButtonChecked else Icons.Default.RadioButtonUnchecked,
+                contentDescription = null,
+                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.width(12.dp))
+            
+            if (icon != null) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(Modifier.width(12.dp))
+            }
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer 
+                           else MaterialTheme.colorScheme.onSurface
+                )
+                if (subtitle != null) {
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }

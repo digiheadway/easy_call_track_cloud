@@ -54,10 +54,7 @@ class MainActivity : ComponentActivity() {
         
         enableEdgeToEdge()
         setContent {
-            val settingsRepository = remember { SettingsRepository.getInstance(this) }
-            var showOnboarding by remember { 
-                mutableStateOf(!settingsRepository.isOnboardingCompleted()) 
-            }
+            
             
             val themeMode by viewModel.themeMode.collectAsState()
             val darkTheme = when(themeMode) {
@@ -80,15 +77,14 @@ class MainActivity : ComponentActivity() {
             }
 
             CallCloudTheme(darkTheme = darkTheme) {
+                val settingsRepository = SettingsRepository.getInstance(getApplicationContext())
+                var showOnboarding by remember { mutableStateOf(!settingsRepository.isOnboardingCompleted()) }
+                
                 if (showOnboarding) {
-                    OnboardingScreen(
-                        onComplete = {
-                            settingsRepository.setOnboardingCompleted(true)
-                            showOnboarding = false
-                            // Trigger initial sync immediately after onboarding
-                            CallSyncWorker.runNow(this@MainActivity)
-                        }
-                    )
+                    OnboardingScreen(onComplete = {
+                        settingsRepository.setOnboardingCompleted(true)
+                        showOnboarding = false
+                    })
                 } else {
                     MainScreen(audioPlayer = audioPlayer)
                 }
@@ -155,25 +151,27 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
         }
     ) { innerPadding ->
         // Only apply bottom padding from scaffold, let screens handle status bar
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(bottom = innerPadding.calculateBottomPadding())
         ) {
-            when (selectedTab) {
-                AppTab.CALLS -> CallsScreen(audioPlayer = audioPlayer)
-                AppTab.PERSONS -> PersonsScreen(audioPlayer = audioPlayer)
-                AppTab.REPORTS -> ReportsScreen()
-                AppTab.SETTINGS -> SettingsScreen()
-            }
+            Box(modifier = Modifier.weight(1f)) {
+                when (selectedTab) {
+                    AppTab.CALLS -> CallsScreen(audioPlayer = audioPlayer)
+                    AppTab.PERSONS -> PersonsScreen(audioPlayer = audioPlayer)
+                    AppTab.REPORTS -> ReportsScreen()
+                    AppTab.SETTINGS -> SettingsScreen()
+                }
 
-            if (lookupPhoneNumber != null) {
-                PhoneLookupResultModal(
-                    phoneNumber = lookupPhoneNumber!!,
-                    uiState = settingsState,
-                    viewModel = settingsViewModel,
-                    onDismiss = { viewModel.clearLookupPhoneNumber() }
-                )
+                if (lookupPhoneNumber != null) {
+                    PhoneLookupResultModal(
+                        phoneNumber = lookupPhoneNumber!!,
+                        uiState = settingsState,
+                        viewModel = settingsViewModel,
+                        onDismiss = { viewModel.clearLookupPhoneNumber() }
+                    )
+                }
             }
         }
     }

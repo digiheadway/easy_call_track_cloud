@@ -29,6 +29,11 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
     private val settingsRepository = SettingsRepository.getInstance(context)
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        if (androidx.core.content.ContextCompat.checkSelfPermission(applicationContext, android.Manifest.permission.READ_CALL_LOG) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "Missing READ_CALL_LOG permission. Skipping sync pass.")
+            return@withContext Result.success()
+        }
+        
         Log.d(TAG, "Starting sync pass...")
         
         // PHASE 0: ALWAYS sync from system call log to local Room DB (OFFLINE-FIRST)

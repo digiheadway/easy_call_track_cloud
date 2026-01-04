@@ -40,7 +40,11 @@ class SyncService : Service() {
         Log.d(TAG, "SyncService created")
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification())
-        startPhoneStateMonitoring()
+        if (checkHasPermissions()) {
+            startPhoneStateMonitoring()
+        } else {
+            Log.d(TAG, "Permissions missing, skipping monitor start")
+        }
         
         // Run initial sync
         triggerSync()
@@ -92,6 +96,16 @@ class SyncService : Service() {
             .setSilent(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
+    }
+
+    private fun checkHasPermissions(): Boolean {
+        val phoneState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_PHONE_STATE) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        } else true
+        
+        val callLog = androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_CALL_LOG) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        
+        return phoneState && callLog
     }
 
     private fun startPhoneStateMonitoring() {
@@ -269,6 +283,10 @@ class SyncService : Service() {
     }
 
     private fun triggerSync() {
+        if (!checkHasPermissions()) {
+            Log.d(TAG, "Sync skipped - missing permissions")
+            return
+        }
         Log.d(TAG, "Triggering sync workers")
         CallSyncWorker.runNow(this)
         RecordingUploadWorker.runNow(this)

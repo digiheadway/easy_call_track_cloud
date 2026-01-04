@@ -19,18 +19,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _lookupPhoneNumber = MutableStateFlow<String?>(null)
     val lookupPhoneNumber: StateFlow<String?> = _lookupPhoneNumber.asStateFlow()
 
+    private val _isSessionOnboardingDismissed = MutableStateFlow(false)
+    val isSessionOnboardingDismissed: StateFlow<Boolean> = _isSessionOnboardingDismissed.asStateFlow()
+
     init {
         loadSettings()
+        _isSessionOnboardingDismissed.value = settingsRepository.isOnboardingOffline()
     }
 
     private fun loadSettings() {
         _themeMode.value = settingsRepository.getThemeMode()
     }
-
-    // You might want to refresh this if it changes elsewhere.
-    // Ideally SettingsRepository would expose a Flow, but it uses SharedPreferences.
-    // For now, we can rely on onResume to refresh it in MainActivity or make SettingsRepository expose a Flow.
-    // Since MainActivity has onResume, we can call refreshTheme() there.
     
     fun refreshTheme() {
         val current = settingsRepository.getThemeMode()
@@ -45,5 +44,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearLookupPhoneNumber() {
         _lookupPhoneNumber.value = null
+    }
+
+    fun dismissOnboardingSession() {
+        _isSessionOnboardingDismissed.value = true
+        settingsRepository.setOnboardingOffline(true)
+    }
+
+    fun resetOnboardingSession() {
+        _isSessionOnboardingDismissed.value = false
+        settingsRepository.setOnboardingOffline(false)
     }
 }

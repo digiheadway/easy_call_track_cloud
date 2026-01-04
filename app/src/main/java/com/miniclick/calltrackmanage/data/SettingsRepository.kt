@@ -36,6 +36,9 @@ class SettingsRepository private constructor(private val context: Context) {
     private val KEY_PLAN_EXPIRY_DATE = "plan_expiry_date"
     private val KEY_ALLOWED_STORAGE_GB = "allowed_storage_gb"
     private val KEY_STORAGE_USED_BYTES = "storage_used_bytes"
+    private val KEY_ONBOARDING_OFFLINE = "onboarding_offline"
+
+    private val KEY_TRACK_START_DATE_SET = "track_start_date_set"
 
     private val prefs by lazy {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -92,14 +95,7 @@ class SettingsRepository private constructor(private val context: Context) {
     // Track Start Date
     // Default is Yesterday (Today - 1)
     fun getTrackStartDate(): Long {
-        val defaultDate = Calendar.getInstance().apply {
-            add(Calendar.DAY_OF_YEAR, -1)
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
-        return prefs.getLong(KEY_TRACK_START_DATE, defaultDate)
+        return prefs.getLong(KEY_TRACK_START_DATE, 0L)
     }
 
     fun getTrackStartDateFlow(): Flow<Long> = callbackFlow {
@@ -114,8 +110,14 @@ class SettingsRepository private constructor(private val context: Context) {
     }
 
     fun setTrackStartDate(date: Long) {
-        prefs.edit().putLong(KEY_TRACK_START_DATE, date).apply()
+        prefs.edit()
+            .putLong(KEY_TRACK_START_DATE, date)
+            .putBoolean(KEY_TRACK_START_DATE_SET, true)
+            .apply()
     }
+
+    fun isTrackStartDateSet(): Boolean = prefs.getBoolean(KEY_TRACK_START_DATE_SET, false)
+    fun setTrackStartDateSet(set: Boolean) = prefs.edit().putBoolean(KEY_TRACK_START_DATE_SET, set).apply()
 
     fun getOwnPhoneNumber(): String? {
         return prefs.getString(KEY_OWN_PHONE_NUMBER, null)
@@ -187,12 +189,15 @@ class SettingsRepository private constructor(private val context: Context) {
     }
 
     fun isOnboardingCompleted(): Boolean {
-        return prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
+        return prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false) || prefs.getBoolean(KEY_ONBOARDING_OFFLINE, false)
     }
 
     fun setOnboardingCompleted(completed: Boolean) {
         prefs.edit().putBoolean(KEY_ONBOARDING_COMPLETED, completed).apply()
     }
+
+    fun isOnboardingOffline(): Boolean = prefs.getBoolean(KEY_ONBOARDING_OFFLINE, false)
+    fun setOnboardingOffline(offline: Boolean) = prefs.edit().putBoolean(KEY_ONBOARDING_OFFLINE, offline).apply()
 
     fun getSim1CalibrationHint(): String? {
         return prefs.getString(KEY_SIM1_CALIBRATION_HINT, null)

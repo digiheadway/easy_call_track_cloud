@@ -551,6 +551,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         settingsRepository.setTrackStartDate(date)
         _uiState.update { it.copy(trackStartDate = date) }
     }
+
+    fun isTrackStartDateSet(): Boolean = settingsRepository.isTrackStartDateSet()
+
+    fun updateCallRecordEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setCallRecordEnabled(enabled)
+            _uiState.update { it.copy(callRecordEnabled = enabled) }
+        }
+    }
+
+    fun updatePlanExpiryDate(date: String?) {
+        settingsRepository.setPlanExpiryDate(date)
+        _uiState.update { it.copy(planExpiryDate = date) }
+    }
     
     fun updateRecordingPath(path: String) {
         recordingRepository.setCustomPath(path)

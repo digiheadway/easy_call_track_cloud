@@ -97,19 +97,6 @@ fun CallsScreen(
     }
 
     // Permissions
-    val permissions = listOf(
-        Manifest.permission.READ_CALL_LOG,
-        Manifest.permission.READ_CONTACTS,
-        Manifest.permission.READ_PHONE_STATE,
-        Manifest.permission.READ_EXTERNAL_STORAGE,
-        Manifest.permission.READ_MEDIA_AUDIO
-    )
-    
-    val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) {
-        // Just refresh Room data if permissions granted, background sync will handle the rest
-    }
 
     // Audio Picker
     var attachTarget by remember { mutableStateOf<CallDataEntity?>(null) }
@@ -130,9 +117,6 @@ fun CallsScreen(
         // Sync is handled by workers triggered by call events or manual pull-to-refresh.
     }
 
-    LaunchedEffect(Unit) {
-        launcher.launch(permissions.toTypedArray())
-    }
 
     // Call End Detection
     DisposableEffect(Unit) {
@@ -206,7 +190,6 @@ fun CallsScreen(
             isSearchActive = uiState.isSearchVisible,
             isFilterActive = uiState.isFiltersVisible
         )
-        
         var showSyncQueue by remember { mutableStateOf(false) }
         
         if (showSyncQueue) {
@@ -269,61 +252,90 @@ fun CallsScreen(
         }
         
         // Content
-        Box(modifier = Modifier.weight(1f)) {
-            if (uiState.isLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else if (uiState.simSelection == "Off") {
-                EmptyState(
-                    icon = Icons.Default.SimCard,
-                    title = "Select Sim Card to Track",
-                    description = "Capture your call logs by selecting which SIM cards to monitor.",
-                    action = {
-                        Button(
-                            onClick = { showTrackSimModal = true },
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(Icons.Default.Done, null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Select SIM Now")
-                        }
+        OnboardingGuide(
+            asEmptyState = true,
+            modifier = Modifier.weight(1f)
+        ) {
+            Box(Modifier.fillMaxSize()) {
+                if (uiState.isLoading) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
                     }
-                )
-            } else if (uiState.filteredLogs.isEmpty()) {
-                val isFiltered = uiState.searchQuery.isNotEmpty() || 
-                                uiState.callTypeFilter != CallTypeFilter.ALL ||
-                                uiState.connectedFilter != ConnectedFilter.ALL ||
-                                uiState.notesFilter != NotesFilter.ALL ||
-                                uiState.contactsFilter != ContactsFilter.ALL ||
-                                uiState.attendedFilter != AttendedFilter.ALL ||
-                                uiState.labelFilter.isNotEmpty()
-                
-                EmptyState(
-                    icon = if (isFiltered) Icons.Default.SearchOff else Icons.Default.History,
-                    title = if (isFiltered) "No results found" else "No calls yet",
-                    description = if (isFiltered) "Try adjusting your filters or search query." else "Your call history will appear here once tracking starts."
-                )
-            } else {
-                CallLogList(
-                    logs = uiState.filteredLogs,
-                    recordings = uiState.recordings,
-                    personGroupsMap = allPersonGroupsMap,
-                    modifier = Modifier.fillMaxSize(),
-                    onSaveCallNote = { id, note -> viewModel.saveCallNote(id, note) },
-                    onSavePersonNote = { number, note -> viewModel.savePersonNote(number, note) },
-                    viewModel = viewModel,
-                    audioPlayer = audioPlayer,
-                    whatsappPreference = uiState.whatsappPreference,
-                    context = context,
-                    onViewMoreClick = { selectedPersonForDetails = it },
-                    onAttachRecording = { 
-                        attachTarget = it
-                        audioPickerLauncher.launch(arrayOf("audio/*"))
-                    },
-                    canExclude = uiState.allowPersonalExclusion || !uiState.isSyncSetup,
-                    onCustomLookup = { lookupPhoneNumber = it }
-                )
+                } else if (uiState.simSelection == "Off") {
+                    EmptyState(
+                        icon = Icons.Default.SimCard,
+                        title = "Select Sim Card to Track",
+                        description = "Capture your call logs by selecting which SIM cards to monitor.",
+                        action = {
+                            Button(
+                                onClick = { showTrackSimModal = true },
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(Icons.Default.Done, null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Select SIM Now")
+                            }
+                        }
+                    )
+                } else if (uiState.filteredLogs.isEmpty()) {
+                    val isFiltered = uiState.searchQuery.isNotEmpty() || 
+                                    uiState.callTypeFilter != CallTypeFilter.ALL ||
+                                    uiState.connectedFilter != ConnectedFilter.ALL ||
+                                    uiState.notesFilter != NotesFilter.ALL ||
+                                    uiState.contactsFilter != ContactsFilter.ALL ||
+                                    uiState.attendedFilter != AttendedFilter.ALL ||
+                                    uiState.labelFilter.isNotEmpty()
+                    
+                    if (isFiltered) {
+                        EmptyState(
+                            icon = Icons.Default.SearchOff,
+                            title = "No results found",
+                            description = "Try adjusting your filters or search query."
+                        )
+                    } else if (uiState.isSyncing) {
+                        EmptyState(
+                            icon = Icons.Default.Sync,
+                            title = "Scanning for calls...",
+                            description = "We are importing your call history from the device. Please wait a moment."
+                        )
+                    } else {
+                        EmptyState(
+                            icon = Icons.Default.History,
+                            title = "No calls yet",
+                            description = "Your call history will appear here once tracking starts.",
+                            action = {
+                                Button(
+                                    onClick = { viewModel.syncFromSystem() },
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(Icons.Default.Refresh, null)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Sync Now")
+                                }
+                            }
+                        )
+                    }
+                } else {
+                    CallLogList(
+                        logs = uiState.filteredLogs,
+                        recordings = uiState.recordings,
+                        personGroupsMap = allPersonGroupsMap,
+                        modifier = Modifier.fillMaxSize(),
+                        onSaveCallNote = { id, note -> viewModel.saveCallNote(id, note) },
+                        onSavePersonNote = { number, note -> viewModel.savePersonNote(number, note) },
+                        viewModel = viewModel,
+                        audioPlayer = audioPlayer,
+                        whatsappPreference = uiState.whatsappPreference,
+                        context = context,
+                        onViewMoreClick = { selectedPersonForDetails = it },
+                        onAttachRecording = { 
+                            attachTarget = it
+                            audioPickerLauncher.launch(arrayOf("audio/*"))
+                        },
+                        canExclude = uiState.allowPersonalExclusion || !uiState.isSyncSetup,
+                        onCustomLookup = { lookupPhoneNumber = it }
+                    )
+                }
             }
         }
     }
@@ -429,21 +441,6 @@ fun PersonsScreen(
         )
     }
 
-    // Permissions
-    val permissions = listOf(
-        Manifest.permission.READ_CALL_LOG,
-        Manifest.permission.READ_CONTACTS,
-        Manifest.permission.READ_PHONE_STATE,
-        Manifest.permission.READ_EXTERNAL_STORAGE,
-        Manifest.permission.READ_MEDIA_AUDIO
-    )
-    
-    val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) {
-        // Just refresh Room data if permissions granted, background sync will handle the rest
-    }
-
     // Audio Picker
     var attachTarget by remember { mutableStateOf<CallDataEntity?>(null) }
     val audioPickerLauncher = rememberLauncherForActivityResult(
@@ -461,10 +458,6 @@ fun PersonsScreen(
     com.miniclick.calltrackmanage.ui.settings.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
         // No auto-sync here to avoid lag. 
         // Sync is handled by workers triggered by call events or manual pull-to-refresh.
-    }
-
-    LaunchedEffect(Unit) {
-        launcher.launch(permissions.toTypedArray())
     }
 
     // Map of phone number to person data
@@ -591,58 +584,87 @@ fun PersonsScreen(
         }
         
         // Content
-        Box(modifier = Modifier.weight(1f)) {
-            if (uiState.isLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else if (uiState.simSelection == "Off") {
-                EmptyState(
-                    icon = Icons.Default.SimCard,
-                    title = "Select Sim Card to Track",
-                    description = "Capture your call logs by selecting which SIM cards to monitor.",
-                    action = {
-                        Button(
-                            onClick = { showTrackSimModal = true },
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(Icons.Default.Done, null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Select SIM Now")
-                        }
+        OnboardingGuide(
+            asEmptyState = true,
+            modifier = Modifier.weight(1f)
+        ) {
+            Box(Modifier.fillMaxSize()) {
+                if (uiState.isLoading) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
                     }
-                )
-            } else if (displayedPersonGroups.isEmpty()) {
-                val isFiltered = uiState.searchQuery.isNotEmpty() || 
-                                uiState.callTypeFilter != CallTypeFilter.ALL ||
-                                uiState.connectedFilter != ConnectedFilter.ALL ||
-                                uiState.notesFilter != NotesFilter.ALL ||
-                                uiState.contactsFilter != ContactsFilter.ALL ||
-                                uiState.attendedFilter != AttendedFilter.ALL ||
-                                uiState.labelFilter.isNotEmpty()
-
-                EmptyState(
-                    icon = if (isFiltered) Icons.Default.SearchOff else Icons.Default.Group,
-                    title = if (isFiltered) "No results found" else "No contacts yet",
-                    description = if (isFiltered) "Try adjusting your filters or search query." else "People you interact with will appear here."
-                )
-            } else {
-                PersonsList(
-                    persons = displayedPersonGroups,
-                    recordings = uiState.recordings,
-                    audioPlayer = audioPlayer,
-                    context = context,
-                    viewModel = viewModel,
-                    whatsappPreference = uiState.whatsappPreference,
-                    onExclude = { viewModel.excludeNumber(it) },
-                    onViewMoreClick = { selectedPersonForDetails = it },
-                    onAttachRecording = { 
-                        attachTarget = it
-                        audioPickerLauncher.launch(arrayOf("audio/*"))
-                    },
-                    canExclude = uiState.allowPersonalExclusion || !uiState.isSyncSetup,
-                    onCustomLookup = { lookupPhoneNumber = it }
-                )
+                } else if (uiState.simSelection == "Off") {
+                    EmptyState(
+                        icon = Icons.Default.SimCard,
+                        title = "Select Sim Card to Track",
+                        description = "Capture your call logs by selecting which SIM cards to monitor.",
+                        action = {
+                            Button(
+                                onClick = { showTrackSimModal = true },
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(Icons.Default.Done, null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Select SIM Now")
+                            }
+                        }
+                    )
+                } else if (displayedPersonGroups.isEmpty()) {
+                    val isFiltered = uiState.searchQuery.isNotEmpty() || 
+                                    uiState.callTypeFilter != CallTypeFilter.ALL ||
+                                    uiState.connectedFilter != ConnectedFilter.ALL ||
+                                    uiState.notesFilter != NotesFilter.ALL ||
+                                    uiState.contactsFilter != ContactsFilter.ALL ||
+                                    uiState.attendedFilter != AttendedFilter.ALL ||
+                                    uiState.labelFilter.isNotEmpty()
+    
+                    if (isFiltered) {
+                        EmptyState(
+                            icon = Icons.Default.SearchOff,
+                            title = "No results found",
+                            description = "Try adjusting your filters or search query."
+                        )
+                    } else if (uiState.isSyncing) {
+                        EmptyState(
+                            icon = Icons.Default.Sync,
+                            title = "Identifying contacts...",
+                            description = "We are organizing your contacts based on call history. Please wait."
+                        )
+                    } else {
+                        EmptyState(
+                            icon = Icons.Default.Group,
+                            title = "No contacts yet",
+                            description = "People you interact with will appear here.",
+                            action = {
+                                Button(
+                                    onClick = { viewModel.syncFromSystem() },
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(Icons.Default.Refresh, null)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Refresh List")
+                                }
+                            }
+                        )
+                    }
+                } else {
+                    PersonsList(
+                        persons = displayedPersonGroups,
+                        recordings = uiState.recordings,
+                        audioPlayer = audioPlayer,
+                        context = context,
+                        viewModel = viewModel,
+                        whatsappPreference = uiState.whatsappPreference,
+                        onExclude = { viewModel.excludeNumber(it) },
+                        onViewMoreClick = { selectedPersonForDetails = it },
+                        onAttachRecording = { 
+                            attachTarget = it
+                            audioPickerLauncher.launch(arrayOf("audio/*"))
+                        },
+                        canExclude = uiState.allowPersonalExclusion || !uiState.isSyncSetup,
+                        onCustomLookup = { lookupPhoneNumber = it }
+                    )
+                }
             }
         }
     }
@@ -1353,7 +1375,7 @@ fun ReportsScreen(
                 }
             }
         }
-
+        
         // Expandable Filters Row
         AnimatedVisibility(
             visible = uiState.isFiltersVisible,
@@ -1402,11 +1424,19 @@ fun ReportsScreen(
                                 uiState.attendedFilter != AttendedFilter.ALL ||
                                 uiState.labelFilter.isNotEmpty()
                 
-                EmptyState(
-                    icon = if (isFiltered) Icons.Default.SearchOff else Icons.Default.BarChart,
-                    title = if (isFiltered) "No results found" else "No data for reports",
-                    description = if (isFiltered) "Try adjusting your filters or search query." else "Reports will be generated once you have some call activity."
-                )
+                if (isFiltered) {
+                    EmptyState(
+                        icon = Icons.Default.SearchOff,
+                        title = "No results found",
+                        description = "Try adjusting your filters or search query."
+                    )
+                } else {
+                    EmptyState(
+                        icon = Icons.Default.BarChart,
+                        title = "No data for reports",
+                        description = "Reports will be generated once you have some call activity."
+                    )
+                }
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
