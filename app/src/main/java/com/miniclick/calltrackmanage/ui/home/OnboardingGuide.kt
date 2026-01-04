@@ -16,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -106,7 +107,7 @@ fun OnboardingGuide(
         }
     }
 
-    val launcher = rememberLauncherForActivityResult(
+    val singlePermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         checkPermissions()
@@ -117,6 +118,15 @@ fun OnboardingGuide(
         // If storage granted, auto-enable recording setting
         if (hasStorage && !uiState.callRecordEnabled) {
             settingsViewModel.updateCallRecordEnabled(true)
+        }
+    }
+    
+    val multiPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        checkPermissions()
+        if (permissions.containsValue(true)) {
+            com.miniclick.calltrackmanage.service.SyncService.start(context)
         }
     }
     
@@ -139,22 +149,21 @@ fun OnboardingGuide(
         mutableListOf<GuideStep>().apply {
             if (!hasCallLog) {
                 add(GuideStep("CALL_LOG", "Allow Call Log", "Required to track and organize your calls automatically.", Icons.Default.Call, "Allow Access", onAction = { 
-                    launcher.launch(Manifest.permission.READ_CALL_LOG) 
+                    singlePermissionLauncher.launch(Manifest.permission.READ_CALL_LOG) 
                 }))
             }
             if (!hasContacts) {
                 add(GuideStep("CONTACTS", "All Access Contacts", "Identify callers by name from your contact list.", Icons.Default.People, "Allow Access", onAction = {
-                    launcher.launch(Manifest.permission.READ_CONTACTS)
+                    singlePermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
                 }))
             }
             if (!hasPhoneState) {
                 add(GuideStep("PHONE_STATE", "Call Manage", "Detect active calls to show caller information in real-time.", Icons.Default.Phone, "Allow Access", onAction = {
-                    launcher.launch(Manifest.permission.READ_PHONE_STATE)
-                }))
-            }
-            if (!hasSimInfo) {
-                add(GuideStep("SIM_INFO", "Allow SIM Detection", "Identify which SIM card is used for each call for tracking.", Icons.Default.SimCard, "Allow Access", onAction = {
-                    launcher.launch(Manifest.permission.READ_PHONE_NUMBERS)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        multiPermissionLauncher.launch(arrayOf(Manifest.permission.READ_PHONE_STATE, Manifest.permission.READ_PHONE_NUMBERS))
+                    } else {
+                        singlePermissionLauncher.launch(Manifest.permission.READ_PHONE_STATE)
+                    }
                 }))
             }
             if (!settingsViewModel.isTrackStartDateSet()) {
@@ -179,24 +188,47 @@ fun OnboardingGuide(
                 }))
             }
             
-            if (!uiState.callRecordEnabled || !hasStorage) {
-                add(GuideStep("RECORDING", "Attach Call Recording?", "Auto-attach recordings to call logs for easy playback.", Icons.Default.Mic, "Enable Now", onAction = {
-                    if (!hasStorage) {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            launcher.launch(Manifest.permission.READ_MEDIA_AUDIO)
+            if ((!uiState.callRecordEnabled && !uiState.userDeclinedRecording) || (!hasStorage && uiState.callRecordEnabled)) {
+                 // Logic: If already enabled but missing storage, show it.
+                 // If disabled AND not declined, show it.
+                 // Wait, simplified: Show if logic requires setup.
+                 // If user declined, we hide it unless enabled manually later?
+                 // But wait, if callRecordEnabled is false and userDeclinedRecording is false, show.
+                 // If callRecordEnabled is true but no storage, show (ignoring decline becuase they turned it on!).
+            }
+            // Let's refine the condition.
+            val showRecordingStep = if (uiState.callRecordEnabled) !hasStorage else !uiState.userDeclinedRecording
+            
+            if (showRecordingStep) {
+                add(GuideStep(
+                    type = "RECORDING",
+                    title = "Attach Call Recording?",
+                    description = "Auto-attach recordings to call logs for easy playback.",
+                    icon = Icons.Default.Mic,
+                    actionLabel = "Enable Now",
+                    onAction = {
+                        if (!hasStorage) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                singlePermissionLauncher.launch(Manifest.permission.READ_MEDIA_AUDIO)
+                            } else {
+                                singlePermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+                            }
                         } else {
-                            launcher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+                            settingsViewModel.updateCallRecordEnabled(true)
                         }
-                    } else {
-                        settingsViewModel.updateCallRecordEnabled(true)
+                    },
+                    secondaryActionLabel = "Skip / Don't Attach",
+                    onSecondaryAction = {
+                        settingsViewModel.updateUserDeclinedRecording(true)
+                        settingsViewModel.updateCallRecordEnabled(false)
                     }
-                }))
+                ))
             }
             
             if (!hasNotifications) {
                 add(GuideStep("NOTIFICATIONS", "Enable Notifications", "Get updates on sync status and incoming calls.", Icons.Default.Notifications, "Allow", onAction = {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        singlePermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     }
                 }))
             }
@@ -245,7 +277,15 @@ fun OnboardingGuide(
                 }
             }
         } else {
-            contentWhenDone()
+            // Ensure content has its own background to prevent any visual bleed-through
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .zIndex(1f)
+            ) {
+                contentWhenDone()
+            }
         }
     }
 

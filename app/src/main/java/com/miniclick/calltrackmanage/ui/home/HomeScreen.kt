@@ -61,6 +61,8 @@ import java.util.*
 import com.miniclick.calltrackmanage.ui.common.SyncQueueModal
 import com.miniclick.calltrackmanage.ui.common.SyncQueueItem
 import com.miniclick.calltrackmanage.ui.common.PhoneLookupResultModal
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material3.ripple
 
 // ============================================
 // CALLS SCREEN (Individual call logs)
@@ -75,6 +77,11 @@ fun CallsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val settingsState by settingsViewModel.uiState.collectAsState()
     val context = LocalContext.current
+
+    // Refresh settings whenever this screen is displayed
+    LaunchedEffect(Unit) {
+        viewModel.refreshSettings()
+    }
     
     var showTrackSimModal by remember { mutableStateOf(false) }
     var lookupPhoneNumber by remember { mutableStateOf<String?>(null) }
@@ -420,6 +427,11 @@ fun PersonsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val settingsState by settingsViewModel.uiState.collectAsState()
     val context = LocalContext.current
+
+    // Refresh settings whenever this screen is displayed
+    LaunchedEffect(Unit) {
+        viewModel.refreshSettings()
+    }
     
     var showTrackSimModal by remember { mutableStateOf(false) }
     var lookupPhoneNumber by remember { mutableStateOf<String?>(null) }
@@ -1024,16 +1036,24 @@ fun PersonCard(
     onAttachRecording: (CallDataEntity) -> Unit,
     onMarkAllReviewed: () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-            .combinedClickable(
-                onClick = onCardClick,
-                onLongClick = onLongClick
-            ),
+            .padding(horizontal = 8.dp, vertical = 4.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = onCardClick,
+                    onLongClick = onLongClick,
+                    interactionSource = interactionSource,
+                    indication = ripple(bounded = true)
+                )
+        ) {
         Column {
             // Main Row (Always Visible)
             Row(
@@ -1106,7 +1126,9 @@ fun PersonCard(
                         Surface(
                             shape = RoundedCornerShape(16.dp),
                             color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.clickable { onViewMoreClick() }
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable { onViewMoreClick() }
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -1276,6 +1298,7 @@ fun PersonCard(
         }
     }
 }
+        }
 
 @Composable
 fun CallTypeSmallBadge(icon: ImageVector, count: Int, color: Color) {
@@ -1289,8 +1312,8 @@ fun CallTypeSmallBadge(icon: ImageVector, count: Int, color: Color) {
 fun LabelChip(label: String, onClick: (() -> Unit)? = null) {
     Surface(
         color = MaterialTheme.colorScheme.tertiaryContainer,
-        shape = RoundedCornerShape(4.dp),
-        modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
+        shape = RoundedCornerShape(8.dp),
+        modifier = if (onClick != null) Modifier.clip(RoundedCornerShape(8.dp)).clickable(onClick = onClick) else Modifier
     ) {
         Text(
             text = label.uppercase(),
@@ -1955,12 +1978,11 @@ fun PersonInteractionBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        dragHandle = { BottomSheetDefaults.DragHandle() },
-        modifier = Modifier.fillMaxHeight(0.9f)
+        dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxHeight(0.9f)
                 .padding(horizontal = 12.dp)
         ) {
             // Header
@@ -2035,9 +2057,11 @@ fun PersonInteractionBottomSheet(
                 person.calls.sortedByDescending { it.callDate }
             }
             
+            val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(bottom = 24.dp)
+                contentPadding = PaddingValues(bottom = navBarPadding + 24.dp)
             ) {
                 items(sortedCalls, key = { it.compositeId }) { log ->
                     // Trigger check for recording path
@@ -2136,6 +2160,7 @@ fun InteractionRow(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
                             .clickable { onNoteClick(call) }
                             .padding(top = 2.dp)
                     )
@@ -2802,16 +2827,24 @@ fun CallLogItem(
     // Check if this recording is currently playing
     val isThisPlaying = currentFile == recordingPath && recordingPath != null
     
+    val interactionSource = remember { MutableInteractionSource() }
+    
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-            .combinedClickable(
-                onClick = onCardClick,
-                onLongClick = onLongClick
-            ),
+            .padding(horizontal = 8.dp, vertical = 4.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = onCardClick,
+                    onLongClick = onLongClick,
+                    interactionSource = interactionSource,
+                    indication = ripple(bounded = true)
+                )
+        ) {
         Column {
             // Main Row (Always Visible)
             Row(
@@ -3186,6 +3219,7 @@ fun ActionIconButton(
         )
     }
 }
+        }
 
 @Composable
 fun NoteDialog(

@@ -34,6 +34,8 @@ enum class ContactsFilter { ALL, IN_CONTACTS, NOT_IN_CONTACTS }
 enum class AttendedFilter { ALL, ATTENDED, NEVER_ATTENDED }
 enum class ViewMode { CALLS, PERSONS }
 enum class DateRange { TODAY, LAST_3_DAYS, LAST_7_DAYS, LAST_14_DAYS, LAST_30_DAYS, THIS_MONTH, PREVIOUS_MONTH, CUSTOM, ALL }
+enum class PersonSortBy { LAST_CALL, MOST_CALLS }
+enum class SortDirection { ASCENDING, DESCENDING }
 
 data class HomeUiState(
     val callLogs: List<CallDataEntity> = emptyList(),
@@ -77,6 +79,8 @@ data class HomeUiState(
     val pendingPersonUpdatesCount: Int = 0,
     val isNetworkAvailable: Boolean = true,
     val isSyncSetup: Boolean = false,
+    val personSortBy: PersonSortBy = PersonSortBy.LAST_CALL,
+    val personSortDirection: SortDirection = SortDirection.DESCENDING,
     val allowPersonalExclusion: Boolean = false
 )
 
@@ -324,6 +328,18 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         triggerFilter()
     }
 
+    fun setPersonSortBy(sortBy: PersonSortBy) {
+        _uiState.update { it.copy(personSortBy = sortBy) }
+        applyPersonFilters()
+    }
+
+    fun togglePersonSortDirection() {
+        _uiState.update { 
+            it.copy(personSortDirection = if (it.personSortDirection == SortDirection.ASCENDING) SortDirection.DESCENDING else SortDirection.ASCENDING) 
+        }
+        applyPersonFilters()
+    }
+
     private var filterJob: kotlinx.coroutines.Job? = null
     private fun triggerFilter() {
         filterJob?.cancel()
@@ -460,8 +476,25 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 matchesQuery && matchesLabel
             }
         }
+
+        val sorted = when (current.personSortBy) {
+            PersonSortBy.LAST_CALL -> {
+                if (current.personSortDirection == SortDirection.DESCENDING) {
+                    filtered.sortedByDescending { it.lastCallDate ?: 0L }
+                } else {
+                    filtered.sortedBy { it.lastCallDate ?: 0L }
+                }
+            }
+            PersonSortBy.MOST_CALLS -> {
+                if (current.personSortDirection == SortDirection.DESCENDING) {
+                    filtered.sortedByDescending { it.totalCalls }
+                } else {
+                    filtered.sortedBy { it.totalCalls }
+                }
+            }
+        }
         
-        _uiState.update { it.copy(filteredPersons = filtered) }
+        _uiState.update { it.copy(filteredPersons = sorted) }
     }
 
     // ============================================
@@ -557,7 +590,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun refreshSettings() {
+    fun refreshSettings() {
         val simSelection = settingsRepository.getSimSelection()
         val trackStartDate = settingsRepository.getTrackStartDate()
         val whatsappPreference = settingsRepository.getWhatsappPreference()

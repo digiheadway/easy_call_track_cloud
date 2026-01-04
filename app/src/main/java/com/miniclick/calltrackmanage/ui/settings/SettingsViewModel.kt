@@ -86,7 +86,8 @@ data class SettingsUiState(
     val callRecordEnabled: Boolean = true,
     val planExpiryDate: String? = null,
     val allowedStorageGb: Float = 0f,
-    val storageUsedBytes: Long = 0L
+    val storageUsedBytes: Long = 0L,
+    val userDeclinedRecording: Boolean = false
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -193,7 +194,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 callRecordEnabled = settingsRepository.isCallRecordEnabled(),
                 planExpiryDate = settingsRepository.getPlanExpiryDate(),
                 allowedStorageGb = settingsRepository.getAllowedStorageGb(),
-                storageUsedBytes = settingsRepository.getStorageUsedBytes()
+                storageUsedBytes = settingsRepository.getStorageUsedBytes(),
+                userDeclinedRecording = settingsRepository.isUserDeclinedRecording()
             )
         }
         refreshRecordingPathInfo()
@@ -325,7 +327,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    private fun fetchWhatsappApps() {
+    fun fetchWhatsappApps() {
         viewModelScope.launch(Dispatchers.IO) {
             val ctx = getApplication<Application>()
             val packageManager = ctx.packageManager
@@ -575,6 +577,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun clearCustomRecordingPath() {
         recordingRepository.clearCustomPath()
         refreshRecordingPathInfo()
+    }
+
+    fun updateUserDeclinedRecording(declined: Boolean) {
+        settingsRepository.setUserDeclinedRecording(declined)
+        _uiState.update { it.copy(userDeclinedRecording = declined) }
     }
 
     private fun refreshRecordingPathInfo() {

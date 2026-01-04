@@ -39,6 +39,7 @@ class SettingsRepository private constructor(private val context: Context) {
     private val KEY_ONBOARDING_OFFLINE = "onboarding_offline"
 
     private val KEY_TRACK_START_DATE_SET = "track_start_date_set"
+    private val KEY_USER_DECLINED_RECORDING = "user_declined_recording"
 
     private val prefs by lazy {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -270,4 +271,7 @@ class SettingsRepository private constructor(private val context: Context) {
 
     fun getStorageUsedBytes(): Long = prefs.getLong(KEY_STORAGE_USED_BYTES, 0L)
     fun setStorageUsedBytes(bytes: Long) = prefs.edit().putLong(KEY_STORAGE_USED_BYTES, bytes).apply()
+
+    fun isUserDeclinedRecording(): Boolean = prefs.getBoolean(KEY_USER_DECLINED_RECORDING, false)
+    fun setUserDeclinedRecording(declined: Boolean) = prefs.edit().putBoolean(KEY_USER_DECLINED_RECORDING, declined).apply()
 }

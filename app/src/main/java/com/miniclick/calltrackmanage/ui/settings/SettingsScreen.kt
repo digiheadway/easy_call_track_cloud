@@ -601,7 +601,10 @@ fun SettingsScreen(
                     trailingContent = {
                         Icon(Icons.Default.ChevronRight, contentDescription = null)
                     },
-                    modifier = Modifier.clickable { showWhatsappModal = true }
+                    modifier = Modifier.clickable { 
+                        viewModel.fetchWhatsappApps()
+                        showWhatsappModal = true 
+                    }
                 )
                 
                 if (showWhatsappModal) {
