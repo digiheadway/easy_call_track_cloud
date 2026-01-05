@@ -87,7 +87,8 @@ data class SettingsUiState(
     val planExpiryDate: String? = null,
     val allowedStorageGb: Float = 0f,
     val storageUsedBytes: Long = 0L,
-    val userDeclinedRecording: Boolean = false
+    val userDeclinedRecording: Boolean = false,
+    val isDialerEnabled: Boolean = true
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -195,7 +196,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 planExpiryDate = settingsRepository.getPlanExpiryDate(),
                 allowedStorageGb = settingsRepository.getAllowedStorageGb(),
                 storageUsedBytes = settingsRepository.getStorageUsedBytes(),
-                userDeclinedRecording = settingsRepository.isUserDeclinedRecording()
+                userDeclinedRecording = settingsRepository.isUserDeclinedRecording(),
+                isDialerEnabled = settingsRepository.isDialerEnabled()
             )
         }
         refreshRecordingPathInfo()
@@ -599,6 +601,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 )
             }
         }
+    }
+
+    fun updateDialerEnabled(enabled: Boolean) {
+        settingsRepository.setDialerEnabled(enabled)
+        _uiState.update { it.copy(isDialerEnabled = enabled) }
     }
 
     fun updatePairingCode(code: String) {

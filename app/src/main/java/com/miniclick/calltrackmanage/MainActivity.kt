@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.miniclick.calltrackmanage.ui.home.DialerScreen
 import com.miniclick.calltrackmanage.ui.home.CallsScreen
 import com.miniclick.calltrackmanage.ui.home.PersonsScreen
 import com.miniclick.calltrackmanage.ui.home.ReportsScreen
@@ -49,6 +50,7 @@ enum class AppTab(
     val icon: ImageVector,
     val selectedIcon: ImageVector
 ) {
+    DIALER("Dialer", Icons.Default.Dialpad, Icons.Filled.Dialpad),
     CALLS("Calls", Icons.Default.Call, Icons.Filled.Call),
     PERSONS("Persons", Icons.Default.People, Icons.Filled.People),
     REPORTS("Reports", Icons.Default.Assessment, Icons.Filled.Assessment),
@@ -244,14 +246,21 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
     val lookupPhoneNumber by viewModel.lookupPhoneNumber.collectAsState()
     val settingsViewModel: SettingsViewModel = viewModel()
     val settingsState by settingsViewModel.uiState.collectAsState()
-    var selectedTab by remember { mutableStateOf(AppTab.CALLS) }
+    val isDialerEnabled = settingsState.isDialerEnabled
+    
+    var selectedTab by remember(isDialerEnabled) { 
+        mutableStateOf(if (isDialerEnabled) AppTab.DIALER else AppTab.CALLS) 
+    }
+    
+    val tabs = remember(isDialerEnabled) {
+        if (isDialerEnabled) AppTab.entries else AppTab.entries.filter { it != AppTab.DIALER }
+    }
     
     Scaffold(
         bottomBar = {
             Column {
-
                 NavigationBar {
-                    AppTab.entries.forEach { tab ->
+                    tabs.forEach { tab ->
                         NavigationBarItem(
                             selected = selectedTab == tab,
                             onClick = { selectedTab = tab },
@@ -281,6 +290,7 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
         ) {
             Box(modifier = Modifier.weight(1f)) {
                 when (selectedTab) {
+                    AppTab.DIALER -> DialerScreen()
                     AppTab.CALLS -> CallsScreen(audioPlayer = audioPlayer)
                     AppTab.PERSONS -> PersonsScreen(audioPlayer = audioPlayer)
                     AppTab.REPORTS -> ReportsScreen()

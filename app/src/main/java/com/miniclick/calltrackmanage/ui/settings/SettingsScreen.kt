@@ -620,6 +620,23 @@ fun SettingsScreen(
                 }
 
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                // Dialer Toggle
+                ListItem(
+                    headlineContent = { Text("Display Dialer") },
+                    supportingContent = { Text("Show dialer tab for making calls") },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.Dialpad, MaterialTheme.colorScheme.primary) 
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = uiState.isDialerEnabled,
+                            onCheckedChange = { viewModel.updateDialerEnabled(it) }
+                        )
+                    }
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 
                 // Caller ID Overlay Toggle
                 
