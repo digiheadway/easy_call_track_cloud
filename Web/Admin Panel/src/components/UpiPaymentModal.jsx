@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 
 // UPI Configuration
 const UPI_ID = '9068062563@ptaxis';
-const UPI_NAME = 'Call Track Cloud';
+const UPI_NAME = 'MiniClick Calls';
 
 export default function UpiPaymentModal({
     isOpen,

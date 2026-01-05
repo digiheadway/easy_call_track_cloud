@@ -26,6 +26,22 @@ import com.miniclick.calltrackmanage.worker.CallSyncWorker
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.miniclick.calltrackmanage.ui.common.PhoneLookupResultModal
 import com.miniclick.calltrackmanage.ui.settings.SettingsViewModel
+import com.miniclick.calltrackmanage.data.RecordingRepository
+import com.miniclick.calltrackmanage.data.CallDataRepository
+import com.miniclick.calltrackmanage.worker.RecordingUploadWorker
+import android.content.Intent
+import android.net.Uri
+import android.provider.OpenableColumns
+import android.util.Log
+import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 // Navigation tabs
 enum class AppTab(
@@ -110,9 +126,116 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: android.content.Intent?) {
-        intent?.getStringExtra("phone_lookup")?.let { phoneNumber ->
+        if (intent == null) return
+
+        // Handle phone lookup from notifications
+        intent.getStringExtra("phone_lookup")?.let { phoneNumber ->
             viewModel.setLookupPhoneNumber(phoneNumber)
         }
+
+        // Handle shared recording files (Google Dialer support)
+        if (intent.action == Intent.ACTION_SEND && intent.type?.startsWith("audio/") == true) {
+            (intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))?.let { uri ->
+                processSharedRecording(uri)
+            }
+        }
+    }
+
+    private fun processSharedRecording(uri: Uri) {
+        lifecycleScope.launch {
+            val context = applicationContext
+            val fileName = getFileName(uri)
+            val recordingRepo = RecordingRepository.getInstance(context)
+            val callRepo = CallDataRepository.getInstance(context)
+            
+            val importedFile = withContext(Dispatchers.IO) {
+                recordingRepo.importSharedRecording(uri, fileName)
+            }
+
+            if (importedFile != null) {
+                // Tiered search through recent calls to find a match
+                val searchTiers = listOf(20, 50, 100, 300, 700, 1000, 3000, 5000)
+                var matchedCall: com.miniclick.calltrackmanage.data.db.CallDataEntity? = null
+                
+                val allRecentCalls = withContext(Dispatchers.IO) {
+                    callRepo.getAllCalls().take(5000) 
+                }
+                
+                var checkedCount = 0
+                for (tier in searchTiers) {
+                    if (checkedCount >= allRecentCalls.size) break
+                    
+                    val limit = minOf(tier, allRecentCalls.size)
+                    for (i in checkedCount until limit) {
+                        val call = allRecentCalls[i]
+                        val isMatch = recordingRepo.findRecordingInList(
+                            arrayOf(importedFile),
+                            call.callDate,
+                            call.duration,
+                            call.phoneNumber,
+                            call.contactName
+                        ) != null
+                        
+                        if (isMatch) {
+                            matchedCall = call
+                            break
+                        }
+                    }
+                    if (matchedCall != null) break
+                    checkedCount = limit
+                }
+
+                if (matchedCall != null) {
+                    // Update DB immediately
+                    withContext(Dispatchers.IO) {
+                        callRepo.updateRecordingPath(matchedCall.compositeId, importedFile.absolutePath)
+                    }
+                    
+                    val personName = matchedCall.contactName ?: matchedCall.phoneNumber
+                    val callTypeStr = when (matchedCall.callType) {
+                        android.provider.CallLog.Calls.INCOMING_TYPE -> "Incoming Call"
+                        android.provider.CallLog.Calls.OUTGOING_TYPE -> "Outgoing Call"
+                        else -> "Call"
+                    }
+                    val timeStr = SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault()).format(Date(matchedCall.callDate))
+                    
+                    Toast.makeText(context, "Attached to $personName's $callTypeStr on $timeStr", Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(context, "No Call Log found to attach this recording, Please Attach from Call history in App.", Toast.LENGTH_LONG).show()
+                }
+                
+                // Trigger an immediate sync to upload the new recording
+                RecordingUploadWorker.runNow(context)
+            } else {
+                Toast.makeText(context, "Failed to Attach Call Recording", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun getFileName(uri: Uri): String? {
+        var result: String? = null
+        if (uri.scheme == "content") {
+            try {
+                contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (index != -1) {
+                            result = cursor.getString(index)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error getting filename", e)
+            }
+        }
+        if (result == null) {
+            result = uri.path
+            val cut = result?.lastIndexOf('/') ?: -1
+            if (cut != -1) {
+                result = result?.substring(cut + 1)
+            }
+        }
+        return result
     }
 }
 

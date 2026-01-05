@@ -158,7 +158,7 @@ fun OnboardingGuide(
                 }))
             }
             if (!hasPhoneState) {
-                add(GuideStep("PHONE_STATE", "Call Manage", "Detect active calls to show caller information in real-time.", Icons.Default.Phone, "Allow Access", onAction = {
+                add(GuideStep("PHONE_STATE", "MiniClick Calls", "Detect active calls to show caller information in real-time.", Icons.Default.Phone, "Allow Access", onAction = {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         multiPermissionLauncher.launch(arrayOf(Manifest.permission.READ_PHONE_STATE, Manifest.permission.READ_PHONE_NUMBERS))
                     } else {

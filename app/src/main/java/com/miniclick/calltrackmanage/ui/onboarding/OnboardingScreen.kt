@@ -68,7 +68,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
         buildList {
             // Intro Screen
             add(OnboardingStep(
-                "Welcome to CallCloud",
+                "Welcome to MiniClick Calls",
                 "Your intelligent call management companion. Track, organize, and sync your calls effortlessly.",
                 Icons.Default.Cloud,
                 OnboardingStepType.Welcome

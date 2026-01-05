@@ -88,7 +88,7 @@ export default function Sidebar({
                 <div className={cn("flex items-center gap-2.5 text-blue-600 font-bold text-lg transition-all duration-300",
                     (isCollapsed && !isMobile) ? "w-0 opacity-0 hidden" : "flex")}>
                     <Cloud size={22} className="flex-shrink-0" />
-                    <span className="whitespace-nowrap">CallCloud</span>
+                    <span className="whitespace-nowrap">MiniClick Calls</span>
                 </div>
 
                 {!isMobile && (

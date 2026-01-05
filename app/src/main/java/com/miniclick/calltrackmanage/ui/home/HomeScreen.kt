@@ -61,6 +61,9 @@ import java.util.*
 import com.miniclick.calltrackmanage.ui.common.SyncQueueModal
 import com.miniclick.calltrackmanage.ui.common.SyncQueueItem
 import com.miniclick.calltrackmanage.ui.common.PhoneLookupResultModal
+import com.miniclick.calltrackmanage.data.RecordingRepository
+import com.miniclick.calltrackmanage.worker.RecordingUploadWorker
+import android.provider.OpenableColumns
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.ripple
 
@@ -111,9 +114,12 @@ fun CallsScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null && attachTarget != null) {
-            val path = copyUriToInternalStorage(context, uri)
-            if (path != null) {
-                viewModel.updateRecordingPathForLog(attachTarget!!.compositeId, path)
+            val fileName = getFileNameFromUri(context, uri)
+            val importedFile = RecordingRepository.getInstance(context).importSharedRecording(uri, fileName)
+            if (importedFile != null) {
+                viewModel.updateRecordingPathForLog(attachTarget!!.compositeId, importedFile.absolutePath)
+                // Trigger immediate upload for this manually attached file
+                RecordingUploadWorker.runNow(context)
             }
         }
         attachTarget = null
@@ -459,9 +465,12 @@ fun PersonsScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null && attachTarget != null) {
-            val path = copyUriToInternalStorage(context, uri)
-            if (path != null) {
-                viewModel.updateRecordingPathForLog(attachTarget!!.compositeId, path)
+            val fileName = getFileNameFromUri(context, uri)
+            val importedFile = RecordingRepository.getInstance(context).importSharedRecording(uri, fileName)
+            if (importedFile != null) {
+                viewModel.updateRecordingPathForLog(attachTarget!!.compositeId, importedFile.absolutePath)
+                // Trigger immediate upload for this manually attached file
+                RecordingUploadWorker.runNow(context)
             }
         }
         attachTarget = null
@@ -3527,24 +3536,30 @@ fun SyncStatusStrip(
     }
 }
 
-fun copyUriToInternalStorage(context: Context, uri: Uri): String? {
-    return try {
-        val inputStream = context.contentResolver.openInputStream(uri) ?: return null
-        val fileName = "attached_recording_${System.currentTimeMillis()}.m4a" 
-        val file = File(context.filesDir, "attached_recordings")
-        if (!file.exists()) file.mkdirs()
-        val destFile = File(file, fileName)
-        val outputStream = FileOutputStream(destFile)
-        inputStream.use { input ->
-            outputStream.use { output ->
-                input.copyTo(output)
+fun getFileNameFromUri(context: Context, uri: Uri): String? {
+    var result: String? = null
+    if (uri.scheme == "content") {
+        try {
+            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (index != -1) {
+                        result = cursor.getString(index)
+                    }
+                }
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        destFile.absolutePath
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
     }
+    if (result == null) {
+        result = uri.path
+        val cut = result?.lastIndexOf('/') ?: -1
+        if (cut != -1) {
+            result = result?.substring(cut + 1)
+        }
+    }
+    return result
 }
 
 @Composable

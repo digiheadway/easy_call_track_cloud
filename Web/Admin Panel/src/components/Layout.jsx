@@ -33,7 +33,7 @@ export default function Layout({ children }) {
                     >
                         <Menu size={24} />
                     </button>
-                    <span className="font-bold text-xl text-blue-600">CallCloud</span>
+                    <span className="font-bold text-xl text-blue-600">MiniClick Calls</span>
                     <div className="w-8"></div>
                 </div>
             )}

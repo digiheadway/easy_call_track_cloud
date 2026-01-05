@@ -18,7 +18,7 @@
 
 ## 🚀 1. Introduction & Philosophy
 
-**MiniClick CRM** is an enterprise-grade solution built to bridge the gap between mobile communication and business intelligence. In a world where sales and support happen on personal or company mobile devices, businesses often lose visibility. MiniClick restores that visibility without compromising usability.
+**MiniClick Calls** is an enterprise-grade solution built to bridge the gap between mobile communication and business intelligence. In a world where sales and support happen on personal or company mobile devices, businesses often lose visibility. MiniClick restores that visibility without compromising usability.
 
 ### Core Philosophy
 *   **Invisible Efficiency**: The app runs quietly in the background without draining battery.
@@ -54,7 +54,7 @@ As a manager or business owner, you are the **Admin**.
 Your usage is simple: **Install and Forget**.
 
 ### Step 1: Installation
-1.  Download **"Call Track & Manage by MiniClick"** from the Play Store.
+1.  Download **"MiniClick Calls"** from the Play Store.
 2.  Open the app.
 
 ### Step 2: Connection
@@ -240,4 +240,4 @@ Recording calls often requires consent (One-Party or Two-Party).
 
 ---
 
-*© 2026 MiniClick CRM. All rights reserved.*
+*© 2026 MiniClick Calls. All rights reserved.*

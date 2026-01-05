@@ -28,6 +28,7 @@ class RecordingRepository private constructor(private val context: Context) {
         private val DEVICE_DEFAULT_PATHS = listOf(
             // Google/Pixel/Stock Android
             "Recordings/Call recordings",
+            "Recordings/CallCloud",              // Our imported recordings
             "Recordings",
             
             // Samsung
@@ -298,24 +299,41 @@ class RecordingRepository private constructor(private val context: Context) {
     }
 
     /**
-     * Get all recording files from current path
+     * Get all recording files from current path and our public CallCloud folder
      */
     fun getRecordingFiles(): Array<File> {
+        val allFiles = mutableListOf<File>()
+        val storage = Environment.getExternalStorageDirectory()
+        
+        // 1. Get files from the primary detected/custom path
         val path = getRecordingPath()
-        val dir = File(path)
-        if (!dir.exists() || !dir.isDirectory) return emptyArray()
-        return dir.listFiles()?.filter { 
-            it.isFile && it.extension.lowercase() in AUDIO_EXTENSIONS 
-        }?.toTypedArray() ?: emptyArray()
+        val primaryDir = File(path)
+        if (primaryDir.exists() && primaryDir.isDirectory) {
+            primaryDir.listFiles()?.filter { 
+                it.isFile && it.extension.lowercase() in AUDIO_EXTENSIONS 
+            }?.let { allFiles.addAll(it) }
+        }
+        
+        // 2. ALWAYS include our public CallCloud folder (prevents loss on reinstall/path change)
+        val callCloudDir = File(storage, "Recordings/CallCloud")
+        if (callCloudDir.exists() && callCloudDir.isDirectory && callCloudDir.absolutePath != primaryDir.absolutePath) {
+            callCloudDir.listFiles()?.filter { 
+                it.isFile && it.extension.lowercase() in AUDIO_EXTENSIONS 
+            }?.let { allFiles.addAll(it) }
+        }
+        
+        return allFiles.toTypedArray()
+    }
+
+    /**
+     * Normalize phone number
+     */
+    private fun normalizePhoneNumber(phone: String): String {
+        return phone.replace(Regex("[^0-9]"), "")
     }
 
     /**
      * Find a recording file that matches the given call details.
-     * 
-     * Matching priority:
-     * 1. Phone number in filename (strongest match)
-     * 2. Contact name in filename
-     * 3. Closest to call end time (fallback)
      */
     fun findRecordingInList(
         files: Array<File>, 
@@ -325,42 +343,55 @@ class RecordingRepository private constructor(private val context: Context) {
         contactName: String? = null
     ): String? {
         val callEndTime = callDate + (durationSec * 1000)
-        val tolerance = 60 * 1000L // 60 seconds
-        val searchWindowEnd = callEndTime + tolerance
+        
+        // Normalize phone number for matching
+        val normalizedPhone = normalizePhoneNumber(phoneNumber)
+        val phoneVariants = generatePhoneVariants(normalizedPhone)
+        val searchName = contactName?.trim()?.lowercase()
 
-        // Filter to audio files within time window
+        // 1. BEST MATCH: Phone number in filename (Ignore timestamp for our CallCloud folder)
+        // This is perfect for Google Dialer recordings shared even hours later
+        val bestMatch = files.find { file ->
+            val fileName = file.nameWithoutExtension.lowercase()
+            val isInCallCloud = file.parentFile?.name == "CallCloud"
+            
+            // If it's in our folder, we trust the phone number match regardless of time
+            if (isInCallCloud) {
+                phoneVariants.any { variant -> fileName.contains(variant) }
+            } else {
+                false
+            }
+        }
+        if (bestMatch != null) return bestMatch.absolutePath
+
+        // 2. SECOND BEST: Time Window + Phone/Name Match (Standard detection)
+        val tolerance = 5 * 60 * 1000L // 5 minutes tolerance for system recordings
         val candidates = files.filter { file ->
             file.extension.lowercase() in AUDIO_EXTENSIONS &&
-            file.lastModified() in (callDate - tolerance)..(searchWindowEnd + tolerance)
+            file.lastModified() in (callDate - tolerance)..(callEndTime + tolerance)
         }
 
         if (candidates.isEmpty()) return null
 
-        // Normalize phone number for matching
-        val normalizedPhone = normalizePhoneNumber(phoneNumber)
-        val phoneVariants = generatePhoneVariants(normalizedPhone)
-
-        // Priority 1: Phone number match (strongest)
+        // Try phone match in time-filtered candidates
         val phoneMatch = candidates.find { file ->
             val fileName = file.nameWithoutExtension.lowercase()
             phoneVariants.any { variant -> fileName.contains(variant) }
         }
         if (phoneMatch != null) return phoneMatch.absolutePath
 
-        // Priority 2: Contact name match
-        if (!contactName.isNullOrBlank()) {
-            val normalizedName = contactName.trim().lowercase()
-            val nameParts = normalizedName.split(" ").filter { it.length > 1 }
-            
+        // Try name match in time-filtered candidates
+        if (!searchName.isNullOrBlank()) {
+            val nameParts = searchName.split(" ").filter { it.length > 1 }
             val nameMatch = candidates.find { file ->
                 val fileName = file.nameWithoutExtension.lowercase()
-                fileName.contains(normalizedName) || 
-                nameParts.all { part -> fileName.contains(part) }
+                fileName.contains(searchName) || 
+                (nameParts.isNotEmpty() && nameParts.all { part -> fileName.contains(part) })
             }
             if (nameMatch != null) return nameMatch.absolutePath
         }
 
-        // Priority 3: Closest to call end time (fallback)
+        // 3. FALLBACK: Closest to call end time
         return candidates.minByOrNull { 
             kotlin.math.abs(it.lastModified() - callEndTime) 
         }?.absolutePath
@@ -385,10 +416,47 @@ class RecordingRepository private constructor(private val context: Context) {
     }
 
     /**
-     * Normalize phone number
+     * Import a shared recording from a Uri (e.g., from Google Dialer share)
      */
-    private fun normalizePhoneNumber(phone: String): String {
-        return phone.replace(Regex("[^0-9]"), "")
+    fun importSharedRecording(uri: android.net.Uri, fileName: String?): File? {
+        try {
+            // Save to Public Recordings folder so it persists after uninstall
+            val publicRecordingsInfo = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_RECORDINGS)
+            val destinationDir = File(publicRecordingsInfo, "CallCloud")
+            
+            if (!destinationDir.exists()) {
+                destinationDir.mkdirs()
+            }
+            
+            val finalFileName = fileName ?: "SharedRecording_${System.currentTimeMillis()}.wav"
+            val destinationFile = File(destinationDir, finalFileName)
+            
+            val success = copyUriToFile(uri, destinationFile)
+            if (success) {
+                Log.d(TAG, "Successfully imported recording to public storage: ${destinationFile.absolutePath}")
+                return destinationFile
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to import shared recording", e)
+        }
+        return null
+    }
+
+    /**
+     * Copy content from a Uri to a file
+     */
+    private fun copyUriToFile(uri: android.net.Uri, destinationFile: File): Boolean {
+        return try {
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                destinationFile.outputStream().use { outputStream ->
+                    inputStream.copyTo(outputStream)
+                }
+            }
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error copying URI to file", e)
+            false
+        }
     }
 
     /**

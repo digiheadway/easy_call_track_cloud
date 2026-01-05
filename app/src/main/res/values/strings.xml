@@ -1,4 +1,5 @@
 <resources>
-    <string name="app_name">Call Manage</string>
-    <string name="public_app_name">Call Track</string>
+    <string name="app_name">MiniClick Calls</string>
+    <string name="public_app_name">MiniClick Calls</string>
+    <string name="brand_name">MiniClick</string>
 </resources>
