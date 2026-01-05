@@ -54,7 +54,7 @@ enum class AppTab(
     CALLS("Calls", Icons.Default.Call, Icons.Filled.Call),
     PERSONS("Persons", Icons.Default.People, Icons.Filled.People),
     REPORTS("Reports", Icons.Default.Assessment, Icons.Filled.Assessment),
-    SETTINGS("Settings", Icons.Default.Settings, Icons.Filled.Settings)
+    SETTINGS("More", Icons.Default.Settings, Icons.Filled.Settings)
 }
 
 class MainActivity : ComponentActivity() {
@@ -241,20 +241,24 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel()) {
     val lookupPhoneNumber by viewModel.lookupPhoneNumber.collectAsState()
     val settingsViewModel: SettingsViewModel = viewModel()
     val settingsState by settingsViewModel.uiState.collectAsState()
-    val isDialerEnabled = settingsState.isDialerEnabled
     
-    var selectedTab by remember(isDialerEnabled) { 
-        mutableStateOf(if (isDialerEnabled) AppTab.DIALER else AppTab.CALLS) 
+    // Default to Calls tab since Dialer is now a modal
+    var selectedTab by remember { mutableStateOf(AppTab.CALLS) }
+    
+    // Explicitly exclude DIALER from tabs
+    val tabs = remember {
+        AppTab.entries.filter { it != AppTab.DIALER }
     }
     
-    val tabs = remember(isDialerEnabled) {
-        if (isDialerEnabled) AppTab.entries else AppTab.entries.filter { it != AppTab.DIALER }
-    }
+    // Dialer Sheet State
+    var showDialerSheet by remember { mutableStateOf(false) }
+    val dialerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     
     Scaffold(
         bottomBar = {
@@ -290,8 +294,11 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
         ) {
             Box(modifier = Modifier.weight(1f)) {
                 when (selectedTab) {
-                    AppTab.DIALER -> DialerScreen()
-                    AppTab.CALLS -> CallsScreen(audioPlayer = audioPlayer)
+                    AppTab.DIALER -> { /* No-op, should not happen */ }
+                    AppTab.CALLS -> CallsScreen(
+                        audioPlayer = audioPlayer, 
+                        onOpenDialer = { showDialerSheet = true }
+                    )
                     AppTab.PERSONS -> PersonsScreen(audioPlayer = audioPlayer)
                     AppTab.REPORTS -> ReportsScreen()
                     AppTab.SETTINGS -> SettingsScreen()
@@ -304,6 +311,27 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                         viewModel = settingsViewModel,
                         onDismiss = { viewModel.clearLookupPhoneNumber() }
                     )
+                }
+                
+                // Dialer Bottom Sheet
+                if (showDialerSheet) {
+                    ModalBottomSheet(
+                        onDismissRequest = { showDialerSheet = false },
+                        sheetState = dialerSheetState,
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        dragHandle = { BottomSheetDefaults.DragHandle() },
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        // DialerScreen content
+                        Box(modifier = Modifier.fillMaxSize()) {
+                             DialerScreen(
+                                 onIdentifyCallHistory = { 
+                                     showDialerSheet = false
+                                 },
+                                 onClose = { showDialerSheet = false }
+                             )
+                        }
+                    }
                 }
             }
         }

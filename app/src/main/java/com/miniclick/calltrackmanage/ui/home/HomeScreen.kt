@@ -75,7 +75,8 @@ import androidx.compose.material3.ripple
 fun CallsScreen(
     audioPlayer: AudioPlayer,
     viewModel: HomeViewModel = viewModel(),
-    settingsViewModel: SettingsViewModel = viewModel()
+    settingsViewModel: SettingsViewModel = viewModel(),
+    onOpenDialer: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val settingsState by settingsViewModel.uiState.collectAsState()
@@ -195,159 +196,179 @@ fun CallsScreen(
         )
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Header Row
-        CallsHeader(
-            onSearchClick = viewModel::toggleSearchVisibility,
-            onFilterClick = viewModel::toggleFiltersVisibility,
-            isSearchActive = uiState.isSearchVisible,
-            isFilterActive = uiState.isFiltersVisible
-        )
-        var showSyncQueue by remember { mutableStateOf(false) }
-        
-        if (showSyncQueue) {
-            SyncQueueModal(
-                pendingNewCalls = uiState.pendingNewCallsCount,
-                pendingRelatedData = uiState.pendingMetadataUpdatesCount + uiState.pendingPersonUpdatesCount,
-                pendingRecordings = uiState.pendingRecordingCount,
-                onSyncAll = viewModel::fullSync,
-                onDismiss = { showSyncQueue = false }
-            )
+    Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onOpenDialer,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(Icons.Default.Dialpad, contentDescription = "Dialer")
+            }
         }
-
-        // Sync Status Strip - only show when sync is configured
-        if (uiState.isSyncSetup) {
-            SyncStatusStrip(
-                pendingCount = uiState.pendingSyncCount,
-                pendingMetadata = uiState.pendingMetadataCount,
-                pendingRecordings = uiState.pendingRecordingCount,
-                isNetworkAvailable = uiState.isNetworkAvailable,
-                onSyncNow = viewModel::syncNow,
-                onShowQueue = { showSyncQueue = true }
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            // Header Row
+            CallsHeader(
+                onSearchClick = viewModel::toggleSearchVisibility,
+                onFilterClick = viewModel::toggleFiltersVisibility,
+                onSimClick = { showTrackSimModal = true },
+                isSearchActive = uiState.isSearchVisible,
+                isFilterActive = uiState.isFiltersVisible
             )
-        }
-        
-        // Expandable Search Row
-        AnimatedVisibility(
-            visible = uiState.isSearchVisible,
-            enter = expandVertically(),
-            exit = shrinkVertically()
-        ) {
-            SearchInputRow(
-                query = uiState.searchQuery,
-                onQueryChange = viewModel::onSearchQueryChanged
-            )
-        }
-        
-        // Expandable Filters Row
-        AnimatedVisibility(
-            visible = uiState.isFiltersVisible,
-            enter = expandVertically(),
-            exit = shrinkVertically()
-        ) {
-            FilterChipsRow(
-                callTypeFilter = uiState.callTypeFilter,
-                connectedFilter = uiState.connectedFilter,
-                notesFilter = uiState.notesFilter,
-                contactsFilter = uiState.contactsFilter,
-                attendedFilter = uiState.attendedFilter,
-                onCallTypeFilterChange = viewModel::setCallTypeFilter,
-                onConnectedFilterChange = viewModel::setConnectedFilter,
-                onNotesFilterChange = viewModel::setNotesFilter,
-                onContactsFilterChange = viewModel::setContactsFilter,
-                onAttendedFilterChange = viewModel::setAttendedFilter,
-                dateRange = uiState.dateRange,
-                onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) },
-                labelFilter = uiState.labelFilter,
-                onLabelFilterChange = viewModel::setLabelFilter,
-                availableLabels = remember(uiState.persons) { uiState.persons.mapNotNull { it.label }.filter { it.isNotEmpty() }.distinct().sorted() }
-            )
-        }
-        
-        // Content
-        OnboardingGuide(
-            asEmptyState = true,
-            modifier = Modifier.weight(1f)
-        ) {
-            Box(Modifier.fillMaxSize()) {
-                if (uiState.isLoading) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
-                } else if (uiState.simSelection == "Off") {
-                    EmptyState(
-                        icon = Icons.Default.SimCard,
-                        title = "Select Sim Card to Track",
-                        description = "Capture your call logs by selecting which SIM cards to monitor.",
-                        action = {
-                            Button(
-                                onClick = { showTrackSimModal = true },
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(Icons.Default.Done, null)
-                                Spacer(Modifier.width(8.dp))
-                                Text("Select SIM Now")
-                            }
+            // ... rest of content logic preserved via existing logic flow?
+            // Wait, I can't just replace the start and expect the rest to work if I'm wrapping in Scaffold.
+            // I need to offset the entire block.
+            // Or I can just wrap the Column in Scaffold and keep the rest as is.
+            
+            // Re-using existing state variables
+            var showSyncQueue by remember { mutableStateOf(false) }
+            
+            if (showSyncQueue) {
+                SyncQueueModal(
+                    pendingNewCalls = uiState.pendingNewCallsCount,
+                    pendingRelatedData = uiState.pendingMetadataUpdatesCount + uiState.pendingPersonUpdatesCount,
+                    pendingRecordings = uiState.pendingRecordingCount,
+                    onSyncAll = viewModel::fullSync,
+                    onDismiss = { showSyncQueue = false }
+                )
+            }
+    
+            // Sync Status Strip - only show when sync is configured
+            if (uiState.isSyncSetup) {
+                SyncStatusStrip(
+                    pendingCount = uiState.pendingSyncCount,
+                    pendingMetadata = uiState.pendingMetadataCount,
+                    pendingRecordings = uiState.pendingRecordingCount,
+                    isNetworkAvailable = uiState.isNetworkAvailable,
+                    onSyncNow = viewModel::syncNow,
+                    onShowQueue = { showSyncQueue = true }
+                )
+            }
+            
+            // Expandable Search Row
+            AnimatedVisibility(
+                visible = uiState.isSearchVisible,
+                enter = expandVertically(),
+                exit = shrinkVertically()
+            ) {
+                SearchInputRow(
+                    query = uiState.searchQuery,
+                    onQueryChange = viewModel::onSearchQueryChanged
+                )
+            }
+            
+            // Expandable Filters Row
+            AnimatedVisibility(
+                visible = uiState.isFiltersVisible,
+                enter = expandVertically(),
+                exit = shrinkVertically()
+            ) {
+                FilterChipsRow(
+                    callTypeFilter = uiState.callTypeFilter,
+                    connectedFilter = uiState.connectedFilter,
+                    notesFilter = uiState.notesFilter,
+                    contactsFilter = uiState.contactsFilter,
+                    attendedFilter = uiState.attendedFilter,
+                    onCallTypeFilterChange = viewModel::setCallTypeFilter,
+                    onConnectedFilterChange = viewModel::setConnectedFilter,
+                    onNotesFilterChange = viewModel::setNotesFilter,
+                    onContactsFilterChange = viewModel::setContactsFilter,
+                    onAttendedFilterChange = viewModel::setAttendedFilter,
+                    dateRange = uiState.dateRange,
+                    onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) },
+                    labelFilter = uiState.labelFilter,
+                    onLabelFilterChange = viewModel::setLabelFilter,
+                    availableLabels = remember(uiState.persons) { uiState.persons.mapNotNull { it.label }.filter { it.isNotEmpty() }.distinct().sorted() }
+                )
+            }
+            
+            // Content
+            OnboardingGuide(
+                asEmptyState = true,
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(Modifier.fillMaxSize()) {
+                    if (uiState.isLoading) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
                         }
-                    )
-                } else if (uiState.filteredLogs.isEmpty()) {
-                    val isFiltered = uiState.searchQuery.isNotEmpty() || 
-                                    uiState.callTypeFilter != CallTypeFilter.ALL ||
-                                    uiState.connectedFilter != ConnectedFilter.ALL ||
-                                    uiState.notesFilter != NotesFilter.ALL ||
-                                    uiState.contactsFilter != ContactsFilter.ALL ||
-                                    uiState.attendedFilter != AttendedFilter.ALL ||
-                                    uiState.labelFilter.isNotEmpty()
-                    
-                    if (isFiltered) {
+                    } else if (uiState.simSelection == "Off") {
                         EmptyState(
-                            icon = Icons.Default.SearchOff,
-                            title = "No results found",
-                            description = "Try adjusting your filters or search query."
-                        )
-                    } else if (uiState.isSyncing) {
-                        EmptyState(
-                            icon = Icons.Default.Sync,
-                            title = "Scanning for calls...",
-                            description = "We are importing your call history from the device. Please wait a moment."
-                        )
-                    } else {
-                        EmptyState(
-                            icon = Icons.Default.History,
-                            title = "No calls yet",
-                            description = "Your call history will appear here once tracking starts.",
+                            icon = Icons.Default.SimCard,
+                            title = "Select Sim Card to Track",
+                            description = "Capture your call logs by selecting which SIM cards to monitor.",
                             action = {
                                 Button(
-                                    onClick = { viewModel.syncFromSystem() },
+                                    onClick = { showTrackSimModal = true },
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Icon(Icons.Default.Refresh, null)
+                                    Icon(Icons.Default.Done, null)
                                     Spacer(Modifier.width(8.dp))
-                                    Text("Sync Now")
+                                    Text("Select SIM Now")
                                 }
                             }
                         )
+                    } else if (uiState.filteredLogs.isEmpty()) {
+                        val isFiltered = uiState.searchQuery.isNotEmpty() || 
+                                        uiState.callTypeFilter != CallTypeFilter.ALL ||
+                                        uiState.connectedFilter != ConnectedFilter.ALL ||
+                                        uiState.notesFilter != NotesFilter.ALL ||
+                                        uiState.contactsFilter != ContactsFilter.ALL ||
+                                        uiState.attendedFilter != AttendedFilter.ALL ||
+                                        uiState.labelFilter.isNotEmpty()
+                        
+                        if (isFiltered) {
+                            EmptyState(
+                                icon = Icons.Default.SearchOff,
+                                title = "No results found",
+                                description = "Try adjusting your filters or search query."
+                            )
+                        } else if (uiState.isSyncing) {
+                            EmptyState(
+                                icon = Icons.Default.Sync,
+                                title = "Scanning for calls...",
+                                description = "We are importing your call history from the device. Please wait a moment."
+                            )
+                        } else {
+                            EmptyState(
+                                icon = Icons.Default.History,
+                                title = "No calls yet",
+                                description = "Your call history will appear here once tracking starts.",
+                                action = {
+                                    Button(
+                                        onClick = { viewModel.syncFromSystem() },
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Icon(Icons.Default.Refresh, null)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("Sync Now")
+                                    }
+                                }
+                            )
+                        }
+                    } else {
+                        CallLogList(
+                            logs = uiState.filteredLogs,
+                            recordings = uiState.recordings,
+                            personGroupsMap = allPersonGroupsMap,
+                            modifier = Modifier.fillMaxSize(),
+                            onSaveCallNote = { id, note -> viewModel.saveCallNote(id, note) },
+                            onSavePersonNote = { number, note -> viewModel.savePersonNote(number, note) },
+                            viewModel = viewModel,
+                            audioPlayer = audioPlayer,
+                            whatsappPreference = uiState.whatsappPreference,
+                            context = context,
+                            onViewMoreClick = { selectedPersonForDetails = it },
+                            onAttachRecording = { 
+                                attachTarget = it
+                                audioPickerLauncher.launch(arrayOf("audio/*"))
+                            },
+                            canExclude = uiState.allowPersonalExclusion || !uiState.isSyncSetup,
+                            onCustomLookup = { lookupPhoneNumber = it }
+                        )
                     }
-                } else {
-                    CallLogList(
-                        logs = uiState.filteredLogs,
-                        recordings = uiState.recordings,
-                        personGroupsMap = allPersonGroupsMap,
-                        modifier = Modifier.fillMaxSize(),
-                        onSaveCallNote = { id, note -> viewModel.saveCallNote(id, note) },
-                        onSavePersonNote = { number, note -> viewModel.savePersonNote(number, note) },
-                        viewModel = viewModel,
-                        audioPlayer = audioPlayer,
-                        whatsappPreference = uiState.whatsappPreference,
-                        context = context,
-                        onViewMoreClick = { selectedPersonForDetails = it },
-                        onAttachRecording = { 
-                            attachTarget = it
-                            audioPickerLauncher.launch(arrayOf("audio/*"))
-                        },
-                        canExclude = uiState.allowPersonalExclusion || !uiState.isSyncSetup,
-                        onCustomLookup = { lookupPhoneNumber = it }
-                    )
                 }
             }
         }
@@ -359,6 +380,7 @@ fun CallsScreen(
 fun CallsHeader(
     onSearchClick: () -> Unit,
     onFilterClick: () -> Unit,
+    onSimClick: () -> Unit,
     isSearchActive: Boolean,
     isFilterActive: Boolean
 ) {
@@ -384,6 +406,15 @@ fun CallsHeader(
             
             // Action Icons
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // Sim Icon
+                IconButton(onClick = onSimClick) {
+                    Icon(
+                        imageVector = Icons.Default.SimCard,
+                        contentDescription = "Sim Selection",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
                 // Search Icon
                 IconButton(onClick = onSearchClick) {
                     Icon(
@@ -539,6 +570,7 @@ fun PersonsScreen(
         PersonsHeader(
             onSearchClick = viewModel::toggleSearchVisibility,
             onFilterClick = viewModel::toggleFiltersVisibility,
+            onSimClick = { showTrackSimModal = true },
             isSearchActive = uiState.isSearchVisible,
             isFilterActive = uiState.isFiltersVisible
         )
@@ -696,6 +728,7 @@ fun PersonsScreen(
 fun PersonsHeader(
     onSearchClick: () -> Unit,
     onFilterClick: () -> Unit,
+    onSimClick: () -> Unit,
     isSearchActive: Boolean,
     isFilterActive: Boolean
 ) {
@@ -721,6 +754,15 @@ fun PersonsHeader(
             
             // Action Icons
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // Sim Icon
+                IconButton(onClick = onSimClick) {
+                    Icon(
+                        imageVector = Icons.Default.SimCard,
+                        contentDescription = "Sim Selection",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
                 IconButton(onClick = onSearchClick) {
                     Icon(
                         imageVector = Icons.Default.Search,

@@ -39,6 +39,7 @@ import java.util.*
 sealed class OnboardingStepType {
     object Welcome : OnboardingStepType()
     object FeatureIntro : OnboardingStepType()
+    object PermissionDisclosure : OnboardingStepType()
 }
 
 data class OnboardingStep(
@@ -120,6 +121,14 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                 "Optionally sync your data to the dashboard to access your call history from any device.",
                 Icons.Default.CloudSync,
                 OnboardingStepType.FeatureIntro
+            ))
+            
+            // NEW: Prominent Disclosure Step
+            add(OnboardingStep(
+                "Data & Permissions",
+                "To provide its core call management and dialer features, MiniClick Calls needs your permission to access specific data.",
+                Icons.Default.Security,
+                OnboardingStepType.PermissionDisclosure
             ))
             
         }
@@ -211,6 +220,11 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                             },
                             buttonText = if (page < steps.size - 1) "Next" else "Done",
                             showSkip = false
+                        )
+                    }
+                    is OnboardingStepType.PermissionDisclosure -> {
+                        PermissionDisclosureStepContent(
+                            onContinue = onComplete
                         )
                     }
                 }
@@ -417,6 +431,162 @@ fun OnboardingStepContent(
         }
     }
 }
+
+@Composable
+fun PermissionDisclosureStepContent(
+    onContinue: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(Modifier.height(32.dp))
+        
+        Surface(
+            modifier = Modifier.size(80.dp),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    Icons.Default.PrivacyTip,
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+        
+        Spacer(Modifier.height(24.dp))
+        
+        Text(
+            "Privacy & Permissions",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
+        )
+        
+        Spacer(Modifier.height(16.dp))
+        
+        Text(
+            "MiniClick Calls is a communication tool. For it to work, we need your permission for the following:",
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        
+        Spacer(Modifier.height(24.dp))
+        
+        PermissionDisclosureItem(
+            icon = Icons.Default.Call,
+            title = "Call Logs",
+            description = "Used to display your call history, provide dialer features, and enable optional cloud synchronization."
+        )
+        
+        PermissionDisclosureItem(
+            icon = Icons.Default.Contacts,
+            title = "Contacts",
+            description = "Helps identify callers and organize your call logs with names."
+        )
+        
+        PermissionDisclosureItem(
+            icon = Icons.Default.Phone,
+            title = "Phone State",
+            description = "Required to detect active calls for real-time notes and call management features."
+        )
+        
+        PermissionDisclosureItem(
+            icon = Icons.Default.Call,
+            title = "Make Calls",
+            description = "Allows the app to initiate phone calls directly from the dialer without opening other apps."
+        )
+
+        PermissionDisclosureItem(
+            icon = Icons.Default.Folder,
+            title = "Storage",
+            description = "Needed if you choose to attach and manage recording files."
+        )
+        
+        Spacer(Modifier.height(32.dp))
+        
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text(
+                "By continuing, you agree that this data will be processed locally on your device or uploaded to your private dashboard if you enable cloud sync.",
+                modifier = Modifier.padding(16.dp),
+                style = MaterialTheme.typography.labelSmall,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        
+        Spacer(Modifier.height(32.dp))
+        
+        Button(
+            onClick = onContinue,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Text("I Understand & Agree")
+        }
+        
+        Spacer(Modifier.height(32.dp))
+    }
+}
+
+@Composable
+fun PermissionDisclosureItem(
+    icon: ImageVector,
+    title: String,
+    description: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+        
+        Spacer(Modifier.width(16.dp))
+        
+        Column {
+            Text(
+                title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
 
 @Composable
 fun DateOptionChip(

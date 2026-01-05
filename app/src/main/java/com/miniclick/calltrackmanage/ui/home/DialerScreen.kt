@@ -2,17 +2,24 @@ package com.miniclick.calltrackmanage.ui.home
 
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Backspace
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,75 +33,147 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.material.icons.filled.Close
+
 @Composable
-fun DialerScreen() {
+fun DialerScreen(onIdentifyCallHistory: () -> Unit, onClose: () -> Unit = {}) {
     var phoneNumber by remember { mutableStateOf("") }
     val context = LocalContext.current
     
-    // Check if app is default dialer
-    val isDefaultDialer = remember {
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    var isDefaultDialer by remember { mutableStateOf(false) }
+    
+    // Launcher for Default Dialer Role
+    val roleLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { _ ->
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
             val telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as android.telecom.TelecomManager
-            telecomManager.defaultDialerPackage == context.packageName
-        } else {
-            false
+            isDefaultDialer = telecomManager.defaultDialerPackage == context.packageName
         }
+    }
+
+    // Launcher for Call Permission
+    val callPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted && phoneNumber.isNotEmpty()) {
+            val intent = Intent(Intent.ACTION_CALL).apply {
+                data = Uri.parse("tel:$phoneNumber")
+            }
+            context.startActivity(intent)
+        } else if (phoneNumber.isNotEmpty()) {
+            val intent = Intent(Intent.ACTION_DIAL).apply {
+                data = Uri.parse("tel:$phoneNumber")
+            }
+            context.startActivity(intent)
+        }
+    }
+
+    // Check status whenever the screen is resumed
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                    val telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as android.telecom.TelecomManager
+                    isDefaultDialer = telecomManager.defaultDialerPackage == context.packageName
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Top Bar info
-        if (!isDefaultDialer) {
-            Surface(
-                onClick = {
-                    try {
-                        val intent = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                            val roleManager = context.getSystemService(Context.ROLE_SERVICE) as android.app.role.RoleManager
-                            roleManager.createRequestRoleIntent(android.app.role.RoleManager.ROLE_DIALER)
-                        } else {
-                            Intent(android.telecom.TelecomManager.ACTION_CHANGE_DEFAULT_DIALER).apply {
-                                putExtra(android.telecom.TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME, context.packageName)
+        // Top Row: Default Dialer Warning + Close Button
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
+        ) {
+            // Default Dialer Warning (if needed)
+            if (!isDefaultDialer) {
+                Surface(
+                    onClick = {
+                        val packageName = context.packageName
+                        try {
+                            var intentLaunched = false
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                                try {
+                                    val roleManager = context.getSystemService(Context.ROLE_SERVICE) as android.app.role.RoleManager
+                                    if (roleManager.isRoleAvailable(android.app.role.RoleManager.ROLE_DIALER)) {
+                                        val intent = roleManager.createRequestRoleIntent(android.app.role.RoleManager.ROLE_DIALER)
+                                        roleLauncher.launch(intent)
+                                        intentLaunched = true
+                                    }
+                                } catch (e: Exception) {
+                                    // Fallback to older method if RoleManager fails
+                                    android.util.Log.e("DialerScreen", "RoleManager failed", e)
+                                }
                             }
+                            
+                            if (!intentLaunched && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                                try {
+                                    val intent = Intent(android.telecom.TelecomManager.ACTION_CHANGE_DEFAULT_DIALER).apply {
+                                        putExtra(android.telecom.TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME, packageName)
+                                    }
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    android.widget.Toast.makeText(context, "Failed to launch settings: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                                }
+                            } else if (!intentLaunched) {
+                                 android.widget.Toast.makeText(context, "Default dialer not supported on only this Android version", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        } catch (e: Exception) {
+                            android.widget.Toast.makeText(context, "Error: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
                         }
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        // Fallback
-                    }
-                },
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                modifier = Modifier.padding(bottom = 8.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                    modifier = Modifier.weight(1f).padding(end = 8.dp)
                 ) {
-                    Icon(Icons.Default.Call, null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Set as default dialer", style = MaterialTheme.typography.labelMedium)
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Call, null, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Set as default dialer", style = MaterialTheme.typography.labelSmall)
+                    }
                 }
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
             }
-        } else {
-            Spacer(modifier = Modifier.height(32.dp))
+            
+            // Close Button
+            IconButton(onClick = onClose) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Close",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
+
 
         // Phone Number Display
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f),
+                .weight(0.8f),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = phoneNumber,
                     style = MaterialTheme.typography.displayMedium.copy(
-                        fontSize = if (phoneNumber.length > 10) 32.sp else 40.sp,
+                        fontSize = if (phoneNumber.length > 10) 28.sp else 36.sp,
                         fontWeight = FontWeight.Light
                     ),
                     textAlign = TextAlign.Center,
@@ -108,7 +187,7 @@ fun DialerScreen() {
                         text = "Add to contacts",
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
-                            .padding(top = 8.dp)
+                            .padding(top = 4.dp)
                             .clickable {
                                 val intent = Intent(Intent.ACTION_INSERT).apply {
                                     type = android.provider.ContactsContract.RawContacts.CONTENT_TYPE
@@ -116,7 +195,7 @@ fun DialerScreen() {
                                 }
                                 context.startActivity(intent)
                             },
-                        style = MaterialTheme.typography.labelLarge
+                        style = MaterialTheme.typography.labelMedium
                     )
                 }
             }
@@ -127,10 +206,10 @@ fun DialerScreen() {
         
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+            contentPadding = PaddingValues(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(keys) { key ->
                 DialKey(
@@ -145,40 +224,62 @@ fun DialerScreen() {
             }
         }
 
-        // Action Buttons (Call, Backspace)
+        // Action Buttons
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 32.dp),
+                .padding(bottom = 16.dp, top = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
-                onClick = { /* Could add more dialer actions here */ },
-                modifier = Modifier.size(64.dp)
+                onClick = onIdentifyCallHistory,
+                modifier = Modifier.size(56.dp)
             ) {
-                // Empty placeholder for symmetry or history icon
+                 Icon(
+                     imageVector = Icons.Default.History,
+                     contentDescription = "History",
+                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                     modifier = Modifier.size(28.dp)
+                 )
             }
 
             FloatingActionButton(
                 onClick = {
                     if (phoneNumber.isNotEmpty()) {
-                        val intent = Intent(Intent.ACTION_DIAL).apply {
-                            data = Uri.parse("tel:$phoneNumber")
+                        val hasCallPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                            context, android.Manifest.permission.CALL_PHONE
+                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                        
+                        if (hasCallPermission) {
+                            if (isDefaultDialer && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                                try {
+                                    val telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as android.telecom.TelecomManager
+                                    val uri = Uri.fromParts("tel", phoneNumber, null)
+                                    val extras = Bundle()
+                                    telecomManager.placeCall(uri, extras)
+                                } catch (e: SecurityException) {
+                                    Toast.makeText(context, "Permission error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                            } else {
+                                val intent = Intent(Intent.ACTION_CALL).apply {
+                                    data = Uri.parse("tel:$phoneNumber")
+                                }
+                                context.startActivity(intent)
+                            }
+                        } else {
+                            callPermissionLauncher.launch(android.Manifest.permission.CALL_PHONE)
                         }
-                        context.startActivity(intent)
                     }
                 },
                 containerColor = Color(0xFF4CAF50),
                 contentColor = Color.White,
-                modifier = Modifier.size(72.dp),
+                modifier = Modifier.size(64.dp),
                 shape = CircleShape
             ) {
-                Icon(
-                    imageVector = Icons.Default.Call,
-                    contentDescription = "Call",
-                    modifier = Modifier.size(32.dp)
-                )
+                Icon(Icons.Default.Call, "Call", modifier = Modifier.size(28.dp))
             }
 
             IconButton(
@@ -187,14 +288,10 @@ fun DialerScreen() {
                         phoneNumber = phoneNumber.dropLast(1)
                     }
                 },
-                modifier = Modifier.size(64.dp)
+                modifier = Modifier.size(56.dp)
             ) {
                 if (phoneNumber.isNotEmpty()) {
-                    Icon(
-                        imageVector = Icons.Default.Backspace,
-                        contentDescription = "Backspace",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Icon(Icons.Default.Backspace, "Backspace", modifier = Modifier.size(24.dp))
                 }
             }
         }
@@ -208,38 +305,17 @@ fun DialKey(text: String, onClick: () -> Unit, onLongClick: (() -> Unit)? = null
         modifier = Modifier
             .aspectRatio(1f)
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick
-            ),
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Normal
-                )
-            )
-            // Optional: Subtext for letters (like in real dialers)
+            Text(text = text, style = MaterialTheme.typography.headlineSmall)
             val subtext = when (text) {
-                "2" -> "ABC"
-                "3" -> "DEF"
-                "4" -> "GHI"
-                "5" -> "JKL"
-                "6" -> "MNO"
-                "7" -> "PQRS"
-                "8" -> "TUV"
-                "9" -> "WXYZ"
-                else -> ""
+                "2" -> "ABC"; "3" -> "DEF"; "4" -> "GHI"; "5" -> "JKL"; "6" -> "MNO"; "7" -> "PQRS"; "8" -> "TUV"; "9" -> "WXYZ"; else -> ""
             }
             if (subtext.isNotEmpty()) {
-                Text(
-                    text = subtext,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
+                Text(text = subtext, style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
             }
         }
     }

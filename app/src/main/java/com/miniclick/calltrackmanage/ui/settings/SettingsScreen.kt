@@ -255,7 +255,7 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text("More") },
                 navigationIcon = if (onBack != null) {
                     {
                         IconButton(onClick = onBack) {

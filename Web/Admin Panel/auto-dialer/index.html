@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Dialer | MiniClick - Supercharge Cold Calling</title>
+    <meta name="description"
+        content="MiniClick Auto Dialer - The fastest way to reach your leads. Upload lists, start campaigns, and dial automatically.">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../assets/favicon.png">
+    <link rel="apple-touch-icon" href="../assets/favicon.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                        },
+                        dialer: {
+                            500: '#f97316', /* Orange for Action/Dialing */
+                            600: '#ea580c',
+                        },
+                        dark: {
+                            bg: '#0B0F19',
+                            card: '#111827',
+                            border: '#1F2937'
+                        }
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'ping-slow': 'ping 3s cubic-bezier(0, 0, 0.2, 1) infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        .glass {
+            background-color: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-card {
+            background-color: rgba(17, 24, 39, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(31, 41, 55, 0.5);
+            transition: all 0.3s;
+        }
+        .glass-card:hover {
+            border-color: rgba(249, 115, 22, 0.3);
+        }
+        .text-gradient {
+            background: linear-gradient(to right, #fbbf24, #f97316);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        body {
+            background-color: #0B0F19; /* dark-bg */
+            color: #ffffff;
+        }
+    </style>
+</head>
+
+<body class="antialiased overflow-x-hidden">
+
+    <!-- Navbar -->
+    <nav class="fixed w-full z-50 transition-all duration-300 top-0 glass border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <a href="../" class="flex items-center gap-2">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
+                        <i data-feather="zap" class="text-white w-4 h-4"></i>
+                    </div>
+                    <span class="font-bold text-xl tracking-tight">MiniClick <span
+                            class="text-dialer-500">Dialer</span></span>
+                </a>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-8">
+                        <a href="../"
+                            class="hover:text-white text-gray-400 transition-colors px-3 py-2 text-sm font-medium">Calls
+                            App</a>
+                        <a href="../sales-crm/"
+                            class="hover:text-white text-gray-400 transition-colors px-3 py-2 text-sm font-medium">Sales
+                            CRM</a>
+                        <a href="#features"
+                            class="hover:text-dialer-500 transition-colors px-3 py-2 text-sm font-medium">Features</a>
+                        <a href="#how-it-works"
+                            class="hover:text-dialer-500 transition-colors px-3 py-2 text-sm font-medium">How it
+                            Works</a>
+                        <a href="#pricing"
+                            class="hover:text-dialer-500 transition-colors px-3 py-2 text-sm font-medium">Pricing</a>
+                    </div>
+                </div>
+                <div class="hidden md:flex items-center gap-4">
+                    <a href="../login/" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">Log
+                        In</a>
+                    <a href="../signup/"
+                        class="bg-dialer-600 hover:bg-dialer-500 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-all shadow-lg shadow-dialer-500/20 hover:shadow-dialer-500/40">
+                        Start Calling
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="relative pt-32 pb-20 sm:pt-40 sm:pb-24 overflow-hidden">
+        <!-- Background Glows -->
+        <div class="absolute top-0 right-1/4 w-96 h-96 bg-dialer-500/20 rounded-full blur-[128px] pointer-events-none">
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="lg:grid lg:grid-cols-12 lg:gap-16 items-center">
+                <div class="lg:col-span-6 order-last lg:order-first relative">
+                    <!-- Visual: Phone/Dialer Loop -->
+                    <div
+                        class="relative rounded-3xl overflow-hidden shadow-2xl shadow-dialer-500/10 border border-white/5 bg-dark-card/50 backdrop-blur p-8">
+                        <div class="flex items-center justify-between mb-8 border-b border-white/5 pb-4">
+                            <div>
+                                <h3 class="font-bold text-white text-lg">Campaign: Tech Leads</h3>
+                                <p class="text-sm text-gray-400">List: 1,500 Contacts</p>
+                            </div>
+                            <span
+                                class="px-3 py-1 bg-green-500/20 text-green-400 text-xs rounded-full font-bold animate-pulse">LIVE</span>
+                        </div>
+
+                        <div class="flex flex-col items-center justify-center py-8">
+                            <div
+                                class="w-32 h-32 rounded-full border-4 border-dialer-500 flex items-center justify-center relative mb-6">
+                                <div
+                                    class="absolute inset-0 rounded-full border-4 border-dialer-500/30 animate-ping-slow">
+                                </div>
+                                <i data-feather="phone-forwarded" class="w-12 h-12 text-white"></i>
+                            </div>
+                            <div class="text-2xl font-bold text-white mb-1">Dialing...</div>
+                            <div class="text-brand-400">+1 (555) 012-3456</div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 mt-6">
+                            <div class="bg-white/5 p-3 rounded-lg text-center">
+                                <div class="text-2xl font-bold text-white">45</div>
+                                <div class="text-xs text-gray-500">Calls Made</div>
+                            </div>
+                            <div class="bg-white/5 p-3 rounded-lg text-center">
+                                <div class="text-2xl font-bold text-green-400">12%</div>
+                                <div class="text-xs text-gray-500">Connection Rate</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-6 text-center lg:text-left mb-12 lg:mb-0">
+                    <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-tight">
+                        Triple Your <br />
+                        <span class="text-gradient">Daily Call Volume</span>
+                    </h1>
+                    <p class="text-lg text-gray-400 mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+                        Stop manual dialing. Upload your leads, set your script, and let the Auto Dialer keep your team
+                        talking. Seamlessly push successful calls to the MiniClick CRM.
+                    </p>
+                    <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                        <a href="#pricing"
+                            class="w-full sm:w-auto px-8 py-4 bg-dialer-500 text-white font-bold rounded-full hover:bg-dialer-600 transition-all shadow-lg shadow-dialer-500/25 transform hover:-translate-y-1">
+                            Get Dialer Access
+                        </a>
+                        <a href="#how-it-works"
+                            class="w-full sm:w-auto px-8 py-4 glass text-white font-medium rounded-full hover:bg-white/10 transition-all flex items-center justify-center gap-2">
+                            Watch Demo
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Grid -->
+    <section id="features" class="py-24 bg-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-base text-dialer-500 font-semibold tracking-wide uppercase">Features</h2>
+                <h2 class="text-3xl font-bold mb-4">Everything needed for High Velocity Sales</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="glass-card p-6 rounded-2xl">
+                    <i data-feather="upload-cloud" class="w-10 h-10 text-dialer-500 mb-4"></i>
+                    <h3 class="text-xl font-bold mb-2">Easy Import</h3>
+                    <p class="text-gray-400">Upload CSV or Excel files with thousands of leads in seconds. Auto-clean
+                        duplicates.</p>
+                </div>
+                <div class="glass-card p-6 rounded-2xl">
+                    <i data-feather="repeat" class="w-10 h-10 text-dialer-500 mb-4"></i>
+                    <h3 class="text-xl font-bold mb-2">Power Dialing</h3>
+                    <p class="text-gray-400">Dial the next number instantly as you hang up. Zero downtime between calls.
+                    </p>
+                </div>
+                <div class="glass-card p-6 rounded-2xl">
+                    <i data-feather="check-square" class="w-10 h-10 text-dialer-500 mb-4"></i>
+                    <h3 class="text-xl font-bold mb-2">CRM Sync</h3>
+                    <p class="text-gray-400">One-click "Qualified" button pushes the contact and recording to MiniClick
+                        Sales CRM.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-24 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-base text-dialer-500 font-semibold tracking-wide uppercase">Pricing</h2>
+                <p class="mt-2 text-3xl font-extrabold text-white sm:text-4xl">Pay As You Go</p>
+                <p class="mt-4 text-gray-400">No licenses. Just pay for the calls you make.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <!-- Plan 1 -->
+                <div class="glass-card p-8 rounded-3xl flex flex-col items-center text-center">
+                    <h3 class="text-xl font-bold text-gray-300">Starter Pack</h3>
+                    <div class="my-6">
+                        <span class="text-4xl font-bold">₹999</span>
+                        <span class="text-gray-500">/ 500 mins</span>
+                    </div>
+                    <ul class="text-left space-y-3 mb-8">
+                        <li class="flex items-center gap-2 text-sm text-gray-300"><i data-feather="check"
+                                class="w-4 h-4 text-dialer-500"></i> Local Numbers</li>
+                        <li class="flex items-center gap-2 text-sm text-gray-300"><i data-feather="check"
+                                class="w-4 h-4 text-dialer-500"></i> Basic Analytics</li>
+                    </ul>
+                    <a href="#"
+                        class="w-full py-3 rounded-xl border border-white/20 hover:bg-white/10 transition-colors">Buy
+                        Credits</a>
+                </div>
+
+                <!-- Plan 2 -->
+                <div
+                    class="glass-card p-8 rounded-3xl flex flex-col items-center text-center border-t-4 border-dialer-500 bg-white/5">
+                    <h3 class="text-xl font-bold text-white">Power Pack</h3>
+                    <div class="my-6">
+                        <span class="text-4xl font-bold">₹4999</span>
+                        <span class="text-gray-500">/ 3000 mins</span>
+                    </div>
+                    <ul class="text-left space-y-3 mb-8">
+                        <li class="flex items-center gap-2 text-sm text-white"><i data-feather="check"
+                                class="w-4 h-4 text-dialer-500"></i> <strong>Priority Routes</strong></li>
+                        <li class="flex items-center gap-2 text-sm text-white"><i data-feather="check"
+                                class="w-4 h-4 text-dialer-500"></i> Recording Included</li>
+                        <li class="flex items-center gap-2 text-sm text-white"><i data-feather="check"
+                                class="w-4 h-4 text-dialer-500"></i> CRM Integration</li>
+                    </ul>
+                    <a href="#"
+                        class="w-full py-3 rounded-xl bg-dialer-500 hover:bg-dialer-600 text-white font-bold transition-colors">Buy
+                        Credits</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/10 bg-[#0B0F19] pt-16 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-gray-600 text-sm">© 2026 MiniClick. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        feather.replace();
+    </script>
+</body>
+
+</html>
