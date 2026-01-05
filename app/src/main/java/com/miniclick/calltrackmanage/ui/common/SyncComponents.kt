@@ -242,11 +242,17 @@ fun RecordingQueueModal(
                     }
                 }
             } else {
+                val sortedRecordings = remember(activeRecordings) {
+                    activeRecordings.sortedByDescending { it.callDate }
+                }
+                val displayList = remember(sortedRecordings) { sortedRecordings.take(100) }
+                val remaining = sortedRecordings.size - displayList.size
+
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.heightIn(max = 400.dp)
                 ) {
-                    items(activeRecordings, key = { it.compositeId }) { recording ->
+                    items(displayList, key = { it.compositeId }) { recording ->
                         RecordingQueueItem(
                             recording = recording,
                             onClick = {
@@ -256,6 +262,22 @@ fun RecordingQueueModal(
                             },
                             onRetry = { onRetry(recording.compositeId) }
                         )
+                    }
+
+                    if (remaining > 0) {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "$remaining remaining recordings...",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
                     }
                 }
             }

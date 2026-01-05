@@ -65,16 +65,24 @@
         }
     </script>
     <style type="text/tailwindcss">
-        @layer utilities {
-            .glass {
-                @apply bg-white/5 backdrop-blur-lg border border-white/10;
-            }
-            .glass-card {
-                @apply bg-dark-card/60 backdrop-blur-md border border-dark-border/50 hover:border-brand-500/30 transition-all duration-300;
-            }
-            .text-gradient {
-                @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-400 to-purple-400;
-            }
+        .glass {
+            background-color: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-card {
+            background-color: rgba(17, 24, 39, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(31, 41, 55, 0.5);
+            transition: all 0.3s;
+        }
+        .glass-card:hover {
+            border-color: rgba(14, 165, 233, 0.3);
+        }
+        .text-gradient {
+            background: linear-gradient(to right, #38bdf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         body {
             background-color: #0B0F19; /* dark-bg */
@@ -103,30 +111,31 @@
     <nav class="fixed w-full z-50 transition-all duration-300 top-0 glass border-b border-white/5">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
-                <div class="flex items-center gap-2">
+                <a href="/" class="flex items-center gap-2">
                     <div
                         class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center">
                         <i data-feather="phone-call" class="text-white w-4 h-4"></i>
                     </div>
                     <span class="font-bold text-xl tracking-tight">Call Track<span
                             class="text-brand-400">.</span></span>
-                </div>
+                </a>
                 <div class="hidden md:block">
                     <div class="ml-10 flex items-baseline space-x-8">
-                        <a href="features.html"
+                        <a href="#features"
                             class="hover:text-brand-400 transition-colors px-3 py-2 text-sm font-medium">Features</a>
+                        <a href="#how-it-works"
+                            class="hover:text-brand-400 transition-colors px-3 py-2 text-sm font-medium">How it
+                            Works</a>
                         <a href="#pricing"
                             class="hover:text-brand-400 transition-colors px-3 py-2 text-sm font-medium">Pricing</a>
-                        <a href="setup.html"
-                            class="hover:text-brand-400 transition-colors px-3 py-2 text-sm font-medium">Setup Guide</a>
-                        <a href="blog/how-to-track-employee-calls.html"
-                            class="hover:text-brand-400 transition-colors px-3 py-2 text-sm font-medium">Blog</a>
+                        <a href="#faqs"
+                            class="hover:text-brand-400 transition-colors px-3 py-2 text-sm font-medium">FAQs</a>
                     </div>
                 </div>
                 <div id="auth-desktop" class="hidden md:flex items-center gap-4">
-                    <a href="login.html"
-                        class="text-gray-300 hover:text-white transition-colors text-sm font-medium">Log In</a>
-                    <a href="signup.html"
+                    <a href="login/" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">Log
+                        In</a>
+                    <a href="signup/"
                         class="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-all shadow-lg shadow-brand-500/20 hover:shadow-brand-500/40">
                         Get Started
                     </a>
@@ -143,17 +152,16 @@
         <!-- Mobile Menu (Hidden by default) -->
         <div class="md:hidden hidden bg-dark-bg/95 backdrop-blur-xl border-b border-white/10" id="mobile-menu">
             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                <a href="features.html"
+                <a href="#features"
                     class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">Features</a>
+                <a href="#how-it-works" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">How it
+                    Works</a>
                 <a href="#pricing" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">Pricing</a>
-                <a href="setup.html" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">Setup
-                    Guide</a>
-                <a href="blog/how-to-track-employee-calls.html"
-                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">Blog</a>
-                <a id="auth-mobile-login" href="login.html"
+                <a href="#faqs" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">FAQs</a>
+                <a id="auth-mobile-login" href="login/"
                     class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">Log
                     In</a>
-                <a id="auth-mobile-signup" href="signup.html"
+                <a id="auth-mobile-signup" href="signup/"
                     class="block w-full text-center mt-4 bg-brand-600 hover:bg-brand-500 text-white px-5 py-3 rounded-lg text-base font-medium">Get
                     Started</a>
             </div>
@@ -190,7 +198,7 @@
                             class="w-full sm:w-auto px-8 py-4 bg-white text-dark-bg font-bold rounded-full hover:bg-gray-100 transition-all shadow-lg shadow-white/10 transform hover:-translate-y-1">
                             Start 3 Day Free Trial
                         </a>
-                        <a href="download.html"
+                        <a href="download/"
                             class="w-full sm:w-auto px-8 py-4 glass text-white font-medium rounded-full hover:bg-white/10 transition-all flex items-center justify-center gap-2">
                             <i data-feather="download" class="w-4 h-4"></i> Download App
                         </a>
@@ -387,7 +395,7 @@
                             <i data-feather="check" class="w-4 h-4 text-green-400"></i> No Cloud Sync
                         </li>
                     </ul>
-                    <a href="download.html"
+                    <a href="download/"
                         class="w-full block text-center py-3 rounded-xl border border-white/20 hover:bg-white/10 transition-colors font-medium">Download
                         Now</a>
                 </div>
@@ -420,7 +428,7 @@
                             <i data-feather="check" class="w-4 h-4 text-brand-400"></i> Employee Activity Reports
                         </li>
                     </ul>
-                    <a href="signup.html"
+                    <a href="signup/"
                         class="w-full block text-center py-3 rounded-xl bg-brand-600 hover:bg-brand-500 transition-colors text-white font-bold shadow-lg shadow-brand-500/25">Start
                         3-Day Free Trial</a>
                 </div>
@@ -445,10 +453,117 @@
                             <i data-feather="check" class="w-4 h-4 text-purple-400"></i> Accessible Anywhere
                         </li>
                     </ul>
-                    <a href="signup.html"
+                    <a href="signup/"
                         class="w-full block text-center py-3 rounded-xl border border-white/20 hover:bg-white/10 transition-colors font-medium">Add
                         to Plan</a>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faqs" class="py-24 relative overflow-hidden bg-white/[0.02]">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-base text-brand-400 font-semibold tracking-wide uppercase">Support</h2>
+                <p class="mt-2 text-3xl font-extrabold text-white sm:text-4xl">Frequently Asked Questions</p>
+                <p class="mt-4 text-gray-400">Everything you need to know about Call Track by MiniClick.</p>
+            </div>
+
+            <div class="space-y-4">
+                <!-- FAQ 1 -->
+                <div class="glass-card rounded-2xl overflow-hidden transition-all duration-300">
+                    <button class="w-full px-8 py-6 text-left flex justify-between items-center group"
+                        onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-180')">
+                        <span class="text-lg font-semibold text-white group-hover:text-brand-400 transition-colors">What
+                            devices are supported?</span>
+                        <i data-feather="chevron-down" class="text-gray-500 transition-transform duration-300"></i>
+                    </button>
+                    <div class="px-8 pb-6 text-gray-400 hidden animate-fade-in">
+                        Call Track works on all Android devices running Android 8.0 (Oreo) and above. We recommend
+                        disabling battery optimization for the best experience. iOS is currently not supported due to
+                        Apple's system restrictions on call recording.
+                    </div>
+                </div>
+
+                <!-- FAQ 2 -->
+                <div class="glass-card rounded-2xl overflow-hidden transition-all duration-300">
+                    <button class="w-full px-8 py-6 text-left flex justify-between items-center group"
+                        onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-180')">
+                        <span class="text-lg font-semibold text-white group-hover:text-brand-400 transition-colors">Is
+                            it legal to record phone calls?</span>
+                        <i data-feather="chevron-down" class="text-gray-500 transition-transform duration-300"></i>
+                    </button>
+                    <div class="px-8 pb-6 text-gray-400 hidden animate-fade-in">
+                        Call recording laws vary by country and state. Generally, you should inform the other party that
+                        the call is being recorded. Some jurisdictions require "one-party consent" while others require
+                        "all-party consent." Always consult your local laws to ensure compliance.
+                    </div>
+                </div>
+
+                <!-- FAQ 3 -->
+                <div class="glass-card rounded-2xl overflow-hidden transition-all duration-300">
+                    <button class="w-full px-8 py-6 text-left flex justify-between items-center group"
+                        onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-180')">
+                        <span class="text-lg font-semibold text-white group-hover:text-brand-400 transition-colors">Does
+                            it work on Dual-SIM phones?</span>
+                        <i data-feather="chevron-down" class="text-gray-500 transition-transform duration-300"></i>
+                    </button>
+                    <div class="px-8 pb-6 text-gray-400 hidden animate-fade-in">
+                        Yes! Call Track fully supports Dual-SIM devices. You can choose to track calls from both SIMs or
+                        exclude specific numbers and SIM slots in the app settings.
+                    </div>
+                </div>
+
+                <!-- FAQ 4 -->
+                <div class="glass-card rounded-2xl overflow-hidden transition-all duration-300">
+                    <button class="w-full px-8 py-6 text-left flex justify-between items-center group"
+                        onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-180')">
+                        <span class="text-lg font-semibold text-white group-hover:text-brand-400 transition-colors">Will
+                            it work if the phone is offline?</span>
+                        <i data-feather="chevron-down" class="text-gray-500 transition-transform duration-300"></i>
+                    </button>
+                    <div class="px-8 pb-6 text-gray-400 hidden animate-fade-in">
+                        Yes. Calls and recordings are queued locally on the device and will automatically sync to the
+                        cloud as soon as an internet connection (Wi-Fi or Mobile Data) is restored.
+                    </div>
+                </div>
+
+                <!-- FAQ 5 -->
+                <div class="glass-card rounded-2xl overflow-hidden transition-all duration-300">
+                    <button class="w-full px-8 py-6 text-left flex justify-between items-center group"
+                        onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-180')">
+                        <span class="text-lg font-semibold text-white group-hover:text-brand-400 transition-colors">Can
+                            I record WhatsApp or VoIP calls?</span>
+                        <i data-feather="chevron-down" class="text-gray-500 transition-transform duration-300"></i>
+                    </button>
+                    <div class="px-8 pb-6 text-gray-400 hidden animate-fade-in">
+                        Currently, Call Track specializes in standard cellular calls. Recording for VoIP apps like
+                        WhatsApp, Telegram, or Zoom is a feature on our roadmap but is not supported in the current
+                        version.
+                    </div>
+                </div>
+
+                <!-- FAQ 6 -->
+                <div class="glass-card rounded-2xl overflow-hidden transition-all duration-300">
+                    <button class="w-full px-8 py-6 text-left flex justify-between items-center group"
+                        onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-180')">
+                        <span class="text-lg font-semibold text-white group-hover:text-brand-400 transition-colors">How
+                            secure is my data?</span>
+                        <i data-feather="chevron-down" class="text-gray-500 transition-transform duration-300"></i>
+                    </button>
+                    <div class="px-8 pb-6 text-gray-400 hidden animate-fade-in">
+                        Your privacy is our priority. All call metadata and recordings are encrypted during transit and
+                        at rest in our secure cloud storage. Only authorized users within your organization can access
+                        the recordings through the Admin Panel.
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-12 text-center">
+                <p class="text-gray-500">Still have questions? <a href="mailto:support@miniclick.com"
+                        class="text-brand-400 hover:text-brand-300 underline underline-offset-4">Contact our support
+                        team</a></p>
             </div>
         </div>
     </section>
@@ -461,7 +576,7 @@
             <p class="text-xl text-gray-300 mb-10">Join thousands of micro and small businesses streamlining their
                 communication today.</p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="signup.html"
+                <a href="signup/"
                     class="px-8 py-4 bg-white text-dark-bg font-bold rounded-full hover:bg-gray-100 transition-all shadow-xl">Get
                     Started Now</a>
             </div>
@@ -481,34 +596,35 @@
                 <div>
                     <h4 class="font-bold mb-4">Product</h4>
                     <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="features.html" class="hover:text-white transition-colors">Features</a></li>
+                        <li><a href="#features" class="hover:text-white transition-colors">Features</a></li>
                         <li><a href="#pricing" class="hover:text-white transition-colors">Pricing</a></li>
-                        <li><a href="download.html" class="hover:text-white transition-colors">Download</a></li>
+                        <li><a href="download/" class="hover:text-white transition-colors">Download</a></li>
                     </ul>
                 </div>
                 <div>
                     <h4 class="font-bold mb-4">Resources</h4>
                     <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="setup.html" class="hover:text-white transition-colors">Setup Guide</a></li>
-                        <li><a href="blog/how-to-track-employee-calls.html"
+                        <li><a href="setup/" class="hover:text-white transition-colors">Setup Guide</a></li>
+                        <li><a href="blog/how-to-track-employee-calls/"
                                 class="hover:text-white transition-colors">Blog</a></li>
-                        <li><a href="privacy.html" class="hover:text-white transition-colors">Privacy Policy</a></li>
-                        <li><a href="terms.html" class="hover:text-white transition-colors">Terms of Use</a></li>
+                        <li><a href="privacy/" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                        <li><a href="terms/" class="hover:text-white transition-colors">Terms of Use</a></li>
+                        <li><a href="#faqs" class="hover:text-white transition-colors">FAQs</a></li>
                     </ul>
                 </div>
                 <div>
-                    <h4 class="font-bold mb-4">Account</h4>
+                    <h4 class="font-bold mb-4">Admin</h4>
                     <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="login.html" class="hover:text-white transition-colors">Login</a></li>
-                        <li><a href="signup.html" class="hover:text-white transition-colors">Sign Up</a></li>
+                        <li><a href="login/" class="hover:text-white transition-colors">Login</a></li>
+                        <li><a href="signup/" class="hover:text-white transition-colors">Sign Up</a></li>
                     </ul>
                 </div>
             </div>
             <div class="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
                 <p class="text-gray-600 text-sm">© 2026 MiniClick. All rights reserved.</p>
                 <div class="flex items-center gap-6 text-sm text-gray-500">
-                    <a href="privacy.html" class="hover:text-white transition-colors">Privacy Policy</a>
-                    <a href="terms.html" class="hover:text-white transition-colors">Terms of Use</a>
+                    <a href="privacy/" class="hover:text-white transition-colors">Privacy Policy</a>
+                    <a href="terms/" class="hover:text-white transition-colors">Terms of Use</a>
                 </div>
                 <div class="flex gap-4">
                     <a href="#" class="text-gray-600 hover:text-white transition-colors"><i data-feather="twitter"

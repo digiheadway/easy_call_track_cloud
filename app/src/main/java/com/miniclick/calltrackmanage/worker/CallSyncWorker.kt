@@ -471,6 +471,10 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             .setOnlyAlertOnce(true)
             .build()
 
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            Log.d(TAG, "Creating ForegroundInfo with DATA_SYNC type")
+            return ForegroundInfo(1003, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        }
         return ForegroundInfo(1003, notification)
     }
 

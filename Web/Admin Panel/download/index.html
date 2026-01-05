@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download Call Track - Call Track by MiniClick</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../assets/favicon.png">
+    <link rel="apple-touch-icon" href="../assets/favicon.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                        },
+                        dark: {
+                            bg: '#0B0F19',
+                            card: '#111827',
+                        }
+                    },
+                    animation: {
+                        'bounce-slow': 'bounce 3s infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0B0F19;
+            color: white;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body class="antialiased h-screen flex flex-col justify-between">
+
+    <nav class="w-full flex justify-between items-center p-6 lg:px-12">
+        <a href="/" class="flex items-center gap-2 group">
+            <div
+                class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center">
+                <i data-feather="arrow-left" class="text-white w-4 h-4"></i>
+            </div>
+            <span class="font-bold text-xl tracking-tight group-hover:text-brand-400 transition-colors">Back to
+                Home</span>
+        </a>
+        <a href="../setup/"
+            class="text-gray-400 hover:text-white transition-colors font-medium flex items-center gap-2">
+            <i data-feather="book-open" class="w-4 h-4"></i>
+            Setup Guide
+        </a>
+    </nav>
+
+    <main class="flex-grow flex flex-col items-center justify-center px-4 text-center">
+        <div class="relative w-32 h-32 mb-8 mx-auto">
+            <div class="absolute inset-0 bg-brand-500 blur-3xl opacity-20 rounded-full"></div>
+            <div
+                class="relative w-full h-full bg-gradient-to-br from-brand-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl animate-bounce-slow">
+                <i data-feather="smartphone" class="w-16 h-16 text-white"></i>
+            </div>
+        </div>
+
+        <h1 class="text-4xl md:text-5xl font-bold mb-4">Download <span class="text-brand-400">Call Track</span></h1>
+        <p class="text-gray-400 text-lg max-w-xl mx-auto mb-10">
+            Get the app on your Android device to start tracking calls, syncing recordings, and managing your business
+            leads effortlessly.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-6">
+            <a href="#"
+                class="flex items-center gap-4 bg-white text-dark-bg px-6 py-3 rounded-xl hover:bg-gray-200 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1 group">
+                <i data-feather="play-circle" class="w-8 h-8 text-green-600"></i>
+                <div class="text-left">
+                    <div class="text-xs font-semibold uppercase tracking-wider text-gray-500">Get it on</div>
+                    <div class="text-xl font-bold">Google Play</div>
+                </div>
+            </a>
+
+            <a href="#"
+                class="flex items-center gap-4 bg-white/10 text-white px-6 py-3 rounded-xl hover:bg-white/20 transition-all border border-white/20 transform hover:-translate-y-1">
+                <i data-feather="download" class="w-8 h-8"></i>
+                <div class="text-left">
+                    <div class="text-xs font-semibold uppercase tracking-wider text-gray-400">Download APK</div>
+                    <div class="text-xl font-bold">Direct Link</div>
+                </div>
+            </a>
+        </div>
+
+        <div class="mt-12 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 max-w-md">
+            <div class="flex items-center gap-2 mb-2">
+                <i data-feather="alert-circle" class="text-yellow-500 w-4 h-4"></i>
+                <span class="text-sm font-bold text-yellow-500">Setup Requirement</span>
+            </div>
+            <p class="text-xs text-left text-gray-400">
+                After installing, please open the app and follow the <a href="../setup/"
+                    class="text-yellow-500 hover:underline font-bold">"Easy Setup" guide</a> to grant necessary
+                permissions
+                for call recording and sync.
+            </p>
+        </div>
+    </main>
+
+    <footer class="py-8 text-center text-gray-600 text-sm">
+        &copy; 2024 MiniClick. All rights reserved.
+    </footer>
+
+    <script>feather.replace()</script>
+</body>
+
+</html>
