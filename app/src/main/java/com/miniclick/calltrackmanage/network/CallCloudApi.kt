@@ -35,6 +35,18 @@ interface CallCloudApi {
         @Field("call_time") callTime: String
     ): Response<Map<String, Any>>
 
+    // NEW: Batch Sync Calls
+    @FormUrlEncoded
+    @POST("sync_app.php")
+    suspend fun batchSyncCalls(
+        @Field("action") action: String,
+        @Field("org_id") orgId: String,
+        @Field("user_id") userId: String,
+        @Field("device_id") deviceId: String,
+        @Field("device_phone") devicePhone: String,
+        @Field("calls_json") callsJson: String
+    ): Response<Map<String, Any>>
+
     @Multipart
     @POST("sync_app.php")
     suspend fun uploadChunk(

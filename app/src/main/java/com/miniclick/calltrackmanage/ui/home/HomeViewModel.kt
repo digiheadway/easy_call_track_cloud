@@ -81,7 +81,8 @@ data class HomeUiState(
     val isSyncSetup: Boolean = false,
     val personSortBy: PersonSortBy = PersonSortBy.LAST_CALL,
     val personSortDirection: SortDirection = SortDirection.DESCENDING,
-    val allowPersonalExclusion: Boolean = false
+    val allowPersonalExclusion: Boolean = false,
+    val callRecordEnabled: Boolean = true
 )
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
@@ -238,6 +239,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      * Get recording for a call (with caching)
      */
     suspend fun getRecordingForLog(call: CallDataEntity): String? {
+        if (!_uiState.value.callRecordEnabled) return null
+        
+        val lastEnabledTime = settingsRepository.getRecordingLastEnabledTimestamp()
+        if (call.callDate < lastEnabledTime) return null
+
         // Check if already has recording path
         if (!call.localRecordingPath.isNullOrEmpty()) {
             return call.localRecordingPath
@@ -597,18 +603,21 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val orgId = settingsRepository.getOrganisationId()
         val isSyncSetup = orgId.isNotEmpty()
         val allowPersonalExclusion = settingsRepository.isAllowPersonalExclusion()
+        val callRecordEnabled = settingsRepository.isCallRecordEnabled()
         
         if (simSelection != _uiState.value.simSelection || 
             trackStartDate != _uiState.value.trackStartDate ||
             whatsappPreference != _uiState.value.whatsappPreference ||
             isSyncSetup != _uiState.value.isSyncSetup ||
-            allowPersonalExclusion != _uiState.value.allowPersonalExclusion) {
+            allowPersonalExclusion != _uiState.value.allowPersonalExclusion ||
+            callRecordEnabled != _uiState.value.callRecordEnabled) {
             _uiState.update { it.copy(
                 simSelection = simSelection, 
                 trackStartDate = trackStartDate,
                 whatsappPreference = whatsappPreference,
                 isSyncSetup = isSyncSetup,
-                allowPersonalExclusion = allowPersonalExclusion
+                allowPersonalExclusion = allowPersonalExclusion,
+                callRecordEnabled = callRecordEnabled
             ) }
             applyFilters()
         }

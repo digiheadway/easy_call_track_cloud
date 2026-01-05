@@ -341,6 +341,117 @@ if ($action === "start_call") {
 }
 
 /* =====================================================
+   1️⃣.5️⃣ BATCH SYNC CALLS
+   ===================================================== */
+if ($action === "batch_sync_calls") {
+    $org_id = trim($_POST['org_id'] ?? '');
+    $employee_id = trim($_POST['user_id'] ?? '');
+    $device_id = trim($_POST['device_id'] ?? '');
+    $calls_json = $_POST['calls_json'] ?? '[]';
+
+    if ($org_id === '' || $employee_id === '') errorOut("org_id and user_id required");
+    if ($device_id === '') errorOut("device_id required");
+
+    // Verify employee and device
+    $stmtVerify = $conn->prepare("SELECT device_id FROM employees WHERE id = ? AND org_id = ?");
+    $stmtVerify->bind_param("is", $employee_id, $org_id);
+    $stmtVerify->execute();
+    $resVerify = $stmtVerify->get_result();
+
+    if ($resVerify->num_rows === 0) {
+        errorOut("Invalid employee or organization");
+    }
+
+    $emp = $resVerify->fetch_assoc();
+    if ($emp['device_id'] !== $device_id) {
+        errorOut("Unauthorized: This device is not linked to this employee account.");
+    }
+
+    // Update last_sync for the employee
+    $updSync = $conn->prepare("UPDATE employees SET last_sync = NOW() WHERE id = ?");
+    $updSync->bind_param("i", $employee_id);
+    $updSync->execute();
+
+    $calls = json_decode($calls_json, true);
+    if (!is_array($calls)) {
+        errorOut("Invalid calls_json format");
+    }
+
+    $synced_ids = [];
+    $created_at = date("Y-m-d H:i:s");
+
+    // Prepare Statement outside loop for efficiency
+    $stmt = $conn->prepare("
+        INSERT INTO calls
+        (unique_id, org_id, employee_id, device_phone, caller_name, caller_phone, duration, type, upload_status, call_time)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+            device_phone  = VALUES(device_phone),
+            caller_name   = VALUES(caller_name),
+            caller_phone  = VALUES(caller_phone),
+            duration      = VALUES(duration),
+            type          = VALUES(type),
+            upload_status = VALUES(upload_status),
+            call_time     = VALUES(call_time),
+            updated_at    = NOW()
+    ");
+
+    $conn->begin_transaction();
+
+    try {
+        foreach ($calls as $call) {
+            $unique_id = $call['unique_id'] ?? '';
+            if (!$unique_id) continue;
+
+            $caller_name = $call['caller_name'] ?? null;
+            $caller_phone = isset($call['caller']) ? preg_replace('/[^\d]/', '', $call['caller']) : null;
+            $duration = intval($call['duration'] ?? 0);
+            $type = ucfirst($call['type'] ?? 'unknown');
+            $call_time_param = $call['call_time'] ?? null;
+            
+            $device_phone_call = isset($call['device_phone']) ? preg_replace('/[^\d]/', '', $call['device_phone']) : null;
+
+            $call_time_to_insert = $created_at;
+            if ($call_time_param && strtotime($call_time_param)) {
+                $call_time_to_insert = $call_time_param;
+            }
+
+            // Determine upload status
+            $upload_status = 'pending';
+            if ($duration <= 0 || strtolower($type) === 'missed') {
+                $upload_status = 'completed';
+            }
+
+            $stmt->bind_param(
+                "ssssssisss",
+                $unique_id,
+                $org_id,
+                $employee_id,
+                $device_phone_call,
+                $caller_name,
+                $caller_phone,
+                $duration,
+                $type,
+                $upload_status,
+                $call_time_to_insert
+            );
+            $stmt->execute();
+            $synced_ids[] = $unique_id;
+        }
+        $conn->commit();
+    } catch (Exception $e) {
+        $conn->rollback();
+        errorOut("Batch Insert Failed: " . $e->getMessage(), 500);
+    }
+
+    out([
+        "success" => true,
+        "synced_ids" => $synced_ids,
+        "server_time" => time() * 1000
+    ]);
+}
+
+/* =====================================================
    2️⃣ UPLOAD CHUNK
 ===================================================== */
 if ($action === "upload_chunk") {

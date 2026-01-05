@@ -35,6 +35,7 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
         }
         
         Log.d(TAG, "Starting sync pass...")
+        setForeground(createForegroundInfo("Syncing Calls with Server.."))
         
         // PHASE 0: ALWAYS sync from system call log to local Room DB (OFFLINE-FIRST)
         // This ensures calls are visible in the app even without server sync configured
@@ -82,57 +83,64 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             pullServerUpdates(orgId, userId, deviceId, lastSyncTime)
             
             // Phase 3: PUSH - Sync pending calls to server (metadata only)
-            val pendingCalls = callDataRepository.getCallsNeedingMetadataSync()
-            Log.d(TAG, "Found ${pendingCalls.size} calls needing metadata sync")
-            
+            // Phase 3: PUSH - Sync pending calls to server (metadata only)
             var syncedCount = 0
-            for (call in pendingCalls) {
-                try {
-                    val activePhone = getPhoneForCall(call.subscriptionId, phone1, phone2)
-
-                    // Check if number is excluded
-                    if (settingsRepository.isNumberExcluded(call.phoneNumber)) {
-                        Log.d(TAG, "Skipping excluded number: ${call.phoneNumber}. Marking as SYNCED to clear queue.")
-                        // Mark as synced so it doesn't stay in the pending queue
-                        callDataRepository.markMetadataSynced(call.compositeId, System.currentTimeMillis())
-                        // Also ensure recording status is NOT_APPLICABLE
-                        callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.NOT_APPLICABLE)
-                        continue
+            val allPendingCalls = callDataRepository.getCallsNeedingMetadataSync()
+            Log.d(TAG, "Found ${allPendingCalls.size} calls needing metadata sync")
+            
+            // Separate NEW calls (batchable) from UPDATES (one-by-one for now)
+            val (newCalls, updateCalls) = allPendingCalls.partition { 
+                it.metadataSyncStatus == MetadataSyncStatus.PENDING || it.metadataSyncStatus == MetadataSyncStatus.FAILED 
+            }
+            
+            // 3a. Process Updates (One-by-one)
+            for (call in updateCalls) {
+                if (settingsRepository.isNumberExcluded(call.phoneNumber)) {
+                    callDataRepository.markMetadataSynced(call.compositeId, System.currentTimeMillis())
+                    continue
+                }
+                pushCallUpdates(call)
+                syncedCount++
+            }
+            
+            // 3b. Process New Calls (BATCHED)
+            val callsToSync = mutableListOf<com.miniclick.calltrackmanage.data.db.CallDataEntity>()
+            
+            // Filter locally first
+            for (call in newCalls) {
+                if (settingsRepository.isNumberExcluded(call.phoneNumber)) {
+                    callDataRepository.markMetadataSynced(call.compositeId, System.currentTimeMillis())
+                    callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.NOT_APPLICABLE)
+                    continue
+                }
+                
+                val activePhone = getPhoneForCall(call.subscriptionId, phone1, phone2)
+                val shouldSync = when (simSelection) {
+                    "Sim1" -> activePhone == phone1
+                    "Sim2" -> activePhone == phone2
+                    else -> true
+                }
+                
+                if (shouldSync) {
+                    callsToSync.add(call)
+                }
+            }
+            
+            if (callsToSync.isNotEmpty()) {
+                val chunks = callsToSync.chunked(100) // Batch size 100
+                val totalChunks = chunks.size
+                
+                Log.d(TAG, "Batching ${callsToSync.size} calls into $totalChunks requests")
+                
+                for ((index, batch) in chunks.withIndex()) {
+                    try {
+                        setForeground(createForegroundInfo("Syncing Call Metadata (${index+1}/$totalChunks).."))
+                        syncBatchCalls(batch, orgId, userId, deviceId, phone1, phone2) // phone1/phone2 passed to resolve per-call sim
+                        syncedCount += batch.size
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Batch metadata sync failed", e)
+                        // Don't throw, try next batch
                     }
-                    
-                    // Filter by SIM selection
-                    val shouldSync = when (simSelection) {
-                        "Sim1" -> activePhone == phone1
-                        "Sim2" -> activePhone == phone2
-                        else -> true
-                    }
-                    
-                    if (!shouldSync) {
-                        Log.d(TAG, "Skipping call ${call.compositeId} - SIM filter")
-                        continue
-                    }
-                    
-                    when (call.metadataSyncStatus) {
-                        MetadataSyncStatus.PENDING -> {
-                            // New call - sync to server
-                            syncNewCall(call, orgId, userId, deviceId, activePhone)
-                        }
-                        MetadataSyncStatus.UPDATE_PENDING -> {
-                            // Existing call with local changes - push updates
-                            pushCallUpdates(call)
-                        }
-                        MetadataSyncStatus.FAILED -> {
-                            // Retry failed sync
-                            syncNewCall(call, orgId, userId, deviceId, activePhone)
-                        }
-                        else -> {}
-                    }
-                    syncedCount++
-                } catch (e: kotlinx.coroutines.CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to sync call ${call.compositeId}", e)
-                    callDataRepository.updateMetadataSyncStatus(call.compositeId, MetadataSyncStatus.FAILED)
                 }
             }
             
@@ -209,6 +217,87 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to pull server updates", e)
+        }
+    }
+
+    private suspend fun syncBatchCalls(
+        calls: List<com.miniclick.calltrackmanage.data.db.CallDataEntity>,
+        orgId: String,
+        userId: String,
+        deviceId: String,
+        phone1: String,
+        phone2: String
+    ) {
+        // Prepare payload
+        val payloadList = calls.map { call ->
+            val activePhone = getPhoneForCall(call.subscriptionId, phone1, phone2)
+            val typeStr = when (call.callType) {
+                android.provider.CallLog.Calls.INCOMING_TYPE -> "incoming"
+                android.provider.CallLog.Calls.OUTGOING_TYPE -> "outgoing"
+                android.provider.CallLog.Calls.MISSED_TYPE -> "missed"
+                5 -> "rejected"
+                6 -> "blocked"
+                else -> "unknown"
+            }
+            val callTime = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).apply {
+                timeZone = java.util.TimeZone.getTimeZone("UTC")
+            }.format(java.util.Date(call.callDate))
+            
+            mapOf(
+                "unique_id" to call.compositeId,
+                "caller_name" to (call.contactName ?: ""),
+                "caller" to call.phoneNumber,
+                "type" to typeStr,
+                "duration" to call.duration,
+                "call_time" to callTime,
+                "device_phone" to activePhone
+            )
+        }
+        
+        val callsJson = com.google.gson.Gson().toJson(payloadList)
+        
+        Log.d(TAG, "Sending batch of ${calls.size} calls")
+        val response = NetworkClient.api.batchSyncCalls(
+            action = "batch_sync_calls", // Server must handle this action
+            orgId = orgId,
+            userId = userId,
+            deviceId = deviceId,
+            devicePhone = "", // Passed inside each call object now, or global device phone? API def had it. We can leave empty here if server looks at JSON.
+            callsJson = callsJson
+        )
+        
+        if (response.isSuccessful && response.body()?.get("success") == true) {
+            val serverTime = (response.body()?.get("server_time") as? Number)?.toLong() ?: System.currentTimeMillis()
+            
+            @Suppress("UNCHECKED_CAST")
+            val syncedIds = response.body()?.get("synced_ids") as? List<String>
+            
+            if (syncedIds != null) {
+                for (id in syncedIds) {
+                    callDataRepository.markMetadataSynced(id, serverTime)
+                    callDataRepository.updateSyncError(id, null)
+                    
+                    // Check if recording upload is needed (locally, since server might not return status for each)
+                    // We assume if it synced, we check duration
+                    val call = calls.find { it.compositeId == id }
+                    if (call != null && call.duration > 0) {
+                        callDataRepository.updateRecordingSyncStatus(id, RecordingSyncStatus.PENDING)
+                    }
+                }
+                Log.d(TAG, "Batch sync success: ${syncedIds.size} calls synced")
+            } else {
+                 Log.w(TAG, "Batch sync returned success but no synced_ids list. Marking all as synced.")
+                 // Fallback: Mark all as synced
+                 for (call in calls) {
+                     callDataRepository.markMetadataSynced(call.compositeId, serverTime)
+                     if (call.duration > 0) callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.PENDING)
+                 }
+            }
+        } else {
+            val errorMsg = response.errorBody()?.string() ?: "Batch sync failed"
+            Log.e(TAG, "Batch sync failed: $errorMsg")
+            // Throw to trigger retry or fallback (although we catch in loop)
+            throw Exception(errorMsg)
         }
     }
     
@@ -357,6 +446,32 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
         }
 
         return if (phone1.isNotEmpty()) phone1 else phone2
+    }
+
+    private fun createForegroundInfo(progress: String): ForegroundInfo {
+        val channelId = "sync_channel"
+        val title = "Call Cloud Sync"
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val channel = android.app.NotificationChannel(
+                channelId,
+                "Background Sync",
+                android.app.NotificationManager.IMPORTANCE_LOW
+            )
+            val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val notification = androidx.core.app.NotificationCompat.Builder(applicationContext, channelId)
+            .setContentTitle(title)
+            .setTicker(title)
+            .setContentText(progress)
+            .setSmallIcon(com.miniclick.calltrackmanage.R.drawable.ic_launcher_foreground)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .build()
+
+        return ForegroundInfo(1003, notification)
     }
 
     companion object {

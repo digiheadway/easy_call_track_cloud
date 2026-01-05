@@ -559,6 +559,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun updateCallRecordEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setCallRecordEnabled(enabled)
+            if (enabled) {
+                settingsRepository.setRecordingLastEnabledTimestamp(System.currentTimeMillis())
+            }
             _uiState.update { it.copy(callRecordEnabled = enabled) }
         }
     }

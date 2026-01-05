@@ -1036,6 +1036,7 @@ fun PersonCard(
     onAttachRecording: (CallDataEntity) -> Unit,
     onMarkAllReviewed: () -> Unit
 ) {
+    val uiState by viewModel.uiState.collectAsState()
     val interactionSource = remember { MutableInteractionSource() }
     
     ElevatedCard(
@@ -1047,11 +1048,12 @@ fun PersonCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
                 .combinedClickable(
                     onClick = onCardClick,
                     onLongClick = onLongClick,
                     interactionSource = interactionSource,
-                    indication = ripple(bounded = true)
+                    indication = if (isExpanded) null else ripple(bounded = true)
                 )
         ) {
         Column {
@@ -1262,6 +1264,7 @@ fun PersonCard(
                             call = call,
                             recordings = recordings,
                             audioPlayer = audioPlayer,
+                            callRecordEnabled = uiState.callRecordEnabled,
                             onNoteClick = onCallNoteClick,
                             onAttachRecording = onAttachRecording
                         )
@@ -1956,6 +1959,7 @@ fun PersonInteractionBottomSheet(
     onAttachRecording: (CallDataEntity) -> Unit,
     onCustomLookup: (String) -> Unit
 ) {
+    val uiState by viewModel.uiState.collectAsState()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     
     // Note Dialog State
@@ -2075,6 +2079,7 @@ fun PersonInteractionBottomSheet(
                         call = log,
                         recordings = recordings,
                         audioPlayer = audioPlayer,
+                        callRecordEnabled = uiState.callRecordEnabled,
                         onNoteClick = { callNoteTarget = it },
                         onAttachRecording = onAttachRecording
                     )
@@ -2089,6 +2094,7 @@ fun InteractionRow(
     call: CallDataEntity,
     recordings: Map<String, String>,
     audioPlayer: AudioPlayer,
+    callRecordEnabled: Boolean,
     onNoteClick: (CallDataEntity) -> Unit,
     onAttachRecording: (CallDataEntity) -> Unit
 ) {
@@ -2193,52 +2199,54 @@ fun InteractionRow(
                     )
                 }
 
-                if (hasRecording) {
-                    IconButton(
-                        onClick = {
-                            if (isShowingPlayer) {
-                                audioPlayer.togglePlayPause()
-                            } else {
-                                val callTypeStr = when (call.callType) {
-                                    android.provider.CallLog.Calls.INCOMING_TYPE -> "Incoming"
-                                    android.provider.CallLog.Calls.OUTGOING_TYPE -> "Outgoing"
-                                    android.provider.CallLog.Calls.MISSED_TYPE -> "Missed"
-                                    5 -> "Rejected"
-                                    6 -> "Blocked"
-                                    else -> "Call"
-                                }
-                                val timeStr = SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()).format(java.util.Date(call.callDate))
-                                audioPlayer.play(
-                                    recordingPath!!,
-                                    PlaybackMetadata(
-                                        name = call.contactName,
-                                        phoneNumber = call.phoneNumber,
-                                        callTime = timeStr,
-                                        callType = callTypeStr
+                if (callRecordEnabled) {
+                    if (hasRecording) {
+                        IconButton(
+                            onClick = {
+                                if (isShowingPlayer) {
+                                    audioPlayer.togglePlayPause()
+                                } else {
+                                    val callTypeStr = when (call.callType) {
+                                        android.provider.CallLog.Calls.INCOMING_TYPE -> "Incoming"
+                                        android.provider.CallLog.Calls.OUTGOING_TYPE -> "Outgoing"
+                                        android.provider.CallLog.Calls.MISSED_TYPE -> "Missed"
+                                        5 -> "Rejected"
+                                        6 -> "Blocked"
+                                        else -> "Call"
+                                    }
+                                    val timeStr = SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()).format(java.util.Date(call.callDate))
+                                    audioPlayer.play(
+                                        recordingPath!!,
+                                        PlaybackMetadata(
+                                            name = call.contactName,
+                                            phoneNumber = call.phoneNumber,
+                                            callTime = timeStr,
+                                            callType = callTypeStr
+                                        )
                                     )
-                                )
-                            }
-                        },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (isShowingPlayer && isPlaying) Icons.Default.PauseCircleFilled else Icons.Default.PlayCircleFilled,
-                            contentDescription = "Play/Pause",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                } else if (call.duration > 0) {
-                    IconButton(
-                        onClick = { onAttachRecording(call) },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AttachFile,
-                            contentDescription = "Attach Recording",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp)
-                        )
+                                }
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (isShowingPlayer && isPlaying) Icons.Default.PauseCircleFilled else Icons.Default.PlayCircleFilled,
+                                contentDescription = "Play/Pause",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    } else if (call.duration > 0) {
+                        IconButton(
+                            onClick = { onAttachRecording(call) },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AttachFile,
+                                contentDescription = "Attach Recording",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -2403,6 +2411,7 @@ fun CallLogList(
     canExclude: Boolean = true,
     onCustomLookup: (String) -> Unit
 ) {
+    val uiState by viewModel.uiState.collectAsState()
     // Note Dialog States
     var callNoteTarget by remember { mutableStateOf<CallDataEntity?>(null) }
     var personNoteTarget by remember { mutableStateOf<CallDataEntity?>(null) }
@@ -2712,7 +2721,8 @@ fun CallLogList(
                     personGroup = personGroupsMap[log.phoneNumber],
                     onLabelClick = { labelTarget = log },
                     onAttachRecording = onAttachRecording,
-                    onReviewedToggle = { viewModel.updateReviewed(log.compositeId, !log.reviewed) }
+                    onReviewedToggle = { viewModel.updateReviewed(log.compositeId, !log.reviewed) },
+                    callRecordEnabled = uiState.callRecordEnabled
                 )
             }
         }
@@ -2820,7 +2830,8 @@ fun CallLogItem(
     personGroup: PersonGroup?,
     onLabelClick: () -> Unit,
     onAttachRecording: (CallDataEntity) -> Unit,
-    onReviewedToggle: () -> Unit
+    onReviewedToggle: () -> Unit,
+    callRecordEnabled: Boolean
 ) {
     val currentFile by audioPlayer.currentFile.collectAsState()
     
@@ -2838,11 +2849,12 @@ fun CallLogItem(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
                 .combinedClickable(
                     onClick = onCardClick,
                     onLongClick = onLongClick,
                     interactionSource = interactionSource,
-                    indication = ripple(bounded = true)
+                    indication = if (isExpanded) null else ripple(bounded = true)
                 )
         ) {
         Column {
@@ -3124,38 +3136,40 @@ fun CallLogItem(
                 }
                 
                 // Recording Player Row (if recording exists)
-                if (hasRecording && recordingPath != null) {
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    PlaybackControls(
-                        audioPlayer = audioPlayer,
-                        recordingPath = recordingPath,
-                        isExpanded = true,
-                        log = log
-                    )
-                } else if (log.duration > 0) {
-                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onAttachRecording(log) }
-                            .padding(horizontal = 12.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AttachFile,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
+                if (callRecordEnabled) {
+                    if (hasRecording && recordingPath != null) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        PlaybackControls(
+                            audioPlayer = audioPlayer,
+                            recordingPath = recordingPath,
+                            isExpanded = true,
+                            log = log
                         )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = "Attach Recording",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                     }
+                    } else if (log.duration > 0) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onAttachRecording(log) }
+                                .padding(horizontal = 12.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AttachFile,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = "Attach Recording",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
                 }
 
                 // View all interactions button
