@@ -1,3 +1,0 @@
-RewriteEngine On
-RewriteBase /api/
-RewriteRule ^(.*)$ index.php?request=$1 [QSA,L]

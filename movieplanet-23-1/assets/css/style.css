@@ -797,7 +797,8 @@ footer {
 .link_unlock_btn-effect {
     font-size: 20px;
     font-weight: bold;
-    color: var(--them-color) transition: all 0.2s ease-in-out;
+    color: var(--them-color);
+    transition: all 0.2s ease-in-out;
 }
 
 .iamontop {
@@ -1391,6 +1392,22 @@ footer {
 
 .pop23_container.hide {
     animation: fadeOut 0.3s;
+}
+
+/* Working Links Badge */
+.working-links-badge {
+    font-size: 12px;
+    text-align: center;
+    display: flex;
+    gap: 5px;
+    background: #148005;
+    align-items: center;
+    margin: 10px 0;
+    font-weight: bold;
+    color: #ffffff;
+    padding: 10px;
+    border-radius: 5px;
+    justify-content: center;
 }
 
 /* loading for btn */

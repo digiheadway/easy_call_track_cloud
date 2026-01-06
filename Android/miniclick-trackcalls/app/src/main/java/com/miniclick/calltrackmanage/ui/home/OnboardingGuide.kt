@@ -64,13 +64,35 @@ fun OnboardingGuide(
     
     val uiState by settingsViewModel.uiState.collectAsState()
     
-    // --- State for Permissions ---
-    var hasCallLog by remember { mutableStateOf(false) }
-    var hasContacts by remember { mutableStateOf(false) }
-    var hasPhoneState by remember { mutableStateOf(false) }
-    var hasSimInfo by remember { mutableStateOf(false) } // READ_PHONE_NUMBERS
-    var hasNotifications by remember { mutableStateOf(false) }
-    var hasStorage by remember { mutableStateOf(false) }
+    // --- State for Permissions (initialized with actual values to prevent flash) ---
+    fun checkPermission(permission: String): Boolean {
+        return androidx.core.content.ContextCompat.checkSelfPermission(context, permission) == android.content.pm.PackageManager.PERMISSION_GRANTED
+    }
+    
+    var hasCallLog by remember { mutableStateOf(checkPermission(Manifest.permission.READ_CALL_LOG)) }
+    var hasContacts by remember { mutableStateOf(checkPermission(Manifest.permission.READ_CONTACTS)) }
+    var hasPhoneState by remember { mutableStateOf(checkPermission(Manifest.permission.READ_PHONE_STATE)) }
+    var hasSimInfo by remember { 
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) 
+                checkPermission(Manifest.permission.READ_PHONE_NUMBERS) 
+            else true
+        ) 
+    }
+    var hasNotifications by remember { 
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) 
+                checkPermission(Manifest.permission.POST_NOTIFICATIONS) 
+            else true
+        ) 
+    }
+    var hasStorage by remember { 
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) 
+                checkPermission(Manifest.permission.READ_MEDIA_AUDIO) 
+            else checkPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
+        ) 
+    }
     
     // --- Modals State ---
     var showSimModal by remember { mutableStateOf(false) }
@@ -82,29 +104,13 @@ fun OnboardingGuide(
     var accountEditField by remember { mutableStateOf<String?>(null) }
 
     // --- Helpers / Launchers ---
-
     fun checkPermissions() {
-        hasCallLog = androidx.core.content.ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALL_LOG) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        hasContacts = androidx.core.content.ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        hasPhoneState = androidx.core.content.ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        
-        hasSimInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            androidx.core.content.ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        } else {
-            true
-        }
-        
-        hasNotifications = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            androidx.core.content.ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        } else {
-            true
-        }
-        
-        hasStorage = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            androidx.core.content.ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        } else {
-            androidx.core.content.ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        }
+        hasCallLog = checkPermission(Manifest.permission.READ_CALL_LOG)
+        hasContacts = checkPermission(Manifest.permission.READ_CONTACTS)
+        hasPhoneState = checkPermission(Manifest.permission.READ_PHONE_STATE)
+        hasSimInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) checkPermission(Manifest.permission.READ_PHONE_NUMBERS) else true
+        hasNotifications = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) checkPermission(Manifest.permission.POST_NOTIFICATIONS) else true
+        hasStorage = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) checkPermission(Manifest.permission.READ_MEDIA_AUDIO) else checkPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
     }
 
     val singlePermissionLauncher = rememberLauncherForActivityResult(

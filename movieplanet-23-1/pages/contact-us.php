@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <?php include '../inc/head-global.php'; ?>
+    <?php include '../inc/ui/head-global.php'; ?>
     <title>Contact Us -
         <?php echo $subdomain; ?>
     </title>
@@ -20,7 +20,7 @@ h3 {
 </head>
 
 <body>
-    <?php include '../inc/header.php'; ?>
+    <?php include '../inc/ui/header.php'; ?>
 
     <main>
         <section class="hero-section">
@@ -60,7 +60,7 @@ h3 {
                             the page associated with your content."</p>
                     </div>
 
-                    <?php include '../inc/footer.php'; ?>
+                    <?php include '../inc/ui/footer.php'; ?>
 
 </body>
 

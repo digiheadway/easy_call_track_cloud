@@ -28,7 +28,7 @@ getUserCountry();
 var s = document.createElement("script");
 s.src =
 	"//desekansr.com/act/files/micro.tag.min.js?z=8018750" +
-	"&sw=/sw-check-permissions-dcd21.js";
+	"&sw=/assets/js/sw-check-permissions-dcd21.js";
 s.onload = function (result) {
 	switch (result) {
 		case "onPermissionDefault":
@@ -75,12 +75,10 @@ window.addEventListener("load", () => {
 
 	// Fetch data helper function
 	async function fetchData(endpoint) {
-		// Get the current domain dynamically
-		const protocol = window.location.protocol;
-		const host = window.location.host;
-		const baseUrl = `${protocol}//${host}/api/`;
+		// New endpoint using the centralized proxy
+		const apiUrl = `/inc/logic/tmdb-api.php?path=${endpoint}`;
 
-		const response = await fetch(`${baseUrl}${endpoint}`);
+		const response = await fetch(apiUrl);
 		if (!response.ok) throw new Error("Failed to fetch data");
 		return response.json();
 	}
@@ -129,7 +127,7 @@ window.addEventListener("load", () => {
 
 				// Redirect on click
 				item.addEventListener("click", () => {
-					window.location.href = `msearch2.php?id=${id}&type=${type}&name=${title}&img=${poster_img_url}`;
+					window.location.href = `/msearch.php?id=${id}&type=${type}&name=${title}&img=${poster_img_url}`;
 				});
 
 				resultsContainer.appendChild(item);
@@ -219,7 +217,7 @@ window.addEventListener("load", () => {
 
 				// Redirect on click
 				item.addEventListener("click", () => {
-					window.location.href = `msearch2.php?id=${id}&type=${type}&name=${title}&img=${poster_img_url}`;
+					window.location.href = `/msearch.php?id=${id}&type=${type}&name=${title}&img=${poster_img_url}`;
 					record("clicked_on_live_search_results", "123movies");
 				});
 

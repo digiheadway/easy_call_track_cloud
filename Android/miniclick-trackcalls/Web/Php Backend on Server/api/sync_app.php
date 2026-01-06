@@ -192,39 +192,33 @@ if ($action === "verify_pairing_code") {
                 ]
             ]);
         } else {
-            // Different device - FORCE LOGOUT from old device by switching to new device
-            // This effectively logs out the old device
-            
-            // If the NEW device is already linked to another employee, unlink them first (Takeover)
-            $unlink = $conn->prepare("UPDATE employees SET device_id = NULL WHERE org_id = ? AND device_id = ? AND id != ?");
-            $unlink->bind_param("ssi", $org_id, $device_id, $employee_id);
-            $unlink->execute();
-
-            // Switch device - unlink old, link new
-            $upd = $conn->prepare("UPDATE employees SET device_id = ?, device_model = ?, os_version = ?, battery_level = ?, updated_at = NOW() WHERE id = ?");
-            if (!$upd) errorOut("DB Error (Switch Device): " . $conn->error, 500);
-            $upd->bind_param("sssii", $device_id, $device_model, $os_version, $battery_level, $employee_id);
-            if (!$upd->execute()) {
-                errorOut("Failed to switch device: " . $conn->error, 500);
+            // Different device - BLOCK (employee must unpair old device first)
+            // TESTER BYPASS: Allow uptown-5 to switch freely
+            if (strtolower($org_id) === 'uptown' && $employee_id == 5) {
+                // Tester account - allow device switch
+                $upd = $conn->prepare("UPDATE employees SET device_id = ?, device_model = ?, os_version = ?, battery_level = ?, updated_at = NOW() WHERE id = ?");
+                $upd->bind_param("sssii", $device_id, $device_model, $os_version, $battery_level, $employee_id);
+                $upd->execute();
+                out([
+                    "success" => true,
+                    "message" => "Tester device switched",
+                    "employee_name" => $employee['name'],
+                    "settings" => [
+                        "allow_personal_exclusion" => (int)$employee['allow_personal_exclusion'],
+                        "allow_changing_tracking_start_date" => (int)$employee['allow_changing_tracking_start_date'],
+                        "allow_updating_tracking_sims" => (int)$employee['allow_updating_tracking_sims'],
+                        "default_tracking_starting_date" => $employee['default_tracking_starting_date'],
+                        "call_track" => (int)$employee['call_track'],
+                        "call_record_crm" => (int)$employee['call_record_crm']
+                    ],
+                    "plan" => [
+                        "expiry_date" => $employee['plan_expiry_date'] ?? null,
+                        "allowed_storage_gb" => (float)($employee['allowed_storage_gb'] ?? 0),
+                        "storage_used_bytes" => (int)($employee['storage_used_bytes'] ?? 0)
+                    ]
+                ]);
             }
-            out([
-                "success" => true,
-                "message" => "Switched to new device - Previous device logged out",
-                "employee_name" => $employee['name'],
-                "settings" => [
-                    "allow_personal_exclusion" => (int)$employee['allow_personal_exclusion'],
-                    "allow_changing_tracking_start_date" => (int)$employee['allow_changing_tracking_start_date'],
-                    "allow_updating_tracking_sims" => (int)$employee['allow_updating_tracking_sims'],
-                    "default_tracking_starting_date" => $employee['default_tracking_starting_date'],
-                    "call_track" => (int)$employee['call_track'],
-                    "call_record_crm" => (int)$employee['call_record_crm']
-                ],
-                "plan" => [
-                    "expiry_date" => $employee['plan_expiry_date'] ?? null,
-                    "allowed_storage_gb" => (float)($employee['allowed_storage_gb'] ?? 0),
-                    "storage_used_bytes" => (int)($employee['storage_used_bytes'] ?? 0)
-                ]
-            ]);
+            errorOut("Your account is already paired to another device. Please unpair from the old device first (Settings > Disconnect Organisation) or contact your administrator.", 403);
         }
     }
 

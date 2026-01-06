@@ -1,0 +1,96 @@
+<?php
+/**
+ * Global Header Component
+ * Contains meta tags, fonts, styles, and essential scripts
+ */
+
+// Basic includes
+require_once dirname(__DIR__) . '/core/function.php';
+
+// Session management
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// UTM source tracking
+if (isset($_GET['utm_source'])) {
+    $utm_source = $_GET['utm_source'];
+    if (in_array($utm_source, ['helpsarkari', 'pokipro'])) {
+        $_SESSION['known_user'] = true;
+    }
+}
+
+// SEO & Canonical
+$canonical = $canonical ?? (empty($_SERVER['HTTPS']) ? 'http://' : 'https://') . $_SERVER['HTTP_HOST'] . strtok($_SERVER['REQUEST_URI'], '?');
+?>
+<meta charset="UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#161616" />
+<meta name="language" content="en" />
+<meta name="distribution" content="global" />
+<meta name="author" content="Contributors to Wikimedia projects" />
+<link rel="canonical" href="<?php echo htmlspecialchars($canonical); ?>" />
+<link rel="icon" type="image/x-icon" href="/assets/img/favicon.png" />
+
+<!-- Fonts & Styles -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="<?php echo asset('/assets/css/style.css'); ?>" />
+
+<!-- Core Scripts -->
+<script src="<?php echo asset('/assets/js/scriptglobal.js'); ?>"></script>
+
+<!-- Google Analytics (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-6NGMZYQ1WQ"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag("js", new Date());
+    gtag("config", "G-6NGMZYQ1WQ");
+    gtag("config", "G-TMCFD5ECR8");
+
+    function record(event_name, event_info) {
+        gtag("event", event_name, { event_info: event_info });
+        console.log("Recorded event:", event_name, event_info);
+    }
+</script>
+
+<!-- MS Clarity -->
+<script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "jyrsvad036");
+</script>
+
+<!-- Notix Web Push -->
+<script id="script">
+    (function() {
+        var s = document.createElement("script");
+        s.src = "https://notix.io/ent/current/enot.min.js";
+        s.onload = function(sdk) {
+            sdk.startInstall({
+                "appId": "10052ebe563441000003bfa0d956e92",
+                "loadSettings": true
+            });
+        };
+        document.head.append(s);
+    })();
+</script>
+
+<?php if (isset($fulldomain) && $fulldomain === 'harleywives.com'): ?>
+    <!-- AdSense for harleywives.com -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3167708670200886" crossorigin="anonymous"></script>
+    <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+    <script>
+        window.googletag = window.googletag || { cmd: [] };
+        googletag.cmd.push(function () {
+            googletag.defineSlot("/22904121374/Test_Ad3", [[200, 200], [336, 280], [250, 250], [300, 250]], "div-gpt-ad-1683164921086-0")
+                    .addService(googletag.pubads());
+            googletag.pubads().enableSingleRequest();
+            googletag.pubads().collapseEmptyDivs();
+            googletag.enableServices();
+        });
+    </script>
+<?php endif; ?>

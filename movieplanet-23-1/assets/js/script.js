@@ -9,7 +9,7 @@ if (window.location.pathname.includes("msearch.php")) {
 }
 
 if (query) {
-	const url = `/inc/php/search-debug.php?q=${query}`;
+	const url = `/inc/logic/search.php?q=${query}`;
 	fetch(url)
 		.then((response) => response.json())
 		.then((data) => {
@@ -17,9 +17,10 @@ if (query) {
 				const imageUrl = data.imageUrl;
 				document.getElementById("loader_img").src = imageUrl;
 
-				// Update browserTeraLink1 with preview param
+				// Update browserTeraLink1 with preview param (Android only)
+				var isAndroidForPreview = /android/i.test(navigator.userAgent);
 				const shortenLink = document.getElementById("url_shorten_link");
-				if (shortenLink) {
+				if (shortenLink && isAndroidForPreview) {
 					try {
 						const url = new URL(shortenLink.href);
 						url.searchParams.set("preview", imageUrl);
@@ -51,7 +52,7 @@ async function not_this_save() {
 	// Get the value of the 'q' parameter from the URL
 	const urlParams = new URLSearchParams(window.location.search);
 	const queryToCheck = urlParams.get("q") || ""; // Default to an empty string if 'q' is not present
-	const apiUrl = `inc/php/not_this.php?q=${encodeURIComponent(queryToCheck)}`;
+	const apiUrl = `/inc/core/query-counter.php?action=not_this&q=${encodeURIComponent(queryToCheck)}`;
 	const response = await fetch(apiUrl, {
 		method: "GET",
 		headers: {
@@ -70,7 +71,7 @@ async function down_tried(btn_type) {
 		const urlParams = new URLSearchParams(window.location.search);
 		const queryToCheck = urlParams.get("q") || ""; // Default to an empty string if 'q' is not present
 
-		const apiUrl = `inc/php/down_tried.php?q=${encodeURIComponent(
+		const apiUrl = `/inc/core/query-counter.php?action=down_tried&q=${encodeURIComponent(
 			queryToCheck
 		)}`;
 		const response = await fetch(apiUrl, {

@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <?php include '../inc/head-global.php'; ?>
+    <?php include '../inc/ui/head-global.php'; ?>
     <title>Terms of Services - <?php echo $subdomain; ?></title>
     <style>
 	ul,
@@ -18,7 +18,7 @@ h3 {
 </head>
 
 <body>
-    <?php include '../inc/header.php'; ?>
+    <?php include '../inc/ui/header.php'; ?>
 
     <main>
         <section class="hero-section">
@@ -34,7 +34,7 @@ h3 {
                         </p>
                     </div>
 
-    <?php include '../inc/footer.php'; ?>
+    <?php include '../inc/ui/footer.php'; ?>
 
 </body>
 

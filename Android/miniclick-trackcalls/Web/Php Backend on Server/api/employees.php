@@ -42,6 +42,117 @@ switch ($method) {
             ");
             
             Response::success($stats, 'Employee statistics retrieved');
+        } elseif ($action === 'data_stats' && $id) {
+            // Get employee data statistics for deletion flow
+            $employee = Database::getOne("SELECT id FROM employees WHERE id = $id AND org_id = '$orgId'");
+            if (!$employee) {
+                Response::error('Employee not found', 404);
+            }
+            
+            // Get calls count and contacts count
+            $callsStats = Database::getOne("
+                SELECT 
+                    COUNT(*) as calls_count,
+                    COUNT(CASE WHEN recording_url IS NOT NULL AND recording_url != '' THEN 1 END) as recordings_count
+                FROM calls 
+                WHERE employee_id = '$id' AND org_id = '$orgId'
+            ");
+            
+            $contactsCount = Database::getOne("
+                SELECT COUNT(*) as count FROM contacts 
+                WHERE employee_id = $id AND org_id = '$orgId'
+            ")['count'] ?? 0;
+            
+            // Calculate recordings size
+            $recordings = Database::select("
+                SELECT recording_url FROM calls 
+                WHERE employee_id = '$id' AND org_id = '$orgId' 
+                AND recording_url IS NOT NULL AND recording_url != ''
+            ");
+            
+            $totalSize = 0;
+            foreach ($recordings as $rec) {
+                $filePath = $rec['recording_url'];
+                // Handle both URL and local paths
+                if (strpos($filePath, 'http') === 0) {
+                    // Convert URL to local path
+                    $filePath = str_replace(BASE_URL . '/', '../', $filePath);
+                }
+                if (file_exists($filePath)) {
+                    $totalSize += filesize($filePath);
+                }
+            }
+            
+            Response::success([
+                'calls_count' => (int)($callsStats['calls_count'] ?? 0),
+                'recordings_count' => (int)($callsStats['recordings_count'] ?? 0),
+                'recordings_size_bytes' => $totalSize,
+                'contacts_count' => (int)$contactsCount
+            ], 'Employee data stats retrieved');
+        } elseif ($action === 'delete_calls' && $id) {
+            // Delete all calls and contacts for this employee
+            $employee = Database::getOne("SELECT id FROM employees WHERE id = $id AND org_id = '$orgId'");
+            if (!$employee) {
+                Response::error('Employee not found', 404);
+            }
+            
+            // Delete calls (without recordings - those are handled separately)
+            $callsDeleted = Database::execute("DELETE FROM calls WHERE employee_id = '$id' AND org_id = '$orgId' AND (recording_url IS NULL OR recording_url = '')");
+            
+            // Delete contacts linked to this employee
+            $contactsDeleted = Database::execute("DELETE FROM contacts WHERE employee_id = $id AND org_id = '$orgId'");
+            
+            Response::success([
+                'calls_deleted' => true,
+                'contacts_deleted' => true
+            ], 'Calls and contacts deleted successfully');
+        } elseif ($action === 'delete_recordings' && $id) {
+            // Delete recordings files and update calls
+            $employee = Database::getOne("SELECT id FROM employees WHERE id = $id AND org_id = '$orgId'");
+            if (!$employee) {
+                Response::error('Employee not found', 404);
+            }
+            
+            // Get all recordings
+            $recordings = Database::select("
+                SELECT id, recording_url FROM calls 
+                WHERE employee_id = '$id' AND org_id = '$orgId' 
+                AND recording_url IS NOT NULL AND recording_url != ''
+            ");
+            
+            $deletedCount = 0;
+            $freedBytes = 0;
+            
+            foreach ($recordings as $rec) {
+                $filePath = $rec['recording_url'];
+                // Handle both URL and local paths
+                if (strpos($filePath, 'http') === 0) {
+                    $filePath = str_replace(BASE_URL . '/', '../', $filePath);
+                }
+                if (file_exists($filePath)) {
+                    $freedBytes += filesize($filePath);
+                    @unlink($filePath);
+                    $deletedCount++;
+                }
+            }
+            
+            // Now delete the calls that had recordings
+            Database::execute("DELETE FROM calls WHERE employee_id = '$id' AND org_id = '$orgId' AND recording_url IS NOT NULL AND recording_url != ''");
+            
+            Response::success([
+                'recordings_deleted' => $deletedCount,
+                'bytes_freed' => $freedBytes
+            ], 'Recordings deleted successfully');
+        } elseif ($action === 'archive' && $id) {
+            // Archive employee (set status to inactive)
+            $employee = Database::getOne("SELECT id FROM employees WHERE id = $id AND org_id = '$orgId'");
+            if (!$employee) {
+                Response::error('Employee not found', 404);
+            }
+            
+            Database::execute("UPDATE employees SET status = 'inactive' WHERE id = $id");
+            
+            Response::success(['archived' => true], 'Employee archived successfully');
         } else {
             // Get all employees
             $employees = Database::select("

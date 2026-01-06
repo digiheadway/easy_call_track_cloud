@@ -19,7 +19,12 @@ import {
     UserX,
     CalendarClock,
     SmartphoneNfc,
-    AlertTriangle
+    AlertTriangle,
+    Archive,
+    Database,
+    HardDrive,
+    Loader2,
+    CheckCircle2
 } from 'lucide-react';
 import Modal from '../components/Modal';
 import { format } from 'date-fns';
@@ -46,6 +51,16 @@ export default function EmployeesPage() {
         action: null,
         isDestructive: false
     });
+
+    // Deletion Modal State
+    const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false);
+    const [deletionEmployee, setDeletionEmployee] = useState(null);
+    const [deletionStats, setDeletionStats] = useState(null);
+    const [loadingStats, setLoadingStats] = useState(false);
+    const [deletingCalls, setDeletingCalls] = useState(false);
+    const [deletingRecordings, setDeletingRecordings] = useState(false);
+    const [callsDeleted, setCallsDeleted] = useState(false);
+    const [recordingsDeleted, setRecordingsDeleted] = useState(false);
 
     useEffect(() => {
         fetchEmployees();
@@ -172,23 +187,96 @@ export default function EmployeesPage() {
         }
     };
 
-    const handleDelete = (id) => {
-        setConfirmModal({
-            isOpen: true,
-            title: 'Delete Employee',
-            message: 'Are you sure you want to delete this employee? This action cannot be undone.',
-            isDestructive: true,
-            onConfirm: async () => {
-                try {
-                    await api.delete(`/employees.php?id=${id}`);
-                    toast.success('Employee deleted');
-                    fetchEmployees();
-                } catch (err) {
-                    console.error(err);
-                    toast.error('Failed to delete employee.');
-                }
-            }
-        });
+    // Format bytes for display
+    const formatBytes = (bytes, decimals = 2) => {
+        if (!bytes || bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const dm = decimals < 0 ? 0 : decimals;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    };
+
+    const openDeletionModal = async (employee) => {
+        setDeletionEmployee(employee);
+        setDeletionStats(null);
+        setCallsDeleted(false);
+        setRecordingsDeleted(false);
+        setIsDeletionModalOpen(true);
+
+        // Fetch stats
+        setLoadingStats(true);
+        try {
+            const res = await api.get(`/employees.php?action=data_stats&id=${employee.id}`);
+            setDeletionStats(res.data);
+        } catch (err) {
+            console.error('Failed to fetch deletion stats', err);
+            toast.error('Failed to fetch employee data stats');
+        } finally {
+            setLoadingStats(false);
+        }
+    };
+
+    const handleDeleteCalls = async () => {
+        if (!deletionEmployee) return;
+        setDeletingCalls(true);
+        try {
+            await api.get(`/employees.php?action=delete_calls&id=${deletionEmployee.id}`);
+            setCallsDeleted(true);
+            setDeletionStats(prev => ({ ...prev, calls_count: 0, contacts_count: 0 }));
+            toast.success('Calls and contacts deleted');
+        } catch (err) {
+            console.error('Failed to delete calls', err);
+            toast.error('Failed to delete calls');
+        } finally {
+            setDeletingCalls(false);
+        }
+    };
+
+    const handleDeleteRecordings = async () => {
+        if (!deletionEmployee) return;
+        setDeletingRecordings(true);
+        try {
+            const res = await api.get(`/employees.php?action=delete_recordings&id=${deletionEmployee.id}`);
+            setRecordingsDeleted(true);
+            setDeletionStats(prev => ({ ...prev, recordings_count: 0, recordings_size_bytes: 0 }));
+            toast.success(`Recordings deleted, freed ${formatBytes(res.data?.bytes_freed || 0)}`);
+        } catch (err) {
+            console.error('Failed to delete recordings', err);
+            toast.error('Failed to delete recordings');
+        } finally {
+            setDeletingRecordings(false);
+        }
+    };
+
+    const handleDeleteEmployee = async () => {
+        if (!deletionEmployee) return;
+        try {
+            await api.delete(`/employees.php?id=${deletionEmployee.id}`);
+            toast.success('Employee deleted permanently');
+            setIsDeletionModalOpen(false);
+            fetchEmployees();
+        } catch (err) {
+            console.error('Failed to delete employee', err);
+            toast.error('Failed to delete employee');
+        }
+    };
+
+    const handleArchiveEmployee = async () => {
+        if (!deletionEmployee) return;
+        try {
+            await api.get(`/employees.php?action=archive&id=${deletionEmployee.id}`);
+            toast.success('Employee archived');
+            setIsDeletionModalOpen(false);
+            fetchEmployees();
+        } catch (err) {
+            console.error('Failed to archive employee', err);
+            toast.error('Failed to archive employee');
+        }
+    };
+
+    const handleDelete = (employee) => {
+        openDeletionModal(employee);
     };
 
     const copyToClipboard = (code) => {
@@ -344,7 +432,7 @@ export default function EmployeesPage() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <button
-                                                onClick={(e) => { e.stopPropagation(); handleDelete(emp.id); }}
+                                                onClick={(e) => { e.stopPropagation(); handleDelete(emp); }}
                                                 className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-all active:scale-95"
                                                 title="Delete"
                                             >

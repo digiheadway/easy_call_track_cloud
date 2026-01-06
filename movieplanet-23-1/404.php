@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <?php include 'inc/head-global.php'; ?>
+    <?php include 'inc/ui/head-global.php'; ?>
     <meta charset="UTF-8">
     <meta http-equiv="refresh" content="3;url=/">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

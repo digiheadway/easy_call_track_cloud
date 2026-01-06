@@ -1,0 +1,99 @@
+/* Category Page Specific Styles */
+.movies_quality_type {
+    background: rgba(0, 0, 0, 0.6);
+    color: #ffffff;
+    top: 0px;
+}
+
+.hero_container {
+    margin: 20px auto;
+    max-width: 900px;
+}
+
+.hero_search_form {
+    display: flex;
+    align-items: center;
+    color: #5B5B5B;
+    font-size: 14px;
+    margin: 20px auto;
+    padding: 0px;
+    border-radius: 5px;
+    background: #202020;
+    max-width: 900px;
+    border: 1px solid #333;
+}
+
+.hero_search_form button {
+    background: none;
+    border: none;
+    margin: 0 20px;
+    height: 20px;
+    width: 20px;
+    cursor: pointer;
+}
+
+#hero_search {
+    flex: 1;
+    margin: 0;
+    background-color: transparent;
+    border: none;
+    padding: 17px 20px;
+    font-weight: bold;
+    color: #bababa;
+    outline: none;
+}
+
+.v3_home_brad_camp,
+.v3_bradcamp_box svg path {
+    color: #5D5B5B;
+    fill: #5D5B5B;
+}
+
+.v3_bradcamp_box {
+    margin: 20px 0;
+}
+
+.latest_movies_conatiner {
+    max-width: 900px;
+    width: 100%;
+    margin: auto;
+    margin-top: 41px;
+}
+
+.contant_container {
+    max-width: 900px;
+    margin: 50px auto;
+}
+
+.category_list {
+    background-color: #202020;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-radius: 5px;
+    outline: 0.1px solid #262626;
+    margin-top: 20px;
+    text-decoration: none;
+    transition: background 0.3s;
+}
+
+.category_list:hover {
+    background: #2a2a2a;
+}
+
+.catogry_list_label {
+    color: #A0A0A0;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.notice_board_box {
+    border-radius: 5px;
+    background: #FFF;
+    box-shadow: 2px 3px 10.7px 3px rgba(255, 255, 255, 0.25);
+    color: #141414;
+    text-align: center;
+    padding: 20px;
+    margin: 40px 0;
+}
