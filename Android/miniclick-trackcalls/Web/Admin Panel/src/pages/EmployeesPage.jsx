@@ -792,6 +792,193 @@ export default function EmployeesPage() {
                     </button>
                 </div>
             </Modal>
+
+            {/* Employee Deletion Modal */}
+            <Modal
+                isOpen={isDeletionModalOpen}
+                onClose={() => setIsDeletionModalOpen(false)}
+                title="Manage Employee Data"
+            >
+                <div className="space-y-5">
+                    {/* Employee Header */}
+                    <div className="flex items-center gap-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-2xl border border-red-100 dark:border-red-900/30">
+                        <div className="w-12 h-12 bg-red-100 dark:bg-red-900/50 rounded-xl flex items-center justify-center text-red-600 dark:text-red-400">
+                            <User size={24} />
+                        </div>
+                        <div>
+                            <h4 className="font-black text-gray-900 dark:text-white">{deletionEmployee?.name}</h4>
+                            <p className="text-xs text-red-600 dark:text-red-400 font-bold uppercase tracking-wider">
+                                {deletionEmployee?.status === 'inactive' ? 'Archived' : 'Active Employee'}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Loading State */}
+                    {loadingStats && (
+                        <div className="flex items-center justify-center py-8">
+                            <Loader2 size={24} className="animate-spin text-gray-400" />
+                            <span className="ml-2 text-sm text-gray-500">Loading data stats...</span>
+                        </div>
+                    )}
+
+                    {/* Data Stats & Actions */}
+                    {!loadingStats && deletionStats && (
+                        <div className="space-y-3">
+                            {/* Delete Calls & Data */}
+                            <div className={`p-4 rounded-2xl border transition-all ${callsDeleted || (deletionStats.calls_count === 0 && deletionStats.contacts_count === 0)
+                                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30'
+                                    : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700'
+                                }`}>
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className={`p-2.5 rounded-xl ${callsDeleted || (deletionStats.calls_count === 0 && deletionStats.contacts_count === 0)
+                                                ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400'
+                                                : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                            }`}>
+                                            {callsDeleted || (deletionStats.calls_count === 0 && deletionStats.contacts_count === 0)
+                                                ? <CheckCircle2 size={20} />
+                                                : <Database size={20} />
+                                            }
+                                        </div>
+                                        <div>
+                                            <div className="text-sm font-black text-gray-900 dark:text-gray-100">
+                                                Calls & Contacts Data
+                                            </div>
+                                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                                {deletionStats.calls_count === 0 && deletionStats.contacts_count === 0
+                                                    ? 'No data to delete'
+                                                    : `${deletionStats.calls_count - deletionStats.recordings_count} calls, ${deletionStats.contacts_count} contacts`
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {!(callsDeleted || (deletionStats.calls_count === 0 && deletionStats.contacts_count === 0)) && (
+                                        <button
+                                            onClick={handleDeleteCalls}
+                                            disabled={deletingCalls}
+                                            className="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-xs font-bold hover:bg-red-200 dark:hover:bg-red-900/50 transition-all disabled:opacity-50 flex items-center gap-1.5"
+                                        >
+                                            {deletingCalls ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                                            Delete
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Delete Recordings */}
+                            <div className={`p-4 rounded-2xl border transition-all ${recordingsDeleted || deletionStats.recordings_count === 0
+                                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30'
+                                    : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700'
+                                }`}>
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className={`p-2.5 rounded-xl ${recordingsDeleted || deletionStats.recordings_count === 0
+                                                ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400'
+                                                : 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                                            }`}>
+                                            {recordingsDeleted || deletionStats.recordings_count === 0
+                                                ? <CheckCircle2 size={20} />
+                                                : <HardDrive size={20} />
+                                            }
+                                        </div>
+                                        <div>
+                                            <div className="text-sm font-black text-gray-900 dark:text-gray-100">
+                                                Recordings & Storage
+                                            </div>
+                                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                                {deletionStats.recordings_count === 0
+                                                    ? 'No recordings to delete'
+                                                    : `${deletionStats.recordings_count} files • ${formatBytes(deletionStats.recordings_size_bytes)}`
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {!(recordingsDeleted || deletionStats.recordings_count === 0) && (
+                                        <button
+                                            onClick={handleDeleteRecordings}
+                                            disabled={deletingRecordings}
+                                            className="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-xs font-bold hover:bg-red-200 dark:hover:bg-red-900/50 transition-all disabled:opacity-50 flex items-center gap-1.5"
+                                        >
+                                            {deletingRecordings ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                                            Delete
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Divider */}
+                            <div className="relative py-2">
+                                <div className="absolute inset-0 flex items-center">
+                                    <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+                                </div>
+                                <div className="relative flex justify-center">
+                                    <span className="px-3 bg-white dark:bg-gray-900 text-[10px] font-black uppercase tracking-widest text-gray-400">Actions</span>
+                                </div>
+                            </div>
+
+                            {/* Delete Employee Button - LOCKED until data is cleared */}
+                            {(() => {
+                                const hasData = (deletionStats.calls_count > 0 || deletionStats.recordings_count > 0) && !(callsDeleted && recordingsDeleted);
+                                const canDelete = !hasData || (callsDeleted && (recordingsDeleted || deletionStats.recordings_count === 0));
+
+                                return (
+                                    <button
+                                        onClick={handleDeleteEmployee}
+                                        disabled={!canDelete}
+                                        className={`w-full p-4 rounded-2xl border transition-all flex items-center justify-between ${canDelete
+                                                ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
+                                                : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 cursor-not-allowed'
+                                            }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <Trash2 size={20} />
+                                            <div className="text-left">
+                                                <div className="font-bold">Delete Employee Permanently</div>
+                                                <div className={`text-xs ${canDelete ? 'text-red-200' : 'text-gray-500'}`}>
+                                                    {canDelete ? 'This action cannot be undone' : 'Delete all data above first'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {!canDelete && (
+                                            <div className="px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded text-[10px] font-black uppercase">
+                                                Locked
+                                            </div>
+                                        )}
+                                    </button>
+                                );
+                            })()}
+
+                            {/* Archive Option */}
+                            <button
+                                onClick={handleArchiveEmployee}
+                                disabled={deletionEmployee?.status === 'inactive'}
+                                className={`w-full p-4 rounded-2xl border transition-all flex items-center gap-3 ${deletionEmployee?.status === 'inactive'
+                                        ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 cursor-not-allowed'
+                                        : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30'
+                                    }`}
+                            >
+                                <Archive size={20} />
+                                <div className="text-left flex-1">
+                                    <div className="font-bold">
+                                        {deletionEmployee?.status === 'inactive' ? 'Already Archived' : 'Disable & Archive'}
+                                    </div>
+                                    <div className="text-xs opacity-75">
+                                        Not counted towards active employees • Data preserved
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Cancel Button */}
+                    <button
+                        onClick={() => setIsDeletionModalOpen(false)}
+                        className="w-full btn bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </Modal>
         </div>
     );
 }
