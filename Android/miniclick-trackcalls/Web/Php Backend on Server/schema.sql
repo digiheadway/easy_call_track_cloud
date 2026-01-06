@@ -119,6 +119,8 @@ CREATE TABLE `excluded_contacts` (
   `org_id` varchar(20) NOT NULL,
   `phone` varchar(20) NOT NULL,
   `name` varchar(100) DEFAULT NULL,
+  `exclude_from_sync` tinyint(1) DEFAULT 1,
+  `exclude_from_list` tinyint(1) DEFAULT 1,
   `is_active` tinyint(1) DEFAULT 1,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),

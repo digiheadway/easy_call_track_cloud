@@ -43,6 +43,14 @@ $sqlLocalNow = "DATE_ADD(UTC_TIMESTAMP(), INTERVAL $dbOffsetMinutes MINUTE)";
 // Build Base WHERE array for `calls` table
 $where = ["c.org_id = '$orgId'"];
 
+// Exclusion Filter: Hide calls from contacts marked as exclude_from_list
+$where[] = "NOT EXISTS (
+    SELECT 1 FROM excluded_contacts exc_list 
+    WHERE exc_list.phone = c.caller_phone 
+    AND exc_list.org_id = c.org_id 
+    AND exc_list.exclude_from_list = 1
+)";
+
 // Apply Employee Filter
 if ($employeeId && $employeeId !== 'all') {
     $empId = (int)$employeeId;

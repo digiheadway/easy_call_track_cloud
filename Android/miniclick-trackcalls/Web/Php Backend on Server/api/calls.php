@@ -184,6 +184,14 @@ switch ($method) {
                 $where[] = "c.is_archived = 1";
             }
             // if 'all', logic is to show everything (no filter on is_archived)
+
+            // Exclusion Filter: Hide calls from contacts marked as exclude_from_list
+            $where[] = "NOT EXISTS (
+                SELECT 1 FROM excluded_contacts exc_list 
+                WHERE exc_list.phone = c.caller_phone 
+                AND exc_list.org_id = c.org_id 
+                AND exc_list.exclude_from_list = 1
+            )";
             
             // Employee Filter
             if ($employeeId && $employeeId !== 'all') {
@@ -432,7 +440,7 @@ switch ($method) {
                     FROM contacts 
                     GROUP BY phone, org_id
                 ) c_info ON (c.caller_phone = c_info.phone AND c.org_id = c_info.org_id)
-                LEFT JOIN excluded_contacts exc ON (c.caller_phone = exc.phone AND c.org_id = exc.org_id AND exc.is_active = 1)
+                LEFT JOIN excluded_contacts exc ON (c.caller_phone = exc.phone AND c.org_id = exc.org_id)
                 WHERE $whereClause
             ");
             $total = $countResult['total'];
@@ -446,7 +454,9 @@ switch ($method) {
                     e.name as employee_name,
                     c_info.notes as person_note,
                     c_info.label as person_labels,
-                    CASE WHEN exc.id IS NOT NULL THEN 1 ELSE 0 END as is_excluded
+                    CASE WHEN exc.id IS NOT NULL THEN 1 ELSE 0 END as is_excluded,
+                    exc.exclude_from_sync,
+                    exc.exclude_from_list
                 FROM calls c
                 LEFT JOIN employees e ON c.employee_id = e.id
                 LEFT JOIN (
@@ -454,7 +464,7 @@ switch ($method) {
                     FROM contacts 
                     GROUP BY phone, org_id
                 ) c_info ON (c.caller_phone = c_info.phone AND c.org_id = c_info.org_id)
-                LEFT JOIN excluded_contacts exc ON (c.caller_phone = exc.phone AND c.org_id = exc.org_id AND exc.is_active = 1)
+                LEFT JOIN excluded_contacts exc ON (c.caller_phone = exc.phone AND c.org_id = exc.org_id)
                 WHERE $whereClause 
                 ORDER BY $sortColumn $sortOrder
                 LIMIT $limit OFFSET $offset

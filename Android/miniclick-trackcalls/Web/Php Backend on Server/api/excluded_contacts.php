@@ -97,7 +97,8 @@ switch ($method) {
         
         $phone = Database::escape($data['phone']);
         $name = isset($data['name']) ? Database::escape($data['name']) : '';
-        $isActive = isset($data['is_active']) ? (int)$data['is_active'] : 1;
+        $excludeFromSync = isset($data['exclude_from_sync']) ? (int)$data['exclude_from_sync'] : 1;
+        $excludeFromList = isset($data['exclude_from_list']) ? (int)$data['exclude_from_list'] : 1;
         
         // Check if already exists
         $existing = Database::getOne("SELECT id FROM excluded_contacts WHERE org_id = '$orgId' AND phone = '$phone'");
@@ -105,8 +106,8 @@ switch ($method) {
             Response::error('This contact is already excluded');
         }
         
-        $sql = "INSERT INTO excluded_contacts (org_id, phone, name, is_active) 
-                VALUES ('$orgId', '$phone', '$name', $isActive)";
+        $sql = "INSERT INTO excluded_contacts (org_id, phone, name, exclude_from_sync, exclude_from_list) 
+                VALUES ('$orgId', '$phone', '$name', $excludeFromSync, $excludeFromList)";
         
         $insertId = Database::insert($sql);
         
@@ -133,7 +134,8 @@ switch ($method) {
         $updates = [];
         if (isset($data['phone'])) $updates[] = "phone = '" . Database::escape($data['phone']) . "'";
         if (isset($data['name'])) $updates[] = "name = '" . Database::escape($data['name']) . "'";
-        if (isset($data['is_active'])) $updates[] = "is_active = " . (int)$data['is_active'];
+        if (isset($data['exclude_from_sync'])) $updates[] = "exclude_from_sync = " . (int)$data['exclude_from_sync'];
+        if (isset($data['exclude_from_list'])) $updates[] = "exclude_from_list = " . (int)$data['exclude_from_list'];
         
         if (empty($updates)) {
             Response::error('No fields to update');

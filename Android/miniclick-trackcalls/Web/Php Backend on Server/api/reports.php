@@ -28,7 +28,7 @@ $dateRange = $_GET['dateRange'] ?? '7days';
 // Build date filter
 $timezoneOffset = isset($_GET['tzOffset']) ? (int)$_GET['tzOffset'] : 0;
 $dbOffsetMinutes = -1 * $timezoneOffset;
-$sqlLocalTime = "DATE_ADD(call_time, INTERVAL $dbOffsetMinutes MINUTE)";
+$sqlLocalTime = "DATE_ADD(c.call_time, INTERVAL $dbOffsetMinutes MINUTE)";
 $sqlLocalNow = "DATE_ADD(UTC_TIMESTAMP(), INTERVAL $dbOffsetMinutes MINUTE)";
 
 $dateFilter = '';
@@ -75,6 +75,14 @@ switch ($dateRange) {
         $dateFilter = "AND $sqlLocalTime >= DATE_SUB($sqlLocalNow, INTERVAL 7 DAY)"; // Default fallback
 }
 
+// Privacy Filter: Hide calls from contacts marked as exclude_from_list
+$privacyFilter = "AND NOT EXISTS (
+    SELECT 1 FROM excluded_contacts exc_list 
+    WHERE exc_list.phone = c.caller_phone 
+    AND exc_list.org_id = c.org_id 
+    AND exc_list.exclude_from_list = 1
+)";
+
 // Helper to format duration
 function formatDuration($seconds) {
     if (!$seconds) return '0m';
@@ -110,7 +118,7 @@ if ($reportType === 'all' || $reportType === 'employee_performance') {
             AVG(NULLIF(c.duration, 0)) as avg_handle_time,
             AVG(c.duration) as avg_duration_all
         FROM employees e
-        LEFT JOIN calls c ON e.id = c.employee_id $dateFilter 
+        LEFT JOIN calls c ON e.id = c.employee_id $dateFilter $privacyFilter
         WHERE UPPER(e.org_id) = UPPER('$orgId') AND e.status = 'active' $employeeFilter
         GROUP BY e.id, e.name
         ORDER BY total_calls DESC
@@ -160,6 +168,7 @@ if ($reportType === 'all' || $reportType === 'missed_opportunities') {
         AND (c.type = 'Inbound' OR c.type = 'Incoming') 
         AND c.duration = 0 
         $dateFilter
+        $privacyFilter
         ORDER BY c.call_time DESC
         LIMIT 100
     ");
@@ -170,12 +179,13 @@ if ($reportType === 'all' || $reportType === 'missed_opportunities') {
         $missedTime = $missed['call_time'];
         
         $callback = Database::getOne("
-            SELECT call_time, employee_id, duration 
-            FROM calls 
-            WHERE UPPER(org_id) = UPPER('$orgId')
-            AND caller_phone = '$phone' 
-            AND (type = 'Outbound' OR type = 'Outgoing')
-            AND call_time > '$missedTime'
+            SELECT c.call_time, c.employee_id, c.duration 
+            FROM calls c
+            WHERE UPPER(c.org_id) = UPPER('$orgId')
+            AND c.caller_phone = '$phone' 
+            AND (c.type = 'Outbound' OR c.type = 'Outgoing')
+            AND c.call_time > '$missedTime'
+            $privacyFilter
             LIMIT 1
         ");
         
@@ -212,8 +222,8 @@ if ($reportType === 'all' || $reportType === 'operational_insights') {
             DAYOFWEEK($sqlLocalTime) as day_num,
             HOUR($sqlLocalTime) as hour_num,
             COUNT(*) as call_volume
-        FROM calls
-        WHERE UPPER(org_id) = UPPER('$orgId') $dateFilter
+        FROM calls c
+        WHERE UPPER(c.org_id) = UPPER('$orgId') $dateFilter $privacyFilter
         GROUP BY day_num, hour_num
         ORDER BY day_num, hour_num
     ");
@@ -289,8 +299,8 @@ if ($reportType === 'all' || $reportType === 'summary') {
             SUM(duration) as total_duration,
             SUM(CASE WHEN duration > 0 THEN 1 ELSE 0 END) as connected,
             SUM(CASE WHEN duration = 0 THEN 1 ELSE 0 END) as missed
-        FROM calls 
-        WHERE UPPER(org_id) = UPPER('$orgId') $dateFilter
+        FROM calls c
+        WHERE UPPER(c.org_id) = UPPER('$orgId') $dateFilter $privacyFilter
     ");
     
     $summary['formatted_duration'] = formatDuration($summary['total_duration']);

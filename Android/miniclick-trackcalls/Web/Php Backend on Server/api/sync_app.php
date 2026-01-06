@@ -968,7 +968,7 @@ if ($action === "fetch_config") {
     }
 
     // 1. Get Excluded Contacts
-    $stmt = $conn->prepare("SELECT phone FROM excluded_contacts WHERE org_id = ? AND is_active = 1");
+    $stmt = $conn->prepare("SELECT phone FROM excluded_contacts WHERE org_id = ? AND exclude_from_sync = 1");
     $stmt->bind_param("s", $org_id);
     $stmt->execute();
     $res = $stmt->get_result();
