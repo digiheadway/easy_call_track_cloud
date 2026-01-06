@@ -75,6 +75,18 @@ fun SettingsScreen(
         }
     }
 
+    val exportLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let { viewModel.exportData(it) }
+    }
+
+    val importLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let { viewModel.importData(it) }
+    }
+
     if (onBack != null) {
         androidx.activity.compose.BackHandler {
             onBack()
@@ -782,7 +794,38 @@ fun SettingsScreen(
             Spacer(Modifier.height(16.dp))
 
             // ===============================================
-            // 5. SUPPORT
+            // 5. DATA MANAGEMENT
+            // ===============================================
+            SettingsSection(title = "Data Management") {
+                ListItem(
+                    headlineContent = { Text("Export Data") },
+                    supportingContent = { Text("Backup your local call logs and notes to a file") },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.Download, MaterialTheme.colorScheme.primary) 
+                    },
+                    modifier = Modifier.clickable { 
+                        exportLauncher.launch("miniclick_backup_${System.currentTimeMillis()}.json")
+                    }
+                )
+                
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                ListItem(
+                    headlineContent = { Text("Import Data") },
+                    supportingContent = { Text("Restore data from a previously exported backup file") },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.Upload, MaterialTheme.colorScheme.secondary) 
+                    },
+                    modifier = Modifier.clickable { 
+                        importLauncher.launch(arrayOf("application/json"))
+                    }
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // ===============================================
+            // 6. SUPPORT
             // ===============================================
             SettingsSection(title = "Support") {
                 // Support items
@@ -883,6 +926,50 @@ fun SettingsScreen(
                         Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                     },
                     modifier = Modifier.clickable { showClearDataDialog = true }
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // ===============================================
+            // 7. TROUBLESHOOTING
+            // ===============================================
+            SettingsSection(title = "Troubleshooting") {
+                ListItem(
+                    headlineContent = { Text("Recheck Recordings") },
+                    supportingContent = { Text("Force a re-scan of local folders for call recordings") },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.ManageSearch, MaterialTheme.colorScheme.primary) 
+                    },
+                    modifier = Modifier.clickable { 
+                        viewModel.recheckRecordings()
+                    }
+                )
+                
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                ListItem(
+                    headlineContent = { Text("Re-import Call History") },
+                    supportingContent = { Text("Re-fetch call logs from system and sync them") },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.History, MaterialTheme.colorScheme.secondary) 
+                    },
+                    modifier = Modifier.clickable { 
+                        viewModel.reImportCallHistory()
+                    }
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                ListItem(
+                    headlineContent = { Text("Re-import Recordings") },
+                    supportingContent = { Text("Reset recording sync status and retry all uploads") },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.CloudSync, MaterialTheme.colorScheme.tertiary) 
+                    },
+                    modifier = Modifier.clickable { 
+                        viewModel.reImportRecordings()
+                    }
                 )
             }
 

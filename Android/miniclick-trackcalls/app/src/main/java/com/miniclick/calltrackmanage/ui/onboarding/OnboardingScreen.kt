@@ -1,6 +1,8 @@
 package com.miniclick.calltrackmanage.ui.onboarding
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -498,6 +500,7 @@ fun OnboardingStepContent(
 fun PermissionDisclosureStepContent(
     onContinue: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()

@@ -315,8 +315,8 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                             it.recordingSyncStatus == com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.UPLOADING || 
                             it.recordingSyncStatus == com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.COMPRESSING 
                         },
-                        // Only show network error if sync is actually setup
-                        isNetworkAvailable = settingsState.isNetworkAvailable || !settingsState.isSyncSetup,
+                        isNetworkAvailable = settingsState.isNetworkAvailable,
+                        isSyncSetup = settingsState.isSyncSetup,
                         onSyncNow = { settingsViewModel.syncCallManually() },
                         onShowQueue = { settingsViewModel.toggleSyncQueue(true) }
                     )
@@ -377,6 +377,8 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                         pendingNewCalls = settingsState.pendingNewCallsCount,
                         pendingRelatedData = settingsState.pendingMetadataUpdatesCount + settingsState.pendingPersonUpdatesCount,
                         pendingRecordings = settingsState.pendingRecordingCount,
+                        isSyncSetup = settingsState.isSyncSetup,
+                        isNetworkAvailable = settingsState.isNetworkAvailable,
                         onSyncAll = { settingsViewModel.syncCallManually() },
                         onDismiss = { settingsViewModel.toggleSyncQueue(false) },
                         onRecordingClick = {

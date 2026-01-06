@@ -330,7 +330,14 @@ export default function PlansPage() {
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Current Slots</p>
-                                    <p className="text-lg font-black text-gray-900 dark:text-white">{usage.allowed_users} Employees</p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-lg font-black text-gray-900 dark:text-white">{usage.allowed_users} Employees</p>
+                                        {addUsers > 0 && (
+                                            <span className="text-xs font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                                                <Plus size={10} />{addUsers}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             {addUsers === 0 && (
@@ -342,7 +349,7 @@ export default function PlansPage() {
                                     className="h-8 px-3 bg-blue-600 text-white rounded-lg font-black text-[9px] uppercase tracking-wider hover:bg-blue-700 active:scale-95 transition-all shadow-lg shadow-blue-500/20 flex items-center gap-1.5"
                                 >
                                     <Plus size={12} />
-                                    Add
+                                    +1 Slot
                                 </button>
                             )}
                         </div>
@@ -354,7 +361,14 @@ export default function PlansPage() {
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Active Storage</p>
-                                    <p className="text-lg font-black text-gray-900 dark:text-white">{usage.allowed_storage_gb > 0 ? `${usage.allowed_storage_gb} GB` : '0 GB'}</p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-lg font-black text-gray-900 dark:text-white">{usage.allowed_storage_gb > 0 ? `${usage.allowed_storage_gb} GB` : '0 GB'}</p>
+                                        {addStorage > 0 && (
+                                            <span className="text-xs font-black text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                                                <Plus size={10} />{addStorage} GB
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             {addStorage === 0 && (
@@ -366,7 +380,7 @@ export default function PlansPage() {
                                     className="h-8 px-3 bg-purple-600 text-white rounded-lg font-black text-[9px] uppercase tracking-wider hover:bg-purple-700 active:scale-95 transition-all shadow-lg shadow-purple-500/20 flex items-center gap-1.5"
                                 >
                                     <Plus size={12} />
-                                    Add
+                                    +2 GB
                                 </button>
                             )}
                         </div>
@@ -487,20 +501,27 @@ export default function PlansPage() {
                                                 </div>
                                             )}
                                             {(addStorage > 0 || isRenewing) && (
-                                                <div className="flex justify-between items-center text-sm p-4 bg-gray-50 rounded-2xl border border-gray-100 transition-all">
+                                                <div className="flex justify-between items-center text-sm p-4 bg-gray-50 dark:bg-gray-700/30 rounded-2xl border border-gray-100 dark:border-gray-700 transition-all">
                                                     <div className="flex items-center gap-4">
                                                         <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center font-black text-white shadow-md">
                                                             {isRenewing ? (usage?.allowed_storage_gb || 0) + addStorage : addStorage}
                                                         </div>
                                                         <div className="flex flex-col">
-                                                            <span className="font-black text-gray-900">{isRenewing ? 'Total Storage Limit' : 'Extra Storage'}</span>
-                                                            <span className="text-xs text-gray-400 font-bold tracking-tighter">
-                                                                {isRenewing ? `${(usage?.allowed_storage_gb || 0) + addStorage} GB Total` : `Rs ${unitPrices.price_per_gb} / GB / mo`}
+                                                            <span className="font-black text-gray-900 dark:text-white">{isRenewing ? 'Total Storage Limit' : 'Extra Storage'}</span>
+                                                            <span className="text-xs text-gray-400 dark:text-gray-500 font-bold tracking-tighter">
+                                                                {isRenewing 
+                                                                    ? `Current: ${usage?.allowed_storage_gb || 0} GB → New Total: ${(usage?.allowed_storage_gb || 0) + addStorage} GB` 
+                                                                    : `+${addStorage} GB @ Rs ${unitPrices.price_per_gb}/GB/month`}
                                                             </span>
+                                                            {!isRenewing && addStorage > 0 && (
+                                                                <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold mt-0.5">
+                                                                    Your total storage will become: {(usage?.allowed_storage_gb || 0) + addStorage} GB
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-6">
-                                                        <div className="flex items-center bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                                                        <div className="flex items-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden shadow-sm">
                                                             <button
                                                                 onClick={() => {
                                                                     if (isRenewing) {
@@ -511,18 +532,21 @@ export default function PlansPage() {
                                                                         setAddStorage(Math.max(0, addStorage - 2));
                                                                     }
                                                                 }}
-                                                                className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 text-gray-400 hover:text-red-500 transition-colors border-r border-gray-100"
+                                                                className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-400 dark:text-gray-300 hover:text-red-500 transition-colors border-r border-gray-100 dark:border-gray-600"
                                                             >
                                                                 <Minus size={14} />
                                                             </button>
-                                                            <span className="w-12 text-center text-sm font-black text-gray-900">
-                                                                {isRenewing ? (usage?.allowed_storage_gb || 0) + addStorage : addStorage}
-                                                            </span>
-                                                            <button onClick={() => setAddStorage(addStorage + 2)} className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 text-gray-400 hover:text-blue-500 transition-colors border-l border-gray-100">
+                                                            <div className="w-16 text-center">
+                                                                <span className="text-sm font-black text-gray-900 dark:text-white">
+                                                                    {isRenewing ? (usage?.allowed_storage_gb || 0) + addStorage : addStorage}
+                                                                </span>
+                                                                <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 block -mt-0.5">GB</span>
+                                                            </div>
+                                                            <button onClick={() => setAddStorage(addStorage + 2)} className="w-10 h-10 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-400 dark:text-gray-300 hover:text-blue-500 transition-colors border-l border-gray-100 dark:border-gray-600">
                                                                 <Plus size={14} />
                                                             </button>
                                                         </div>
-                                                        <span className="font-black text-gray-900 min-w-[80px] text-right text-base text-indigo-600">
+                                                        <span className="font-black text-gray-900 dark:text-white min-w-[80px] text-right text-base text-indigo-600 dark:text-indigo-400">
                                                             Rs {((isRenewing ? (usage?.allowed_storage_gb || 0) : 0) + addStorage) * unitPrices.price_per_gb}
                                                         </span>
                                                     </div>

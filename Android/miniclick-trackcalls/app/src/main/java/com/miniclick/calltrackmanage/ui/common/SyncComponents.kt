@@ -32,6 +32,8 @@ fun SyncQueueModal(
     pendingNewCalls: Int,
     pendingRelatedData: Int,
     pendingRecordings: Int,
+    isSyncSetup: Boolean = true,
+    isNetworkAvailable: Boolean = true,
     onSyncAll: () -> Unit,
     onDismiss: () -> Unit,
     onRecordingClick: (() -> Unit)? = null
@@ -47,50 +49,159 @@ fun SyncQueueModal(
                 .padding(bottom = 32.dp, start = 20.dp, end = 20.dp, top = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Header - Different based on sync setup
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(bottom = 8.dp)
             ) {
-                Icon(Icons.Default.Sync, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                Icon(
+                    if (isSyncSetup) Icons.Default.CloudSync else Icons.Default.PhoneAndroid,
+                    null, 
+                    tint = MaterialTheme.colorScheme.primary, 
+                    modifier = Modifier.size(24.dp)
+                )
                 Spacer(Modifier.width(12.dp))
-                Text("Sync Queue Status", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Column {
+                    Text(
+                        if (isSyncSetup) "Cloud Backup Status" else "Local Data Status", 
+                        style = MaterialTheme.typography.titleLarge, 
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (!isSyncSetup) {
+                        Text(
+                            "All data is saved locally on your device",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
 
-            SyncQueueItem(
-                label = "New Calls",
-                count = pendingNewCalls,
-                icon = Icons.Default.Phone,
-                status = if (pendingNewCalls > 0) "Pending upload" else "All synced"
-            )
+            // Network status banner (only if sync is setup and offline)
+            if (isSyncSetup && !isNetworkAvailable) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.CloudOff,
+                            null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                "You're offline",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Text(
+                                "Data is saved locally. Will backup when online.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                }
+            }
 
-            SyncQueueItem(
-                label = "Related Data",
-                count = pendingRelatedData,
-                icon = Icons.Default.Description,
-                status = if (pendingRelatedData > 0) "Notes, labels & status updates" else "All updated"
-            )
+            val totalPending = pendingNewCalls + pendingRelatedData + pendingRecordings
 
-            SyncQueueItem(
-                label = "Call Recordings",
-                count = pendingRecordings,
-                icon = Icons.Default.Mic,
-                status = if (pendingRecordings > 0) "Tap to view queue" else "All uploaded",
-                onClick = if (pendingRecordings > 0) onRecordingClick else null
-            )
+            if (isSyncSetup) {
+                // Cloud sync mode: Show what needs to be backed up
+                SyncQueueItem(
+                    label = "New Calls",
+                    count = pendingNewCalls,
+                    icon = Icons.Default.Phone,
+                    status = if (pendingNewCalls > 0) "Ready for cloud backup" else "All backed up ✓"
+                )
 
-            Spacer(Modifier.height(8.dp))
+                SyncQueueItem(
+                    label = "Notes & Labels",
+                    count = pendingRelatedData,
+                    icon = Icons.Default.Edit,
+                    status = if (pendingRelatedData > 0) "Changes pending backup" else "All changes backed up ✓"
+                )
 
-            Button(
-                onClick = {
-                    onSyncAll()
-                    onDismiss()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(Icons.Default.Sync, null)
-                Spacer(Modifier.width(8.dp))
-                Text("Sync All Now")
+                SyncQueueItem(
+                    label = "Call Recordings",
+                    count = pendingRecordings,
+                    icon = Icons.Default.Mic,
+                    status = if (pendingRecordings > 0) "Tap to view upload queue" else "All recordings uploaded ✓",
+                    onClick = if (pendingRecordings > 0) onRecordingClick else null
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                // Reassuring message
+                if (totalPending > 0) {
+                    Text(
+                        "✓ Your data is saved locally and will backup to cloud automatically.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                }
+
+                Button(
+                    onClick = {
+                        onSyncAll()
+                        onDismiss()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = isNetworkAvailable && totalPending > 0
+                ) {
+                    Icon(Icons.Default.CloudUpload, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (totalPending > 0) "Backup Now" else "All Backed Up")
+                }
+            } else {
+                // Offline/local mode: Show local data status
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "All Data Saved Locally",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "Your call logs, notes, and recordings are stored on this device.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "To enable cloud backup, go to Settings → Organisation Setup",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
             }
         }
     }
@@ -430,15 +541,21 @@ fun GlobalSyncStatusBar(
     pendingRecordings: Int,
     activeUploads: Int,
     isNetworkAvailable: Boolean,
+    isSyncSetup: Boolean = true,
     onSyncNow: () -> Unit,
     onShowQueue: () -> Unit
 ) {
     val activeProcess by com.miniclick.calltrackmanage.data.ProcessMonitor.activeProcess.collectAsState()
     
     val totalPending = pendingNewCalls + pendingMetadata + pendingPersonUpdates
-    val showBar = activeProcess != null || totalPending > 0 || pendingRecordings > 0 || activeUploads > 0 || !isNetworkAvailable
+    
+    // Only show bar if:
+    // 1. There's an active local process (importing, finding recordings)
+    // 2. Sync is setup AND there are pending items or network issues
+    val showBar = activeProcess != null || 
+                  (isSyncSetup && (totalPending > 0 || pendingRecordings > 0 || activeUploads > 0 || !isNetworkAvailable))
 
-    android.util.Log.d("GlobalSyncStatusBar", "showBar: $showBar, activeProcess: ${activeProcess?.title}, totalPending: $totalPending, pendingRecordings: $pendingRecordings, activeUploads: $activeUploads, isNetworkAvailable: $isNetworkAvailable")
+    android.util.Log.d("GlobalSyncStatusBar", "showBar: $showBar, activeProcess: ${activeProcess?.title}, totalPending: $totalPending, pendingRecordings: $pendingRecordings, activeUploads: $activeUploads, isNetworkAvailable: $isNetworkAvailable, isSyncSetup: $isSyncSetup")
 
     AnimatedVisibility(
         visible = showBar,
@@ -446,15 +563,24 @@ fun GlobalSyncStatusBar(
         enter = expandVertically() + fadeIn(),
         exit = shrinkVertically() + fadeOut()
     ) {
-        val backgroundColor = if (isNetworkAvailable) 
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f) 
-        else 
-            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.95f)
+        val process = activeProcess
+        val isLocalProcess = process != null
         
-        val contentColor = if (isNetworkAvailable) 
-            MaterialTheme.colorScheme.onPrimaryContainer 
-        else 
-            MaterialTheme.colorScheme.onErrorContainer
+        // Color scheme:
+        // - Local process (import/find) = neutral surface color
+        // - Cloud backup pending = primary container
+        // - No network = error container (only if sync setup)
+        val backgroundColor = when {
+            isLocalProcess -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f)
+            !isNetworkAvailable && isSyncSetup -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.95f)
+            else -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f)
+        }
+        
+        val contentColor = when {
+            isLocalProcess -> MaterialTheme.colorScheme.onSurfaceVariant
+            !isNetworkAvailable && isSyncSetup -> MaterialTheme.colorScheme.onErrorContainer
+            else -> MaterialTheme.colorScheme.onPrimaryContainer
+        }
 
         Surface(
             modifier = Modifier
@@ -470,27 +596,35 @@ fun GlobalSyncStatusBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                // Determine what to show
-                val process = activeProcess
-                
+                // Determine what to show - prioritize local processes, then network, then cloud backup
                 val text = when {
-                    !isNetworkAvailable -> "No internet: ${totalPending + pendingRecordings} pending"
+                    // Local processes (no network needed)
                     process != null -> {
                         val progressPct = if (process.isIndeterminate) "" else " ${(process.progress * 100).toInt()}%"
                         "${process.title}$progressPct"
                     }
-                    totalPending > 0 -> "Syncing $totalPending updates..."
-                    activeUploads > 0 -> "Uploading $activeUploads recordings..."
-                    pendingRecordings > 0 -> "$pendingRecordings recordings in queue"
-                    else -> "Syncing..."
+                    // Network issue (only matters if sync is setup)
+                    !isNetworkAvailable && isSyncSetup -> {
+                        val pendingTotal = totalPending + pendingRecordings
+                        if (pendingTotal > 0) "Offline • $pendingTotal saved locally" else "Offline"
+                    }
+                    // Active uploads
+                    activeUploads > 0 -> "Uploading $activeUploads recording${if (activeUploads > 1) "s" else ""}..."
+                    // Pending cloud backup
+                    totalPending > 0 -> "Backing up $totalPending item${if (totalPending > 1) "s" else ""}..."
+                    // Recordings in queue
+                    pendingRecordings > 0 -> "$pendingRecordings recording${if (pendingRecordings > 1) "s" else ""} pending upload"
+                    // Fallback (shouldn't happen)
+                    else -> "Processing..."
                 }
 
                 val icon = when {
-                    !isNetworkAvailable -> Icons.Default.CloudOff
-                    process != null -> Icons.Default.Sync
-                    totalPending > 0 -> Icons.Default.Sync
+                    process != null -> Icons.Default.Sync  // Local processing
+                    !isNetworkAvailable && isSyncSetup -> Icons.Default.CloudOff
                     activeUploads > 0 -> Icons.Default.CloudUpload
-                    else -> Icons.Default.Mic
+                    totalPending > 0 -> Icons.Default.CloudSync
+                    pendingRecordings > 0 -> Icons.Default.Mic
+                    else -> Icons.Default.Sync
                 }
 
                 Icon(
@@ -509,7 +643,8 @@ fun GlobalSyncStatusBar(
                     fontWeight = FontWeight.Medium
                 )
                 
-                if (isNetworkAvailable) {
+                // Show progress indicator only when actively doing something
+                if (process != null || (isNetworkAvailable && (activeUploads > 0 || totalPending > 0))) {
                     Spacer(Modifier.width(12.dp))
                     
                     if (process != null && !process.isIndeterminate) {
@@ -522,7 +657,7 @@ fun GlobalSyncStatusBar(
                             color = contentColor,
                             trackColor = contentColor.copy(alpha = 0.2f),
                         )
-                    } else {
+                    } else if (process != null || activeUploads > 0 || totalPending > 0) {
                         LinearProgressIndicator(
                             modifier = Modifier
                                 .width(48.dp)
@@ -537,4 +672,3 @@ fun GlobalSyncStatusBar(
         }
     }
 }
-

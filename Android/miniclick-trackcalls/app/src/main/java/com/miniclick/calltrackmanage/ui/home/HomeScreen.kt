@@ -45,6 +45,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.miniclick.calltrackmanage.data.db.CallDataEntity
 import com.miniclick.calltrackmanage.data.db.PersonDataEntity
@@ -163,7 +164,7 @@ fun CallsScreen(
             .groupBy { it.phoneNumber }
             .mapValues { (number, calls) ->
                 val sortedCalls = calls.sortedByDescending { it.callDate }
-                val person = personsMap[number]
+                val person = personsMap[number] ?: personsMap[viewModel.normalizePhoneNumber(number)]
                 PersonGroup(
                     number = number,
                     name = person?.contactName ?: calls.firstOrNull { !it.contactName.isNullOrEmpty() }?.contactName,
@@ -182,9 +183,11 @@ fun CallsScreen(
 
     var selectedPersonForDetails by remember { mutableStateOf<PersonGroup?>(null) }
     
-    if (selectedPersonForDetails != null) {
+    selectedPersonForDetails?.let { person ->
+        // Use the latest data from the map if it changed (reactive updates)
+        val latestPerson = allPersonGroupsMap[person.number] ?: person
         PersonInteractionBottomSheet(
-            person = selectedPersonForDetails!!,
+            person = latestPerson,
             recordings = uiState.recordings,
             audioPlayer = audioPlayer,
             viewModel = viewModel,
@@ -491,7 +494,7 @@ fun PersonsScreen(
             .groupBy { it.phoneNumber }
             .mapValues { (number, calls) ->
                 val sortedCalls = calls.sortedByDescending { it.callDate }
-                val person = personsMap[number]
+                val person = personsMap[number] ?: personsMap[viewModel.normalizePhoneNumber(number)]
                 PersonGroup(
                     number = number,
                     name = person?.contactName ?: calls.firstOrNull { !it.contactName.isNullOrEmpty() }?.contactName,
@@ -518,9 +521,11 @@ fun PersonsScreen(
 
     var selectedPersonForDetails by remember { mutableStateOf<PersonGroup?>(null) }
     
-    if (selectedPersonForDetails != null) {
+    selectedPersonForDetails?.let { person ->
+        // Use the latest data from the map if it changed (reactive updates)
+        val latestPerson = allPersonGroupsMap[person.number] ?: person
         PersonInteractionBottomSheet(
-            person = selectedPersonForDetails!!,
+            person = latestPerson,
             recordings = uiState.recordings,
             audioPlayer = audioPlayer,
             viewModel = viewModel,
@@ -3419,81 +3424,231 @@ fun LabelPickerDialog(
     onDismiss: () -> Unit,
     onSave: (String) -> Unit
 ) {
+    var customLabel by remember { mutableStateOf("") }
+    var showCustomInput by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
+    
+    // Parse current labels (comma-separated)
+    val selectedLabels = remember(currentLabel) {
+        currentLabel?.split(",")?.filter { it.isNotBlank() }?.toMutableStateList() ?: mutableStateListOf<String>()
+    }
+    
     // Predefined common labels
     val predefinedLabels = listOf("VIP", "Lead", "Customer", "Spam", "Follow-up", "Important", "Personal", "Work")
     
     // Count usage of each label
     val labelUsageCount = remember(availableLabels) {
-        availableLabels.groupingBy { it }.eachCount()
+        availableLabels.flatMap { it.split(",") }.filter { it.isNotBlank() }.groupingBy { it }.eachCount()
     }
     
     // Combine predefined + existing labels, sorted by usage (most used first), then alphabetically
     val allLabels = remember(availableLabels) {
-        val allUnique = (availableLabels + predefinedLabels).distinct()
+        val allUnique = (availableLabels.flatMap { it.split(",") }.filter { it.isNotBlank() } + predefinedLabels).distinct()
         allUnique.sortedWith(
             compareByDescending<String> { labelUsageCount[it] ?: 0 }
                 .thenBy { it }
         )
     }
     
-    // Use DropdownMenu for simpler inline selection
-    DropdownMenu(
-        expanded = true,
+    Dialog(
         onDismissRequest = onDismiss,
-        modifier = Modifier
-            .widthIn(min = 180.dp, max = 280.dp)
-            .heightIn(max = 400.dp)
+        properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        // "None" option to clear label
-        DropdownMenuItem(
-            text = { 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (currentLabel.isNullOrEmpty()) {
-                        Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(8.dp))
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 8.dp,
+            modifier = Modifier
+                .padding(horizontal = 24.dp)
+                .widthIn(max = 350.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Person Labels",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.Close, "Close", modifier = Modifier.size(20.dp))
                     }
-                    Text("None", color = if (currentLabel.isNullOrEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
                 }
-            },
-            onClick = { onSave(""); onDismiss() },
-            leadingIcon = { Icon(Icons.Default.Clear, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error) }
-        )
-        
-        HorizontalDivider()
-        
-        allLabels.forEach { label ->
-            val isSelected = currentLabel == label
-            DropdownMenuItem(
-                text = { 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (isSelected) {
-                            Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
-                            Spacer(Modifier.width(8.dp))
-                        }
-                        Text(label, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
-                        
-                        // Show usage count if > 0
-                        val count = labelUsageCount[label] ?: 0
-                        if (count > 0) {
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                "($count)",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                
+                Spacer(Modifier.height(12.dp))
+                
+                // Active Labels Display (Chips)
+                if (selectedLabels.isNotEmpty()) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        selectedLabels.forEach { label ->
+                            InputChip(
+                                selected = true,
+                                onClick = { selectedLabels.remove(label) },
+                                label = { Text(label) },
+                                trailingIcon = { Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp)) }
                             )
                         }
                     }
-                },
-                onClick = { onSave(label); onDismiss() },
-                leadingIcon = { 
-                    Icon(
-                        Icons.AutoMirrored.Filled.Label, 
-                        null, 
-                        modifier = Modifier.size(18.dp),
-                        tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                    ) 
+                    Spacer(Modifier.height(16.dp))
+                    HorizontalDivider()
+                    Spacer(Modifier.height(8.dp))
                 }
-            )
+
+                Text(
+                    "Quick Select",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                
+                Spacer(Modifier.height(8.dp))
+                
+                // Scrollable label list
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 250.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(allLabels.size) { index ->
+                        val label = allLabels[index]
+                        val isSelected = selectedLabels.contains(label)
+                        val count = labelUsageCount[label] ?: 0
+                        
+                        Surface(
+                            onClick = { 
+                                if (isSelected) selectedLabels.remove(label) 
+                                else selectedLabels.add(label)
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isSelected) 
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) 
+                                else Color.Transparent,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.Label, 
+                                    null, 
+                                    modifier = Modifier.size(18.dp),
+                                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(Modifier.width(12.dp))
+                                Text(
+                                    label, 
+                                    modifier = Modifier.weight(1f),
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                if (count > 0) {
+                                    Text(
+                                        "($count)",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                }
+                                Checkbox(
+                                    checked = isSelected,
+                                    onCheckedChange = { 
+                                        if (it) selectedLabels.add(label) 
+                                        else selectedLabels.remove(label)
+                                    },
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    }
+                    
+                    item {
+                        if (showCustomInput) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedTextField(
+                                    value = customLabel,
+                                    onValueChange = { customLabel = it },
+                                    placeholder = { Text("Custom label...") },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .focusRequester(focusRequester),
+                                    singleLine = true,
+                                    textStyle = MaterialTheme.typography.bodyMedium,
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Button(
+                                    onClick = { 
+                                        if (customLabel.isNotBlank()) {
+                                            val trimmed = customLabel.trim()
+                                            if (!selectedLabels.contains(trimmed)) {
+                                                selectedLabels.add(trimmed)
+                                            }
+                                            customLabel = ""
+                                            showCustomInput = false
+                                        }
+                                    },
+                                    enabled = customLabel.isNotBlank(),
+                                    contentPadding = PaddingValues(horizontal = 12.dp)
+                                ) {
+                                    Text("Add")
+                                }
+                            }
+                            
+                            LaunchedEffect(Unit) {
+                                focusRequester.requestFocus()
+                            }
+                        } else {
+                            TextButton(
+                                onClick = { showCustomInput = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("New Custom Label")
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(Modifier.height(16.dp))
+                
+                // Action Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TextButton(
+                        onClick = { onSave(""); onDismiss() },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Clear All")
+                    }
+                    
+                    Button(
+                        onClick = { 
+                            onSave(selectedLabels.joinToString(","))
+                            onDismiss() 
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Save")
+                    }
+                }
+            }
         }
     }
 }

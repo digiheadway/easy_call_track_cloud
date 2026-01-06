@@ -928,4 +928,15 @@ class CallDataRepository private constructor(private val context: Context) {
         callDataDao.deleteAll()
         personDataDao.deleteAll()
     }
+
+    /**
+     * Import data from a backup.
+     */
+    suspend fun importData(calls: List<CallDataEntity>, persons: List<PersonDataEntity>) = withContext(Dispatchers.IO) {
+        database.withTransaction {
+            callDataDao.insertAll(calls)
+            personDataDao.insertAll(persons)
+        }
+        Log.d(TAG, "Imported ${calls.size} calls and ${persons.size} persons from backup")
+    }
 }

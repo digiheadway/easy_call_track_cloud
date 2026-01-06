@@ -17,6 +17,10 @@ import androidx.work.WorkManager
 import com.miniclick.calltrackmanage.worker.CallSyncWorker
 import com.miniclick.calltrackmanage.worker.RecordingUploadWorker
 import com.google.gson.GsonBuilder
+import android.net.Uri
+import java.io.OutputStreamWriter
+import java.io.InputStreamReader
+import kotlinx.coroutines.withContext
 
 data class PermissionState(
     val name: String,
@@ -1318,5 +1322,129 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         if (value is Number) return value.toInt() == 1
         val s = value.toString().trim().lowercase()
         return s == "1" || s == "true" || s == "1.0"
+    }
+
+    // ============================================
+    // DATA EXPORT & IMPORT
+    // ============================================
+
+    data class BackupData(
+        val calls: List<com.miniclick.calltrackmanage.data.db.CallDataEntity>,
+        val persons: List<com.miniclick.calltrackmanage.data.db.PersonDataEntity>,
+        val exportDate: Long = System.currentTimeMillis(),
+        val appVersion: String
+    )
+
+    fun exportData(uri: Uri) {
+        viewModelScope.launch {
+            try {
+                val calls = callDataRepository.getAllCalls()
+                val persons = callDataRepository.getAllPersons()
+                val packageInfo = getApplication<Application>().packageManager.getPackageInfo(getApplication<Application>().packageName, 0)
+                val appVersion = packageInfo.versionName ?: "Unknown"
+                
+                val backup = BackupData(calls, persons, appVersion = appVersion)
+                val json = GsonBuilder().setPrettyPrinting().create().toJson(backup)
+                
+                withContext(Dispatchers.IO) {
+                    getApplication<Application>().contentResolver.openOutputStream(uri)?.use { outputStream ->
+                        OutputStreamWriter(outputStream).use { writer ->
+                            writer.write(json)
+                        }
+                    }
+                }
+                Toast.makeText(getApplication(), "Data exported successfully", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Log.e("SettingsViewModel", "Failed to export data", e)
+                Toast.makeText(getApplication(), "Failed to export: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    fun importData(uri: Uri) {
+        viewModelScope.launch {
+            try {
+                val json = withContext(Dispatchers.IO) {
+                    getApplication<Application>().contentResolver.openInputStream(uri)?.use { inputStream ->
+                        InputStreamReader(inputStream).use { reader ->
+                            reader.readText()
+                        }
+                    } ?: ""
+                }
+                
+                if (json.isBlank()) {
+                    Toast.makeText(getApplication(), "Empty file", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                
+                val backup = GsonBuilder().create().fromJson(json, BackupData::class.java)
+                
+                if (backup.calls.isEmpty() && backup.persons.isEmpty()) {
+                    Toast.makeText(getApplication(), "No data found in file", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                
+                withContext(Dispatchers.IO) {
+                    callDataRepository.importData(backup.calls, backup.persons)
+                }
+                
+                Toast.makeText(getApplication(), "Data imported: ${backup.calls.size} calls, ${backup.persons.size} persons", Toast.LENGTH_LONG).show()
+                loadSettings()
+            } catch (e: Exception) {
+                Log.e("SettingsViewModel", "Failed to import data", e)
+                Toast.makeText(getApplication(), "Failed to import: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    // ============================================
+    // TROUBLESHOOTING
+    // ============================================
+
+    fun reImportCallHistory() {
+        viewModelScope.launch {
+            try {
+                // We keep existing data but force a fresh scan from system call log
+                // The repository handles duplicates by using compositeId as primary key
+                withContext(Dispatchers.IO) {
+                    callDataRepository.syncFromSystemCallLog()
+                }
+                Toast.makeText(getApplication(), "Re-imported calls from system log", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(getApplication(), "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    fun reImportRecordings() {
+        viewModelScope.launch {
+            try {
+                // Reset recording sync status for calls that have recordings or failed
+                withContext(Dispatchers.IO) {
+                    callDataRepository.resetSkippedRecordings()
+                }
+                // Trigger recording worker
+                RecordingUploadWorker.runNow(getApplication())
+                Toast.makeText(getApplication(), "Recording sync reset and started", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(getApplication(), "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    fun recheckRecordings() {
+        viewModelScope.launch {
+            try {
+                // Re-verify path and scan
+                refreshRecordingPathInfo()
+                // Also trigger a system log sync which looks for recording paths
+                withContext(Dispatchers.IO) {
+                    callDataRepository.syncFromSystemCallLog()
+                }
+                Toast.makeText(getApplication(), "Recording scan completed", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(getApplication(), "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 }

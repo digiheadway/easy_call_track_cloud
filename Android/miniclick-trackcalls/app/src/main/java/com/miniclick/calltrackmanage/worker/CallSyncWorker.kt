@@ -36,16 +36,24 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             return@withContext Result.success()
         }
         
-        Log.d(TAG, "Starting sync pass...")
+        // Check if this is a quick sync (skip system import)
+        val skipSystemImport = inputData.getBoolean(KEY_SKIP_SYSTEM_IMPORT, false)
+        
+        Log.d(TAG, "Starting sync pass... (skipSystemImport=$skipSystemImport)")
         setForeground(createForegroundInfo("Syncing Calls with Server.."))
         
-        // PHASE 0: ALWAYS sync from system call log to local Room DB (OFFLINE-FIRST)
-        // This ensures calls are visible in the app even without server sync configured
-        try {
-            callDataRepository.syncFromSystemCallLog()
-            Log.d(TAG, "Local call import completed")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to import calls from system", e)
+        // PHASE 0: Sync from system call log to local Room DB (OFFLINE-FIRST)
+        // Skip this phase for quick syncs (e.g., after note edit) to avoid showing
+        // "Importing Data" / "Finding Recordings" status for minor operations
+        if (!skipSystemImport) {
+            try {
+                callDataRepository.syncFromSystemCallLog()
+                Log.d(TAG, "Local call import completed")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to import calls from system", e)
+            }
+        } else {
+            Log.d(TAG, "Skipping system call log import (quick sync mode)")
         }
         
         // Check if server sync is configured
@@ -489,9 +497,10 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
     companion object {
         private const val TAG = "CallSyncWorker"
+        private const val KEY_SKIP_SYSTEM_IMPORT = "skip_system_import"
         
         /**
-         * Enqueue periodic sync (runs every 2 hours)
+         * Enqueue periodic sync (runs every 30 minutes)
          */
         fun enqueue(context: Context) {
             val constraints = Constraints.Builder()
@@ -510,7 +519,8 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
         }
 
         /**
-         * Run sync immediately (triggered by events like call end, note edit, etc.)
+         * Run full sync immediately (imports from system call log + pushes pending changes)
+         * Use this after call ends, pull-to-refresh, or when app starts
          */
         fun runNow(context: Context) {
             val constraints = Constraints.Builder()
@@ -523,6 +533,30 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
             WorkManager.getInstance(context).enqueueUniqueWork(
                 "CallSyncWorker_Immediate",
+                ExistingWorkPolicy.REPLACE,
+                request
+            )
+        }
+
+        /**
+         * Run quick sync (only pushes pending metadata changes, skips system import)
+         * Use this for lightweight operations like note edit, label change, etc.
+         * Avoids showing "Importing Data" / "Finding Recordings" status for minor operations
+         */
+        fun runQuickSync(context: Context) {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+
+            val inputData = workDataOf(KEY_SKIP_SYSTEM_IMPORT to true)
+
+            val request = OneTimeWorkRequestBuilder<CallSyncWorker>()
+                .setInputData(inputData)
+                .setConstraints(constraints)
+                .build()
+
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                "CallSyncWorker_QuickSync",
                 ExistingWorkPolicy.REPLACE,
                 request
             )
