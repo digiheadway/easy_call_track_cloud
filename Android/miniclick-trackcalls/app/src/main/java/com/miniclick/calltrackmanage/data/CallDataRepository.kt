@@ -431,11 +431,39 @@ class CallDataRepository private constructor(private val context: Context) {
     }
     
     /**
-     * Get person by phone number
+     * Get person by phone number with robust fallback for normalization differences
      */
     suspend fun getPersonByNumber(phoneNumber: String): PersonDataEntity? = withContext(Dispatchers.IO) {
         val normalized = normalizePhoneNumber(phoneNumber)
-        personDataDao.getByPhoneNumber(normalized)
+        getPersonRobust(normalized)
+    }
+
+    /**
+     * Robust lookup helper for person data
+     */
+    private suspend fun getPersonRobust(normalized: String): PersonDataEntity? {
+        var existing = personDataDao.getByPhoneNumber(normalized)
+        if (existing != null) return existing
+
+        // Fallback 1: Try without '+' if normalized starts with it
+        if (normalized.startsWith("+")) {
+            existing = personDataDao.getByPhoneNumber(normalized.substring(1))
+            if (existing != null) return existing
+        }
+
+        // Fallback 2: Try with '+' if normalized doesn't have it
+        if (!normalized.startsWith("+")) {
+            existing = personDataDao.getByPhoneNumber("+$normalized")
+            if (existing != null) return existing
+        }
+
+        // Fallback 3: Suffix match (last 10 digits) - more expensive but safer than creating duplicate
+        if (normalized.length >= 10) {
+            val suffix = normalized.takeLast(10)
+            existing = personDataDao.getAllPersons().find { it.phoneNumber.endsWith(suffix) }
+        }
+
+        return existing
     }
     
     /**
@@ -484,9 +512,9 @@ class CallDataRepository private constructor(private val context: Context) {
         val normalized = normalizePhoneNumber(phoneNumber)
         
         // 1. Update Person Table (Dao handles needsSync=1)
-        val existing = personDataDao.getByPhoneNumber(normalized)
+        val existing = getPersonRobust(normalized)
         if (existing != null) {
-            personDataDao.updatePersonNote(normalized, note)
+            personDataDao.updatePersonNote(existing.phoneNumber, note)
         } else {
             personDataDao.insert(PersonDataEntity(
                 phoneNumber = normalized,
@@ -501,9 +529,9 @@ class CallDataRepository private constructor(private val context: Context) {
      */
     suspend fun updatePersonLabel(phoneNumber: String, label: String?) = withContext(Dispatchers.IO) {
         val normalized = normalizePhoneNumber(phoneNumber)
-        val existing = personDataDao.getByPhoneNumber(normalized)
+        val existing = getPersonRobust(normalized)
         if (existing != null) {
-            personDataDao.updateLabel(normalized, label)
+            personDataDao.updateLabel(existing.phoneNumber, label)
         } else {
             // Create person entry if doesn't exist
             personDataDao.insert(PersonDataEntity(
@@ -519,9 +547,9 @@ class CallDataRepository private constructor(private val context: Context) {
      */
     suspend fun updatePersonName(phoneNumber: String, name: String?) = withContext(Dispatchers.IO) {
         val normalized = normalizePhoneNumber(phoneNumber)
-        val existing = personDataDao.getByPhoneNumber(normalized)
+        val existing = getPersonRobust(normalized)
         if (existing != null) {
-            personDataDao.updateName(normalized, name)
+            personDataDao.updateName(existing.phoneNumber, name)
         } else {
             // Create person entry if doesn't exist
             personDataDao.insert(PersonDataEntity(
@@ -721,7 +749,8 @@ class CallDataRepository private constructor(private val context: Context) {
             val sortedCalls = calls.sortedByDescending { it.callDate }
             val lastCall = sortedCalls.firstOrNull() ?: continue
             
-            val existing = existingPersons[phoneNumber]
+            // Robust lookup to match existing person data (notes, labels, etc.)
+            val existing = existingPersons[phoneNumber] ?: getPersonRobust(phoneNumber)
             
             val totalIncoming = calls.count { it.callType == CallLog.Calls.INCOMING_TYPE }
             val totalOutgoing = calls.count { it.callType == CallLog.Calls.OUTGOING_TYPE }

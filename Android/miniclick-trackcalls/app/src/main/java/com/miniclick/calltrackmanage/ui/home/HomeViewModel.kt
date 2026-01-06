@@ -485,7 +485,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             // Label Filter
             if (labelFilter.isNotEmpty()) {
                 val person = personsMap[call.phoneNumber] ?: personsMap[normalizePhoneNumber(call.phoneNumber)]
-                if (person?.label != labelFilter) return@filter false
+                val personLabels = person?.label?.split(",")?.map { it.trim() } ?: emptyList()
+                if (!personLabels.contains(labelFilter)) return@filter false
             }
 
             // Call Type Filter
@@ -535,7 +536,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         
         val filtered = if (query.isEmpty()) {
             if (current.labelFilter.isNotEmpty()) {
-                current.persons.filter { it.label == current.labelFilter }
+                current.persons.filter { it.label?.split(",")?.map { l -> l.trim() }?.contains(current.labelFilter) == true }
             } else {
                 current.persons
             }
@@ -545,7 +546,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 (person.contactName?.lowercase()?.contains(query) == true) ||
                 (person.personNote?.lowercase()?.contains(query) == true))
                 
-                val matchesLabel = if (current.labelFilter.isNotEmpty()) person.label == current.labelFilter else true
+                val matchesLabel = if (current.labelFilter.isNotEmpty()) {
+                person.label?.split(",")?.map { l -> l.trim() }?.contains(current.labelFilter) == true
+            } else true
                 
                 matchesQuery && matchesLabel
             }

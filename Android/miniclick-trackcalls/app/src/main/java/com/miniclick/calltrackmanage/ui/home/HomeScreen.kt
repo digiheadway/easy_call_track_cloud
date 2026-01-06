@@ -260,7 +260,14 @@ fun CallsScreen(
                     onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) },
                     labelFilter = uiState.labelFilter,
                     onLabelFilterChange = viewModel::setLabelFilter,
-                    availableLabels = remember(uiState.persons) { uiState.persons.mapNotNull { it.label }.filter { it.isNotEmpty() }.distinct().sorted() }
+                    availableLabels = remember(uiState.persons) { 
+                        uiState.persons.mapNotNull { it.label }
+                            .flatMap { it.split(",") }
+                            .map { it.trim() }
+                            .filter { it.isNotEmpty() }
+                            .distinct()
+                            .sorted() 
+                    }
                 )
             }
             
@@ -582,7 +589,14 @@ fun PersonsScreen(
                 onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) },
                 labelFilter = uiState.labelFilter,
                 onLabelFilterChange = viewModel::setLabelFilter,
-                availableLabels = remember(uiState.persons) { uiState.persons.mapNotNull { it.label }.filter { it.isNotEmpty() }.distinct().sorted() }
+                availableLabels = remember(uiState.persons) { 
+                    uiState.persons.mapNotNull { it.label }
+                        .flatMap { it.split(",") }
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+                        .distinct()
+                        .sorted() 
+                }
             )
         }
         
@@ -1417,7 +1431,15 @@ fun ReportsScreen(
                 dateRange = uiState.dateRange,
                 onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) },
                 labelFilter = uiState.labelFilter,
-                onLabelFilterChange = viewModel::setLabelFilter
+                onLabelFilterChange = viewModel::setLabelFilter,
+                availableLabels = remember(uiState.persons) { 
+                    uiState.persons.mapNotNull { it.label }
+                        .flatMap { it.split(",") }
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+                        .distinct()
+                        .sorted() 
+                }
             )
         }
         

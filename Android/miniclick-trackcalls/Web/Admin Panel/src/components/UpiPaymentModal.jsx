@@ -181,29 +181,7 @@ export default function UpiPaymentModal({
                         )}
                     </div>
 
-                    {/* Plan Benefits Summary */}
-                    {orderDetails && (
-                        <div className="relative z-10 mt-4 pt-3 border-t border-white/20">
-                            <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-2">After Payment, You'll Get:</p>
-                            <div className="flex flex-wrap gap-2">
-                                {(orderDetails.add_users > 0 || orderDetails.user_count > 0) && (
-                                    <span className="px-2 py-1 bg-white/10 backdrop-blur-md rounded-lg border border-white/10 text-[10px] font-bold text-white">
-                                        {orderDetails.add_users > 0 ? `+${orderDetails.add_users} Employee Slots` : `${orderDetails.user_count} Employee Slots`}
-                                    </span>
-                                )}
-                                {(orderDetails.add_storage > 0 || orderDetails.storage_gb > 0) && (
-                                    <span className="px-2 py-1 bg-white/10 backdrop-blur-md rounded-lg border border-white/10 text-[10px] font-bold text-white">
-                                        {orderDetails.add_storage > 0 ? `+${orderDetails.add_storage} GB Storage` : `${orderDetails.storage_gb} GB Storage`}
-                                    </span>
-                                )}
-                                {orderDetails.duration_months > 0 && (
-                                    <span className="px-2 py-1 bg-white/10 backdrop-blur-md rounded-lg border border-white/10 text-[10px] font-bold text-white">
-                                        +{orderDetails.duration_months === 1 ? '30 Days' : `${orderDetails.duration_months * 30} Days`}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    )}
+
                 </div>
 
                 {/* 2. Main Action Area */}
@@ -304,39 +282,7 @@ export default function UpiPaymentModal({
                                         </p>
                                     </div>
 
-                                    {/* Limits Increase Info Banner */}
-                                    {orderDetails && (
-                                        <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-100 dark:border-blue-800">
-                                            <div className="flex items-start gap-3">
-                                                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
-                                                    <Zap size={16} className="text-white" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs font-black text-blue-700 dark:text-blue-400 mb-1">Your Plan Benefits (After Verification)</p>
-                                                    <p className="text-[11px] text-slate-600 dark:text-gray-300 font-medium leading-relaxed">
-                                                        Once your payment is verified, your limits will be increased as per your chosen plan:
-                                                    </p>
-                                                    <div className="flex flex-wrap gap-1.5 mt-2">
-                                                        {(orderDetails.add_users > 0 || orderDetails.user_count > 0) && (
-                                                            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-[10px] font-bold">
-                                                                {orderDetails.add_users > 0 ? `+${orderDetails.add_users} Employees` : `${orderDetails.user_count} Employees`}
-                                                            </span>
-                                                        )}
-                                                        {(orderDetails.add_storage > 0 || orderDetails.storage_gb > 0) && (
-                                                            <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-md text-[10px] font-bold">
-                                                                {orderDetails.add_storage > 0 ? `+${orderDetails.add_storage} GB Storage` : `${orderDetails.storage_gb} GB Storage`}
-                                                            </span>
-                                                        )}
-                                                        {orderDetails.duration_months > 0 && (
-                                                            <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-md text-[10px] font-bold">
-                                                                +{orderDetails.duration_months === 1 ? '30 Days' : `${orderDetails.duration_months * 30} Days`} Validity
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
+
 
                                     <div className="space-y-4">
                                         <div className="space-y-2">
