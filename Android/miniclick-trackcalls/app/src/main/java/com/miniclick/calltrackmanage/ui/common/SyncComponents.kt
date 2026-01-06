@@ -601,7 +601,8 @@ fun GlobalSyncStatusBar(
                     // Local processes (no network needed)
                     process != null -> {
                         val progressPct = if (process.isIndeterminate) "" else " ${(process.progress * 100).toInt()}%"
-                        "${process.title}$progressPct"
+                        val detailText = if (!process.details.isNullOrEmpty()) ": ${process.details}" else progressPct
+                        "${process.title}$detailText"
                     }
                     // Network issue (only matters if sync is setup)
                     !isNetworkAvailable && isSyncSetup -> {

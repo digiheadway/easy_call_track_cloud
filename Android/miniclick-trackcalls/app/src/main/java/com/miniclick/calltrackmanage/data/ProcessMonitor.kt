@@ -31,7 +31,11 @@ object ProcessMonitor {
                 if (details != null && details != current.details) {
                     android.util.Log.d("ProcessMonitor", "Updating process: ${current.title} -> $details")
                 }
-                current.copy(progress = progress, details = details ?: current.details)
+                current.copy(
+                    progress = progress, 
+                    details = details ?: current.details,
+                    isIndeterminate = false // Automatically switch to determinate if we have progress
+                )
             } else current
         }
     }

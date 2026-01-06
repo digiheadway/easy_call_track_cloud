@@ -615,11 +615,46 @@ fun SettingsScreen(
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-
-
-
             // ===============================================
+            // POST-CALL PROMPTS
+            // ===============================================
+            SettingsSection(title = "Post-Call Prompts") {
+                // 1. Google Dialer Recording Reminder (Only if recording is enabled AND it's a Google Dialer phone)
+                if (uiState.callRecordEnabled && uiState.isGoogleDialer) {
+                    ListItem(
+                        headlineContent = { Text("Recording Share Reminder") },
+                        supportingContent = { 
+                            Text("Reminder to share recording after calls") 
+                        },
+                        leadingContent = { 
+                            SettingsIcon(Icons.Default.NotificationsActive, MaterialTheme.colorScheme.primary) 
+                        },
+                        trailingContent = {
+                            Switch(
+                                checked = uiState.showRecordingReminder,
+                                onCheckedChange = { viewModel.updateShowRecordingReminder(it) }
+                            )
+                        }
+                    )
+                }
+
+                // 2. Note for Unknowns
+                ListItem(
+                    headlineContent = { Text("Note for Unknowns") },
+                    supportingContent = { 
+                        Text("Prompt for note/label after unknown calls") 
+                    },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.EditNote, MaterialTheme.colorScheme.secondary) 
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = uiState.showUnknownNoteReminder,
+                            onCheckedChange = { viewModel.updateShowUnknownNoteReminder(it) }
+                        )
+                    }
+                )
+            }
             // 3. FEATURES
             // ===============================================
             SettingsSection(title = "Features") {

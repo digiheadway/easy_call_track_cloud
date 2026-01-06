@@ -16,6 +16,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.miniclick.calltrackmanage.worker.CallSyncWorker
 import com.miniclick.calltrackmanage.worker.RecordingUploadWorker
+import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import android.net.Uri
 import java.io.OutputStreamWriter
@@ -41,7 +42,7 @@ data class AppInfo(
 )
 
 data class SettingsUiState(
-    val simSelection: String = "Both", // "Both", "Sim1", "Sim2"
+    val simSelection: String = "Off", // "Both", "Sim1", "Sim2", "Off"
     val trackStartDate: Long = 0L,
     val isSyncing: Boolean = false,
     val recordingPath: String = "",
@@ -96,7 +97,10 @@ data class SettingsUiState(
     val isNetworkAvailable: Boolean = true,
     val isSyncSetup: Boolean = false,
     val showSyncQueue: Boolean = false,
-    val showRecordingQueue: Boolean = false
+    val showRecordingQueue: Boolean = false,
+    val showRecordingReminder: Boolean = true,
+    val showUnknownNoteReminder: Boolean = true,
+    val isGoogleDialer: Boolean = false
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -199,6 +203,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val userId = settingsRepository.getUserId()
         val pairingCode = if (orgId.isNotEmpty() && userId.isNotEmpty()) "$orgId-$userId" else ""
         
+        if (!settingsRepository.isTrackStartDateSet()) {
+            val cal = java.util.Calendar.getInstance()
+            cal.add(java.util.Calendar.DAY_OF_YEAR, -1)
+            cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
+            cal.set(java.util.Calendar.MINUTE, 0)
+            cal.set(java.util.Calendar.SECOND, 0)
+            cal.set(java.util.Calendar.MILLISECOND, 0)
+            settingsRepository.setTrackStartDate(cal.timeInMillis)
+        }
+        
         _uiState.update {
             it.copy(
                 simSelection = settingsRepository.getSimSelection(),
@@ -229,10 +243,18 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 storageUsedBytes = settingsRepository.getStorageUsedBytes(),
                 userDeclinedRecording = settingsRepository.isUserDeclinedRecording(),
                 isDialerEnabled = settingsRepository.isDialerEnabled(),
+                showRecordingReminder = settingsRepository.isShowRecordingReminder(),
+                showUnknownNoteReminder = settingsRepository.isShowUnknownNoteReminder(),
+                isGoogleDialer = isGoogleDialer(),
                 isSyncSetup = orgId.isNotEmpty()
             )
         }
         refreshRecordingPathInfo()
+    }
+
+    private fun isGoogleDialer(): Boolean {
+        val telecomManager = getApplication<Application>().getSystemService(Context.TELECOM_SERVICE) as? android.telecom.TelecomManager
+        return telecomManager?.defaultDialerPackage == "com.google.android.dialer"
     }
     
     fun updateThemeMode(mode: String) {
@@ -602,6 +624,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             settingsRepository.setCallRecordEnabled(enabled)
             if (enabled) {
+                // Only automatically enable recording reminder on Google Dialer
+                if (isGoogleDialer()) {
+                    settingsRepository.setShowRecordingReminder(true)
+                }
+                
                 if (scanOld) {
                     // Start from beginning/track start date
                     settingsRepository.setRecordingLastEnabledTimestamp(0L)
@@ -620,6 +647,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
             _uiState.update { it.copy(
                 callRecordEnabled = enabled,
+                showRecordingReminder = if (enabled) true else it.showRecordingReminder,
                 showRecordingEnablementDialog = false,
                 showRecordingDisablementDialog = false
             ) }
@@ -696,6 +724,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         // These are independent of the Join Org verification flow
         settingsRepository.setCallerPhoneSim2(phone)
         _uiState.update { it.copy(callerPhoneSim2 = phone) }
+    }
+
+    fun updateShowRecordingReminder(show: Boolean) {
+        settingsRepository.setShowRecordingReminder(show)
+        _uiState.update { it.copy(showRecordingReminder = show) }
+    }
+
+    fun updateShowUnknownNoteReminder(show: Boolean) {
+        settingsRepository.setShowUnknownNoteReminder(show)
+        _uiState.update { it.copy(showUnknownNoteReminder = show) }
     }
 
     fun resetVerificationState() {
@@ -835,13 +873,23 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     
                     Log.d("SettingsViewModel", "Verification successful: $employeeName from $orgId")
                 } else {
-                    val error = response.body()?.get("error")?.toString() 
+                    // Comprehensive error message extraction
+                    val errorBody = response.errorBody()?.string()
+                    val errorMsg = try {
+                        if (errorBody != null) {
+                            val map = com.google.gson.Gson().fromJson(errorBody, Map::class.java)
+                            map["error"]?.toString() ?: map["message"]?.toString()
+                        } else null
+                    } catch (e: Exception) { null }
+
+                    val error = errorMsg 
+                        ?: response.body()?.get("error")?.toString() 
                         ?: response.body()?.get("message")?.toString()
-                        ?: "Invalid pairing code"
+                        ?: "Invalid pairing code (Status: ${response.code()})"
                     
                     _uiState.update { it.copy(verificationStatus = "failed") }
                     Toast.makeText(ctx, error, Toast.LENGTH_LONG).show()
-                    Log.e("SettingsViewModel", "Verification failed: $error")
+                    Log.e("SettingsViewModel", "Verification failed: $error (Code: ${response.code()})")
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(verificationStatus = "failed") }
@@ -1122,12 +1170,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     onSuccess()
                 } else {
                     // FAILED - Don't save anything
-                    val error = response.body()?.get("error")?.toString() 
+                    val errorBody = response.errorBody()?.string()
+                    val errorMsg = try {
+                        if (errorBody != null) {
+                            val map = com.google.gson.Gson().fromJson(errorBody, Map::class.java)
+                            map["error"]?.toString() ?: map["message"]?.toString()
+                        } else null
+                    } catch (e: Exception) { null }
+
+                    val error = errorMsg 
+                        ?: response.body()?.get("error")?.toString() 
                         ?: response.body()?.get("message")?.toString()
-                        ?: response.errorBody()?.string()
-                        ?: "Verification failed. Please check your pairing code."
+                        ?: "Verification failed. (Status: ${response.code()})"
                     
-                    Log.e("SettingsViewModel", "Verification failed: $error")
+                    Log.e("SettingsViewModel", "Verification failed: $error (Code: ${response.code()})")
                     Toast.makeText(ctx, "✗ $error", Toast.LENGTH_LONG).show()
                 }
             } catch (e: Exception) {

@@ -244,13 +244,16 @@ fun OnboardingGuide(
             // JOIN_ORG step removed to be shown as instant modal instead
         }
     }
-    // --- UI Render ---
-    val shouldShowOnboarding = steps.isNotEmpty() && !isDismissed
+    val hasCorePermissionSteps = steps.any { it.type in listOf("CALL_LOG", "CONTACTS", "PHONE_STATE") }
+    val shouldShowOnboarding = steps.isNotEmpty() && (!isDismissed || hasCorePermissionSteps)
     
     Box(modifier = modifier) {
         if (shouldShowOnboarding) {
+            val currentStep = steps.firstOrNull()
+            val isCorePermission = currentStep?.type in listOf("CALL_LOG", "CONTACTS", "PHONE_STATE")
+            
             AnimatedContent(
-                targetState = steps.firstOrNull(),
+                targetState = currentStep,
                 transitionSpec = {
                     (fadeIn(animationSpec = tween(500, delayMillis = 90)) + 
                      scaleIn(initialScale = 0.92f, animationSpec = tween(500, delayMillis = 90)))
@@ -269,7 +272,8 @@ fun OnboardingGuide(
                         onDismiss = { mainViewModel.dismissOnboardingSession() },
                         asEmptyState = asEmptyState,
                         secondaryActionLabel = step.secondaryActionLabel,
-                        onSecondaryAction = step.onSecondaryAction
+                        onSecondaryAction = step.onSecondaryAction,
+                        canDismiss = !isCorePermission
                     )
                 }
             }
@@ -378,7 +382,8 @@ private fun OnboardingPromo(
     modifier: Modifier = Modifier,
     asEmptyState: Boolean = false,
     secondaryActionLabel: String? = null,
-    onSecondaryAction: (() -> Unit)? = null
+    onSecondaryAction: (() -> Unit)? = null,
+    canDismiss: Boolean = true
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "icon_pulse")
     val iconScale by infiniteTransition.animateFloat(
@@ -473,17 +478,19 @@ private fun OnboardingPromo(
             shape = RoundedCornerShape(24.dp)
         ) {
             Box {
-                IconButton(
-                    onClick = onDismiss,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = "Dismiss",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                if (canDismiss) {
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Dismiss",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
                 Column(

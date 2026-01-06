@@ -134,6 +134,11 @@ class MainActivity : ComponentActivity() {
             viewModel.setLookupPhoneNumber(phoneNumber)
         }
 
+        // Handle person details from notifications
+        intent.getStringExtra("OPEN_PERSON_DETAILS")?.let { phoneNumber ->
+            viewModel.setPersonDetailsPhone(phoneNumber)
+        }
+
         // Handle shared recording files (Google Dialer support)
         if (intent.action == Intent.ACTION_SEND && intent.type?.startsWith("audio/") == true) {
             (intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))?.let { uri ->
@@ -245,6 +250,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel()) {
     val lookupPhoneNumber by viewModel.lookupPhoneNumber.collectAsState()
+    val personDetailsPhone by viewModel.personDetailsPhone.collectAsState()
     val settingsViewModel: SettingsViewModel = viewModel()
     val settingsState by settingsViewModel.uiState.collectAsState()
     
@@ -327,7 +333,9 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                     AppTab.CALLS -> CallsScreen(
                         audioPlayer = audioPlayer, 
                         onOpenDialer = { showDialerSheet = true },
-                        syncStatusBar = syncStatusBar
+                        syncStatusBar = syncStatusBar,
+                        personDetailsPhone = personDetailsPhone,
+                        onClearPersonDetails = { viewModel.setPersonDetailsPhone(null) }
                     )
                     AppTab.PERSONS -> PersonsScreen(
                         audioPlayer = audioPlayer,

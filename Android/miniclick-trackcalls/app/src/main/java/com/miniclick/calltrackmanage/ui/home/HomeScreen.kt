@@ -78,7 +78,9 @@ fun CallsScreen(
     viewModel: HomeViewModel = viewModel(),
     settingsViewModel: SettingsViewModel = viewModel(),
     onOpenDialer: () -> Unit = {},
-    syncStatusBar: @Composable () -> Unit = {}
+    syncStatusBar: @Composable () -> Unit = {},
+    personDetailsPhone: String? = null,
+    onClearPersonDetails: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val settingsState by settingsViewModel.uiState.collectAsState()
@@ -182,6 +184,17 @@ fun CallsScreen(
     }
 
     var selectedPersonForDetails by remember { mutableStateOf<PersonGroup?>(null) }
+    
+    // Handle opening person details from external triggers (e.g. notifications)
+    LaunchedEffect(personDetailsPhone, allPersonGroupsMap) {
+        if (personDetailsPhone != null && allPersonGroupsMap.isNotEmpty()) {
+            val group = allPersonGroupsMap[personDetailsPhone] ?: allPersonGroupsMap[viewModel.normalizePhoneNumber(personDetailsPhone)]
+            if (group != null) {
+                selectedPersonForDetails = group
+                onClearPersonDetails()
+            }
+        }
+    }
     
     selectedPersonForDetails?.let { person ->
         // Use the latest data from the map if it changed (reactive updates)
@@ -322,15 +335,15 @@ fun CallsScreen(
                             EmptyState(
                                 icon = Icons.Default.History,
                                 title = "No calls yet",
-                                description = "Your call history will appear here once tracking starts.",
+                                description = "Your call history will appear here once you fetch them or tracking starts.",
                                 action = {
                                     Button(
                                         onClick = { viewModel.syncFromSystem() },
                                         shape = RoundedCornerShape(12.dp)
                                     ) {
-                                        Icon(Icons.Default.Refresh, null)
+                                        Icon(Icons.Default.CloudDownload, null)
                                         Spacer(Modifier.width(8.dp))
-                                        Text("Sync Now")
+                                        Text("Fetch Call Logs")
                                     }
                                 }
                             )
@@ -657,9 +670,9 @@ fun PersonsScreen(
                                     onClick = { viewModel.syncFromSystem() },
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Icon(Icons.Default.Refresh, null)
+                                    Icon(Icons.Default.CloudDownload, null)
                                     Spacer(Modifier.width(8.dp))
-                                    Text("Refresh List")
+                                    Text("Fetch Contacts")
                                 }
                             }
                         )

@@ -19,6 +19,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _lookupPhoneNumber = MutableStateFlow<String?>(null)
     val lookupPhoneNumber: StateFlow<String?> = _lookupPhoneNumber.asStateFlow()
 
+    private val _personDetailsPhone = MutableStateFlow<String?>(null)
+    val personDetailsPhone: StateFlow<String?> = _personDetailsPhone.asStateFlow()
+
     private val _isSessionOnboardingDismissed = MutableStateFlow(false)
     val isSessionOnboardingDismissed: StateFlow<Boolean> = _isSessionOnboardingDismissed.asStateFlow()
 
@@ -52,6 +55,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearLookupPhoneNumber() {
         _lookupPhoneNumber.value = null
+    }
+
+    fun setPersonDetailsPhone(phone: String?) {
+        _personDetailsPhone.value = phone
     }
 
     fun dismissOnboardingSession() {

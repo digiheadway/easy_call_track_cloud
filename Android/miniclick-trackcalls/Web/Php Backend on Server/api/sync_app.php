@@ -133,16 +133,10 @@ if ($action === "verify_pairing_code") {
     // Enforce one employee per device rule
     if ($employee['device_id'] === null || $employee['device_id'] === '') {
         // Device not yet linked to this employee.
-        // Check if THIS device is already linked to ANOTHER employee in the same ORG
-        $stmt2 = $conn->prepare("SELECT id, name FROM employees WHERE org_id = ? AND device_id = ? AND id != ?");
-        $stmt2->bind_param("ssi", $org_id, $device_id, $employee_id);
-        $stmt2->execute();
-        $res2 = $stmt2->get_result();
-
-        if ($res2->num_rows > 0) {
-            $otherEmployee = $res2->fetch_assoc();
-            errorOut("This device is already registered to " . $otherEmployee['name'] . " (ID: " . $otherEmployee['id'] . "). Please contact admin.");
-        }
+        // If this device is already linked to ANOTHER employee, unlink them first (Takeover)
+        $unlink = $conn->prepare("UPDATE employees SET device_id = NULL WHERE org_id = ? AND device_id = ? AND id != ?");
+        $unlink->bind_param("ssi", $org_id, $device_id, $employee_id);
+        $unlink->execute();
 
         // Link the device to this employee
         $upd = $conn->prepare("UPDATE employees SET device_id = ?, device_model = ?, os_version = ?, battery_level = ?, updated_at = NOW() WHERE id = ?");
@@ -201,18 +195,11 @@ if ($action === "verify_pairing_code") {
             // Different device - FORCE LOGOUT from old device by switching to new device
             // This effectively logs out the old device
             
-            // Check if the NEW device is already linked to another employee
-            $stmt3 = $conn->prepare("SELECT id, name FROM employees WHERE org_id = ? AND device_id = ? AND id != ?");
-            $stmt3->bind_param("ssi", $org_id, $device_id, $employee_id);
-            $stmt3->execute();
-            $res3 = $stmt3->get_result();
+            // If the NEW device is already linked to another employee, unlink them first (Takeover)
+            $unlink = $conn->prepare("UPDATE employees SET device_id = NULL WHERE org_id = ? AND device_id = ? AND id != ?");
+            $unlink->bind_param("ssi", $org_id, $device_id, $employee_id);
+            $unlink->execute();
 
-            if ($res3->num_rows > 0) {
-                $otherEmployee = $res3->fetch_assoc();
-                errorOut("This new device is already registered to " . $otherEmployee['name'] . " (ID: " . $otherEmployee['id'] . "). Please use a different device.");
-            }
-
-            // Switch device - unlink old, link new
             // Switch device - unlink old, link new
             $upd = $conn->prepare("UPDATE employees SET device_id = ?, device_model = ?, os_version = ?, battery_level = ?, updated_at = NOW() WHERE id = ?");
             if (!$upd) errorOut("DB Error (Switch Device): " . $conn->error, 500);

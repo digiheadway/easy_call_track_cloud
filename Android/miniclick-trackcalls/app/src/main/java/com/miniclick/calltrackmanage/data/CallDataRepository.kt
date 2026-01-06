@@ -688,9 +688,10 @@ class CallDataRepository private constructor(private val context: Context) {
                 val updates = mutableMapOf<String, String>()
                 
                 unsyncedWithNoPath.forEachIndexed { index, call ->
-                    // Update progress every 10 items to reduce overhead
-                    if (index % 10 == 0) {
-                        val progress = index.toFloat() / total
+                    // Update progress frequently for small lists, or every 10 for large ones
+                    val updateFrequency = if (total < 20) 1 else 10
+                    if (index % updateFrequency == 0 || index == total - 1) {
+                        val progress = (index + 1).toFloat() / total
                         ProcessMonitor.updateProgress(progress, "${(progress * 100).toInt()}% Done")
                     }
 

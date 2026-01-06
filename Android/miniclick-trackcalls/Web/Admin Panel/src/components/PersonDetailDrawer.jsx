@@ -7,7 +7,7 @@ import {
     X, Phone, Clock, Smartphone,
     PhoneIncoming, PhoneOutgoing, PhoneMissed, User,
     MessageSquare, Edit3, FileText, CheckCircle2, Circle, Tag, UserX, Plus,
-    Archive, Trash2, ShieldAlert, MoreVertical
+    Archive, Trash2, ShieldAlert, MoreVertical, EyeOff, CloudOff, Database
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAudioPlayer } from '../context/AudioPlayerContext';
@@ -262,22 +262,36 @@ export default function PersonDetailDrawer() {
         }
     };
 
-    const handleToggleExclude = async () => {
+    const handleUpdateExclusion = async (type) => {
         if (!personData?.phone_number) return;
         setExcludeLoading(true);
-        const newState = !isExcluded;
 
         try {
-            // Call API to add/remove from exclude list
-            await api.post('/contacts.php?action=exclude', {
-                phone_number: personData.phone_number,
-                excluded: newState
-            });
-            setIsExcluded(newState);
-            toast.success(newState ? 'Added to exclude list' : 'Removed from exclude list');
+            if (type === 'none') {
+                // Remove from exclude list using excluded_contacts.php API
+                // We first need the ID or we can use phone-based deletion if supported
+                // The contacts.php?action=exclude still works for removal:
+                await api.post('/contacts.php?action=exclude', {
+                    phone_number: personData.phone_number,
+                    excluded: false
+                });
+                setIsExcluded(false);
+                toast.success('Restored to lists');
+            } else {
+                // Add/Update using excluded_contacts.php or generic exclude action
+                // Let's use excluded_contacts.php directly for granular control
+                await api.post('/excluded_contacts.php', {
+                    phone: personData.phone_number,
+                    name: contactName,
+                    exclude_from_sync: type === 'full' ? 1 : 0,
+                    exclude_from_list: 1
+                });
+                setIsExcluded(true);
+                toast.success(type === 'full' ? 'Added to Exclusions' : 'Removed from lists');
+            }
         } catch (err) {
-            console.error('Failed to update exclude status', err);
-            toast.error('Failed to update exclude status');
+            console.error('Failed to update exclusion', err);
+            toast.error(err.response?.data?.message || 'Failed to update exclusion');
         } finally {
             setExcludeLoading(false);
         }
@@ -418,14 +432,35 @@ export default function PersonDetailDrawer() {
                                     <>
                                         <div className="fixed inset-0 z-10" onClick={() => setShowManagement(false)} />
                                         <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-20 animate-in fade-in slide-in-from-top-2 duration-150">
-                                            <button
-                                                onClick={() => { handleToggleExclude(); setShowManagement(false); }}
-                                                disabled={excludeLoading}
-                                                className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
-                                            >
-                                                <UserX size={16} className={isExcluded ? 'text-green-500' : 'text-gray-400'} />
-                                                {excludeLoading ? 'Updating...' : isExcluded ? 'Remove from Exclude List' : 'Add to Exclude List'}
-                                            </button>
+                                            {isExcluded ? (
+                                                <button
+                                                    onClick={() => { handleUpdateExclusion('none'); setShowManagement(false); }}
+                                                    disabled={excludeLoading}
+                                                    className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors font-medium text-emerald-600"
+                                                >
+                                                    <CheckCircle2 size={16} className="text-emerald-500" />
+                                                    {excludeLoading ? 'Updating...' : 'Restore to List'}
+                                                </button>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        onClick={() => { handleUpdateExclusion('full'); setShowManagement(false); }}
+                                                        disabled={excludeLoading}
+                                                        className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                                                    >
+                                                        <CloudOff size={16} className="text-gray-400" />
+                                                        {excludeLoading ? 'Updating...' : 'Add to Exclusions'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => { handleUpdateExclusion('privacy'); setShowManagement(false); }}
+                                                        disabled={excludeLoading}
+                                                        className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                                                    >
+                                                        <EyeOff size={16} className="text-gray-400" />
+                                                        {excludeLoading ? 'Updating...' : 'Remove from List'}
+                                                    </button>
+                                                </>
+                                            )}
                                             <div className="border-t border-gray-100 my-1" />
                                             <button
                                                 onClick={() => { handleArchiveData(); setShowManagement(false); }}

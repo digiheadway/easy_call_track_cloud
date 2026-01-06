@@ -34,8 +34,8 @@ class CallReceiver : BroadcastReceiver() {
                 }
                 TelephonyManager.EXTRA_STATE_OFFHOOK -> {
                     // Call answered or outgoing call started
-                    // Keep overlay visible during call if it was showing
                     Log.d(TAG, "Call in progress (OFFHOOK state)")
+                    wasOffHook = true
                 }
                 TelephonyManager.EXTRA_STATE_IDLE -> {
                     Log.d(TAG, "Call ended (IDLE state). Triggering immediate sync.")
@@ -49,11 +49,89 @@ class CallReceiver : BroadcastReceiver() {
                     // Also trigger recording upload check
                     RecordingUploadWorker.runNow(context)
 
-                    // Show guidance for Google Dialer users
-                    showGuidanceNotification(context)
+                    // Show guidance only if the call was actually answered/made
+                    if (wasOffHook) {
+                        val settings = SettingsRepository.getInstance(context)
+                        val telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as? android.telecom.TelecomManager
+                        val defaultDialer = telecomManager?.defaultDialerPackage
+                        
+                        // 1. Google Dialer Recording Reminder
+                        if (settings.isShowRecordingReminder() && defaultDialer == "com.google.android.dialer") {
+                            showGuidanceNotification(context)
+                        }
+
+                        // 2. Unknown Number Note Prompt
+                        if (settings.isShowUnknownNoteReminder() && !phoneNumber.isNullOrBlank()) {
+                            checkAndShowNotePrompt(context, phoneNumber)
+                        }
+                    }
+                    
+                    // Reset for next call
+                    wasOffHook = false
                 }
             }
         }
+    }
+
+    private fun checkAndShowNotePrompt(context: Context, phoneNumber: String) {
+        // Query system contacts to see if this is an unknown number
+        val contactName = fetchContactName(context, phoneNumber)
+        if (contactName == null) {
+            // Unknown number! Show prompt to add note
+            showNotePromptNotification(context, phoneNumber)
+        }
+    }
+
+    private fun fetchContactName(context: Context, phoneNumber: String): String? {
+        val uri = android.net.Uri.withAppendedPath(
+            android.provider.ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+            android.net.Uri.encode(phoneNumber)
+        )
+        val projection = arrayOf(android.provider.ContactsContract.PhoneLookup.DISPLAY_NAME)
+        
+        return try {
+            context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    cursor.getString(0)
+                } else null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun showNotePromptNotification(context: Context, phoneNumber: String) {
+        val channelId = "call_note_prompt_channel"
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Add Call Note",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("OPEN_PERSON_DETAILS", phoneNumber)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, 3002, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val notification = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.mipmap.ic_launcher_round)
+            .setContentTitle("Unknown Number: $phoneNumber")
+            .setContentText("Tap to add a note or label for this person.")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+
+        notificationManager.notify(3002, notification)
     }
 
     private fun showGuidanceNotification(context: Context) {
@@ -80,12 +158,13 @@ class CallReceiver : BroadcastReceiver() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
+        val body = "If you recorded this call, share it to \"${context.getString(R.string.public_app_name)}\" to sync it."
+
         val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.mipmap.ic_launcher_round)
-            .setContentTitle("Call Finished")
-            .setContentText("Recorded using Google Dialer? Share it to Sync.")
-            .setStyle(NotificationCompat.BigTextStyle()
-                .bigText("If you recorded this call using the Google Phone app, remember to Share the recording to \"${context.getString(R.string.public_app_name)}\" to sync it to the dashboard."))
+            .setContentTitle("Recorded with Google Dialer?")
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
@@ -96,5 +175,6 @@ class CallReceiver : BroadcastReceiver() {
 
     companion object {
         private const val TAG = "CallReceiver"
+        private var wasOffHook = false
     }
 }

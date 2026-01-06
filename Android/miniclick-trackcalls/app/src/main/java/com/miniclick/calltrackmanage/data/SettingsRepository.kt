@@ -42,6 +42,8 @@ class SettingsRepository private constructor(private val context: Context) {
     private val KEY_USER_DECLINED_RECORDING = "user_declined_recording"
     private val KEY_RECORDING_LAST_ENABLED_TIMESTAMP = "recording_last_enabled_timestamp"
     private val KEY_DIALER_ENABLED = "dialer_enabled"
+    private val KEY_SHOW_RECORDING_REMINDER = "show_recording_reminder"
+    private val KEY_SHOW_UNKNOWN_NOTE_REMINDER = "show_unknown_note_reminder"
 
     // Persistence for Home Screen State
     private val KEY_SEARCH_VISIBLE = "search_visible"
@@ -100,9 +102,9 @@ class SettingsRepository private constructor(private val context: Context) {
     }
 
     // Sim Selection: "Both", "Sim1", "Sim2", "Off"
-    // Default is "Both" so app works out-of-box without calibration
+    // Default is "Off" so user must explicitly enable and configure SIMs
     fun getSimSelection(): String {
-        return prefs.getString(KEY_SIM_SELECTION, "Both") ?: "Both"
+        return prefs.getString(KEY_SIM_SELECTION, "Off") ?: "Off"
     }
 
     fun setSimSelection(selection: String) {
@@ -112,7 +114,17 @@ class SettingsRepository private constructor(private val context: Context) {
     // Track Start Date
     // Default is Yesterday (Today - 1)
     fun getTrackStartDate(): Long {
-        return prefs.getLong(KEY_TRACK_START_DATE, 0L)
+        val date = prefs.getLong(KEY_TRACK_START_DATE, 0L)
+        if (date != 0L) return date
+        
+        // Default to yesterday at start of day
+        val cal = Calendar.getInstance()
+        cal.add(Calendar.DAY_OF_YEAR, -1)
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        return cal.timeInMillis
     }
 
     fun getTrackStartDateFlow(): Flow<Long> = callbackFlow {
@@ -296,6 +308,12 @@ class SettingsRepository private constructor(private val context: Context) {
 
     fun isDialerEnabled(): Boolean = prefs.getBoolean(KEY_DIALER_ENABLED, true)
     fun setDialerEnabled(enabled: Boolean) = prefs.edit().putBoolean(KEY_DIALER_ENABLED, enabled).apply()
+
+    fun isShowRecordingReminder(): Boolean = prefs.getBoolean(KEY_SHOW_RECORDING_REMINDER, true)
+    fun setShowRecordingReminder(show: Boolean) = prefs.edit().putBoolean(KEY_SHOW_RECORDING_REMINDER, show).apply()
+
+    fun isShowUnknownNoteReminder(): Boolean = prefs.getBoolean(KEY_SHOW_UNKNOWN_NOTE_REMINDER, true)
+    fun setShowUnknownNoteReminder(show: Boolean) = prefs.edit().putBoolean(KEY_SHOW_UNKNOWN_NOTE_REMINDER, show).apply()
 
     // Home Screen State Persistence
     fun isSearchVisible(): Boolean = prefs.getBoolean(KEY_SEARCH_VISIBLE, false)
