@@ -229,8 +229,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                         isLoading = false
                     )
                 }
-                applyFilters()
-                applyPersonFilters()
+                triggerFilter()
             } catch (e: Exception) {
                 e.printStackTrace()
                 _uiState.update { it.copy(isLoading = false) }
@@ -319,7 +318,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             connectedFilter = connFilter,
             notesFilter = nFilter,
             contactsFilter = cFilter,
-            attendedFilter = aFilter
+            attendedFilter = aFilter,
+            dateRange = try { DateRange.valueOf(settingsRepository.getDateRangeFilter()) } catch(e: Exception) { DateRange.ALL },
+            customStartDate = settingsRepository.getCustomStartDate().let { if (it == 0L) null else it },
+            customEndDate = settingsRepository.getCustomEndDate().let { if (it == 0L) null else it }
         ) }
         triggerFilter()
     }
@@ -393,6 +395,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setDateRange(range: DateRange, start: Long? = null, end: Long? = null) {
         _uiState.update { it.copy(dateRange = range, customStartDate = start, customEndDate = end) }
+        settingsRepository.setDateRangeFilter(range.name)
+        settingsRepository.setCustomStartDate(start ?: 0L)
+        settingsRepository.setCustomEndDate(end ?: 0L)
         triggerFilter()
     }
 
@@ -573,42 +578,42 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun saveCallNote(compositeId: String, note: String) {
         viewModelScope.launch {
             callDataRepository.updateCallNote(compositeId, note.ifEmpty { null })
-            syncNow()
+            quickSync()  // Use quick sync - no need to import system calls for note edit
         }
     }
 
     fun savePersonNote(phoneNumber: String, note: String) {
         viewModelScope.launch {
             callDataRepository.updatePersonNote(phoneNumber, note.ifEmpty { null })
-            syncNow()
+            quickSync()
         }
     }
     
     fun savePersonLabel(phoneNumber: String, label: String) {
         viewModelScope.launch {
             callDataRepository.updatePersonLabel(phoneNumber, label.ifEmpty { null })
-            syncNow()
+            quickSync()
         }
     }
 
     fun savePersonName(phoneNumber: String, name: String) {
         viewModelScope.launch {
             callDataRepository.updatePersonName(phoneNumber, name.ifEmpty { null })
-            syncNow()
+            quickSync()
         }
     }
     
     fun updateReviewed(compositeId: String, reviewed: Boolean) {
         viewModelScope.launch {
             callDataRepository.updateReviewed(compositeId, reviewed)
-            syncNow()
+            quickSync()
         }
     }
 
     fun markAllCallsReviewed(phoneNumber: String) {
         viewModelScope.launch {
             callDataRepository.markAllCallsReviewed(phoneNumber)
-            syncNow()
+            quickSync()
         }
     }
 
@@ -625,13 +630,28 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun updateRecordingPathForLog(compositeId: String, path: String?) {
         viewModelScope.launch {
             callDataRepository.updateRecordingPath(compositeId, path)
-            syncNow()
+            quickSync()  // Use quick sync - recording path update doesn't need system import
         }
     }
 
+    /**
+     * Full sync - imports from system call log + pushes pending changes
+     * Use for: pull-to-refresh, after call ends, app start
+     */
     fun syncNow() {
         val application = getApplication<android.app.Application>()
         com.miniclick.calltrackmanage.worker.CallSyncWorker.runNow(application)
+        com.miniclick.calltrackmanage.worker.RecordingUploadWorker.runNow(application)
+    }
+
+    /**
+     * Quick sync - only pushes pending metadata changes, skips system import
+     * Use for: note edit, label change, reviewed status update
+     * Avoids showing "Importing Data" / "Finding Recordings" in status bar
+     */
+    fun quickSync() {
+        val application = getApplication<android.app.Application>()
+        com.miniclick.calltrackmanage.worker.CallSyncWorker.runQuickSync(application)
         com.miniclick.calltrackmanage.worker.RecordingUploadWorker.runNow(application)
     }
 

@@ -53,6 +53,9 @@ class SettingsRepository private constructor(private val context: Context) {
     private val KEY_FILTER_CONTACTS = "filter_contacts"
     private val KEY_FILTER_ATTENDED = "filter_attended"
     private val KEY_FILTER_LABEL = "filter_label"
+    private val KEY_FILTER_DATE_RANGE = "filter_date_range"
+    private val KEY_CUSTOM_START_DATE = "filter_custom_start_date"
+    private val KEY_CUSTOM_END_DATE = "filter_custom_end_date"
 
     private val prefs by lazy {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -321,4 +324,13 @@ class SettingsRepository private constructor(private val context: Context) {
 
     fun getLabelFilter(): String = prefs.getString(KEY_FILTER_LABEL, "") ?: ""
     fun setLabelFilter(label: String) = prefs.edit().putString(KEY_FILTER_LABEL, label).apply()
+
+    fun getDateRangeFilter(): String = prefs.getString(KEY_FILTER_DATE_RANGE, "ALL") ?: "ALL"
+    fun setDateRangeFilter(filter: String) = prefs.edit().putString(KEY_FILTER_DATE_RANGE, filter).apply()
+
+    fun getCustomStartDate(): Long = prefs.getLong(KEY_CUSTOM_START_DATE, 0L)
+    fun setCustomStartDate(date: Long) = prefs.edit().putLong(KEY_CUSTOM_START_DATE, date).apply()
+
+    fun getCustomEndDate(): Long = prefs.getLong(KEY_CUSTOM_END_DATE, 0L)
+    fun setCustomEndDate(date: Long) = prefs.edit().putLong(KEY_CUSTOM_END_DATE, date).apply()
 }

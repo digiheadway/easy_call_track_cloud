@@ -771,11 +771,12 @@ fun PersonsList(
     }
 
     if (labelTarget != null) {
-        NoteDialog(
-            title = "Person Label",
-            initialNote = labelTarget?.label ?: "",
-            label = "Label (e.g., VIP, Lead, Spam)",
-            buttonText = "Save Label",
+        val labelsFromPersons = remember(persons) { 
+            persons.mapNotNull { it.label }.filter { it.isNotEmpty() }.distinct().sorted() 
+        }
+        LabelPickerDialog(
+            currentLabel = labelTarget?.label,
+            availableLabels = labelsFromPersons,
             onDismiss = { labelTarget = null },
             onSave = { label ->
                 labelTarget?.let { viewModel.savePersonLabel(it.number, label) }
@@ -1937,7 +1938,7 @@ data class FilterOption(
     val onClick: () -> Unit
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun PersonInteractionBottomSheet(
     person: PersonGroup,
@@ -1951,9 +1952,13 @@ fun PersonInteractionBottomSheet(
     val uiState by viewModel.uiState.collectAsState()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     
-    // Note Dialog State
+    // Note Dialog States
     var callNoteTarget by remember { mutableStateOf<CallDataEntity?>(null) }
+    var showNameDialog by remember { mutableStateOf(false) }
+    var showLabelDialog by remember { mutableStateOf(false) }
+    var showPersonNoteDialog by remember { mutableStateOf(false) }
     
+    // Dialogs
     if (callNoteTarget != null) {
         NoteDialog(
             title = "Call Note",
@@ -1962,8 +1967,48 @@ fun PersonInteractionBottomSheet(
             buttonText = "Save Call Note",
             onDismiss = { callNoteTarget = null },
             onSave = { note -> 
-                callNoteTarget?.let { viewModel.saveCallNote(it.compositeId, note) }
+                viewModel.saveCallNote(callNoteTarget!!.compositeId, note)
                 callNoteTarget = null 
+            }
+        )
+    }
+
+    if (showNameDialog) {
+        NoteDialog(
+            title = "Set Name",
+            initialNote = person.name ?: "",
+            label = "Name for this contact",
+            buttonText = "Save Name",
+            onDismiss = { showNameDialog = false },
+            onSave = { name ->
+                viewModel.savePersonName(person.number, name)
+                showNameDialog = false
+            }
+        )
+    }
+
+    if (showLabelDialog) {
+        LabelPickerDialog(
+            currentLabel = person.label,
+            availableLabels = uiState.persons.mapNotNull { it.label }.filter { it.isNotEmpty() }.distinct().sorted(),
+            onDismiss = { showLabelDialog = false },
+            onSave = { label ->
+                viewModel.savePersonLabel(person.number, label)
+                showLabelDialog = false
+            }
+        )
+    }
+
+    if (showPersonNoteDialog) {
+        NoteDialog(
+            title = "Person Note",
+            initialNote = person.personNote ?: "",
+            label = "Note (linked to phone number)",
+            buttonText = "Save Person Note",
+            onDismiss = { showPersonNoteDialog = false },
+            onSave = { note ->
+                viewModel.savePersonNote(person.number, note)
+                showPersonNoteDialog = false
             }
         )
     }
@@ -1982,7 +2027,7 @@ fun PersonInteractionBottomSheet(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp),
+                    .padding(bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
@@ -2005,12 +2050,25 @@ fun PersonInteractionBottomSheet(
                 Spacer(modifier = Modifier.width(16.dp))
                 
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = person.name ?: cleanNumber(person.number),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    // No separate number display if name exists as per request
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = person.name ?: cleanNumber(person.number),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable { showNameDialog = true }
+                        )
+                        IconButton(onClick = { showNameDialog = true }, modifier = Modifier.size(24.dp).padding(start = 4.dp)) {
+                            Icon(Icons.Default.Edit, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+
+                    if (person.name != null) {
+                        Text(
+                            text = cleanNumber(person.number),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
                 IconButton(onClick = { onCustomLookup(person.number) }) {
@@ -2018,6 +2076,59 @@ fun PersonInteractionBottomSheet(
                         imageVector = Icons.Default.ManageSearch,
                         contentDescription = "Custom Lookup",
                         tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            // Sub-header for Label and Person Note
+            if (!person.label.isNullOrEmpty() || !person.personNote.isNullOrEmpty()) {
+                FlowRow(
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (!person.label.isNullOrEmpty()) {
+                        LabelChip(label = person.label, onClick = { showLabelDialog = true })
+                    } else {
+                         AssistChip(
+                            onClick = { showLabelDialog = true },
+                            label = { Text("Add Label", style = MaterialTheme.typography.labelSmall) },
+                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.Label, null, modifier = Modifier.size(14.dp)) }
+                        )
+                    }
+
+                    if (!person.personNote.isNullOrEmpty()) {
+                        AssistChip(
+                            onClick = { showPersonNoteDialog = true },
+                            label = { Text(person.personNote, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                            leadingIcon = { Icon(Icons.Default.StickyNote2, null, modifier = Modifier.size(14.dp)) },
+                            colors = AssistChipDefaults.assistChipColors(
+                                labelColor = MaterialTheme.colorScheme.primary,
+                                leadingIconContentColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                    } else {
+                        AssistChip(
+                            onClick = { showPersonNoteDialog = true },
+                            label = { Text("Add Person Note", style = MaterialTheme.typography.labelSmall) },
+                            leadingIcon = { Icon(Icons.Default.NoteAdd, null, modifier = Modifier.size(14.dp)) }
+                        )
+                    }
+                }
+            } else {
+                 Row(
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    AssistChip(
+                        onClick = { showLabelDialog = true },
+                        label = { Text("Add Label", style = MaterialTheme.typography.labelSmall) },
+                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.Label, null, modifier = Modifier.size(14.dp)) }
+                    )
+                    AssistChip(
+                        onClick = { showPersonNoteDialog = true },
+                        label = { Text("Add Person Note", style = MaterialTheme.typography.labelSmall) },
+                        leadingIcon = { Icon(Icons.Default.NoteAdd, null, modifier = Modifier.size(14.dp)) }
                     )
                 }
             }
@@ -2162,32 +2273,11 @@ fun InteractionRow(
                 }
             }
 
-            // Right side: Note Toggle, Duration and Play Button
+            // Right side: Play Button, Duration and Note Toggle
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Note Icon
-                IconButton(
-                    onClick = { onNoteClick(call) },
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = if (call.callNote.isNullOrEmpty()) Icons.AutoMirrored.Filled.NoteAdd else Icons.Default.EditNote,
-                        contentDescription = "Add/Edit Note",
-                        tint = if (call.callNote.isNullOrEmpty()) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-
-                if (call.duration > 0) {
-                    Text(
-                        text = formatDurationShort(call.duration),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
                 if (callRecordEnabled) {
                     if (hasRecording) {
                         IconButton(
@@ -2237,6 +2327,27 @@ fun InteractionRow(
                             )
                         }
                     }
+                }
+
+                if (call.duration > 0) {
+                    Text(
+                        text = formatDurationShort(call.duration),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Note Icon
+                IconButton(
+                    onClick = { onNoteClick(call) },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = if (call.callNote.isNullOrEmpty()) Icons.AutoMirrored.Filled.NoteAdd else Icons.Default.EditNote,
+                        contentDescription = "Add/Edit Note",
+                        tint = if (call.callNote.isNullOrEmpty()) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }
@@ -2438,11 +2549,9 @@ fun CallLogList(
     }
 
     if (labelTarget != null) {
-        NoteDialog(
-            title = "Person Label",
-            initialNote = personGroupsMap[labelTarget?.phoneNumber]?.label ?: "",
-            label = "Label (e.g., VIP, Lead, Spam)",
-            buttonText = "Save Label",
+        LabelPickerDialog(
+            currentLabel = personGroupsMap[labelTarget?.phoneNumber]?.label,
+            availableLabels = uiState.persons.mapNotNull { it.label }.filter { it.isNotEmpty() }.distinct().sorted(),
             onDismiss = { labelTarget = null },
             onSave = { label ->
                 labelTarget?.let { viewModel.savePersonLabel(it.phoneNumber, label) }
@@ -3302,6 +3411,160 @@ fun NoteDialog(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun LabelPickerDialog(
+    currentLabel: String?,
+    availableLabels: List<String>,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
+) {
+    var selectedLabel by remember { mutableStateOf(currentLabel ?: "") }
+    var showCustomInput by remember { mutableStateOf(false) }
+    var customLabel by remember { mutableStateOf("") }
+    val focusRequester = remember { FocusRequester() }
+
+    // Predefined common labels
+    val predefinedLabels = listOf("VIP", "Lead", "Customer", "Spam", "Follow-up", "Important", "Personal", "Work")
+    
+    // Combine predefined + existing labels (deduplicated)
+    val allLabels = remember(availableLabels) {
+        (predefinedLabels + availableLabels).distinct().sorted()
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp,
+            modifier = Modifier.fillMaxWidth().padding(16.dp)
+        ) {
+            Box {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "Select Label",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    // Label chips grid
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // "None" option to clear label
+                        FilterChip(
+                            selected = selectedLabel.isEmpty(),
+                            onClick = { selectedLabel = "" },
+                            label = { Text("None") },
+                            leadingIcon = if (selectedLabel.isEmpty()) {
+                                { Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp)) }
+                            } else null,
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.errorContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        )
+
+                        allLabels.forEach { label ->
+                            FilterChip(
+                                selected = selectedLabel == label,
+                                onClick = { selectedLabel = label },
+                                label = { Text(label) },
+                                leadingIcon = if (selectedLabel == label) {
+                                    { Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp)) }
+                                } else null,
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            )
+                        }
+                        
+                        // "Custom" option
+                        FilterChip(
+                            selected = showCustomInput,
+                            onClick = { showCustomInput = !showCustomInput },
+                            label = { Text("Custom...") },
+                            leadingIcon = { Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp)) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        )
+                    }
+
+                    // Custom label input (shown when "Custom..." is selected)
+                    AnimatedVisibility(visible = showCustomInput) {
+                        OutlinedTextField(
+                            value = customLabel,
+                            onValueChange = { 
+                                customLabel = it
+                                selectedLabel = it
+                            },
+                            label = { Text("Custom Label") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(focusRequester),
+                            singleLine = true,
+                            trailingIcon = {
+                                if (customLabel.isNotEmpty()) {
+                                    IconButton(onClick = { customLabel = ""; selectedLabel = "" }) {
+                                        Icon(Icons.Default.Clear, "Clear")
+                                    }
+                                }
+                            }
+                        )
+                    }
+
+                    // Action buttons
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Cancel")
+                        }
+                        
+                        Button(
+                            onClick = { onSave(selectedLabel) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Save")
+                        }
+                    }
+                }
+
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(showCustomInput) {
+        if (showCustomInput) {
+            focusRequester.requestFocus()
+        }
+    }
+}
 
 
 @Composable
