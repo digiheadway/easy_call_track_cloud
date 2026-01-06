@@ -228,7 +228,14 @@ if ($action === "verify_pairing_code") {
                     "allow_personal_exclusion" => (int)$employee['allow_personal_exclusion'],
                     "allow_changing_tracking_start_date" => (int)$employee['allow_changing_tracking_start_date'],
                     "allow_updating_tracking_sims" => (int)$employee['allow_updating_tracking_sims'],
-                    "default_tracking_starting_date" => $employee['default_tracking_starting_date']
+                    "default_tracking_starting_date" => $employee['default_tracking_starting_date'],
+                    "call_track" => (int)$employee['call_track'],
+                    "call_record_crm" => (int)$employee['call_record_crm']
+                ],
+                "plan" => [
+                    "expiry_date" => $employee['plan_expiry_date'] ?? null,
+                    "allowed_storage_gb" => (float)($employee['allowed_storage_gb'] ?? 0),
+                    "storage_used_bytes" => (int)($employee['storage_used_bytes'] ?? 0)
                 ]
             ]);
         }
