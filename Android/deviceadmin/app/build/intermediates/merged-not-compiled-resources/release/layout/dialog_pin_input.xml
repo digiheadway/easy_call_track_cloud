@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Master PIN"
+        app:boxBackgroundColor="#21262D"
+        app:boxStrokeColor="#30363D"
+        app:hintTextColor="#8B949E"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusBottomEnd="12dp"
+        app:boxCornerRadiusTopStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:endIconMode="password_toggle"
+        app:endIconTint="#8B949E"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/pinInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="numberPassword"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:letterSpacing="0.2"
+            android:gravity="center"
+            android:paddingVertical="16dp"
+            android:maxLength="10" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Enter your master PIN to remove protection"
+        android:textSize="12sp"
+        android:textColor="#6E7681"
+        android:layout_marginTop="12dp"
+        android:layout_gravity="center" />
+
+</LinearLayout>

@@ -1,0 +1,80 @@
+<resources>
+
+    <string name="app_name">Terabox Downloader</string>
+
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Settings</string>
+
+    <!--menu and settings screens-->
+    <string name="version_label">Version</string>
+    <string name="menu_night">Night Mode</string>
+    <string name="policy_privacy">Privacy Policy</string>
+    <string name="terms_and_conditions">Terms and Conditions</string>
+    <string name="follow_us_on_social_media">Follow us on Social Media</string>
+    <string name="more_apps">More Apps</string>
+    <string name="push_notification">Push Notification</string>
+    <string name="about_us">About us</string>
+    <string name="contact_us">Contact Us</string>
+    <string name="give_star">Give Star</string>
+    <string name="share_app">Share App</string>
+    <string name="menu_home">Home</string>
+    <string name="nav_header_subtitle">Direct Terabox Video Downloader</string>
+    <string name="settings">Settings</string>
+
+
+    <!--contact us strings-->
+    <string name="your_email">officialnewtonapps@gmail.com</string>
+    <string name="email_text">Hello , i like Downloader App</string>
+
+
+    <!--player strings-->
+    <string name="track_selection_title">Select tracks</string>
+    <string name="exo_track_selection_title_audio">Audio</string>
+    <string name="exo_track_selection_title_text">Text</string>
+    <string name="exo_track_selection_title_video">Video</string>
+    <string name="web_cast">Web Cast video Player is Not Installed. Would you like to install it
+        now.</string>
+
+
+    <!--ads id strings-->
+    <string name="admob_app_id">ca-app-pub-3940256099942544~3347511713</string>
+
+
+    <string name="not_downloaded">Not downloaded</string>
+    <string name="click_to_play">Click to play</string>
+    <string name="merge">Merge</string>
+    <string name="waiting">Waiting</string>
+    <string name="downloading">Downloading…</string>
+    <string name="enter_source_file_path">Please enter the source file path</string>
+    <string name="enter_origin_document">Please enter the original document</string>
+    <string name="enter_target_file_path">Please enter the target file path</string>
+    <string name="output_target_file">Please output the target file</string>
+    <string name="change_format">Change packaging format</string>
+    <string name="download_m3u8_file">Downloaded M3U8 file</string>
+    <string name="download_setting">Download settings</string>
+    <string name="qr_code_scan">QR code scanning</string>
+    <string name="normal_download">Normal download</string>
+    <string name="m3u8_to_mp4">Combine M3U8 to MP4</string>
+    <string name="pause_all_download_task">Pause all download tasks</string>
+    <string name="resume_all_download_task">Resume all download tasks</string>
+    <string name="storage_location">Storage location</string>
+    <string name="cache_file_size">Cache file size</string>
+    <string name="clear_cache">Clear cache</string>
+    <string name="open_storage_directory">Open the storage directory</string>
+    <string name="maximum_concurrent_number">Maximum concurrent number</string>
+    <string name="merge_ts_after_download">Whether to merge ts shards after downloading</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="ignore_certificate">Whether to ignore the certificate</string>
+    <string name="pause_download_on_mobile_network">Whether to pause downloading under mobile network</string>
+    <string name="convert_progress">The progress of the conversion: %s\%</string>
+    <string name="download_paused_downloaded_size">Download paused, already downloaded =%s</string>
+    <string name="download_completed_total_size">Download complete, total size =%s</string>
+    <string name="download_error">Download error</string>
+    <string name="progress_speed_downloaded">Progress:%s, Speed:%s, Downloaded:%s</string>
+    <string name="progress">Progress:%s</string>
+</resources>

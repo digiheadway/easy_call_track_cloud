@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center p-4">
+    <div class="max-w-xl w-full bg-white shadow-md rounded-lg p-6">
+        <div class="response">
+            <span>Trial</span><span id="can_trial"></span>
+            <span>Buy</span><span id="can_buy"></span>
+
+        </div>
+
+        <h1 class="text-2xl font-bold mb-4 text-center">Plan Management</h1>
+        
+        <div id="active-plan" class="mb-6">
+            <h2 class="text-xl font-semibold mb-2">Active Plan</h2>
+            <div id="active-plan-info" class="p-4 bg-blue-50 rounded">
+                <p class="text-gray-500">Loading active plan...</p>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <h2 class="text-xl font-semibold mb-2">Actions</h2>
+            <div class="space-y-2">
+                <button id="start-trial" class="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                    Start Trial
+                </button>
+                <button id="start-plan" class="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                    Start New Plan
+                </button>
+            </div>
+        </div>
+
+        <div id="plan-history" class="mb-6">
+            <h2 class="text-xl font-semibold mb-2">Plan History</h2>
+            <div id="history-list" class="p-4 bg-gray-50 rounded">
+                <p class="text-gray-500">Loading plan history...</p>
+            </div>
+        </div>
+
+        <div id="status" class="text-center text-sm text-gray-500"></div>
+    </div>
+
+    <script>
+        const phone = new URLSearchParams(window.location.search).get('phone') || '9068062563';
+        const apiBase = 'https://backend123.tiffincrm.com/subs.php';
+
+        async function fetchData(action, params = {}) {
+            const url = new URL(apiBase);
+            url.searchParams.append('phone', phone);
+            url.searchParams.append('action', action);
+            Object.entries(params).forEach(([key, value]) => {
+                url.searchParams.append(key, value);
+            });
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                return data;
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+                console.error(error);
+                return null;
+            }
+        }
+
+        async function loadActivePlan() {
+            const data = await fetchData('getplans');
+            if (!data || !data.activeplans) return;
+
+            const activePlan = data.activeplans;
+            const status = data.current_status.status;
+            const daysRemaining = data.current_status.days_remaining || 0;
+
+            const container = document.getElementById('active-plan-info');
+            if (activePlan) {
+                container.innerHTML = `
+                    <p><strong>Status:</strong> ${status}</p>
+                    <p><strong>Days Remaining:</strong> ${daysRemaining}</p>
+                    <p><strong>Daily Limit:</strong> ${activePlan.daily_limit}</p>
+                    <p><strong>Start Date:</strong> ${activePlan.start_date}</p>
+                    <p><strong>Expiry Date:</strong> ${activePlan.expiry_date}</p>
+                `;
+            } else {
+                container.innerHTML = `<p class="text-gray-500">No active plan found.</p>`;
+            }
+        }
+
+        async function loadPlanHistory() {
+            const data = await fetchData('getplans');
+            if (!data || !data.planshistory) return;
+
+            const historyList = document.getElementById('history-list');
+            if (data.planshistory.length > 0) {
+                historyList.innerHTML = data.planshistory.map(plan => `
+                    <div class="mb-2 p-2 bg-white rounded shadow">
+                        <p><strong>Description:</strong> ${plan.description}</p>
+                        <p><strong>Expiry Date:</strong> ${plan.expiry_date}</p>
+                        <p><strong>Days Remaining:</strong> ${plan.days_remaining}</p>
+                         <p><strong>Days Remaining:</strong> ${plan.daily_limit}</p>
+
+                    </div>
+                `).join('');
+            } else {
+                historyList.innerHTML = `<p class="text-gray-500">No plan history found.</p>`;
+            }
+        }
+
+        document.getElementById('start-trial').addEventListener('click', async () => {
+            const dailyLimit = prompt("Enter daily limit for trial:", 5);
+            if (!dailyLimit) return;
+
+            const response = await fetchData('trialstart', { daily_limit: dailyLimit });
+            if (response && response.message) {
+                alert(response.message);
+                loadActivePlan();
+                loadPlanHistory();
+            }
+        });
+
+        document.getElementById('start-plan').addEventListener('click', async () => {
+            const dailyLimit = prompt("Enter daily limit for new plan:", 10);
+            const expiryDate = prompt("Enter expiry date (YYYY-MM-DD):", "2024-12-31");
+            const amount = prompt("Enter amount for the plan:", 1000);
+            if (!dailyLimit || !expiryDate || !amount) return;
+
+            const response = await fetchData('newplan', { daily_limit: dailyLimit, expiry_date: expiryDate, amount });
+            if (response && response.message) {
+                alert(response.message);
+                loadActivePlan();
+                loadPlanHistory();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadActivePlan();
+            loadPlanHistory();
+        });
+    </script>
+</body>
+</html>

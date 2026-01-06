@@ -1,0 +1,18 @@
+{
+    "manifest_version": 3,
+    "name": "Custom Script Injector",
+    "version": "1.0",
+    "description": "Injects a script on specific pages.",
+    "permissions": ["scripting", "tabs"],
+    "host_permissions": ["*://*/*"],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "content_scripts": [
+      {
+        "matches": ["*://*/*/wap/share/filelist*"],
+        "js": ["content-script.js"]
+      }
+    ]
+  }
+  

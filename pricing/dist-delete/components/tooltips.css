@@ -1,0 +1,31 @@
+.pp2-info-icon {
+  margin-left: auto;
+  color: var(--text-light);
+  font-size: 0.875rem;
+  cursor: help;
+}
+
+.pp2-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text-primary);
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: var(--transition-all);
+  z-index: 10;
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+}
+
+.pp2-feature-wrapper:hover .pp2-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-0.5rem);
+}

@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TiffinCRM - Pricing</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/css/main.css">
+</head>
+
+<body>
+  <div class="pp2-container">
+    <header class="pp2-header">
+      <h1>Choose Your Perfect Plan</h1>
+      <p>Scale your tiffin service business with our flexible pricing plans</p>
+
+      <div class="pp2-controls">
+        <div class="pp2-country-selector">
+          <button class="pp2-country-btn active" data-country="IN">
+            <img src="src/ind.svg?v1" alt="India" class="pp2-country-flag">
+            <span>India</span>
+          </button>
+          <button class="pp2-country-btn" data-country="OUT">
+            <i class="fas fa-globe pp2-country-icon"></i>
+            <span>Outside India</span>
+          </button>
+        </div>
+
+        <div class="pp2-billing-wrapper">
+          <select id="billingPeriod" class="pp2-billing-select">
+            <option value="monthly">Monthly Billing</option>
+            <option value="quarterly" selected>Quarterly Billing (Save 12%)</option>
+            <option value="yearly">Yearly Billing (Save 24%)</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <div class="pp2-plans-container">
+      <div class="pp2-plans-scroll">
+        <!-- Free Plan -->
+        <div class="pp2-plan-card" data-orders="25">
+          <div class="pp2-plan-header">
+            <h3>Side Hustle</h3>
+            <p>Perfect for new businesses</p>
+          </div>
+          <div class="pp2-price">
+            <span class="pp2-amount">Free</span>
+            <span class="pp2-period">/forever</span>
+          </div>
+          <div class="pp2-features">
+            <ul>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Up to 25 orders daily</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Process up to 25 food orders per day</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>2 Staff Logins</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Create accounts for 2 staff members</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Basic Support</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Email support with 24-hour response time</div>
+              </li>
+            </ul>
+          </div>
+          <button class="pp2-cta-button">Start Free Forever</button>
+        </div>
+
+        <!-- Growth Plan -->
+        <div class="pp2-plan-card" data-orders="50">
+          <div class="pp2-plan-header">
+            <h3>Basic</h3>
+            <p>For growing businesses</p>
+          </div>
+          <div class="pp2-price">
+            <span class="pp2-original-price"></span>
+            <span class="pp2-amount"></span>
+            <div class="pp2-gst-amount"></div>
+          </div>
+          <div class="pp2-features">
+            <ul>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Up to 50 orders daily</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Process up to 50 food orders per day</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>5 Staff Logins</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Create accounts for 5 staff members</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Priority Support</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Priority email support with 12-hour response time</div>
+              </li>
+            </ul>
+          </div>
+          <button class="pp2-cta-button">Start 14-Day Trial</button>
+        </div>
+        <!-- Growth Plan 2-->
+        <div class="pp2-plan-card" data-orders="75">
+          <div class="pp2-plan-header">
+            <h3>Basic Plus</h3>
+            <p>For growing businesses</p>
+          </div>
+          <div class="pp2-price">
+            <span class="pp2-original-price"></span>
+            <span class="pp2-amount"></span>
+            <div class="pp2-gst-amount"></div>
+          </div>
+          <div class="pp2-features">
+            <ul>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Up to 75 orders daily</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Process up to 50 food orders per day</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>5 Staff Logins</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Create accounts for 5 staff members</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Priority Support</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Priority email support with 12-hour response time</div>
+              </li>
+            </ul>
+          </div>
+          <button class="pp2-cta-button">Start 14-Day Trial</button>
+        </div>
+        <!-- Pro Plan -->
+        <div class="pp2-plan-card pp2-popular" data-orders="100">
+          <div class="pp2-popular-tag">Most Popular</div>
+          <div class="pp2-plan-header">
+            <h3>Business</h3>
+            <p>For established businesses</p>
+          </div>
+          <div class="pp2-price">
+            <span class="pp2-original-price"></span>
+            <span class="pp2-amount"></span>
+            <div class="pp2-gst-amount"></div>
+          </div>
+          <div class="pp2-features">
+            <ul>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Up to 100 orders daily</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Process up to 100 food orders per day</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Unlimited Staff</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Create unlimited staff accounts</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>24/7 Support</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">24/7 priority support with dedicated account manager</div>
+              </li>
+            </ul>
+          </div>
+          <button class="pp2-cta-button">Start 14-Day Trial</button>
+        </div>
+        <!-- Growth Plan 2-->
+        <div class="pp2-plan-card" data-orders="125">
+          <div class="pp2-plan-header">
+            <h3>Business Plus</h3>
+            <p>For growing businesses</p>
+          </div>
+          <div class="pp2-price">
+            <span class="pp2-original-price"></span>
+            <span class="pp2-amount"></span>
+            <div class="pp2-gst-amount"></div>
+          </div>
+          <div class="pp2-features">
+            <ul>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Up to 125 orders daily</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Process up to 50 food orders per day</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>5 Staff Logins</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Create accounts for 5 staff members</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Priority Support</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Priority email support with 12-hour response time</div>
+              </li>
+            </ul>
+          </div>
+          <button class="pp2-cta-button">Start 14-Day Trial</button>
+        </div>
+        <!-- Growth Plan 2-->
+        <div class="pp2-plan-card" data-orders="150">
+          <div class="pp2-plan-header">
+            <h3>Business Pro</h3>
+            <p>For growing businesses</p>
+          </div>
+          <div class="pp2-price">
+            <span class="pp2-original-price"></span>
+            <span class="pp2-amount"></span>
+            <div class="pp2-gst-amount"></div>
+          </div>
+          <div class="pp2-features">
+            <ul>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Up to 150 orders daily</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Process up to 50 food orders per day</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>5 Staff Logins</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Create accounts for 5 staff members</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Priority Support</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Priority email support with 12-hour response time</div>
+              </li>
+            </ul>
+          </div>
+          <button class="pp2-cta-button">Start 14-Day Trial</button>
+        </div>
+        <!-- Growth Plan 2-->
+        <div class="pp2-plan-card" data-orders="175">
+          <div class="pp2-plan-header">
+            <h3>Business Booster</h3>
+            <p>For growing businesses</p>
+          </div>
+          <div class="pp2-price">
+            <span class="pp2-original-price"></span>
+            <span class="pp2-amount"></span>
+            <div class="pp2-gst-amount"></div>
+          </div>
+          <div class="pp2-features">
+            <ul>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Up to 175 orders daily</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Process up to 50 food orders per day</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>5 Staff Logins</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Create accounts for 5 staff members</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Priority Support</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Priority email support with 12-hour response time</div>
+              </li>
+            </ul>
+          </div>
+          <button class="pp2-cta-button">Start 14-Day Trial</button>
+        </div>
+        <!-- Growth Plan 2-->
+        <div class="pp2-plan-card" data-orders="200">
+          <div class="pp2-plan-header">
+            <h3>Growth</h3>
+            <p>For growing businesses</p>
+          </div>
+          <div class="pp2-price">
+            <span class="pp2-original-price"></span>
+            <span class="pp2-amount"></span>
+            <div class="pp2-gst-amount"></div>
+          </div>
+          <div class="pp2-features">
+            <ul>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Up to 200 orders daily</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Process up to 50 food orders per day</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>5 Staff Logins</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Create accounts for 5 staff members</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Priority Support</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Priority email support with 12-hour response time</div>
+              </li>
+            </ul>
+          </div>
+          <button class="pp2-cta-button">Start 14-Day Trial</button>
+        </div>
+        <!-- Growth Plan 2-->
+        <div class="pp2-plan-card" data-orders="250">
+          <div class="pp2-plan-header">
+            <h3>Growth Plus </h3>
+            <p>For growing businesses</p>
+          </div>
+          <div class="pp2-price">
+            <span class="pp2-original-price"></span>
+            <span class="pp2-amount"></span>
+            <div class="pp2-gst-amount"></div>
+          </div>
+          <div class="pp2-features">
+            <ul>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Up to 250 orders daily</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Process up to 50 food orders per day</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>5 Staff Logins</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Create accounts for 5 staff members</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Priority Support</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Priority email support with 12-hour response time</div>
+              </li>
+            </ul>
+          </div>
+          <button class="pp2-cta-button">Start 14-Day Trial</button>
+        </div>
+        <!-- Growth Plan 2-->
+        <div class="pp2-plan-card" data-orders="300">
+          <div class="pp2-plan-header">
+            <h3>Advance Growth</h3>
+            <p>For growing businesses</p>
+          </div>
+          <div class="pp2-price">
+            <span class="pp2-original-price"></span>
+            <span class="pp2-amount"></span>
+            <div class="pp2-gst-amount"></div>
+          </div>
+          <div class="pp2-features">
+            <ul>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Up to 300 orders daily</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Process up to 50 food orders per day</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>5 Staff Logins</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Create accounts for 5 staff members</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Priority Support</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Priority email support with 12-hour response time</div>
+              </li>
+            </ul>
+          </div>
+          <button class="pp2-cta-button">Start 14-Day Trial</button>
+        </div>
+        <!-- Growth Plan 2-->
+        <div class="pp2-plan-card" data-orders="400">
+          <div class="pp2-plan-header">
+            <h3>Advance Growth Plus </h3>
+            <p>For growing businesses</p>
+          </div>
+          <div class="pp2-price">
+            <span class="pp2-original-price"></span>
+            <span class="pp2-amount"></span>
+            <div class="pp2-gst-amount"></div>
+          </div>
+          <div class="pp2-features">
+            <ul>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Up to 400 orders daily</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Process up to 50 food orders per day</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>5 Staff Logins</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Create accounts for 5 staff members</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Priority Support</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Priority email support with 12-hour response time</div>
+              </li>
+            </ul>
+          </div>
+          <button class="pp2-cta-button">Start 14-Day Trial</button>
+        </div>
+
+        <!-- Enterprise Plan -->
+        <div class="pp2-plan-card" data-orders="custom">
+          <div class="pp2-plan-header">
+            <h3>Enterprise</h3>
+            <p>Custom solutions for large operations</p>
+          </div>
+          <div class="pp2-price">
+            <span class="pp2-amount">Custom</span>
+            <div class="pp2-gst-amount">Contact for pricing</div>
+          </div>
+          <div class="pp2-features">
+            <ul>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Unlimited Orders</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">No limit on daily order processing</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Custom Integration</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">Custom integrations with your existing systems</div>
+              </li>
+              <li class="pp2-feature-wrapper">
+                <i class="fas fa-check-circle"></i>
+                <span>Dedicated Support</span>
+                <i class="fas fa-info-circle pp2-info-icon"></i>
+                <div class="pp2-tooltip">24/7 dedicated support team with custom SLA</div>
+              </li>
+            </ul>
+          </div>
+          <button class="pp2-calculator-btn">Calculate Custom Price</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- iMeals Pro Section -->
+    <section class="pp2-addon-section">
+      <h2>Power Up Your Business</h2>
+      <p>Enhance your service with our premium add-on</p>
+
+      <div class="pp2-addon-card">
+        <div class="pp2-addon-header">
+          <div class="pp2-addon-title">
+            <h3>iMeals Pro</h3>
+            <p>Advanced features for growing businesses</p>
+          </div>
+          <div class="pp2-addon-price">
+            <div class="pp2-addon-original-price">₹14,999/first year</div>
+            <div class="pp2-addon-amount">₹7,999/year after</div>
+            <div class="pp2-addon-gst">+18% GST applicable</div>
+          </div>
+        </div>
+
+        <div class="pp2-addon-features">
+          <div class="pp2-feature-wrapper">
+            <i class="fas fa-check-circle"></i>
+            <span>Customer Self-Signup</span>
+            <i class="fas fa-info-circle pp2-info-icon"></i>
+            <div class="pp2-tooltip">Let customers create accounts and place orders directly</div>
+          </div>
+          <div class="pp2-feature-wrapper">
+            <i class="fas fa-check-circle"></i>
+            <span>White Labelled iMeals</span>
+            <i class="fas fa-info-circle pp2-info-icon"></i>
+            <div class="pp2-tooltip">Use your own branding on the iMeals platform</div>
+          </div>
+          <div class="pp2-feature-wrapper">
+            <i class="fas fa-check-circle"></i>
+            <span>White Labelled Customer App</span>
+            <i class="fas fa-info-circle pp2-info-icon"></i>
+            <div class="pp2-tooltip">Custom branded mobile app for your customers</div>
+          </div>
+        </div>
+
+        <button class="pp2-cta-button">Get iMeals Pro</button>
+      </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="pp2-faq-section">
+      <h2>Frequently Asked Questions</h2>
+      <div class="pp2-faq-grid">
+        <div class="pp2-faq-item">
+          <h3>What happens after my trial ends?</h3>
+          <p>After your 14-day trial, you can choose to upgrade to any of our paid plans or continue with the free plan
+            if you're within the limits. We'll notify you before the trial ends.</p>
+        </div>
+        <div class="pp2-faq-item">
+          <h3>Can I change plans later?</h3>
+          <p>Yes! You can upgrade, downgrade, or cancel your plan at any time. Changes to paid plans take effect in the
+            next billing cycle.</p>
+        </div>
+        <div class="pp2-faq-item">
+          <h3>Is there a setup fee?</h3>
+          <p>No, there are no hidden fees or setup charges. You only pay for your selected plan, and GST will be added
+            to the final amount.</p>
+        </div>
+        <div class="pp2-faq-item">
+          <h3>Do you offer refunds?</h3>
+          <p>Yes, we offer a 30-day money-back guarantee if you're not satisfied with our service.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+  <footer class="pp2-footer">
+    <div class="pp2-footer-content">
+      <p>Need help choosing? <a href="#contact">Talk to our experts</a></p>
+    </div>
+  </footer>
+  <!-- Calculator Modal -->
+  <div class="pp2-modal" id="calculatorModal">
+    <div class="pp2-modal-content">
+      <button class="pp2-close">&times;</button>
+      <h2>Custom Price Calculator</h2>
+      <div class="pp2-calculator">
+        <div class="pp2-calculator-field">
+          <label for="orderSlider">Daily Orders:</label>
+          <input type="range" id="orderSlider" min="100" max="1000" step="25" value="150">
+          <div class="pp2-slider-value">150 orders/day</div>
+        </div>
+
+        <div class="pp2-calculator-field">
+          <label for="calcBillingPeriod">Billing Period:</label>
+          <select id="calcBillingPeriod" class="pp2-billing-select">
+            <option value="monthly">Monthly</option>
+            <option value="quarterly" selected>Quarterly (Save 12%)</option>
+            <option value="yearly">Yearly (Save 24%)</option>
+          </select>
+        </div>
+
+        <div class="pp2-calculated-price">
+          <span>Estimated Price:</span>
+          <span class="pp2-price-value"></span>
+          <div class="pp2-gst-note">+18% GST applicable</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/js/main.js"></script>
+</body>
+
+</html>

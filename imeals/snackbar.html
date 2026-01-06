@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Snackbar Example</title>
+    <style>
+      body {
+        padding: 0;
+        margin: 0;
+      }
+      /* Snackbar container */
+      #snackbar {
+        visibility: hidden; /* Hidden by default */
+        min-width: 250px; /* Minimum width */
+        background-color: #333; /* Default background color */
+        color: #fff; /* White text color */
+        text-align: center; /* Centered text */
+        border-radius: 4px; /* Rounded borders */
+        padding: 16px; /* Some padding */
+        position: fixed; /* Sit on top of the screen */
+        z-index: 1; /* Add a z-index if needed */
+        left: 50%; /* Center the snackbar horizontally */
+        bottom: 30px; /* 30px from the bottom */
+        font-size: 17px; /* Increase font size */
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
+      }
+
+      /* Colors for different types */
+      .snackbar-success {
+        background-color: #4caf50; /* Green */
+      }
+
+      .snackbar-warning {
+        background-color: #ffc107; /* Yellow */
+      }
+
+      .snackbar-error {
+        background-color: #f44336; /* Red */
+      }
+
+      /* Progress bar */
+      .snackbar-progress {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        height: 4px;
+        background-color: #ddd;
+        width: 100%;
+      }
+
+      .snackbar-progress-inner {
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.7);
+        width: 100%;
+        transition: width linear;
+      }
+
+      /* Close button */
+      .snackbar-close {
+        margin-left: 20px;
+        background: none;
+        border: none;
+        color: #fff;
+        font-size: 16px;
+        cursor: pointer;
+      }
+
+      /* Responsive adjustments */
+      @media screen and (max-width: 600px) {
+        #snackbar {
+          width: 90%; /* 90% of the viewport width */
+          margin-left: 0;
+          left: 5%;
+        }
+      }
+      .snackbar_parent {
+        display: flex;
+        justify-content: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="snackbar_parent">
+      <!-- Snackbar Container -->
+      <div id="snackbar"></div>
+    </div>
+
+    <button
+      onclick="showSnackbar('success', 'This is a success message!', 5000)"
+    >
+      Show Success Snackbar
+    </button>
+    <button
+      onclick="showSnackbar('warning', 'This is a warning message!', 5000)"
+    >
+      Show Warning Snackbar
+    </button>
+    <button onclick="showSnackbar('error', 'This is an error message!', 5000)">
+      Show Error Snackbar
+    </button>
+
+    <script>
+      function showSnackbar(type, message, duration = 5000) {
+        const snackbar = document.getElementById("snackbar");
+
+        // Clear any previous snackbar content and classes
+        snackbar.innerHTML = "";
+        snackbar.className = "";
+
+        // Set the appropriate class for the type
+        snackbar.classList.add(`snackbar-${type}`);
+
+        // Create message text
+        const text = document.createElement("span");
+        text.innerText = message;
+
+        // Create progress bar
+        const progressBar = document.createElement("div");
+        progressBar.className = "snackbar-progress";
+        const progressBarInner = document.createElement("div");
+        progressBarInner.className = "snackbar-progress-inner";
+        progressBar.appendChild(progressBarInner);
+
+        // Create close button
+        const closeButton = document.createElement("button");
+        closeButton.className = "snackbar-close";
+        closeButton.innerText = "✖";
+        closeButton.onclick = function () {
+          hideSnackbar();
+        };
+
+        // Add text, progress bar, and close button to the snackbar
+        snackbar.appendChild(text);
+        snackbar.appendChild(progressBar);
+        snackbar.appendChild(closeButton);
+
+        // Show the snackbar
+        snackbar.style.visibility = "visible";
+
+        // Animate the progress bar
+        setTimeout(() => {
+          progressBarInner.style.width = "0%";
+        }, 100); // Add a slight delay to ensure smooth animation
+
+        // Auto-dismiss after the specified duration
+        setTimeout(() => {
+          hideSnackbar();
+        }, duration);
+      }
+
+      function hideSnackbar() {
+        const snackbar = document.getElementById("snackbar");
+        snackbar.style.visibility = "hidden";
+      }
+    </script>
+  </body>
+</html>

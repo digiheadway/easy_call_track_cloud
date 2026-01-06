@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Popup</title>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+        }
+
+        .pop7785_popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            z-index: 1000;
+            padding: 0 5px;
+            user-select: none;
+        }
+
+        .pop7785_popup.pop7785_show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .pop7785_popup_heading {
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+
+        }
+
+        .pop7785_popup_content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .pop7785_popup.pop7785_show .pop7785_popup_content {
+            / transform: translateY(0);
+        }
+
+
+        .pop7785_file_info {
+            background-color: #FBFBFB;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #E0E0E0;
+            font-size: 14px;
+            box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+            transition: transform 0.3s ease;
+            user-select: none;
+        }
+
+        .pop7785_file_info:hover {
+            transform: scale(1.02);
+        }
+
+        .pop7785_file_thumbnail {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .pop7785_file_thumbnail img {
+            height: 80px;
+            border-radius: 10px;
+            object-fit: cover;
+        }
+
+        .pop7785_file_icon {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 3px 3px 1px 3px;
+            border-radius: 50%;
+            font-size: 14px;
+        }
+
+        .pop7785_file_detail {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .pop7785_file_name {
+            font-size: 16px;
+            font-weight: 600;
+            word-break: break-word;
+        }
+
+        .pop7785_file_size {
+            color: #6B6B6B;
+        }
+
+        .pop7785_file_likes {
+            gap: 0.2rem;
+            margin-top: 0.2rem;
+            font-weight: 600;
+            color: #5c5c5c;
+        }
+
+        .pop7785_protection_info {
+            /* background-color: #e8f5e9; */
+            padding: 10px;
+            border-radius: 5px;
+            color: #0D904F;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .pop7785_btn_go_to_file {
+            width: 100%;
+            padding: 16px;
+            background-color: #2C9D70;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+            box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+            transition: background-color 0.3s ease;
+            font-size: 16px;
+            font-weight: bold;
+            position: relative;
+            overflow: hidden;
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        .pop7785_btn_go_to_file:hover {
+            background-color: #178c5d;
+        }
+
+        .pop7785_btn_go_to_file::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(to right,
+                    rgba(255, 255, 255, 0) 0%,
+                    rgba(255, 255, 255, 0.5) 50%,
+                    rgba(255, 255, 255, 0) 100%);
+            transform: rotate(45deg);
+            animation: shine 1.5s infinite;
+        }
+
+        @keyframes shine {
+            0% {
+                left: -50%;
+                top: -50%;
+            }
+
+            100% {
+                left: 150%;
+                top: 150%;
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.02);
+            }
+        }
+
+        .pop7785_mirror_link {
+            text-align: center;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .pop7785_mirror_link a {
+            color: #575757;
+            text-decoration: underline dotted;
+        }
+
+        #pop7785_open_popup_btn {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        #pop7785_open_popup_btn:hover {
+            background-color: #0056b3;
+        }
+
+        @media (max-width: 767px) {
+            .pop7785_popup {
+                align-items: flex-end;
+            }
+
+            .pop7785_popup_content {
+                margin: 0;
+                border-bottom-left-radius: 0;
+                border-bottom-right-radius: 0;
+                transform: translateY(100%);
+            }
+
+            .pop7785_popup.pop7785_show .pop7785_popup_content {
+                transform: translateY(0);
+            }
+
+            .pop7785_popup_content {
+                padding: 20px 10px;
+            }
+        }
+
+
+        .c_flex {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .r_flex {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .jut_c {
+            justify-content: center;
+        }
+
+        .jut-sb {
+            justify-content: space-between;
+        }
+
+        .ali_c {
+            align-items: center;
+        }
+
+        .gap_05 {
+            gap: 0.5rem;
+        }
+
+        .gap_1 {
+            gap: 1rem;
+        }
+
+        .gap_02 {
+            gap: 0.2rem;
+        }
+
+        .flex_wrap {
+            flex-wrap: wrap;
+        }
+
+        .pop7785_loading_screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 30px;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            font-family: Arial, sans-serif;
+        }
+
+        .pop7785_loading_content {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .pop7785_loading_title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #2C9D70;
+            margin-bottom: 20px;
+            text-align: center;
+            height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .pop7785_loading_bar {
+            width: 100%;
+            height: 6px;
+            background-color: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .pop7785_progress {
+            width: 0;
+            height: 100%;
+            background-color: #2C9D70;
+            transition: width 0.5s;
+        }
+
+        .pop7785_loading_message {
+            text-align: center;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #444;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            overflow-y: auto;
+        }
+
+        .pop7785_manual_link {
+            /* display: block; */
+            text-align: center;
+            color: #fff;
+            background-color: #2C9D70;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .pop7785_manual_link:hover {
+            background-color: #238c60;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="pop7785_popup pop7785_show" id="pop7785_popup">
+        <div class="pop7785_popup_content c_flex gap_1 jut_c">
+            <span class="pop7785_popup_heading">Watch/Download 3 Idiot Movie</span>
+            <div class="pop7785_file_info r_flex gap_05 ali_c jut-c">
+                <div class="pop7785_file_thumbnail">
+                    <img src="https://m.media-amazon.com/images/M/MV5BNDBhMWEyZjMtZGU0Ni00YzZjLThmNTAtZGRkNmFhMWM1NTMwXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg"
+                        alt="3 Idiots Movie Poster">
+                    <div class="pop7785_file_icon">
+                        <iconify-icon icon="mdi:video"></iconify-icon>
+                    </div>
+                </div>
+                <div class="pop7785_file_detail">
+                    <div class="pop7785_file_name">Movie57676-1080p.mp4</div>
+                    <div class="pop7785_file_size"><iconify-icon icon="mdi:file-size"></iconify-icon>Size: 1.4 GB</div>
+                    <div class="r_flex gap_05 jut-sb flex_wrap">
+                        <div class="pop7785_file_likes r_flex ali_c">
+                            <iconify-icon icon="mdi:heart"></iconify-icon>
+                            <span>1.2K Likes</span>
+                        </div>
+                        <div class="pop7785_file_size r_flex ali_c gap_05">
+                            <iconify-icon icon="mdi:eye"></iconify-icon>
+                            <span>4k Views</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="pop7785_protection_info r_flex jut_c ali_c flex_w">
+                <strong class="r_flex jut_c ali_c gap_02"><iconify-icon icon="mdi:shield-check"></iconify-icon>Verified
+                    by Play Protect</strong>
+                <!-- <span>: This file is protected and safe to download.</span> -->
+            </div>
+
+            <a href="#" class="pop7785_btn_go_to_file r_flex jut_c ali_c gap_1">
+                <span>Download/Watch Now</span>
+                <iconify-icon icon="mdi:open-in-new"></iconify-icon>
+
+            </a>
+            <div class="pop7785_mirror_link">
+                <a href="#">Mirror Links</a>
+            </div>
+        </div>
+    </div>
+    <div class="main">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Card title</h5>
+                            <p class="card-text">Some quick example text to build on the card title and make up the
+                                bulk of the card's content.</p>
+                            <a href="#" class="btn btn-primary">Go somewhere</a>
+                            <button id="pop7785_open_popup_btn">Open Popup</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration object for links
+        const config = {
+            fileUrl: 'https://www.example.com/your-file-url', // Replace with your actual file URL
+            mirrorLink: 'https://www.example.com/mirror-link', // Replace with your actual mirror link
+        };
+
+        const pop7785_popup = document.getElementById('pop7785_popup');
+        const pop7785_open_popup_btn = document.getElementById('pop7785_open_popup_btn');
+        const pop7785_popup_content = document.querySelector('.pop7785_popup_content');
+        const likesElement = document.querySelector('.pop7785_file_likes span');
+        const viewsElement = document.querySelector('.pop7785_file_size span');
+
+        function pop7785_show_popup() {
+            pop7785_popup.classList.add('pop7785_show');
+        }
+
+        function pop7785_hide_popup() {
+            pop7785_popup.classList.remove('pop7785_show');
+        }
+
+        function generateRandomLikesAndViews() {
+            const likes = Math.floor(Math.random() * (2500 - 900 + 1)) + 900;
+            const viewsMultiplier = Math.random() * (10 - 5) + 5;
+            const views = Math.round(likes * viewsMultiplier * 10) / 10;
+            return { likes, views };
+        }
+
+        function formatNumber(num) {
+            return num >= 1000 ? (num / 1000).toFixed(1) + 'K' : num.toString();
+        }
+
+        function updateLikesAndViews() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const q = urlParams.get('q');
+            let data;
+
+            if (q) {
+                const storedData = localStorage.getItem(`pop7785_data_${q}`);
+                if (storedData) {
+                    data = JSON.parse(storedData);
+                } else {
+                    data = generateRandomLikesAndViews();
+                    localStorage.setItem(`pop7785_data_${q}`, JSON.stringify(data));
+                }
+            } else {
+                data = generateRandomLikesAndViews();
+            }
+
+            likesElement.textContent = `${formatNumber(data.likes)} Likes`;
+            viewsElement.textContent = `${formatNumber(data.views)} Views`;
+        }
+
+        pop7785_open_popup_btn.addEventListener('click', pop7785_show_popup);
+
+        // Close popup when clicking outside
+        pop7785_popup.addEventListener('click', (event) => {
+            if (event.target === pop7785_popup) {
+                pop7785_hide_popup();
+            }
+        });
+
+        // Prevent closing when clicking inside the popup content
+        pop7785_popup_content.addEventListener('click', (event) => {
+            event.stopPropagation();
+        });
+
+        // Show popup on load and update likes and views
+        window.addEventListener('load', () => {
+            pop7785_show_popup();
+            updateLikesAndViews();
+        });
+
+        const loadingSteps = [
+            {
+                title: "Checking File Availability",
+                message: "Checking if the file is available on our server as of now.",
+                duration: 1000 // Reduced duration
+            },
+            {
+                title: "Verifying Browser Compatibility",
+                message: "Checking your browser to ensure it meets our security standards for safe file access and download.",
+                duration: 1200 // Reduced duration
+            },
+            {
+                title: "Scanning File",
+                message: "Performing a thorough scan of the requested file to detect and prevent any potential security threats.",
+                duration: 1500 // Reduced duration
+            },
+            {
+                title: "Generating Access Token",
+                message: "Creating a unique, time-limited token for secure, private access to your requested file.",
+                duration: 1000 // Reduced duration
+            },
+            {
+                title: "Preparing Secure Link",
+                message: "It is for your use only. Do not share this link with others to maintain security.",
+                duration: 2000 // Reduced duration
+            }
+        ];
+
+        function showLoadingScreen(element) {
+            const loadingScreen = document.createElement('div');
+            loadingScreen.className = 'pop7785_loading_screen';
+            loadingScreen.innerHTML = `
+                <div class="pop7785_loading_content">
+                    <h2 class="pop7785_loading_title"></h2>
+                    <div class="pop7785_loading_bar">
+                        <div class="pop7785_progress"></div>
+                    </div>
+                    <div class="pop7785_loading_message"></div>
+                    <a href="${config.fileUrl}" target="_blank" class="pop7785_btn_go_to_file pop7785_manual_link r_flex jut_c ali_c gap_1">
+                        <span>Open File</span>
+                        <iconify-icon icon="mdi:open-in-new">jh</iconify-icon>
+                    </a>
+                </div>
+            `;
+            element.appendChild(loadingScreen);
+
+            const titleElement = loadingScreen.querySelector('.pop7785_loading_title');
+            const progressBar = loadingScreen.querySelector('.pop7785_progress');
+            const messageElement = loadingScreen.querySelector('.pop7785_loading_message');
+            const manualLink = loadingScreen.querySelector('.pop7785_manual_link');
+
+            let width = 0;
+            const totalDuration = loadingSteps.reduce((sum, step) => sum + step.duration, 0);
+            const progressInterval = setInterval(() => {
+                if (width >= 100) {
+                    clearInterval(progressInterval);
+                } else {
+                    width++;
+                    progressBar.style.width = width + '%';
+                }
+            }, totalDuration / 100);
+
+            let index = 0;
+
+            function showNextStep() {
+                if (index >= loadingSteps.length) {
+                    setTimeout(() => {
+                        titleElement.textContent = 'Link Ready';
+                        messageElement.innerHTML = 'Your Link is ready. Click the button below to open it in a new tab.';
+                        // manualLink.style.display = 'block';
+                        // manualLink.textContent = 'Open Link';
+                        manualLink.href = config.fileUrl;
+                    }, 500); // Reduced final delay
+                    return;
+                }
+
+                const { title, message, duration } = loadingSteps[index];
+                titleElement.textContent = title;
+                messageElement.innerHTML = message;
+                index++;
+
+                setTimeout(showNextStep, duration);
+            }
+
+            showNextStep();
+        }
+
+        function handleButtonClick(event) {
+            event.preventDefault();
+            const popupContent = document.querySelector('.pop7785_popup_content');
+            popupContent.innerHTML = '';
+            showLoadingScreen(popupContent);
+        }
+
+        document.querySelector('.pop7785_btn_go_to_file').addEventListener('click', handleButtonClick);
+        document.querySelector('.pop7785_mirror_link').addEventListener('click', (event) => {
+            event.preventDefault();
+            window.open(config.mirrorLink, '_blank');
+        });
+
+
+    </script>
+
+</body>
+
+</html>

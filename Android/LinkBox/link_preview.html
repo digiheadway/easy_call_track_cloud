@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <!-- Dynamic Meta Tags (PHP will populate these) -->
+    <title>LinkBox - Shared Content</title>
+    <meta name="description" content="Open this shared link in the LinkBox app">
+
+    <!-- Open Graph / Social Media Meta Tags -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="LinkBox">
+    <meta property="og:title" content="LinkBox - Shared Content">
+    <meta property="og:description" content="Open this shared link in the LinkBox app">
+    <meta property="og:url" content="">
+    <meta property="og:image" content="">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="LinkBox - Shared Content">
+    <meta name="twitter:description" content="Open this shared link in the LinkBox app">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/favicon.png">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-start: #6366F1;
+            --primary-end: #8B5CF6;
+            --success-start: #10B981;
+            --success-end: #059669;
+            --gold-start: #F59E0B;
+            --gold-end: #D97706;
+            --error-start: #EF4444;
+            --error-end: #DC2626;
+            --purple-start: #A855F7;
+            --purple-end: #7C3AED;
+            --bg-dark: #0F172A;
+            --bg-card: #1E293B;
+            --bg-surface: #334155;
+            --text-primary: #F1F5F9;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: var(--text-primary);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, var(--primary-start), var(--primary-end));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+        }
+
+        .logo svg {
+            width: 32px;
+            height: 32px;
+            color: white;
+        }
+
+        .logo-text {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary-start), var(--primary-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .card-header {
+            padding: 24px;
+            background: linear-gradient(135deg, var(--primary-start), var(--primary-end));
+        }
+
+        .card-header.link-type {
+            background: linear-gradient(135deg, var(--primary-start), var(--primary-end));
+        }
+
+        .card-header.page-type {
+            background: linear-gradient(135deg, var(--purple-start), var(--purple-end));
+        }
+
+        .type-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 16px;
+        }
+
+        .type-badge svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .content-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 8px;
+            word-break: break-word;
+        }
+
+        .content-description {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.5;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 32px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        .url-display {
+            background: var(--bg-surface);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .url-display svg {
+            width: 20px;
+            height: 20px;
+            color: var(--primary-start);
+            flex-shrink: 0;
+        }
+
+        .url-text {
+            flex: 1;
+            font-size: 14px;
+            color: var(--primary-start);
+            word-break: break-all;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .copy-btn svg {
+            width: 18px;
+            height: 18px;
+            color: var(--text-muted);
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            border: none;
+        }
+
+        .btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-start), var(--primary-end));
+            color: white;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn-secondary {
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            margin-top: 12px;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 24px 0;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--bg-surface);
+        }
+
+        .app-download-section {
+            text-align: center;
+            margin-top: 32px;
+            padding: 24px;
+            background: var(--bg-card);
+            border-radius: 20px;
+        }
+
+        .app-download-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .app-download-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        .store-badges {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .store-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-surface);
+            padding: 10px 16px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .store-badge:hover {
+            background: #475569;
+        }
+
+        .store-badge svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .loading-state,
+        .error-state {
+            text-align: center;
+            padding: 48px 24px;
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--bg-surface);
+            border-top-color: var(--primary-start);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 24px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+        }
+
+        .error-icon svg {
+            width: 36px;
+            height: 36px;
+            color: var(--error-start);
+        }
+
+        .error-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .error-message {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 32px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .footer a {
+            color: var(--primary-start);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 480px) {
+            body {
+                padding: 16px;
+            }
+
+            .content-title {
+                font-size: 20px;
+            }
+
+            .stats-row {
+                gap: 20px;
+            }
+
+            .stat-value {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo-section">
+            <div class="logo">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
+            </div>
+            <div class="logo-text">LinkBox</div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading-state" class="card">
+            <div class="loading-state">
+                <div class="loading-spinner"></div>
+                <p style="color: var(--text-muted);">Loading shared content...</p>
+            </div>
+        </div>
+
+        <!-- Error State (Hidden) -->
+        <div id="error-state" class="card" style="display: none;">
+            <div class="error-state">
+                <div class="error-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </div>
+                <div class="error-title" id="error-title">Link Not Found</div>
+                <div class="error-message" id="error-message">This link doesn't exist or has been removed.</div>
+                <button class="btn btn-secondary" onclick="window.history.back()">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    Go Back
+                </button>
+            </div>
+        </div>
+
+        <!-- Content Card (Hidden) -->
+        <div id="content-card" class="card" style="display: none;">
+            <div class="card-header link-type" id="card-header">
+                <div class="type-badge" id="type-badge">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                    </svg>
+                    <span id="type-text">LINK</span>
+                </div>
+                <h1 class="content-title" id="content-title">Loading...</h1>
+                <p class="content-description" id="content-description"></p>
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <span class="stat-value" id="stat-views">0</span>
+                        <span class="stat-label">Views</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="stat-clicks">0</span>
+                        <span class="stat-label">Clicks</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="stat-date">--</span>
+                        <span class="stat-label">Shared</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="url-display" id="url-display">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                    </svg>
+                    <span class="url-text" id="url-text">https://example.com</span>
+                    <button class="copy-btn" onclick="copyUrl()" title="Copy URL">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <a href="#" class="btn btn-primary" id="open-app-btn" onclick="openInApp()">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                    Open in LinkBox App
+                </a>
+
+                <a href="#" class="btn btn-secondary" id="open-browser-btn" style="display: none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path
+                            d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                        </path>
+                    </svg>
+                    Open in Browser
+                </a>
+
+                <div class="divider">or</div>
+
+                <div class="app-download-section" style="background: transparent; padding: 0;">
+                    <p class="app-download-desc">Get the app for best experience</p>
+                    <div class="store-badges">
+                        <a href="#" class="store-badge">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+                            </svg>
+                            App Store
+                        </a>
+                        <a href="#" class="store-badge">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.198l2.807 1.626a1 1 0 0 1 0 1.73l-2.808 1.626L15.206 12l2.492-2.491zM5.864 2.658L16.8 8.99l-2.302 2.302-8.634-8.634z" />
+                            </svg>
+                            Google Play
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Powered by <a href="#">LinkBox</a></p>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">Link copied to clipboard!</div>
+
+    <script>
+        // Get token from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+
+        // Content data (will be populated by PHP)
+        let contentData = null;
+
+        // Simulated data for demo (Replace with actual PHP/API call)
+        // In production, use PHP to fetch and inject data server-side
+        function loadContent() {
+            // Show loading
+            document.getElementById('loading-state').style.display = 'block';
+            document.getElementById('content-card').style.display = 'none';
+            document.getElementById('error-state').style.display = 'none';
+
+            if (!token) {
+                showError('No Token Provided', 'Please provide a valid sharing token in the URL.');
+                return;
+            }
+
+            // In production, this data would come from PHP
+            // For demo, we'll simulate with timeout
+            setTimeout(() => {
+                // Example: Fetch from API or use PHP-injected data
+                // Replace this with actual data fetching
+
+                // Demo content - remove in production
+                if (token === 'SAMPLE12') {
+                    contentData = {
+                        type: 'LINK',
+                        name: 'Welcome to LinkBox',
+                        description: 'This is a sample link to test out the LinkBox app features.',
+                        url: 'https://pokipro.com',
+                        views: 1234,
+                        clicks: 567,
+                        createdAt: new Date().toISOString(),
+                        token: token
+                    };
+                    showContent(contentData);
+                } else {
+                    showError('Link Not Found', 'This link doesn\'t exist or has been removed by the owner.');
+                }
+            }, 500);
+        }
+
+        function showContent(data) {
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('content-card').style.display = 'block';
+            document.getElementById('error-state').style.display = 'none';
+
+            // Update content
+            document.getElementById('content-title').textContent = data.name;
+            document.getElementById('content-description').textContent = data.description || '';
+            document.getElementById('stat-views').textContent = formatNumber(data.views || 0);
+            document.getElementById('stat-clicks').textContent = formatNumber(data.clicks || 0);
+            document.getElementById('stat-date').textContent = formatDate(data.createdAt);
+
+            // Update type badge and header
+            const header = document.getElementById('card-header');
+            const typeBadge = document.getElementById('type-badge');
+            const typeText = document.getElementById('type-text');
+
+            if (data.type === 'PAGE') {
+                header.className = 'card-header page-type';
+                typeText.textContent = 'PAGE';
+                typeBadge.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <span>PAGE</span>
+                `;
+            }
+
+            // URL display
+            const urlDisplay = document.getElementById('url-display');
+            const openBrowserBtn = document.getElementById('open-browser-btn');
+
+            if (data.url && data.type === 'LINK') {
+                urlDisplay.style.display = 'flex';
+                document.getElementById('url-text').textContent = data.url;
+                openBrowserBtn.style.display = 'flex';
+                openBrowserBtn.href = data.url;
+            } else {
+                urlDisplay.style.display = 'none';
+                openBrowserBtn.style.display = 'none';
+            }
+
+            // Update meta tags for social sharing
+            document.title = data.name + ' - LinkBox';
+            updateMeta('description', data.description);
+            updateMeta('og:title', data.name + ' - LinkBox');
+            updateMeta('og:description', data.description);
+            updateMeta('twitter:title', data.name + ' - LinkBox');
+            updateMeta('twitter:description', data.description);
+        }
+
+        function showError(title, message) {
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('content-card').style.display = 'none';
+            document.getElementById('error-state').style.display = 'block';
+
+            document.getElementById('error-title').textContent = title;
+            document.getElementById('error-message').textContent = message;
+        }
+
+        function openInApp() {
+            if (!token) return;
+
+            // Try to open the app via custom scheme
+            const appUrl = 'linkbox://open?token=' + encodeURIComponent(token);
+            const webUrl = window.location.href;
+
+            // Create hidden iframe for fallback detection
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = appUrl;
+            document.body.appendChild(iframe);
+
+            // Fallback: If app not installed, stay on this page
+            setTimeout(() => {
+                document.body.removeChild(iframe);
+            }, 2000);
+
+            // Also try direct window location change
+            window.location.href = appUrl;
+        }
+
+        function copyUrl() {
+            const url = contentData?.url || window.location.href;
+            navigator.clipboard.writeText(url).then(() => {
+                showToast('Link copied to clipboard!');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = url;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast('Link copied to clipboard!');
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            }
+            if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
+        }
+
+        function formatDate(isoDate) {
+            const date = new Date(isoDate);
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return months[date.getMonth()] + ' ' + date.getDate();
+        }
+
+        function updateMeta(name, content) {
+            if (!content) return;
+
+            let selector = name.includes(':')
+                ? `meta[property="${name}"]`
+                : `meta[name="${name}"]`;
+
+            const element = document.querySelector(selector);
+            if (element) {
+                element.setAttribute('content', content);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', loadContent);
+    </script>
+</body>
+
+</html>

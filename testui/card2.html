@@ -1,0 +1,2043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Listings - 10 Variations</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #1f1f1f;
+        }
+
+        /* Version 1: Original Clean */
+        .card-v1 {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .card-v1 .header {
+            padding: 20px 20px 16px;
+            position: relative;
+        }
+
+        .card-v1 .title-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .card-v1 .icon-home {
+            width: 20px;
+            height: 20px;
+            fill: #1f1f1f;
+        }
+
+        .card-v1 .title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1f1f1f;
+        }
+
+        .card-v1 .address-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .card-v1 .icon-file {
+            width: 18px;
+            height: 18px;
+            fill: #1f1f1f;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .card-v1 .address {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #666;
+        }
+
+        .card-v1 .price-box {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-align: right;
+        }
+
+        .card-v1 .price {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f1f1f;
+        }
+
+        .card-v1 .area {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1f1f1f;
+        }
+
+        .card-v1 .rate {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .card-v1 .footer {
+            padding: 14px 20px;
+            background: #fafafa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .card-v1 .tags {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .card-v1 .public {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* Version 2: Border Left Accent */
+        .card-v2 {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #2563eb;
+            overflow: hidden;
+        }
+
+        .card-v2 .header {
+            padding: 18px 18px 14px;
+        }
+
+        .card-v2 .title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f1f1f;
+            margin-bottom: 8px;
+        }
+
+        .card-v2 .id {
+            color: #2563eb;
+        }
+
+        .card-v2 .address {
+            font-size: 13px;
+            line-height: 1.4;
+            color: #666;
+            margin-bottom: 14px;
+        }
+
+        .card-v2 .info-grid {
+            display: flex;
+            gap: 16px;
+            padding: 12px 0;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .card-v2 .info-item {
+            flex: 1;
+        }
+
+        .card-v2 .info-label {
+            font-size: 11px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .card-v2 .info-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f1f1f;
+        }
+
+        .card-v2 .footer {
+            padding: 12px 18px;
+            background: #f8fafc;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Version 3: Compact Card */
+        .card-v3 {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+            padding: 16px;
+        }
+
+        .card-v3 .top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+
+        .card-v3 .title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f1f1f;
+        }
+
+        .card-v3 .price {
+            font-size: 18px;
+            font-weight: 700;
+            color: #10b981;
+        }
+
+        .card-v3 .address {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .card-v3 .details {
+            display: flex;
+            gap: 12px;
+            padding: 10px;
+            background: #f9fafb;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+
+        .card-v3 .detail {
+            flex: 1;
+            font-size: 11px;
+            text-align: center;
+        }
+
+        .card-v3 .detail-value {
+            font-weight: 600;
+            color: #1f1f1f;
+            display: block;
+        }
+
+        .card-v3 .detail-label {
+            color: #999;
+            margin-top: 2px;
+        }
+
+        .card-v3 .bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: #666;
+        }
+
+        /* Version 4: Rounded Minimal */
+        .card-v4 {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            padding: 18px;
+            border: 1px solid #f0f0f0;
+        }
+
+        .card-v4 .header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .card-v4 .type {
+            font-size: 11px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .card-v4 .price-tag {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1f1f1f;
+        }
+
+        .card-v4 .property-id {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f1f1f;
+            margin-bottom: 8px;
+        }
+
+        .card-v4 .address {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 14px;
+        }
+
+        .card-v4 .specs {
+            display: flex;
+            gap: 8px;
+            font-size: 12px;
+            color: #666;
+            padding: 10px 0;
+            border-top: 1px solid #f5f5f5;
+        }
+
+        .card-v4 .spec {
+            padding: 4px 10px;
+            background: #f9fafb;
+            border-radius: 12px;
+        }
+
+        /* Version 5: Shadow Depth */
+        .card-v5 {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .card-v5 .header {
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .card-v5 .title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .card-v5 .id {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .card-v5 .body {
+            padding: 16px 18px;
+        }
+
+        .card-v5 .address {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 14px;
+        }
+
+        .card-v5 .price-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            background: #fafafa;
+            border-radius: 8px;
+        }
+
+        .card-v5 .price-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .card-v5 .price-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1f1f1f;
+        }
+
+        .card-v5 .price-label {
+            font-size: 10px;
+            color: #999;
+            margin-top: 2px;
+        }
+
+        /* Version 6: Split Design */
+        .card-v6 {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-v6 .left {
+            padding: 16px;
+            flex: 1;
+        }
+
+        .card-v6 .title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f1f1f;
+            margin-bottom: 8px;
+        }
+
+        .card-v6 .address {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .card-v6 .right {
+            padding: 16px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .card-v6 .price-main {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1f1f1f;
+            margin-bottom: 8px;
+        }
+
+        .card-v6 .meta-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Version 7: Inline Info */
+        .card-v7 {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            padding: 16px;
+        }
+
+        .card-v7 .title-price {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .card-v7 .title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f1f1f;
+        }
+
+        .card-v7 .price {
+            font-size: 16px;
+            font-weight: 700;
+            color: #059669;
+        }
+
+        .card-v7 .address {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .card-v7 .inline-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 11px;
+        }
+
+        .card-v7 .info-chip {
+            padding: 4px 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            color: #666;
+        }
+
+        /* Version 8: Top Bar Accent */
+        .card-v8 {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+            border-top: 3px solid #f59e0b;
+        }
+
+        .card-v8 .content {
+            padding: 16px;
+        }
+
+        .card-v8 .header-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .card-v8 .type-badge {
+            font-size: 11px;
+            padding: 4px 8px;
+            background: #fef3c7;
+            color: #92400e;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .card-v8 .id {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .card-v8 .address {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .card-v8 .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            padding: 12px;
+            background: #fafafa;
+            border-radius: 6px;
+        }
+
+        .card-v8 .stat {
+            text-align: center;
+        }
+
+        .card-v8 .stat-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f1f1f;
+        }
+
+        .card-v8 .stat-label {
+            font-size: 10px;
+            color: #999;
+        }
+
+        /* Version 9: Card with Icon */
+        .card-v9 {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            padding: 16px;
+            position: relative;
+        }
+
+        .card-v9 .icon-badge {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 40px;
+            height: 40px;
+            background: #eff6ff;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-v9 .icon-badge svg {
+            width: 22px;
+            height: 22px;
+            fill: #2563eb;
+        }
+
+        .card-v9 .title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f1f1f;
+            margin-bottom: 6px;
+            padding-right: 50px;
+        }
+
+        .card-v9 .subtitle {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 12px;
+        }
+
+        .card-v9 .address {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .card-v9 .bottom-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .card-v9 .price {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1f1f1f;
+        }
+
+        .card-v9 .area {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Version 10: Modern Flat */
+        .card-v10 {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            padding: 18px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .card-v10 .top-section {
+            display: flex;
+            align-items: start;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .card-v10 .icon-circle {
+            width: 36px;
+            height: 36px;
+            background: #f3f4f6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .card-v10 .icon-circle svg {
+            width: 18px;
+            height: 18px;
+            fill: #1f1f1f;
+        }
+
+        .card-v10 .info {
+            flex: 1;
+        }
+
+        .card-v10 .title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f1f1f;
+            margin-bottom: 4px;
+        }
+
+        .card-v10 .id {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .card-v10 .price {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1f1f1f;
+        }
+
+        .card-v10 .address {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+
+        .card-v10 .tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .card-v10 .tag {
+            font-size: 10px;
+            padding: 4px 8px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            color: #666;
+        }
+
+        .icon {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Property Card Variations</h1>
+
+        <!-- Version 1 -->
+        <div class="card-v1">
+            <div class="header">
+                <div class="title-row">
+                    <svg class="icon-home" viewBox="0 0 24 24">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                    </svg>
+                    <span class="title">Residential House | Sector 24 | #7389</span>
+                </div>
+                <div class="address-row">
+                    <svg class="icon-file" viewBox="0 0 24 24">
+                        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                    </svg>
+                    <span class="address">4 Marla House Corner, 9 Meter Road, West Face in Kideny Side Block...</span>
+                </div>
+                <div class="price-box">
+                    <div class="price">₹ 2 Cr</div>
+                    <div class="area">250 Gaj</div>
+                    <div class="rate">1 lakh/gaj</div>
+                </div>
+            </div>
+            <div class="footer">
+                <div class="tags">
+                    <span>Main Gali</span>
+                    <span>My Property</span>
+                    <span>Updated Yesterday</span>
+                </div>
+                <div class="public">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                    </svg>
+                    Public
+                </div>
+            </div>
+        </div>
+
+        <!-- Version 2 -->
+        <div class="card-v2">
+            <div class="header">
+                <div class="title">Residential House | Sector 24 | <span class="id">#7389</span></div>
+                <div class="address">4 Marla House Corner, 9 Meter Road, West Face in Kideny Side Block, Double Story</div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Price</div>
+                        <div class="info-value">₹ 2 Cr</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Area</div>
+                        <div class="info-value">250 Gaj</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Rate</div>
+                        <div class="info-value">1L/gaj</div>
+                    </div>
+                </div>
+            </div>
+            <div class="footer">
+                <span>Main Gali • My Property</span>
+                <span>Public</span>
+            </div>
+        </div>
+
+        <!-- Version 3 -->
+        <div class="card-v3">
+            <div class="top-row">
+                <div>
+                    <div class="title">Residential House | Sector 24</div>
+                    <div style="font-size: 11px; color: #999; margin-top: 2px;">#7389</div>
+                </div>
+                <div class="price">₹ 2 Cr</div>
+            </div>
+            <div class="address">4 Marla House Corner, 9 Meter Road, West Face in Kideny Side Block, Double Story</div>
+            <div class="details">
+                <div class="detail">
+                    <span class="detail-value">250 Gaj</span>
+                    <div class="detail-label">Area</div>
+                </div>
+                <div class="detail">
+                    <span class="detail-value">1 lakh</span>
+                    <div class="detail-label">Per Gaj</div>
+                </div>
+                <div class="detail">
+                    <span class="detail-value">Double</span>
+                    <div class="detail-label">Story</div>
+                </div>
+            </div>
+            <div class="bottom">
+                <span>Main Gali • My Property</span>
+                <span>Public</span>
+            </div>
+        </div>
+
+        <!-- Version 4 -->
+        <div class="card-v4">
+            <div class="header-flex">
+                <div>
+                    <div class="type">Residential</div>
+                    <div class="property-id">#7389 • Sector 24</div>
+                </div>
+                <div class="price-tag">₹ 2 Cr</div>
+            </div>
+            <div class="address">4 Marla House Corner, 9 Meter Road, West Face in Kideny Side Block, Double Story</div>
+            <div class="specs">
+                <span class="spec">250 Gaj</span>
+                <span class="spec">1L/gaj</span>
+                <span class="spec">Main Gali</span>
+                <span class="spec">Public</span>
+            </div>
+        </div>
+
+        <!-- Version 5 -->
+        <div class="card-v5">
+            <div class="header">
+                <div class="title">Residential House | Sector 24</div>
+                <div class="id">Property #7389</div>
+            </div>
+            <div class="body">
+                <div class="address">4 Marla House Corner, 9 Meter Road, West Face in Kideny Side Block, Double Story</div>
+                <div class="price-row">
+                    <div class="price-item">
+                        <div class="price-value">₹ 2 Cr</div>
+                        <div class="price-label">PRICE</div>
+                    </div>
+                    <div class="price-item">
+                        <div class="price-value">250</div>
+                        <div class="price-label">GAJ</div>
+                    </div>
+                    <div class="price-item">
+                        <div class="price-value">1 L</div>
+                        <div class="price-label">PER GAJ</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Version 6 -->
+        <div class="card-v6">
+            <div class="left">
+                <div class="title">Residential House | Sector 24 | #7389</div>
+                <div class="address">4 Marla House Corner, 9 Meter Road, West Face in Kideny Side Block, Double Story</div>
+            </div>
+            <div class="right">
+                <div class="price-main">₹ 2 Cr</div>
+                <div class="meta-row">
+                    <span>250 Gaj</span>
+                    <span>1 lakh/gaj</span>
+                    <span>Public</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Version 7 -->
+        <div class="card-v7">
+            <div class="title-price">
+                <div class="title">Residential • Sector 24 • #7389</div>
+                <div class="price">₹ 2 Cr</div>
+            </div>
+            <div class="address">4 Marla House Corner, 9 Meter Road, West Face in Kideny Side Block, Double Story</div>
+            <div class="inline-info">
+                <span class="info-chip">250 Gaj</span>
+                <span class="info-chip">1 lakh/gaj</span>
+                <span class="info-chip">Main Gali</span>
+                <span class="info-chip">My Property</span>
+                <span class="info-chip">Public</span>
+            </div>
+        </div>
+
+        <!-- Version 8 -->
+        <div class="card-v8">
+            <div class="content">
+                <div class="header-row">
+                    <span class="type-badge">Residential</span>
+                    <span class="id">#7389</span>
+                </div>
+                <div class="address">4 Marla House Corner, 9 Meter Road, West Face in Kideny Side Block, Double Story • Sector 24</div>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value">₹ 2 Cr</div>
+                        <div class="stat-label">Price</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">250</div>
+                        <div class="stat-label">Gaj</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">1 L</div>
+                        <div class="stat-label">Per Gaj</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Version 9 -->
+        <div class="card-v9">
+            <div class="icon-badge">
+                <svg viewBox="0 0 24 24">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                </svg>
+            </div>
+            <div class="title">Residential House | #7389</div>
+            <div class="subtitle">Sector 24 • Main Gali • My Property</div>
+            <div class="address">4 Marla House Corner, 9 Meter Road, West Face in Kideny Side Block, Double Story</div>
+            <div class="bottom-bar">
+                <div>
+                    <div class="price">₹ 2 Cr</div>
+                    <div class="area">250 Gaj • 1 lakh/gaj</div>
+                </div>
+                <span class="area">Public</span>
+            </div>
+        </div>
+
+        <!-- Version 10 -->
+        <div class="card-v10">
+            <div class="top-section">
+                <div class="icon-circle">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                    </svg>
+                </div>
+                <div class="info">
+                    <div class="title">Residential House</div>
+                    <div class="id">Sector 24 • #7389</div>
+                </div>
+                <div class="price">₹ 2 Cr</div>
+            </div>
+            <div class="address">4 Marla House Corner, 9 Meter Road, West Face in Kideny Side Block, Double Story</div>
+            <div class="tags">
+                <span class="tag">250 Gaj</span>
+                <span class="tag">1 lakh/gaj</span>
+                <span class="tag">Main Gali</span>
+                <span class="tag">My Property</span>
+                <span class="tag">Public</span>
+            </div>
+        </div>
+
+        <!-- Version 11: Modern Flat with Color -->
+        <div class="card-v11">
+            <div class="top-section">
+                <div class="icon-circle-green">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                    </svg>
+                </div>
+                <div class="info">
+                    <div class="title">Residential Property</div>
+                    <div class="id">Sector 24 • #7389</div>
+                </div>
+                <div class="price-green">₹ 2 Cr</div>
+            </div>
+            <div class="address">4 Marla House Corner, 9 Meter Road, West Face in Kideny Side Block, Double Story</div>
+            <div class="tags">
+                <span class="tag">250 Gaj</span>
+                <span class="tag">1 lakh/gaj</span>
+                <span class="tag">Main Gali</span>
+                <span class="tag-primary">My Property</span>
+            </div>
+        </div>
+
+        <!-- Version 12: Modern with Badge -->
+        <div class="card-v12">
+            <div class="top-section">
+                <div class="icon-circle-blue">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                    </svg>
+                </div>
+                <div class="info">
+                    <div class="title-row">
+                        <span class="title">Residential House</span>
+                        <span class="badge-new">New</span>
+                    </div>
+                    <div class="id">Sector 24 • Property #7389</div>
+                </div>
+            </div>
+            <div class="price-large">₹ 2 Crore</div>
+            <div class="address">4 Marla House Corner, 9 Meter Road, West Face in Kideny Side Block, Double Story</div>
+            <div class="tags">
+                <span class="tag-outline">250 Gaj</span>
+                <span class="tag-outline">₹1L/gaj</span>
+                <span class="tag-outline">Public</span>
+            </div>
+        </div>
+
+        <!-- Version 13: Compact Icon Left -->
+        <div class="card-v13">
+            <div class="flex-row">
+                <div class="icon-square">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                    </svg>
+                </div>
+                <div class="content-area">
+                    <div class="header-row">
+                        <div class="title">Residential • Sector 24</div>
+                        <div class="price-bold">₹ 2 Cr</div>
+                    </div>
+                    <div class="property-id">#7389</div>
+                    <div class="address">4 Marla House Corner, 9 Meter Road, West Face in Kideny Side Block</div>
+                    <div class="meta-tags">
+                        <span class="chip">250 Gaj</span>
+                        <span class="chip">1L/gaj</span>
+                        <span class="chip">Main Gali</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Version 14: Icon with Status -->
+        <div class="card-v14">
+            <div class="header-section">
+                <div class="icon-pill">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                    </svg>
+                    <span>House</span>
+                </div>
+                <div class="status-badge">Available</div>
+            </div>
+            <div class="title">Property #7389 • Sector 24</div>
+            <div class="address">4 Marla House Corner, 9 Meter Road, West Face in Kideny Side Block, Double Story</div>
+            <div class="price-bar">
+                <div class="price-main">₹ 2 Crore</div>
+                <div class="price-sub">₹1 lakh per gaj</div>
+            </div>
+            <div class="tags-row">
+                <span class="tag-gray">250 Gaj</span>
+                <span class="tag-gray">Main Gali</span>
+                <span class="tag-gray">Public</span>
+            </div>
+        </div>
+
+        <!-- Version 15: Minimal Icon Card -->
+        <div class="card-v15">
+            <div class="top-bar">
+                <div class="icon-rounded">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                    </svg>
+                </div>
+                <div class="grow">
+                    <div class="title-bold">Residential House</div>
+                    <div class="subtitle">Sector 24 • #7389 • Main Gali</div>
+                </div>
+                <div class="price-right">₹ 2 Cr</div>
+            </div>
+            <div class="divider"></div>
+            <div class="address">4 Marla House Corner, 9 Meter Road, West Face in Kideny Side Block, Double Story</div>
+            <div class="footer-tags">
+                <span class="tag-small">250 Gaj</span>
+                <span class="tag-small">1 lakh/gaj</span>
+                <span class="tag-small">My Property</span>
+                <span class="tag-small">Public</span>
+            </div>
+        </div>
+
+        <!-- Version 16: Icon with Accent -->
+        <div class="card-v16">
+            <div class="flex-start">
+                <div class="icon-accent">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                    </svg>
+                </div>
+                <div class="flex-grow">
+                    <div class="type-label">Residential Property</div>
+                    <div class="main-title">Sector 24 • Property #7389</div>
+                </div>
+            </div>
+            <div class="address-text">4 Marla House Corner, 9 Meter Road, West Face in Kideny Side Block, Double Story</div>
+            <div class="info-boxes">
+                <div class="info-box">
+                    <div class="box-label">Price</div>
+                    <div class="box-value">₹ 2 Cr</div>
+                </div>
+                <div class="info-box">
+                    <div class="box-label">Area</div>
+                    <div class="box-value">250 Gaj</div>
+                </div>
+                <div class="info-box">
+                    <div class="box-label">Rate</div>
+                    <div class="box-value">1L/gaj</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Version 17: Circle Icon Compact -->
+        <div class="card-v17">
+            <div class="header-flex">
+                <div class="icon-circle-sm">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                    </svg>
+                </div>
+                <div class="header-content">
+                    <div class="title-main">Residential House • #7389</div>
+                    <div class="location">Sector 24 • Main Gali • My Property</div>
+                </div>
+            </div>
+            <div class="address-compact">4 Marla House Corner, 9 Meter Road, West Face in Kideny Side Block, Double Story</div>
+            <div class="stats-row">
+                <div class="stat-box">
+                    <span class="stat-value">₹ 2 Cr</span>
+                    <span class="stat-label">Price</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-value">250</span>
+                    <span class="stat-label">Gaj</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-value">₹1L</span>
+                    <span class="stat-label">Per Gaj</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Version 18: Icon Badge Style -->
+        <div class="card-v18">
+            <div class="top-row-flex">
+                <div class="badge-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                    </svg>
+                    <span>Residential</span>
+                </div>
+                <div class="price-tag">₹ 2 Cr</div>
+            </div>
+            <div class="property-title">Property #7389 • Sector 24</div>
+            <div class="address-line">4 Marla House Corner, 9 Meter Road, West Face in Kideny Side Block, Double Story</div>
+            <div class="separator"></div>
+            <div class="bottom-tags">
+                <span class="mini-tag">250 Gaj</span>
+                <span class="mini-tag">1 lakh/gaj</span>
+                <span class="mini-tag">Main Gali</span>
+                <span class="mini-tag">Public</span>
+            </div>
+        </div>
+
+        <!-- Version 19: Modern Outlined -->
+        <div class="card-v19">
+            <div class="card-top">
+                <div class="icon-outline">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                    </svg>
+                </div>
+                <div class="details">
+                    <div class="name">Residential House</div>
+                    <div class="meta">Sector 24 • #7389</div>
+                </div>
+                <div class="price-display">₹ 2 Cr</div>
+            </div>
+            <div class="description">4 Marla House Corner, 9 Meter Road, West Face in Kideny Side Block, Double Story</div>
+            <div class="tag-list">
+                <span class="list-tag">250 Gaj</span>
+                <span class="list-tag">₹1 lakh/gaj</span>
+                <span class="list-tag">Main Gali</span>
+                <span class="list-tag active">My Property</span>
+            </div>
+        </div>
+
+        <!-- Version 20: Flat Modern -->
+        <div class="card-v20">
+            <div class="main-row">
+                <div class="icon-bg">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                    </svg>
+                </div>
+                <div class="main-content">
+                    <div class="heading">Residential House • Sector 24</div>
+                    <div class="subheading">Property #7389</div>
+                    <div class="description-text">4 Marla House Corner, 9 Meter Road, West Face in Kideny Side Block, Double Story</div>
+                    <div class="tag-row">
+                        <span class="pill">250 Gaj</span>
+                        <span class="pill">₹1L/gaj</span>
+                        <span class="pill">Main Gali</span>
+                    </div>
+                </div>
+                <div class="price-col">
+                    <div class="amount">₹ 2 Cr</div>
+                    <div class="label">Price</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <style>
+        /* Version 11 Styles */
+        .card-v11 {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            padding: 18px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .card-v11 .top-section {
+            display: flex;
+            align-items: start;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .card-v11 .icon-circle-green {
+            width: 36px;
+            height: 36px;
+            background: #d1fae5;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .card-v11 .icon-circle-green svg {
+            width: 18px;
+            height: 18px;
+            fill: #059669;
+        }
+
+        .card-v11 .info {
+            flex: 1;
+        }
+
+        .card-v11 .title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f1f1f;
+            margin-bottom: 4px;
+        }
+
+        .card-v11 .id {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .card-v11 .price-green {
+            font-size: 18px;
+            font-weight: 700;
+            color: #059669;
+        }
+
+        .card-v11 .address {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+
+        .card-v11 .tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .card-v11 .tag {
+            font-size: 10px;
+            padding: 4px 8px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            color: #666;
+        }
+
+        .card-v11 .tag-primary {
+            font-size: 10px;
+            padding: 4px 8px;
+            background: #dbeafe;
+            border: 1px solid #93c5fd;
+            border-radius: 4px;
+            color: #1e40af;
+        }
+
+        /* Version 12 Styles */
+        .card-v12 {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            padding: 18px;
+        }
+
+        .card-v12 .top-section {
+            display: flex;
+            align-items: start;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .card-v12 .icon-circle-blue {
+            width: 40px;
+            height: 40px;
+            background: #dbeafe;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .card-v12 .icon-circle-blue svg {
+            width: 20px;
+            height: 20px;
+            fill: #2563eb;
+        }
+
+        .card-v12 .info {
+            flex: 1;
+        }
+
+        .card-v12 .title-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .card-v12 .title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f1f1f;
+        }
+
+        .card-v12 .badge-new {
+            font-size: 9px;
+            padding: 2px 6px;
+            background: #fef3c7;
+            color: #92400e;
+            border-radius: 3px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .card-v12 .id {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .card-v12 .price-large {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1f1f1f;
+            margin-bottom: 10px;
+        }
+
+        .card-v12 .address {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .card-v12 .tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .card-v12 .tag-outline {
+            font-size: 11px;
+            padding: 5px 10px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            color: #4b5563;
+        }
+
+        /* Version 13 Styles */
+        .card-v13 {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .card-v13 .flex-row {
+            display: flex;
+            gap: 14px;
+        }
+
+        .card-v13 .icon-square {
+            width: 44px;
+            height: 44px;
+            background: #f3f4f6;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .card-v13 .icon-square svg {
+            width: 22px;
+            height: 22px;
+            fill: #1f1f1f;
+        }
+
+        .card-v13 .content-area {
+            flex: 1;
+        }
+
+        .card-v13 .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .card-v13 .title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f1f1f;
+        }
+
+        .card-v13 .price-bold {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1f1f1f;
+        }
+
+        .card-v13 .property-id {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 8px;
+        }
+
+        .card-v13 .address {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+
+        .card-v13 .meta-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .card-v13 .chip {
+            font-size: 10px;
+            padding: 3px 8px;
+            background: #f9fafb;
+            border-radius: 10px;
+            color: #666;
+        }
+
+        /* Version 14 Styles */
+        .card-v14 {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            padding: 16px;
+        }
+
+        .card-v14 .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .card-v14 .icon-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: #f3f4f6;
+            border-radius: 20px;
+        }
+
+        .card-v14 .icon-pill svg {
+            width: 16px;
+            height: 16px;
+            fill: #1f1f1f;
+        }
+
+        .card-v14 .icon-pill span {
+            font-size: 12px;
+            font-weight: 500;
+            color: #1f1f1f;
+        }
+
+        .card-v14 .status-badge {
+            font-size: 10px;
+            padding: 4px 10px;
+            background: #d1fae5;
+            color: #065f46;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .card-v14 .title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f1f1f;
+            margin-bottom: 8px;
+        }
+
+        .card-v14 .address {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .card-v14 .price-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #fafafa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .card-v14 .price-main {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1f1f1f;
+        }
+
+        .card-v14 .price-sub {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .card-v14 .tags-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .card-v14 .tag-gray {
+            font-size: 10px;
+            padding: 4px 8px;
+            background: #f3f4f6;
+            border-radius: 4px;
+            color: #666;
+        }
+
+        /* Version 15 Styles */
+        .card-v15 {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .card-v15 .top-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .card-v15 .icon-rounded {
+            width: 38px;
+            height: 38px;
+            background: #f9fafb;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .card-v15 .icon-rounded svg {
+            width: 18px;
+            height: 18px;
+            fill: #1f1f1f;
+        }
+
+        .card-v15 .grow {
+            flex: 1;
+        }
+
+        .card-v15 .title-bold {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f1f1f;
+            margin-bottom: 3px;
+        }
+
+        .card-v15 .subtitle {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .card-v15 .price-right {
+            font-size: 17px;
+            font-weight: 700;
+            color: #1f1f1f;
+        }
+
+        .card-v15 .divider {
+            height: 1px;
+            background: #f0f0f0;
+            margin-bottom: 12px;
+        }
+
+        .card-v15 .address {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .card-v15 .footer-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .card-v15 .tag-small {
+            font-size: 10px;
+            padding: 4px 8px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            color: #666;
+        }
+
+        /* Version 16 Styles */
+        .card-v16 {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            padding: 18px;
+        }
+
+        .card-v16 .flex-start {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .card-v16 .icon-accent {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .card-v16 .icon-accent svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+
+        .card-v16 .flex-grow {
+            flex: 1;
+        }
+
+        .card-v16 .type-label {
+            font-size: 11px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .card-v16 .main-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f1f1f;
+        }
+
+        .card-v16 .address-text {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 14px;
+        }
+
+        .card-v16 .info-boxes {
+            display: flex;
+            gap: 10px;
+        }
+
+        .card-v16 .info-box {
+            flex: 1;
+            padding: 10px;
+            background: #fafafa;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .card-v16 .box-label {
+            font-size: 10px;
+            color: #999;
+            margin-bottom: 4px;
+        }
+
+        .card-v16 .box-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f1f1f;
+        }
+
+        /* Version 17 Styles */
+        .card-v17 {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .card-v17 .header-flex {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .card-v17 .icon-circle-sm {
+            width: 34px;
+            height: 34px;
+            background: #f3f4f6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .card-v17 .icon-circle-sm svg {
+            width: 17px;
+            height: 17px;
+            fill: #1f1f1f;
+        }
+
+        .card-v17 .header-content {
+            flex: 1;
+        }
+
+        .card-v17 .title-main {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f1f1f;
+            margin-bottom: 3px;
+        }
+
+        .card-v17 .location {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .card-v17 .address-compact {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .card-v17 .stats-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .card-v17 .stat-box {
+            flex: 1;
+            padding: 10px;
+            background: #fafafa;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .card-v17 .stat-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f1f1f;
+        }
+
+        .card-v17 .stat-label {
+            font-size: 9px;
+            color: #999;
+            text-transform: uppercase;
+        }
+
+        /* Version 18 Styles */
+        .card-v18 {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            padding: 16px;
+        }
+
+        .card-v18 .top-row-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .card-v18 .badge-icon {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: #eff6ff;
+            border-radius: 20px;
+        }
+
+        .card-v18 .badge-icon svg {
+            width: 16px;
+            height: 16px;
+            fill: #2563eb;
+        }
+
+        .card-v18 .badge-icon span {
+            font-size: 12px;
+            font-weight: 500;
+            color: #2563eb;
+        }
+
+        .card-v18 .price-tag {
+            font-size: 17px;
+            font-weight: 700;
+            color: #1f1f1f;
+        }
+
+        .card-v18 .property-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f1f1f;
+            margin-bottom: 8px;
+        }
+
+        .card-v18 .address-line {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .card-v18 .separator {
+            height: 1px;
+            background: #f0f0f0;
+            margin-bottom: 12px;
+        }
+
+        .card-v18 .bottom-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .card-v18 .mini-tag {
+            font-size: 10px;
+            padding: 4px 8px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            color: #666;
+        }
+
+        /* Version 19 Styles */
+        .card-v19 {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            padding: 16px;
+            border: 1px solid #d1d5db;
+        }
+
+        .card-v19 .card-top {
+            display: flex;
+            align-items: start;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .card-v19 .icon-outline {
+            width: 38px;
+            height: 38px;
+            border: 2px solid #e5e7eb;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .card-v19 .icon-outline svg {
+            width: 18px;
+            height: 18px;
+            fill: #1f1f1f;
+        }
+
+        .card-v19 .details {
+            flex: 1;
+        }
+
+        .card-v19 .name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f1f1f;
+            margin-bottom: 3px;
+        }
+
+        .card-v19 .meta {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .card-v19 .price-display {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1f1f1f;
+        }
+
+        .card-v19 .description {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .card-v19 .tag-list {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .card-v19 .list-tag {
+            font-size: 10px;
+            padding: 4px 8px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            color: #666;
+        }
+
+        .card-v19 .list-tag.active {
+            background: #eff6ff;
+            border-color: #93c5fd;
+            color: #1e40af;
+        }
+
+        /* Version 20 Styles */
+        .card-v20 {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .card-v20 .main-row {
+            display: flex;
+            gap: 14px;
+        }
+
+        .card-v20 .icon-bg {
+            width: 40px;
+            height: 40px;
+            background: #f9fafb;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .card-v20 .icon-bg svg {
+            width: 20px;
+            height: 20px;
+            fill: #1f1f1f;
+        }
+
+        .card-v20 .main-content {
+            flex: 1;
+        }
+
+        .card-v20 .heading {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f1f1f;
+            margin-bottom: 3px;
+        }
+
+        .card-v20 .subheading {
+            font-size: 11px;
+            color: #999;
+            margin-bottom: 8px;
+        }
+
+        .card-v20 .description-text {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+
+        .card-v20 .tag-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .card-v20 .pill {
+            font-size: 10px;
+            padding: 3px 8px;
+            background: #f3f4f6;
+            border-radius: 10px;
+            color: #666;
+        }
+
+        .card-v20 .price-col {
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .card-v20 .amount {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1f1f1f;
+        }
+
+        .card-v20 .label {
+            font-size: 10px;
+            color: #999;
+        }
+    </style>
+</body>
+</html>

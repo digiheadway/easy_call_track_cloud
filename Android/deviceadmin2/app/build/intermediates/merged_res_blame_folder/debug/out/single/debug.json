@@ -1,0 +1,22 @@
+[
+    {
+        "merged": "com.example.deviceadmin.app-merged_res-33:/layout_activity_main.xml.flat",
+        "source": "com.example.deviceadmin.app-main-35:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-merged_res-33:/xml_accessibility_service_config.xml.flat",
+        "source": "com.example.deviceadmin.app-main-35:/xml/accessibility_service_config.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-merged_res-33:/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "com.example.deviceadmin.app-main-35:/mipmap-xxxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-merged_res-33:/layout_activity_lock.xml.flat",
+        "source": "com.example.deviceadmin.app-main-35:/layout/activity_lock.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-merged_res-33:/xml_device_admin_rules.xml.flat",
+        "source": "com.example.deviceadmin.app-main-35:/xml/device_admin_rules.xml"
+    }
+]

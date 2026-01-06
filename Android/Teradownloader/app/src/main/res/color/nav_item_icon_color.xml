@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Selected icon (white) -->
+    <item android:drawable="@color/white" android:state_checked="true" android:color="@color/white" />
+
+    <!-- Unselected icon (black) -->
+    <item android:drawable="@color/black" android:color="@color/black" />
+</selector>

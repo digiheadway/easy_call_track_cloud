@@ -1,0 +1,214 @@
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap"
+  rel="stylesheet"
+/>
+<style>
+  * {
+    font-family: "Open Sans", sans-serif;
+    font-optical-sizing: auto;
+    font-style: normal;
+    font-variation-settings: "wdth" 100;
+  }
+  body {
+    color: #2e2e2e;
+  }
+  header {
+    margin: 30px auto;
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-size: 24px;
+    padding: 20px;
+    background: linear-gradient(90deg, #6078fe 0%, #4b13e9 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    width: 60%;
+    margin: 20px auto;
+    margin-bottom: 0px;
+  }
+
+  hr {
+    border: none;
+    height: 1px;
+    background: linear-gradient(90deg, #6078fe 0%, #4b13e9 100%);
+    width: 30%;
+    margin: 0px auto;
+  }
+
+  .contact_container {
+    margin: 20px;
+  }
+
+  table {
+    width: 100%;
+    margin-bottom: 100px;
+  }
+  table,
+  th,
+  td {
+    padding: 10px;
+    border: 1px solid rgb(224, 224, 224);
+    border-width: 1px 0 0px 0;
+    text-align: center;
+  }
+
+  th {
+    border: none;
+  }
+
+  table {
+    border: 1px solid rgb(244, 244, 244);
+    border-radius: 10px;
+    padding: 0px;
+    overflow: hidden;
+  }
+
+  th:first-of-type {
+    border-top-left-radius: 10px;
+  }
+  th:last-of-type {
+    border-top-right-radius: 10px;
+  }
+  tr:last-of-type td:first-of-type {
+    border-bottom-left-radius: 10px;
+  }
+  tr:last-of-type td:last-of-type {
+    border-bottom-right-radius: 10px;
+  }
+
+  .box {
+    border: 1px solid #eee;
+    padding: 10px;
+    background-color: #f5f7ff;
+    border-radius: 10px;
+    margin: 10px;
+    box-shadow: #fafbff 0px 0px 10px 0px;
+  }
+
+  p,
+  h2 {
+    margin: 2px;
+  }
+
+  .flex {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  .flex-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .summary_box {
+    margin: 10px auto;
+    font-size: 12px;
+  }
+</style>
+<header>
+  <h1 style="text-align: center">Aug Month's Transactions Report</h1>
+  <hr />
+  <br />
+  <div class="contact_container flex">
+    <div class="flex-col">
+      <p>From</p>
+      <p><b>Vishal's Kitchen</b></p>
+      <p>Mobile: 9068062563</p>
+      <p><b>UPI ID</b>: Test@xyz</p>
+    </div>
+    <div class="flex-col">
+      <p>To</p>
+      <p><b>Mahender</b></p>
+      <p>Mobile: 9359200371</p>
+    </div>
+  </div>
+</header>
+<div class="summary_box flex box">
+  <div class="flex-col">
+    <p>Final Balance on 24 Aug:</p>
+    <p style="font-size: 30px"><b>₹7</b></p>
+  </div>
+  <div class="flex-col">
+    <p class="">Cash Added: <b>₹1007</b></p>
+    <p>Cash Deducted: <b>₹-955</b></p>
+    <p>Order Processed: <b>₹-45</b></p>
+  </div>
+</div>
+<br />
+<table>
+  <tr>
+    <th style="border-right: 1px solid rgb(244, 244, 244)">Date</th>
+    <th>Type</th>
+    <th>Info</th>
+    <th>Amount</th>
+    <th>Balance</th>
+  </tr>
+  <tr>
+    <td style="border-right: 1px solid rgb(244, 244, 244)" rowspan="3">
+      15 Aug
+    </td>
+    <td>Cash Added</td>
+    <td>-</td>
+    <td>₹1000</td>
+    <td>₹1000</td>
+  </tr>
+  <tr>
+    <td>Cash Deducted</td>
+    <td>-</td>
+    <td>₹-955</td>
+    <td>₹45</td>
+  </tr>
+  <tr>
+    <td>Lunch Order Processed</td>
+    <td>-</td>
+    <td>₹-45</td>
+    <td>₹0</td>
+  </tr>
+  <tr>
+    <td style="border-right: 1px solid rgb(244, 244, 244)" class="16 Aug">
+      16 Aug
+    </td>
+    <td>Cash Added</td>
+    <td>-</td>
+    <td>₹2</td>
+    <td>₹2</td>
+  </tr>
+  <tr>
+    <td style="border-right: 1px solid rgb(244, 244, 244)" class="21 Aug">
+      21 Aug
+    </td>
+    <td>Cash Added</td>
+    <td>-</td>
+    <td>₹1</td>
+    <td>₹3</td>
+  </tr>
+  <tr>
+    <td style="border-right: 1px solid rgb(244, 244, 244)" class="22 Aug">
+      22 Aug
+    </td>
+    <td>Cash Added</td>
+    <td>-</td>
+    <td>₹2</td>
+    <td>₹5</td>
+  </tr>
+  <tr>
+    <td style="border-right: 1px solid rgb(244, 244, 244)" class="24 Aug">
+      24 Aug
+    </td>
+    <td>Cash Added</td>
+    <td>Note</td>
+    <td>₹2</td>
+    <td>₹7</td>
+  </tr>
+  <tr>
+    <td style="border-right: 1px solid rgb(244, 244, 244)" class="24 Aug">
+      24 Aug
+    </td>
+    <td>Cash Added</td>
+    <td>Note</td>
+    <td>₹2</td>
+    <td>₹7</td>
+  </tr>
+</table>

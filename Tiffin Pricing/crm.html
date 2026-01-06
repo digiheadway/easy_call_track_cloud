@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Update CRM Record</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f0f0;
+        padding: 2px;
+      }
+
+      .container {
+        max-width: 600px;
+        margin: 10px auto;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      h2 {
+        text-align: center;
+        color: #333;
+      }
+
+      .form-group {
+        margin-bottom: 15px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #333;
+      }
+
+      input[type="number"],
+      textarea,
+      select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+      }
+
+      input[type="checkbox"] {
+        margin-right: 5px;
+      }
+
+      button {
+        width: 100%;
+        padding: 10px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+      /* Horizontal radio buttons */
+      .radio-group {
+        display: flex;
+        gap: 10px;
+      }
+      /* Response Message Styling */
+      .response-message {
+        margin-top: 20px;
+        font-size: 16px;
+        padding: 10px;
+        border-radius: 5px;
+        display: none; /* Hidden by default */
+      }
+
+      .response-success {
+        color: #155724;
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+      }
+
+      .response-error {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+      }
+      #dataContainer {
+        max-width: 100%; /* Ensures the container fits within the viewport */
+        overflow-x: auto; /* Adds a horizontal scrollbar if the table overflows */
+      }
+
+      table {
+        width: 100%; /* Ensures the table takes up the full width of the container */
+        table-layout: auto; /* Allows table cells to resize based on content */
+        border-collapse: collapse; /* Makes the table look cleaner */
+        margin-top: 20px;
+      }
+
+      td {
+        word-wrap: break-word; /* Ensures content breaks onto the next line if it's too long */
+        padding: 8px;
+        border: 1px solid #ddd;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+        background-color: #f9f9f9;
+      }
+
+      th {
+        padding: 8px;
+        text-align: left;
+        border: 1px solid #ddd;
+        background-color: #007bff;
+        color: white;
+      }
+
+      .fetching-message {
+        font-size: 18px;
+        text-align: center;
+        color: #007bff;
+      }
+
+      .error-message {
+        font-size: 18px;
+        text-align: center;
+        color: red;
+      }
+      #pasteBtn {
+        background-color: black;
+        color: white;
+        border: none;
+        padding: 6px;
+        font-size: 12px;
+        cursor: pointer;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+        margin: 20px auto;
+      }
+
+      #pasteBtn:hover {
+        background-color: grey;
+      }
+
+      #pasteBtn:active {
+        background-color: green;
+        transform: translateY(2px);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Update CRM Record</h2>
+      <div id="responseMessage" class="response-message"></div>
+      <button id="pasteBtn" onclick="access_clipboard();">Paste</button>
+
+      <form id="crmForm">
+        <div class="form-group">
+          <label for="phone">Phone Number:</label>
+          <input
+            type="number"
+            id="phone"
+            name="phone"
+            placeholder="Enter phone number"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="note">Response Note:</label>
+          <textarea
+            id="note"
+            name="note"
+            rows="4"
+            placeholder="Enter response note"
+          ></textarea>
+        </div>
+        <div class="form-group">
+          <label for="traits">Select Traits:</label>
+          <select id="traits" name="traits">
+            <option value="" disabled selected>Select a trait</option>
+            <option value="100 plus cx">100 plus cx</option>
+            <option value="50 to 100 cx">50 to 100 cx</option>
+            <option value="10 to 30 cx">10 to 30 cx</option>
+            <option value="less than 10">Less than 10</option>
+            <option value="not started">Not started</option>
+            <option value="need tiffin service">Need Tiffin Service</option>
+            <option value="irrelevant">Irrelevant</option>
+          </select>
+        </div>
+        <!-- <div class="form-group">
+            <label><input type="checkbox" id="unsubscribe" name="unsubscribe"> Unsubscribe</label>
+
+        </div> -->
+        <div class="form-group">
+          <label>Subscription Status:</label>
+          <div class="radio-group">
+            <label
+              ><input type="radio" name="unsubscribe" value="" checked />No
+              Change</label
+            >
+            <label
+              ><input
+                type="radio"
+                name="unsubscribe"
+                value="0"
+              />Subscribe</label
+            >
+            <label
+              ><input
+                type="radio"
+                name="unsubscribe"
+                value="1"
+              />Unsubscribe</label
+            >
+          </div>
+        </div>
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+    <div class="container">
+      <!-- Placeholder for Fetching and Error Messages -->
+      <div id="fetchingMessage" class="fetching-message"></div>
+      <!-- Container for displaying data -->
+      <div id="dataContainer"></div>
+    </div>
+    <script>
+      document
+        .getElementById("crmForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+
+          const phone = document.getElementById("phone").value;
+          const note = document.getElementById("note").value;
+          const traits = document.getElementById("traits").value;
+          const unsubscribe = document.querySelector(
+            'input[name="unsubscribe"]:checked'
+          ).value;
+
+          // Perform validation
+          if (!phone) {
+            alert("Phone number and Traits are required");
+            return;
+          }
+
+          // Prepare data for submission
+          const formData = new FormData();
+          formData.append("phone", phone);
+
+          if (note) {
+            formData.append("note", note);
+          }
+          if (traits) {
+            formData.append("traits", traits);
+          }
+          if (unsubscribe !== "") formData.append("unsubscribe", unsubscribe); // Only append if user chose to change the status
+
+          // Submit data using Fetch API
+          fetch("submit.php", {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              const responseMessage =
+                document.getElementById("responseMessage");
+              if (data.success) {
+                responseMessage.textContent =
+                  "CRM record updated successfully!";
+                responseMessage.className = "response-message response-success";
+              } else {
+                responseMessage.textContent = "Error: " + data.message;
+                responseMessage.className = "response-message response-error";
+              }
+              responseMessage.style.display = "block"; // Show the message
+            })
+            .catch((error) => {
+              const responseMessage =
+                document.getElementById("responseMessage");
+              responseMessage.textContent = "Error: " + error;
+              responseMessage.className = "response-message response-error";
+              responseMessage.style.display = "block"; // Show the message
+            });
+        });
+    </script>
+    <script>
+      document.getElementById("phone").addEventListener("input", function () {
+        fetchdata();
+      });
+
+      function fetchdata() {
+        let phoneInputele = document.getElementById("phone");
+        let phoneInput = phoneInputele.value;
+        localStorage.setItem("phoneInput", phoneInput);
+
+        // Check if the phone number is exactly 10 digits long
+        if (phoneInput.length === 10) {
+          document.getElementById("fetchingMessage").textContent =
+            "Fetching...";
+          document.getElementById("dataContainer").innerHTML = "";
+
+          // Fetch data from the server based on the phone number
+          fetch(`fetch.php?phone=${phoneInput}`)
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.data.length > 0) {
+                document.getElementById("fetchingMessage").textContent = "";
+
+                // Generate the table dynamically
+                let tableHTML = "<table>";
+
+                // Generate table rows dynamically
+                data.data.forEach((row) => {
+                  tableHTML += "<tr>";
+                  data.columns.forEach((column) => {
+                    tableHTML += `<tr><td>${column}</td><td>${row[column]}</td></tr>`;
+                  });
+                  tableHTML += "</tr>";
+                });
+
+                tableHTML += "</table>";
+
+                const record = data.data[0];
+
+                console.log("ID:", record.vendor_id);
+                document.getElementById("fetchingMessage").innerHTML =
+                  '<a target="_blank" href="https://backend123.tiffincrm.com/tools/activities.php?vendor_id=' +
+                  record.vendor_id +
+                  '">Go to Activity</a>';
+                // Append the generated table to the data container
+                document.getElementById("dataContainer").innerHTML = tableHTML;
+              } else {
+                document.getElementById("fetchingMessage").textContent =
+                  "No records found.";
+              }
+            })
+            .catch((error) => {
+              document.getElementById("fetchingMessage").textContent =
+                "Error fetching data.";
+              console.error("Error:", error);
+            });
+        } else {
+          // Clear message and data if phone number is not 10 digits
+          document.getElementById("fetchingMessage").textContent = "";
+          document.getElementById("dataContainer").innerHTML = "";
+        }
+      }
+
+      let phoneInputele = document.getElementById("phone");
+      let storedPhoneInput = localStorage.getItem("phoneInput");
+      if (storedPhoneInput) {
+        phoneInputele.value = storedPhoneInput;
+        fetchdata();
+      }
+
+      async function access_clipboard() {
+        // Read text from clipboard
+        const text = await navigator.clipboard.readText();
+        // Extract only the digits from the pasted text
+        const digits = text.replace(/\D/g, ""); // Remove non-numeric characters
+        // Get the last 10 digits from the string
+        const phone = digits.slice(-10);
+        // Insert the last 10 digits into the input field
+        document.getElementById("phone").value = phone;
+        fetchdata();
+      }
+      access_clipboard();
+    </script>
+  </body>
+</html>

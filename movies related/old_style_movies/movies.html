@@ -1,0 +1,430 @@
+<!doctype html>
+<html ⚡ lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>All Movies - Gomovies</title>
+    <link rel="canonical" href="movies.html">
+    <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1">
+    <meta name="description" content="Browse all Classic Indian Movies.">
+
+    <script async src="https://cdn.ampproject.org/v0.js"></script>
+    <script async custom-element="amp-sidebar" src="https://cdn.ampproject.org/v0/amp-sidebar-0.1.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Roboto+Slab:wght@400;700&display=swap"
+        rel="stylesheet">
+
+    <style amp-boilerplate>
+        body {
+            -webkit-animation: -amp-start 8s steps(1, end) 0s 1 normal both;
+            -moz-animation: -amp-start 8s steps(1, end) 0s 1 normal both;
+            -ms-animation: -amp-start 8s steps(1, end) 0s 1 normal both;
+            animation: -amp-start 8s steps(1, end) 0s 1 normal both
+        }
+
+        @-webkit-keyframes -amp-start {
+            from {
+                visibility: hidden
+            }
+
+            to {
+                visibility: visible
+            }
+        }
+
+        @-moz-keyframes -amp-start {
+            from {
+                visibility: hidden
+            }
+
+            to {
+                visibility: visible
+            }
+        }
+
+        @-ms-keyframes -amp-start {
+            from {
+                visibility: hidden
+            }
+
+            to {
+                visibility: visible
+            }
+        }
+
+        @keyframes -amp-start {
+            from {
+                visibility: hidden
+            }
+
+            to {
+                visibility: visible
+            }
+        }
+    </style><noscript>
+        <style amp-boilerplate>
+            body {
+                -webkit-animation: none;
+                -moz-animation: none;
+                -ms-animation: none;
+                animation: none
+            }
+        </style>
+    </noscript>
+
+    <style amp-custom>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        h1,
+        h2 {
+            font-family: 'Roboto Slab', serif;
+            color: #2c3e50;
+        }
+
+        header {
+            background: #222;
+            color: white;
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .container {
+            max-width: 1170px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .logo span {
+            color: #e74c3c;
+        }
+
+        .desktop-nav {
+            display: flex;
+            gap: 20px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .desktop-nav a {
+            color: #ccc;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        .desktop-nav a:hover {
+            color: white;
+        }
+
+        .hamburger {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Movie List */
+        .movie-list {
+            padding: 40px 0 60px;
+        }
+
+        .movie-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: #ffffff;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+            transition: all 0.2s ease;
+        }
+
+        .movie-item:hover {
+            background: #fafafa;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .movie-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .movie-year {
+            background: #2c3e50;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 3px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .movie-name {
+            font-family: 'Open Sans', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+
+        .movie-genre {
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .watch-btn {
+            padding: 8px 16px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .watch-btn:hover {
+            background: #c0392b;
+        }
+
+        /* Sidebar */
+        amp-sidebar {
+            width: 250px;
+            background: #2c3e50;
+            padding: 20px;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+
+        .sidebar-nav li {
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+
+        .sidebar-nav a {
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 768px) {
+            .desktop-nav {
+                display: none;
+            }
+
+            .hamburger {
+                display: block;
+            }
+
+            .movie-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .watch-btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <amp-sidebar id="sidebar" layout="nodisplay" side="right">
+        <div style="padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.2);">
+            <div class="logo">GO<span>MOVIES</span></div>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="movies.html">Movies</a></li>
+            <li><a href="#">TV Shows</a></li>
+        </ul>
+        <button on="tap:sidebar.close"
+            style="background:none; border:none; color:#bdc3c7; margin-top: 20px; cursor:pointer;">&times; Close
+            Menu</button>
+    </amp-sidebar>
+
+    <header>
+        <div class="container header-content">
+            <div class="logo">GO<span>MOVIES</span></div>
+            <nav>
+                <ul class="desktop-nav">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="movies.html" style="color:white;">Movies</a></li>
+                    <li><a href="#">TV Shows</a></li>
+                </ul>
+            </nav>
+            <button class="hamburger" on="tap:sidebar.toggle">☰</button>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="movie-list">
+            <div class="movie-item">
+                <div class="movie-info">
+                    <span class="movie-year">1960</span>
+                    <div>
+                        <h3 class="movie-name">Mughal-e-Azam</h3>
+                        <span class="movie-genre">Drama • Romance</span>
+                    </div>
+                </div>
+                <a href="movie-details.html" class="watch-btn">Watch</a>
+            </div>
+
+            <div class="movie-item">
+                <div class="movie-info">
+                    <span class="movie-year">1975</span>
+                    <div>
+                        <h3 class="movie-name">Sholay</h3>
+                        <span class="movie-genre">Action • Adventure</span>
+                    </div>
+                </div>
+                <a href="movie-details.html" class="watch-btn">Watch</a>
+            </div>
+
+            <div class="movie-item">
+                <div class="movie-info">
+                    <span class="movie-year">1975</span>
+                    <div>
+                        <h3 class="movie-name">Deewar</h3>
+                        <span class="movie-genre">Action • Crime</span>
+                    </div>
+                </div>
+                <a href="movie-details.html" class="watch-btn">Watch</a>
+            </div>
+
+            <div class="movie-item">
+                <div class="movie-info">
+                    <span class="movie-year">1971</span>
+                    <div>
+                        <h3 class="movie-name">Anand</h3>
+                        <span class="movie-genre">Drama</span>
+                    </div>
+                </div>
+                <a href="movie-details.html" class="watch-btn">Watch</a>
+            </div>
+
+            <div class="movie-item">
+                <div class="movie-info">
+                    <span class="movie-year">1965</span>
+                    <div>
+                        <h3 class="movie-name">Guide</h3>
+                        <span class="movie-genre">Drama • Musical</span>
+                    </div>
+                </div>
+                <a href="movie-details.html" class="watch-btn">Watch</a>
+            </div>
+
+            <div class="movie-item">
+                <div class="movie-info">
+                    <span class="movie-year">1972</span>
+                    <div>
+                        <h3 class="movie-name">Pakeezah</h3>
+                        <span class="movie-genre">Drama • Musical</span>
+                    </div>
+                </div>
+                <a href="movie-details.html" class="watch-btn">Watch</a>
+            </div>
+
+            <div class="movie-item">
+                <div class="movie-info">
+                    <span class="movie-year">1957</span>
+                    <div>
+                        <h3 class="movie-name">Mother India</h3>
+                        <span class="movie-genre">Drama</span>
+                    </div>
+                </div>
+                <a href="movie-details.html" class="watch-btn">Watch</a>
+            </div>
+
+            <div class="movie-item">
+                <div class="movie-info">
+                    <span class="movie-year">1955</span>
+                    <div>
+                        <h3 class="movie-name">Shree 420</h3>
+                        <span class="movie-genre">Comedy • Drama</span>
+                    </div>
+                </div>
+                <a href="movie-details.html" class="watch-btn">Watch</a>
+            </div>
+
+            <div class="movie-item">
+                <div class="movie-info">
+                    <span class="movie-year">1969</span>
+                    <div>
+                        <h3 class="movie-name">Aradhana</h3>
+                        <span class="movie-genre">Drama • Romance</span>
+                    </div>
+                </div>
+                <a href="movie-details.html" class="watch-btn">Watch</a>
+            </div>
+
+            <div class="movie-item">
+                <div class="movie-info">
+                    <span class="movie-year">1973</span>
+                    <div>
+                        <h3 class="movie-name">Bobby</h3>
+                        <span class="movie-genre">Romance</span>
+                    </div>
+                </div>
+                <a href="movie-details.html" class="watch-btn">Watch</a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center" style="background: #2c3e50; color: #ecf0f1; padding: 40px 0; margin-top: 40px;">
+        <div class="container">
+            <p style="opacity: 0.6; font-size: 0.8rem;">&copy; 2015 Gomovies Inc. All rights reserved.</p>
+        </div>
+    </footer>
+
+</body>
+
+</html>

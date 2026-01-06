@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Card Variations</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Decorative Background Elements */
+        .c2_card-bg-gradient {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: linear-gradient(to top, rgba(219, 234, 254, 0.5), transparent);
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .c2_card-bg-orb {
+            position: absolute;
+            top: -2.5rem;
+            left: -2.5rem;
+            width: 6rem;
+            height: 6rem;
+            background-color: rgba(37, 99, 235, 0.1);
+            border-radius: 50%;
+            filter: blur(32px);
+            transition: all 0.5s ease;
+            pointer-events: none;
+        }
+
+        .c2_property-card:hover .c2_card-bg-orb {
+            background-color: rgba(37, 99, 235, 0.15);
+        }
+
+        /* Footer Grid Layout - Two columns on all screen sizes */
+        .c2_footer {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 0.5rem;
+            align-items: start;
+        }
+
+        @media (min-width: 640px) {
+            .c2_footer {
+                gap: 0.75rem;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .c2_footer {
+                gap: 1rem;
+            }
+        }
+
+        /* Reduced Motion Support */
+        @media (prefers-reduced-motion: reduce) {
+
+            .c2_property-card,
+            .c2_card-bg-orb {
+                transition: none !important;
+            }
+
+            .c2_property-card:hover {
+                transform: none !important;
+            }
+        }
+
+        /* High Contrast Mode Support */
+        @media (prefers-contrast: high) {
+            .c2_property-card {
+                border-width: 2px !important;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            .c2_property-card {
+                box-shadow: none !important;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 overflow-x-hidden text-gray-900">
+
+    <!-- Container - Responsive Padding -->
+    <div class="w-full max-w-4xl mx-auto px-3 py-4 sm:px-4 sm:py-5 md:px-6 md:py-6 lg:px-8 lg:py-8">
+
+        <!-- Header - Responsive Typography -->
+        <header class="text-center mb-4 sm:mb-5 md:mb-6 lg:mb-8">
+            <h1 class="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-1 sm:mb-1.5 md:mb-2 text-gray-900">
+                Property Card</h1>
+        </header>
+
+        <!-- Property Card Section -->
+        <section>
+
+
+            <!-- Property Card - Responsive Padding & Borders -->
+            <article
+                class="c2_property-card relative bg-white rounded-lg sm:rounded-xl md:rounded-2xl p-2.5 sm:p-3 md:p-4 lg:p-5 border border-gray-200 overflow-hidden transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:shadow-lg shadow-md">
+
+                <!-- Decorative Background -->
+                <div class="c2_card-bg-gradient"></div>
+                <div class="c2_card-bg-orb"></div>
+
+                <!-- Card Content -->
+                <div class="relative z-10">
+                    <!-- Card Header with Icon, Title & Price - Responsive Layout -->
+                    <header
+                        class="flex flex-row justify-between items-start gap-2 sm:gap-2.5 md:gap-3 lg:gap-4 mb-2.5 sm:mb-3 md:mb-4">
+                        <div class="flex gap-2 sm:gap-2.5 md:gap-3 items-start flex-1 min-w-0">
+                            <!-- Icon - Responsive Size -->
+                            <div
+                                class="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 rounded-full bg-blue-50 border border-blue-200 border-opacity-30 flex items-center justify-center flex-shrink-0">
+                                <i
+                                    class="fa-solid fa-building text-blue-600 text-[10px] sm:text-xs md:text-sm lg:text-base"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <!-- Title - Responsive Text -->
+                                <h3
+                                    class="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-900 mb-0.5 sm:mb-1 flex items-center flex-wrap gap-1">
+                                    250 Gaj | Sector 24
+                                </h3>
+                                <!-- Subtitle - Responsive Text -->
+                                <p class="text-[10px] sm:text-xs md:text-sm text-gray-500">Residential House - #567</p>
+                            </div>
+                        </div>
+                        <!-- Price Section - Responsive -->
+                        <div class="text-right">
+                            <p
+                                class="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-blue-600 mb-0.5 sm:mb-1 whitespace-nowrap">
+                                ₹ 6.50 Cr</p>
+                            <p class="text-[10px] sm:text-xs md:text-sm text-gray-500 whitespace-nowrap">
+                                ₹ 14,500 <span class="text-gray-400">/gaj</span>
+                            </p>
+                        </div>
+                    </header>
+
+                    <!-- Description - Responsive Text & Spacing -->
+                    <p
+                        class="text-[11px] sm:text-xs md:text-sm lg:text-base text-gray-700 leading-relaxed mb-2.5 sm:mb-3 md:mb-4">
+                        North Facing, Size- 22/40, 22 ft . Road , Incomplete lenter only wall Bani Hui Hai or shutter
+                        laga hua hai, All Document ok and Naksha Pass
+
+
+                    </p>
+
+                    <!-- Card Footer with Tags & Timestamp - Grid Layout -->
+                    <footer class="c2_footer pt-2.5 sm:pt-3 md:pt-4 border-t border-gray-200">
+                        <!-- Tags - Responsive -->
+                        <div class="flex flex-wrap gap-1.5 sm:gap-2">
+                            <span
+                                class="inline-flex items-center gap-1 py-0.5 px-1.5 sm:py-1 sm:px-2 md:py-1 md:px-2.5 rounded-full text-[10px] sm:text-xs md:text-sm font-normal bg-gray-50 text-gray-700 border border-gray-200 whitespace-nowrap transition-all duration-200 hover:bg-gray-100">
+                                <i class="fa-solid fa-road text-gray-500 text-[8px] sm:text-[9px] md:text-[10px]"></i>
+                                Corner
+                            </span>
+                            <span
+                                class="inline-flex items-center gap-1 py-0.5 px-1.5 sm:py-1 sm:px-2 md:py-1 md:px-2.5 rounded-full text-[10px] sm:text-xs md:text-sm font-normal bg-gray-50 text-gray-700 border border-gray-200 whitespace-nowrap transition-all duration-200 hover:bg-gray-100">
+                                My Property
+                            </span>
+                            <span
+                                class="inline-flex items-center gap-1 py-0.5 px-1.5 sm:py-1 sm:px-2 md:py-1 md:px-2.5 rounded-full text-[10px] sm:text-xs md:text-sm font-normal bg-gray-50 text-gray-700 border border-gray-200 whitespace-nowrap transition-all duration-200 hover:bg-gray-100">
+                                <i class="fa-solid fa-globe text-gray-500 text-[8px] sm:text-[9px] md:text-[10px]"></i>
+                                Public
+                            </span>
+                            <span
+                                class="inline-flex items-center gap-1 py-0.5 px-1.5 sm:py-1 sm:px-2 md:py-1 md:px-2.5 rounded-full text-[10px] sm:text-xs md:text-sm font-normal bg-gray-50 text-gray-700 border border-gray-200 whitespace-nowrap transition-all duration-200 hover:bg-gray-100">
+                                <i class="fa-solid fa-heart text-red-500 text-[8px] sm:text-[9px] md:text-[10px]"></i>
+                                Saved
+                            </span>
+                            <span
+                                class="inline-flex items-center gap-1 py-0.5 px-1.5 sm:py-1 sm:px-2 md:py-1 md:px-2.5 rounded-full text-[10px] sm:text-xs md:text-sm font-normal bg-gray-50 text-gray-700 border border-gray-200 whitespace-nowrap transition-all duration-200 hover:bg-gray-100">
+                                <i
+                                    class="fa-solid fa-comment text-gray-500 text-[8px] sm:text-[9px] md:text-[10px]"></i>
+                                Plot 600
+                            </span>
+                        </div>
+
+                        <!-- Timestamp - Always on Right Column -->
+                        <div class="text-right flex items-start justify-end">
+                            <span
+                                class="inline-flex items-center gap-1 text-[10px] sm:text-xs md:text-sm text-gray-500 whitespace-nowrap">
+                                <i class="fa-solid fa-clock text-[8px] sm:text-[9px] md:text-[10px]"></i> just
+                                now
+                            </span>
+                        </div>
+                    </footer>
+                </div>
+            </article>
+        </section>
+
+    </div>
+</body>
+
+</html>

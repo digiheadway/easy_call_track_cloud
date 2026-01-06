@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+</head>
+
+<body>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0px;
+      padding: 0;
+    }
+
+    .response_container {
+      padding: 5px;
+      border: 1px solid #004cd0;
+      border-radius: 0px 0px 5px 5px;
+      background-color: #004cd0;
+      top: 0;
+      color: white;
+      margin: 0 auto;
+      position: sticky;
+      width: 95%;
+      z-index: 1000;
+    }
+
+    #response {
+      font-weight: bold;
+      text-align: center;
+    }
+  </style>
+  <div class="response_container">
+    <p id="loading" style="display: none">Loading...</p>
+    <p id="response">Automatically Login You in...</p>
+
+  </div>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const response = urlParams.get("response");
+    document.getElementById("response").innerHTML = response;
+
+    setTimeout(() => {
+      window.location.href = "#";
+    }, 3000);
+
+    function show_animation() {
+      document.getElementById("response").style.display = "none";
+      document.getElementById("loading").style.display = "flex";
+    }
+
+    show_animation();
+  </script>
+</body>
+
+</html>

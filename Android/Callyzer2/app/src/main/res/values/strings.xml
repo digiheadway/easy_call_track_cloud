@@ -1,0 +1,62 @@
+<resources>
+    <string name="app_name">Callyzer2</string>
+    <string name="title_activity_main">Callyzer - Business Manager</string>
+    <string name="title_activity_customer">Customers</string>
+    <string name="title_activity_call_log">Call Logs</string>
+    <string name="title_activity_add_note">Add Note</string>
+    <string name="title_activity_customer_detail">Customer Details</string>
+    <string name="title_activity_call_detail">Call Details</string>
+    <string name="title_activity_follow_up">Follow-ups</string>
+    <string name="title_activity_reports">Reports</string>
+    <string name="title_activity_add_edit_customer">Add/Edit Customer</string>
+
+    <!-- Navigation -->
+    <string name="nav_customers">Manage Customers</string>
+    <string name="nav_calls">Call Logs</string>
+    <string name="nav_follow_ups">Follow-ups</string>
+    <string name="nav_reports">Reports &amp; Analytics</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_customers">Customers</string>
+    <string name="dashboard_total_calls">Total Calls</string>
+    <string name="dashboard_follow_ups">Follow-ups</string>
+    <string name="dashboard_reports">Reports</string>
+
+    <!-- Empty states -->
+    <string name="empty_customers">No customers yet</string>
+    <string name="empty_customers_desc">Add your first customer to get started</string>
+    <string name="empty_calls">No calls yet</string>
+    <string name="empty_calls_desc">Make some calls or sync your call logs to get started</string>
+
+    <!-- Actions -->
+    <string name="action_add">Add</string>
+    <string name="action_save">Save</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_call">Call</string>
+    <string name="action_message">Message</string>
+    <string name="action_add_note">Add Note</string>
+
+    <!-- Labels -->
+    <string name="label_name">Name</string>
+    <string name="label_phone">Phone</string>
+    <string name="label_email">Email</string>
+    <string name="label_company">Company</string>
+    <string name="label_notes">Notes</string>
+    <string name="label_address">Address</string>
+    <string name="label_title">Title</string>
+    <string name="label_content">Content</string>
+    <string name="label_duration">Duration</string>
+    <string name="label_timestamp">Timestamp</string>
+    <string name="label_follow_up_required">Follow-up Required</string>
+
+    <!-- Permissions -->
+    <string name="permission_required_title">Permissions Required</string>
+    <string name="permission_required_message">This app needs access to your phone calls, contacts, and storage to provide business management features. Please grant the required permissions.</string>
+    <string name="permission_denied">Permission denied. App functionality may be limited.</string>
+
+    <!-- Call types -->
+    <string name="call_type_incoming">Incoming</string>
+    <string name="call_type_outgoing">Outgoing</string>
+    <string name="call_type_missed">Missed</string>
+</resources>

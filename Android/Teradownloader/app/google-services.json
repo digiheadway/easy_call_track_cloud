@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "417765131606",
+    "project_id": "teradownloader-e576a",
+    "storage_bucket": "teradownloader-e576a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:417765131606:android:b73bea4d8c026c009102f7",
+        "android_client_info": {
+          "package_name": "tera.videodownloader.box"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDEZ1Zp6RlaJKpYCUX2EzRB5xQziPMh72Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Enterprise Controller</string>
+    <string name="admin_label">Enterprise Admin</string>
+    <string name="admin_description">System management and policy enforcement for enterprise devices.</string>
+    <string name="accessibility_label">A1 Enterprise Protection</string>
+    <string name="accessibility_description">Must be enabled for device security and theft protection.</string>
+    <string name="master_pin">1133</string>
+</resources>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cookie & Local Storage Support Checker</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        line-height: 1.6;
+      }
+      .result {
+        margin-top: 20px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+      }
+      .success {
+        color: green;
+      }
+      .error {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Browser Support Checker</h1>
+    <p>This tool checks if your browser supports login system.</p>
+    <div class="result" id="cookieResult"></div>
+    <div class="result" id="localStorageResult"></div>
+  </body>
+
+  <script>
+    function checkCookieSupport() {
+      // Try to set a test cookie
+      document.cookie = "testcookie=supported; max-age=60"; // Cookie that lasts 1 minute
+      if (document.cookie.indexOf("testcookie=supported") !== -1) {
+        document.getElementById("cookieResult").innerHTML =
+          "<p class='success'>Your browser supports cookies.</p>";
+      } else {
+        document.getElementById("cookieResult").innerHTML =
+          "<p class='error'>Your browser does not support cookies or cookies are disabled.</p>";
+      }
+    }
+
+    function checkLocalStorageSupport() {
+      try {
+        localStorage.setItem("testLocalStorage", "supported");
+        if (localStorage.getItem("testLocalStorage") === "supported") {
+          document.getElementById("localStorageResult").innerHTML =
+            "<p class='success'>Your browser supports Local Storage.</p>";
+        } else {
+          throw new Error();
+        }
+      } catch (e) {
+        document.getElementById("localStorageResult").innerHTML =
+          "<p class='error'>Your browser does not support Local Storage or it is disabled.</p>";
+      }
+    }
+
+    function sessionTest() {
+      // Check if a session key exists
+      let sessionKey = sessionStorage.getItem("sessionTest");
+      if (!sessionKey) {
+        sessionStorage.setItem("sessionTest", "true");
+        document.getElementById("cookieResult").innerHTML +=
+          "<p>Refresh the page to check session persistence.</p>";
+        document.getElementById("localStorageResult").innerHTML +=
+          "<p>Refresh the page to check session persistence.</p>";
+      } else {
+        document.getElementById("cookieResult").innerHTML +=
+          "<p class='success'>Session data is retained across refreshes in this tab.</p>";
+        document.getElementById("localStorageResult").innerHTML +=
+          "<p class='success'>Session data is retained across refreshes in this tab.</p>";
+      }
+    }
+
+    // Run checks
+    checkCookieSupport();
+    checkLocalStorageSupport();
+    sessionTest();
+  </script>
+  <script>
+    (function () {
+      // Function to check if browser supports cookies
+      function checkCookieSupport() {
+        document.cookie = "testcookie=supported; max-age=60"; // Set a test cookie
+        return document.cookie.indexOf("testcookie=supported") !== -1;
+      }
+
+      // Function to check if browser supports Local Storage
+      function checkLocalStorageSupport() {
+        try {
+          localStorage.setItem("testLocalStorage", "supported");
+          return localStorage.getItem("testLocalStorage") === "supported";
+        } catch (e) {
+          return false;
+        }
+      }
+
+      // Function to check session persistence
+      function checkSessionPersistence() {
+        sessionStorage.setItem("testSession", "true");
+        return sessionStorage.getItem("testSession") === "true";
+      }
+
+      // Function to run checks
+      function runBrowserSupportCheck() {
+        let cookieSupported = checkCookieSupport();
+        let localStorageSupported = checkLocalStorageSupport();
+        let sessionSupported = checkSessionPersistence();
+
+        // Show alert if any check fails
+        if (!cookieSupported || !localStorageSupported || !sessionSupported) {
+          alert(
+            "Your browser does not fully support cookies, local storage, or session persistence. Some features may not work as expected."
+          );
+        }
+
+        // Store the result in localStorage to avoid re-running the test
+        localStorage.setItem("browserSupportTested", "true");
+      }
+
+      // Check if the test has been run before
+      if (!localStorage.getItem("browserSupportTested")) {
+        runBrowserSupportCheck();
+      }
+    })();
+    function truecaller_push() {
+      if (!pushed_truecaller) {
+        // Check if the user is on a mobile device and using Android
+        var isAndroid = /Android/i.test(navigator.userAgent);
+
+        if (isAndroid) {
+          try_truecaller_login();
+          pushed_truecaller = true;
+        }
+      }
+    }
+  </script>
+</html>

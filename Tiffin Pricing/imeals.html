@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hey</title>
+    <style>
+      body {
+        padding: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        flex-direction: column;
+        max-width: 100%;
+      }
+
+      button {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+      }
+
+      /* Full-page overlay style */
+      .loading-layer {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        justify-content: center;
+        align-items: center;
+      }
+
+      /* Loader animation style */
+      .loader {
+        border: 8px solid #f3f3f3;
+        /* Light grey */
+        border-top: 8px solid #3498db;
+        /* Blue */
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        animation: spin 2s linear infinite;
+      }
+
+      /* Loader animation */
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .login-button-container {
+        text-align: center;
+      }
+
+      .truecaller-button {
+        display: inline-flex;
+        align-items: center;
+        background-color: #ffffff;
+        color: #0387ff;
+        font-size: 16px;
+        font-weight: bold;
+        padding: 12px 24px;
+        border-radius: 80px;
+        border: 1px solid #0387ff;
+        text-decoration: none;
+        transition: background-color 0.3s ease, transform 0.3s ease;
+      }
+
+      .truecaller-button:hover {
+        transform: scale(1.05);
+      }
+
+      .truecaller-logo {
+        width: 24px;
+        height: 24px;
+        margin-right: 10px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <br /><br /><br /><br />
+
+    <div class="login-button-container">
+      <br /><br /><br /><br />
+
+      <button class="truecaller-button" onclick="try_truecaller_login()">
+        <img
+          src="https://www.truecaller.com/cms/0a2587cdca1b28311c5d067ff7bb701c.avif"
+          alt="Truecaller Logo"
+          class="truecaller-logo"
+        />
+        Login with Truecaller
+      </button>
+    </div>
+    <br /><br /><br /><br />
+
+    <a href="https://imeals.in/?testlogintruecaller">Check Status</a>
+
+    <h4>User Info:</h4>
+    <p id="request_id"></p>
+    <p id="response"></p>
+
+    <div id="userInfo">
+      <!-- The response data will be displayed here -->
+    </div>
+    <div id="loadingLayer" class="loading-layer">
+      <div class="loader"></div>
+      <br />
+    </div>
+    <script>
+      let truecaller_request_id = null; // Initialize as null
+      let isSuccess = false; // Global success flag
+      let retryCount = 0; // Retry attempt counter
+
+      function try_truecaller_login() {
+        page_loading(true);
+        const partnerName = "Imeals";
+        const privacyUrl = "https://imeals.in/privacy-policy";
+        const termsUrl = "https://imeals.in/terms";
+        const loginPrefix = "proceed";
+        const loginSuffix = "verifymobile";
+        const ctaPrefix = "proceedwith";
+        const ctaColor = encodeURIComponent("default");
+        const ctaTextColor = encodeURIComponent("default");
+        const btnShape = "round";
+        const skipOption = "manualdetails";
+        const ttl = 60000;
+        const randomid = Math.floor(Math.random() * 1000000);
+        truecaller_request_id = randomid + Date.now(); // Set global request ID
+        // document.getElementById("request_id").innerHTML = truecaller_request_id;
+        // Properly formatted URL
+        window.location = `truecallersdk://truesdk/web_verify?type=btmsheet&requestNonce=${truecaller_request_id}&partnerKey=Wxruhf8a1644c5276496993024a726dc506f1&partnerName=${partnerName}&lang=en&privacyUrl=${privacyUrl}&termsUrl=${termsUrl}&loginPrefix=${loginPrefix}&loginSuffix=${loginSuffix}&ctaPrefix=${ctaPrefix}&ctaColor=${ctaColor}&ctaTextColor=${ctaTextColor}&btnShape=${btnShape}&skipOption=${skipOption}&ttl=${ttl}`;
+
+        setTimeout(function () {
+          if (document.hasFocus()) {
+            // Truecaller app not present on the device and you redirect the user
+            // to your alternate verification page
+          } else {
+            // Add an event listener to the window for the 'focus' event
+            window.addEventListener("focus", function () {
+              get_truecaller_response();
+            });
+          }
+        }, 600);
+      }
+
+      // Add event listener to the button
+      function get_truecaller_response() {
+        if (truecaller_request_id) {
+          page_loading(true);
+          // Make a POST request to the PHP endpoint to fetch user info
+          fetch("https://imeals.in/truecaller/get_response.php", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              truecaller_request_id,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.status === "ok") {
+                // Display the user info in HTML
+                isSuccess = true;
+
+                const userInfo = data.data.userInfo;
+
+                // Prepare HTML output
+                let htmlContent = `<p>${JSON.stringify(data.data, null, 2)}</p>
+`;
+                // Inject the HTML content into the userInfo div
+                // document.getElementById(
+                //   "userInfo"
+                // ).innerHTML = `<pre>${htmlContent}</pre>`;
+                // Store data in localStorage
+                localStorage.setItem("userInfoData", JSON.stringify(data.data));
+                page_loading(false);
+              } else {
+                // Display error message
+                retryRequest(retryCount + 1); // Call retryRequest
+                // document.getElementById(
+                //   "response"
+                // ).innerHTML = `<p style="color: red;">Error: ${data.message}</p>`;
+              }
+            })
+
+            .catch((error) => {
+              console.error("Fetch error:", error);
+              //   document.getElementById(
+              //     "userInfo"
+              //   ).innerHTML = `<p style="color: red;">Error: ${error}</p>`;
+            });
+          page_loading(false);
+        } else {
+          // Display an error if truecaller_request_id is empty
+          //   document.getElementById(
+          //     "userInfo"
+          //   ).innerHTML = `<p style="color: red;">Please enter a Request ID.</p>`;
+          //   page_loading(false);
+        }
+      }
+      function retryRequest(attempt) {
+        const maxAttempts = 30;
+        const interval = attempt <= 20 ? 3000 : attempt <= 25 ? 6000 : 60000;
+
+        if (attempt <= maxAttempts && !isSuccess) {
+          setTimeout(() => {
+            retryCount = attempt; // Update retry count
+            get_truecaller_response(); // Retry fetching response
+          }, interval);
+        }
+      }
+      function page_loading(isLoading) {
+        var loadingLayer = document.getElementById("loadingLayer");
+        if (isLoading) {
+          loadingLayer.style.display = "flex";
+        } else {
+          loadingLayer.style.display = "none";
+        }
+      }
+    </script>
+  </body>
+</html>

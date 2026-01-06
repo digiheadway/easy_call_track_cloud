@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Background with Overlay</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin-top: 50px;
+      }
+      canvas {
+        border: 1px solid #ddd;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Provide Image Link to Add Background</h2>
+    <input type="text" id="imageUrl" placeholder="Enter direct image link" />
+    <br /><br />
+    <button id="loadImageBtn">Load Image</button>
+    <br /><br />
+    <canvas id="canvas" width="500" height="500"></canvas>
+    <br /><br />
+    <button id="downloadBtn">Download Image</button>
+
+    <script>
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const imageUrlInput = document.getElementById("imageUrl");
+      const loadImageBtn = document.getElementById("loadImageBtn");
+      const downloadBtn = document.getElementById("downloadBtn");
+
+      // Overlay image that will be on top (your provided image layer)
+      const overlayImageSrc = "bg1.png"; // Replace with your image layer
+      const overlayImage = new Image();
+      overlayImage.src = overlayImageSrc;
+
+      // User image settings (you can adjust these dynamically)
+      let userImageX = 70; // X position of the user image
+      let userImageY = 50; // Y position of the user image
+      let userImageScale = 2; // Scale of the user image
+
+      // Function to load and process the user image
+      function loadUserImage(imageUrl) {
+        const userImage = new Image();
+        userImage.src = imageUrl;
+
+        userImage.onload = function () {
+          // Clear the canvas before drawing
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          // Draw the user image (adjust position and scale using variables)
+          const imgWidth = userImage.width * userImageScale;
+          const imgHeight = userImage.height * userImageScale;
+          ctx.drawImage(userImage, userImageX, userImageY, imgWidth, imgHeight);
+
+          // Draw the overlay image on top
+          overlayImage.onload = function () {
+            ctx.drawImage(overlayImage, 0, 0, canvas.width, canvas.height);
+          };
+          ctx.drawImage(overlayImage, 0, 0, canvas.width, canvas.height);
+        };
+
+        userImage.onerror = function () {
+          alert(
+            "Failed to load image from the provided link. Please try a valid image URL."
+          );
+        };
+      }
+
+      // Event listener for 'Load Image' button
+      loadImageBtn.addEventListener("click", function () {
+        const imageUrl = imageUrlInput.value;
+        if (imageUrl) {
+          loadUserImage(imageUrl);
+        } else {
+          alert("Please provide a valid image URL.");
+        }
+      });
+
+      // Download the processed image
+      downloadBtn.addEventListener("click", function () {
+        const link = document.createElement("a");
+        link.download = "processed-image.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      });
+    </script>
+  </body>
+</html>

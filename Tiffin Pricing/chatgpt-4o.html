@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tiffin CRM Pricing Calculator</title>
+    <!--Link for Font awesome icons-->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+
+    <!--Links for Bootstrap-->
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+    />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+    <style>
+      :root {
+        --My-Gradient: linear-gradient(90deg, #6078fe 0%, #4b13e9 100%);
+      }
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f7f7f7;
+        margin: 0;
+        padding: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .container {
+        background-color: #fff;
+        padding: 30px 15px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        width: 350px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 20px;
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 10px;
+        color: #555;
+      }
+
+      input[type="range"] {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+
+      select {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+      }
+
+      .results {
+        font-size: 18px;
+        color: #333;
+        text-align: center;
+        margin-top: 20px;
+      }
+
+      .results_mini {
+        font-size: 12px;
+        color: #6d6a6a;
+      }
+    </style>
+    <style>
+      .price-box {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        background: var(--My-Gradient);
+      }
+
+      .price-box-column {
+        flex: 1;
+        text-align: center;
+      }
+
+      .price-box-column-left .price-box-big-number,
+      .price-box-column-right .price-box-big-number {
+        font-size: 40px;
+        font-weight: bold;
+        color: #f5f5f5;
+      }
+
+      .price-box-column-left .price-box-mini-title,
+      .price-box-column-right .price-box-mini-title {
+        font-size: 1rem;
+        color: #d2c3ff;
+      }
+
+      .price-box-separator {
+        width: 1px;
+        height: 80px;
+        background: rgb(105, 95, 255);
+        margin: 5px 5px;
+      }
+      /* Style the track of the slider */
+      input[type="range"] {
+        -webkit-appearance: none; /* Remove default styling */
+        width: 100%; /* Full-width slider */
+        height: 8px; /* Track height */
+        background: #dddddd; /* Track color */
+        border-radius: 5px; /* Rounded corners */
+        outline: none; /* Remove default outline */
+        opacity: 0.7; /* Slightly transparent */
+        transition: opacity 0.15s ease-in-out; /* Smooth transition */
+      }
+
+      /* Style the slider thumb (circle) */
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none; /* Remove default styling */
+        appearance: none; /* Remove default styling */
+        width: 30px; /* Thumb width */
+        height: 30px; /* Thumb height */
+        background: var(--My-Gradient);
+        border-radius: 50%; /* Circular thumb */
+        cursor: pointer; /* Pointer cursor on hover */
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.3); /* Shadow around the thumb */
+      }
+
+      input[type="range"]::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        background: #4caf50;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+      }
+
+      input[type="range"]::-ms-thumb {
+        width: 20px;
+        height: 20px;
+        background: #4caf50;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+      }
+
+      .dropdown_country {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 10px;
+        flex-direction: row;
+        margin: 10px auto;
+      }
+
+      .dropdown_country select {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 20px;
+        border-radius: 40px;
+        width: 100px;
+        margin: 10px auto;
+        background: #fff;
+        border: 1px solid #4e4e4e;
+      }
+
+      /* Style the range input container */
+      .range-container {
+        margin: 20px;
+      }
+      .pricing_bill {
+        padding: 20px 10px 15px;
+        border-radius: 8px;
+        background: #f5f8fe;
+        border: 1px dotted #5f5f5f;
+        color: rgb(91, 91, 91);
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        flex-direction: column;
+        text-transform: capitalize;
+        margin: 10px auto;
+        gap: 10px;
+      }
+
+      .pricing_bill_row {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+      }
+      .pricing_bill_discount {
+        color: #016204;
+      }
+      .pricing_bill hr {
+        width: 100%;
+        height: 2px;
+        border: none;
+        border-bottom: black 2px dotted;
+        margin: -2px 0;
+      }
+    </style>
+    <style>
+      .dropdown_new {
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        margin-bottom: 10px;
+        font-size: 14px;
+        gap: 0;
+        margin: 20px auto 0px auto;
+      }
+
+      .dropdown_new label {
+        margin-right: 0px;
+      }
+
+      .dropdown_new select {
+        padding: 0px;
+        border: none;
+        border-radius: 0px;
+        font-size: 14px;
+        width: 165px;
+        margin-bottom: 0;
+        color: #555;
+        border-bottom: #929292 1px dotted;
+        background: transparent;
+      }
+      .order_count_input {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+      }
+      .description {
+        font-size: 14px;
+        color: #565656;
+        text-align: center;
+      }
+      .subheading {
+        font-size: 14px;
+        color: #565656;
+        text-align: center;
+        font-weight: 600;
+      }
+    </style>
+    <style>
+      .country_selector_select_box {
+        display: inline-flex; /* Changes from 'flex' to 'inline-flex' to fit content */
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border: 1px solid #ccc;
+        padding: 5px 15px;
+        border-radius: 50px;
+        white-space: nowrap; /* Prevents wrapping of content */
+        margin: 20px auto;
+      }
+
+      .country_selector_dropdown {
+        display: flex;
+        flex-direction: column;
+        align-content: center;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .country_selector_select_box img {
+        width: 20px;
+        height: 20px;
+        margin-right: 10px;
+      }
+
+      .country_selector_dropdown_menu {
+        display: none;
+        position: absolute;
+        border: 1px solid #ccc;
+        background-color: white;
+        z-index: 1;
+        border-radius: 5px;
+      }
+
+      .country_selector_dropdown_item {
+        display: flex;
+        align-items: center;
+        padding: 5px;
+        cursor: pointer;
+      }
+
+      .country_selector_dropdown_item:hover {
+        background-color: #f0f0f0;
+      }
+
+      .country_selector_dropdown_item img {
+        width: 20px;
+        height: 20px;
+        margin-right: 10px;
+      }
+
+      .country_selector_arrow {
+        border: solid black;
+        border-width: 0 1px 1px 0;
+        display: inline-block;
+        padding: 3px;
+        transform: rotate(45deg);
+        margin-left: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Tiffin CRM Pricing Calculator</h1>
+      <p class="description">
+        You will only pay when you earn. We don't charge for number of customers
+        and features.
+      </p>
+      <div class="calculator">
+        <div class="country_selector_dropdown">
+          <div
+            class="country_selector_select_box"
+            onclick="country_selector_toggleDropdown()"
+          >
+            <img
+              id="country_selector_selected_img"
+              src="https://tiffincrm.com/assets/img/india_icon.svg"
+              alt="India"
+            />
+            <span id="country_selector_selected_country">India</span>
+            <div class="country_selector_arrow"></div>
+          </div>
+          <div
+            id="country_selector_dropdown_menu"
+            class="country_selector_dropdown_menu"
+          >
+            <div
+              class="country_selector_dropdown_item"
+              onclick="country_selector_selectCountry('India', 'https://tiffincrm.com/assets/img/india_icon.svg')"
+            >
+              <img
+                src="https://tiffincrm.com/assets/img/india_icon.svg"
+                alt="India"
+              />
+              <span>India</span>
+            </div>
+            <div
+              class="country_selector_dropdown_item"
+              onclick="country_selector_selectCountry('International (USD)', 'https://tiffincrm.com/assets/img/outside_india_icon.svg')"
+            >
+              <img
+                src="https://tiffincrm.com/assets/img/outside_india_icon.svg"
+                alt="International"
+              />
+              <span>International (USD)</span>
+            </div>
+          </div>
+        </div>
+        <p class="subheading">How much orders you process Daily?</p>
+
+        <div class="order_count_input">
+          <input
+            type="range"
+            id="orders"
+            min="0"
+            max="400"
+            step="5"
+            value="25"
+            oninput="updatePricing()"
+          />
+          <label class="description" for="orders"
+            >Approx <span id="orderCount">..</span> Orders</label
+          >
+        </div>
+        <div class="results">
+          <div class="price-box">
+            <div class="price-box-column price-box-column-left">
+              <div class="price-box-big-number" id="orderCount_big"></div>
+              <div class="price-box-mini-title">Daily Orders</div>
+            </div>
+            <div class="price-box-separator"></div>
+            <div class="price-box-column price-box-column-right">
+              <div class="price-box-big-number">
+                <span class="currency_icon">₹</span
+                ><span id="monthlyPricing"></span>
+              </div>
+              <div class="price-box-mini-title">/month</div>
+            </div>
+          </div>
+          <div class="dropdown_new">
+            <label for="billing">Billing For </label>
+            <select id="billing" onchange="updatePricing()">
+              <option value="3 Month" selected>3 Month (-16.5% OFF)</option>
+              <option value="1 Month">1 Month</option>
+              <option value="1 Year">1 Year (-26.5% OFF)</option>
+            </select>
+          </div>
+          <div class="pricing_bill">
+            <div class="pricing_bill_row">
+              <span><span id="billingDuration"></span> Subscription Fee</span>
+              <span
+                ><span class="currency_icon">₹</span
+                ><span id="regular_fees">0</span></span
+              >
+            </div>
+            <div class="pricing_bill_row pricing_bill_discount">
+              <span>Discount (<span id="billingDiscount"></span>)</span>
+              <span
+                ><span class="currency_icon">₹</span
+                ><span id="billingDiscountamount">0</span></span
+              >
+            </div>
+            <hr />
+            <div class="pricing_bill_row">
+              <span>Subtotal</span>
+              <span
+                ><span class="currency_icon">₹</span
+                ><span id="ourCharges">0</span></span
+              >
+            </div>
+            <div class="pricing_bill_row">
+              <span>Taxes (18% GST)</span>
+              <span
+                ><span class="currency_icon">₹</span
+                ><span id="taxes">0</span></span
+              >
+            </div>
+
+            <div class="pricing_bill_row">
+              <span>Total Bill</span>
+              <span
+                ><span class="currency_icon">₹</span
+                ><span id="finalBill">0</span></span
+              >
+            </div>
+          </div>
+          <p class="results_mini">
+            <span class="currency_icon">₹</span><t id="perOrderCost">0</t> for
+            each processed order
+          </p>
+        </div>
+      </div>
+    </div>
+  </body>
+  <script>
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    function updateRangeInput() {
+      const defaultValue = getQueryParam("orders");
+      if (defaultValue) {
+        const rangeInput = document.getElementById("orders");
+        rangeInput.value = defaultValue;
+      }
+    }
+    updateRangeInput();
+    function updatePricing() {
+      update_range();
+      const country = document.getElementById(
+        "country_selector_selected_country"
+      ).innerText;
+      const orders = parseInt(document.getElementById("orders").value);
+      const billing = document.getElementById("billing").value;
+
+      let perOrderPrice = country === "India" ? 7.5 : 0.18;
+      let currency_icon = country === "India" ? "₹" : "$";
+      let deductible = country === "India" ? 26 : 0;
+      let tofixed_in_monthly = country === "India" ? 0 : 1;
+      let tofixed_in_per_order = country === "India" ? 2 : 5;
+      let MonthlyPrice = 0;
+      let ourCharges = 0;
+      let finalBill = 0;
+      let taxes = 0;
+
+      if (orders < 26) {
+        MonthlyPrice = 0;
+        effectiveMonthlyPrice = 0;
+        perOrderCost = 0;
+        ourCharges = 0;
+        finalBill = 0;
+        taxes = 0;
+        regular_fees = 0;
+        billingDiscount = "";
+        billingDiscountamount = 0;
+      } else {
+        MonthlyPrice = orders * perOrderPrice - deductible;
+        switch (billing) {
+          case "1 Month":
+            ourCharges = MonthlyPrice * 1.2;
+            effectiveMonthlyPrice = ourCharges / 1;
+
+            regular_fees = ourCharges;
+            billingDiscount = "(No Discount)";
+            billingDiscountamount = regular_fees - ourCharges;
+            break;
+          case "3 Month":
+            ourCharges = MonthlyPrice * 3;
+            effectiveMonthlyPrice = ourCharges / 3;
+            regular_fees = ourCharges * 1.165;
+            billingDiscount = "(16.5% OFF)";
+            billingDiscountamount = regular_fees - ourCharges;
+            break;
+          case "1 Year":
+            ourCharges = MonthlyPrice * 12 * 0.88;
+            effectiveMonthlyPrice = ourCharges / 12;
+
+            regular_fees = ourCharges / 0.88;
+            billingDiscount = "(26.5% OFF)";
+            billingDiscountamount = regular_fees - ourCharges;
+            break;
+        }
+        taxes = ourCharges * 0.18;
+        finalBill = ourCharges + taxes;
+        perOrderCost = effectiveMonthlyPrice / (orders * 30);
+      }
+
+      document.getElementById("orderCount").textContent = orders;
+      document.getElementById("orderCount_big").textContent = orders;
+      document.getElementById("perOrderCost").textContent =
+        perOrderCost.toFixed(tofixed_in_per_order);
+      document.getElementById("monthlyPricing").textContent =
+        effectiveMonthlyPrice.toFixed(tofixed_in_monthly);
+      document.getElementById("ourCharges").textContent = ourCharges.toFixed(2);
+      document.getElementById("taxes").textContent = taxes.toFixed(2);
+      document.getElementById("finalBill").textContent = finalBill.toFixed(2);
+      document.getElementById("billingDuration").textContent = billing;
+
+      document.getElementById("regular_fees").textContent =
+        regular_fees.toFixed(2);
+      document.getElementById("billingDiscount").textContent = billingDiscount;
+      document.getElementById("billingDiscountamount").textContent =
+        billingDiscountamount.toFixed(2);
+
+      // Select all elements with class 'currency_icon'
+      let currencyElements = document.querySelectorAll(".currency_icon");
+      // Loop through each element and update the content
+      currencyElements.forEach(function (currencyElement) {
+        currencyElement.textContent = currency_icon;
+      });
+    }
+
+    // Initial update
+    updatePricing();
+
+    function update_range() {
+      const rangeInput = document.getElementById("orders");
+      const currentValue = parseInt(rangeInput.value);
+      const minValue = parseInt(rangeInput.min);
+      const maxValue = parseInt(rangeInput.max);
+      const triggermax = maxValue - 100;
+
+      if (currentValue < 26) {
+        rangeInput.step = 1;
+      }
+      if (currentValue > 24) {
+        rangeInput.step = 5;
+      }
+      if (currentValue > 29) {
+        rangeInput.step = 10;
+      }
+      if (currentValue > triggermax) {
+        rangeInput.max = currentValue + 100;
+        // console.log(triggermax + " - " + rangeInput.max);
+      }
+      if (currentValue > 2000) {
+        alert("Contact Us to Discuss this");
+      }
+
+      // Ensure that max is always greater than min
+      if (parseInt(rangeInput.max) <= parseInt(rangeInput.min)) {
+        rangeInput.max = parseInt(rangeInput.min) + 100;
+      }
+    }
+  </script>
+  <script>
+    function country_selector_toggleDropdown() {
+      const dropdownMenu = document.getElementById(
+        "country_selector_dropdown_menu"
+      );
+      dropdownMenu.style.display =
+        dropdownMenu.style.display === "block" ? "none" : "block";
+    }
+
+    function country_selector_selectCountry(country, icon) {
+      document.getElementById("country_selector_selected_country").innerText =
+        country;
+      document.getElementById("country_selector_selected_img").src = icon;
+      document.getElementById("country_selector_dropdown_menu").style.display =
+        "none";
+      updatePricing(); // Call your pricing update function here
+    }
+
+    document.addEventListener("click", function (event) {
+      const dropdown = document.querySelector(".country_selector_dropdown");
+      if (!dropdown.contains(event.target)) {
+        document.getElementById(
+          "country_selector_dropdown_menu"
+        ).style.display = "none";
+      }
+    });
+  </script>
+</html>

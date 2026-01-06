@@ -1,0 +1,43 @@
+<resources>
+    <!-- Default screen margins, per the Android Design guidelines. -->
+    <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="activity_vertical_margin">16dp</dimen>
+    <dimen name="nav_header_vertical_spacing">8dp</dimen>
+    <dimen name="nav_header_height">190dp</dimen>
+    <dimen name="fab_margin">16dp</dimen>
+
+    <dimen name="margin_small">5dp</dimen>
+    <dimen name="margin_medium">10dp</dimen>
+    <dimen name="margin_large">20dp</dimen>
+
+    <dimen name="item_post_padding_small">7dp</dimen>
+    <dimen name="item_post_padding_medium">14dp</dimen>
+
+    <dimen name="post_heading_font_size">18sp</dimen>
+    <dimen name="post_primary_font_size">16sp</dimen>
+    <dimen name="post_secondary_font_size">12sp</dimen>
+
+    <dimen name="title_size_xsmall">13sp</dimen>
+    <dimen name="title_size_small">14sp</dimen>
+    <dimen name="title_size_medium">16sp</dimen>
+    <dimen name="title_size_large">18sp</dimen>
+    <dimen name="title_size_xlarge">20sp</dimen>
+
+    <dimen name="text_heading_title_size">18sp</dimen>
+    <dimen name="text_title_size">16sp</dimen>
+    <dimen name="text_sub_title_size">13sp</dimen>
+    <dimen name="text_excerpt_size">11sp</dimen>
+
+    <dimen name="button_height">54dp</dimen>
+    <dimen name="rounded_corner_radius">8dp</dimen>
+    <dimen name="btn_corner_radius">30dp</dimen>
+    <dimen name="circular_corner_radius">100dp</dimen>
+
+    <dimen name="post_thumbnail_width">94dp</dimen>
+    <dimen name="post_thumbnail_height">94dp</dimen>
+
+    <dimen name="thumbnail_video_height">200dp</dimen>
+    <dimen name="image_detail_height">240dp</dimen>
+    <dimen name="no_padding">0dp</dimen>
+    <dimen name="padding_small">4dp</dimen>
+</resources>

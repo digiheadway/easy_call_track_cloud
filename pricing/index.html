@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TiffinCRM Pricing</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .snap-x {
+            scroll-snap-type: x mandatory;
+        }
+
+        .snap-center {
+            scroll-snap-align: center;
+        }
+
+        .plan-card {
+            width: 80%;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+
+        .plan-card.active {
+            transform: scale(1.05);
+            opacity: 1;
+            background-color: #4F46E5;
+            color: white;
+            z-index: 10;
+        }
+
+        .plan-card.active .text-indigo-600,
+        .plan-card.active .text-gray-600 {
+            color: white;
+        }
+
+        .plan-card:not(.active) {
+            transform: scale(0.92);
+            opacity: 0.8;
+        }
+
+        .period-option {
+            transition: all 0.3s ease;
+        }
+
+        .period-option.active {
+            background-color: #4F46E5;
+        }
+
+        .price-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .price-details.show {
+            max-height: 500px;
+        }
+
+        .popular-tag {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #FEF3C7;
+            color: #D97706;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            white-space: nowrap;
+            z-index: 20;
+        }
+
+        .price-breakdown {
+            border-bottom: 2px dotted #E5E7EB;
+            cursor: pointer;
+        }
+
+        .period-option {
+            transition: all 0.3s ease;
+        }
+
+        .period-option.active {
+            background-color: #4F46E5;
+            color: white;
+        }
+
+        .price-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .price-details.show {
+            max-height: 500px;
+        }
+
+        .faq-item {
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .faq-answer.show {
+            max-height: 500px;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+    <div class="max-w-md mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-3xl font-bold mb-3">Start Trial for TiffinCRM</h1>
+            <p class="text-gray-600">Choose the perfect plan for your tiffin service business</p>
+        </div>
+
+        <!-- Plans Container -->
+        <div class="relative mb-8">
+            <div id="plansContainer" class="flex overflow-x-auto snap-x scrollbar-hide gap-4">
+                <!-- Basic Plan -->
+                <div class="plan-card snap-center rounded-2xl p-6 bg-white shadow-lg">
+                    <h3 class="text-xl font-bold mb-2">Basic</h3>
+                    <div class="text-3xl font-bold text-indigo-600 mb-4">
+                        50 <span class="text-base font-normal text-gray-600">daily Orders</span>
+                    </div>
+                    <ul class="space-y-3">
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Process 50 orders daily</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span>Standard Plans</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span>1 Delivery Boy</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Basic Support</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Pro Plan -->
+                <div class="plan-card snap-center rounded-2xl p-6 bg-white shadow-lg active">
+                    <h3 class="text-xl font-bold mb-2">Pro</h3>
+                    <div class="text-3xl font-bold text-indigo-600 mb-4">
+                        100 <span class="text-base font-normal text-gray-600">daily Orders</span>
+                    </div>
+                    <ul class="space-y-3">
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Process 100 orders daily</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span>Unlimited Standard Plans</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span>Unlimited Delivery Boys</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Priority Support</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Enterprise Plan -->
+                <div class="plan-card snap-center rounded-2xl p-6 bg-white shadow-lg">
+                    <h3 class="text-xl font-bold mb-2">Enterprise</h3>
+                    <div class="text-3xl font-bold text-indigo-600 mb-4">
+                        150+ <span class="text-base font-normal text-gray-600">daily Orders</span>
+                    </div>
+                    <ul class="space-y-3">
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Unlimited orders daily</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span>Custom Features</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span>Dedicated Support</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <!-- Billing Period -->
+        <div class="flex justify-center gap-4 mb-8">
+            <button class="period-option px-6 py-3 rounded-xl bg-gray-100" data-period="monthly">
+                <div>1 Month</div>
+                <div class="font-semibold">₹500/mo</div>
+            </button>
+            <button class="period-option px-6 py-3 rounded-xl active relative" data-period="quarterly">
+                <div>3 Month</div>
+                <div class="font-semibold">₹1300/qua</div>
+                <div class="text-sm">Save ₹200</div>
+                <span class="absolute -top-2 -right-2 bg-indigo-100 text-indigo-600 text-xs px-2 py-0.5 rounded-full">
+                    Popular
+                </span>
+            </button>
+            <button class="period-option px-6 py-3 rounded-xl bg-gray-100" data-period="yearly">
+                <div>1 Year</div>
+                <div class="font-semibold">₹5000/year</div>
+                <div class="text-sm">Save ₹1,000</div>
+            </button>
+        </div>
+        <!-- Trial Offer -->
+        <div class="bg-green-50 border border-green-200 rounded-xl p-4 text-center mb-6">
+            <h4 class="font-semibold text-green-800 text-lg mb-2">Start 30 Days (3 + 27) Free Trial</h4>
+            <p class="text-sm text-green-600">Start Using Within 3 Days to Extend Trial for another 27 days.</p>
+        </div>
+
+        <!-- Action Button -->
+        <button
+            class="w-full bg-indigo-600 text-white py-4 rounded-xl font-semibold mb-4 hover:bg-indigo-700 transition-colors">
+            Start Free Trial Now
+        </button>
+        <p class="text-center text-sm text-gray-500 mb-12">No Credit Card Required, Cancel Anytime</p>
+
+        <!-- Rest of the content remains the same -->
+        <div class="text-gray-600">
+            Final Price after trial:
+            <span class="price-breakdown inline-block px-2 font-semibold">₹1490</span>
+            <svg class="w-4 h-4 inline-block ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+        </div>
+        <div class="price-details mt-4 space-y-2 text-sm text-left bg-white p-4 rounded-lg">
+            <div class="flex justify-between">
+                <span>Base Price</span>
+                <span>₹1300</span>
+            </div>
+            <div class="flex justify-between">
+                <span>GST (18%)</span>
+                <span>₹190</span>
+            </div>
+            <div class="flex justify-between font-semibold text-black pt-2 border-t">
+                <span>Total</span>
+                <span>₹1490</span>
+            </div>
+        </div>
+           <!-- FAQ Section -->
+           <div class="mb-8">
+            <h2 class="text-xl font-semibold mb-6">Frequently Asked Questions</h2>
+            <div class="space-y-4">
+                <div class="faq-item pb-4">
+                    <button class="w-full text-left font-semibold flex justify-between items-center">
+                        <span>What happens After My Free Trial?</span>
+                        <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div class="faq-answer pt-2 text-gray-600">
+                        After the 30-day trial, you'll be billed according to your selected plan. You can cancel or change your plan at any time before the trial ends.
+                    </div>
+                </div>
+
+                <div class="faq-item pb-4">
+                    <button class="w-full text-left font-semibold flex justify-between items-center">
+                        <span>Can I change plans later?</span>
+                        <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div class="faq-answer pt-2 text-gray-600">
+                        Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately.
+                    </div>
+                </div>
+
+                <div class="faq-item pb-4">
+                    <button class="w-full text-left font-semibold flex justify-between items-center">
+                        <span>What payment methods do you accept?</span>
+                        <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div class="faq-answer pt-2 text-gray-600">
+                        We accept all major credit cards, UPI, and net banking. All payments are processed securely.
+                    </div>
+                </div>
+
+                <div class="faq-item pb-4">
+                    <button class="w-full text-left font-semibold flex justify-between items-center">
+                        <span>What features are included?</span>
+                        <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div class="faq-answer pt-2 text-gray-600">
+                        All plans include access to our mobile app, web dashboard, and basic customer support. Additional features vary by plan.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center text-sm text-gray-500">
+            <p>© 2024 Tiffin Service CRM. All rights reserved.</p>
+            <div class="flex justify-center gap-4 mt-2">
+                <a href="#" class="hover:text-gray-700">Terms</a>
+                <a href="#" class="hover:text-gray-700">Privacy</a>
+                <a href="#" class="hover:text-gray-700">Contact</a>
+            </div>
+        </footer>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Plan cards interaction
+            const plansContainer = document.getElementById('plansContainer');
+            const plans = document.querySelectorAll('.plan-card');
+            
+            function updateActivePlan() {
+                const scrollPosition = plansContainer.scrollLeft;
+                const cardWidth = plans[0].offsetWidth + 16; // Including gap
+                const activeIndex = Math.round(scrollPosition / cardWidth);
+                
+                plans.forEach((plan, index) => {
+                    plan.classList.toggle('active', index === activeIndex);
+                });
+            }
+
+            plansContainer.addEventListener('scroll', updateActivePlan);
+
+            // Billing period selection
+            const periodOptions = document.querySelectorAll('.period-option');
+            periodOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    periodOptions.forEach(opt => opt.classList.remove('active'));
+                    option.classList.add('active');
+                });
+            });
+
+            // Price details toggle
+            const priceToggle = document.getElementById('priceToggle');
+            priceToggle.addEventListener('click', () => {
+                const details = priceToggle.querySelector('.price-details');
+                const arrow = priceToggle.querySelector('svg');
+                details.classList.toggle('show');
+                arrow.style.transform = details.classList.contains('show') ? 'rotate(180deg)' : '';
+            });
+
+            // FAQ toggles
+            document.querySelectorAll('.faq-item').forEach(item => {
+                const button = item.querySelector('button');
+                const answer = item.querySelector('.faq-answer');
+                const arrow = button.querySelector('svg');
+
+                button.addEventListener('click', () => {
+                    answer.classList.toggle('show');
+                    arrow.style.transform = answer.classList.contains('show') ? 'rotate(180deg)' : '';
+                });
+            });
+        });
+    </script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                // Plan cards interaction
+                const plansContainer = document.getElementById('plansContainer');
+                const plans = document.querySelectorAll('.plan-card');
+                const priceBreakdown = document.querySelector('.price-breakdown');
+                const priceDetails = document.querySelector('.price-details');
+
+                function updateActivePlan() {
+                    const scrollPosition = plansContainer.scrollLeft;
+                    const containerWidth = plansContainer.offsetWidth;
+                    const cardWidth = plans[0].offsetWidth + 24; // Including gap
+                    const activeIndex = Math.round(scrollPosition / cardWidth);
+
+                    plans.forEach((plan, index) => {
+                        plan.classList.toggle('active', index === activeIndex);
+                    });
+
+                    // Update pricing based on active plan
+                    const prices = ['₹0', '₹590', '₹1490', '₹5900'];
+                    const basePrices = ['₹0', '₹500', '₹1300', '₹5000'];
+                    const gstAmounts = ['₹0', '₹90', '₹190', '₹900'];
+
+                    priceBreakdown.textContent = prices[activeIndex];
+                    document.querySelector('.price-details .flex:nth-child(1) span:last-child').textContent = basePrices[activeIndex];
+                    document.querySelector('.price-details .flex:nth-child(2) span:last-child').textContent = gstAmounts[activeIndex];
+                    document.querySelector('.price-details .flex:last-child span:last-child').textContent = prices[activeIndex];
+                }
+
+                plansContainer.addEventListener('scroll', updateActivePlan);
+
+                // Price breakdown toggle
+                priceBreakdown.addEventListener('click', () => {
+                    priceDetails.classList.toggle('show');
+                    const arrow = priceBreakdown.nextElementSibling;
+                    arrow.style.transform = priceDetails.classList.contains('show') ? 'rotate(180deg)' : '';
+                });
+
+                // Initialize with center plan
+                setTimeout(() => {
+                    const secondPlan = plans[2];
+                    const scrollOffset = secondPlan.offsetLeft - (plansContainer.offsetWidth - secondPlan.offsetWidth) / 2;
+                    plansContainer.scrollTo({ left: scrollOffset, behavior: 'smooth' });
+                }, 100);
+            });
+        </script>
+    </div>
+</body>
+
+</html>

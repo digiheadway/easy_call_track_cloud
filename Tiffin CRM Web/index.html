@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TIffin CRM</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="base.css" />
+    <style>
+      main {
+        max-width: 1080px;
+        margin: 0px auto;
+        scroll-snap-type: y mandatory;
+      }
+      section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        align-content: center;
+        background: #fff;
+        scroll-snap-align: start;
+        padding: 30px;
+        margin: 20px auto;
+        flex-wrap: wrap;
+        gap: 20px;
+        max-width: 1080px;
+      }
+      .subsection {
+        display: flex;
+        justify-content: space-evenly;
+        align-content: center;
+        align-items: center;
+        background: #fff;
+        flex-direction: column;
+        min-width: 250px;
+      }
+      .sub1 {
+        align-items: flex-start;
+      }
+      .sub2 {
+        align-items: flex-end;
+      }
+
+      /* Mobile View */
+      @media (max-width: 767px) {
+        section {
+          flex-direction: column;
+        }
+        .sub1,
+        .sub2 {
+          align-items: start;
+        }
+      }
+      .heading_label {
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .heading {
+        font-size: 20px;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <div class="logo">
+          <img
+            src="https://tiffincrm.com/assets/img/tiffincrm-logo.png?v2"
+            alt=""
+          />
+        </div>
+
+        <!-- Hamburger icon for mobile -->
+        <div class="hamburger" id="hamburger">
+          <div></div>
+          <div></div>
+          <div></div>
+        </div>
+
+        <!-- Navigation Links -->
+        <div class="nav-container" id="navContainer">
+          <ul class="nav-links">
+            <li><a href="#">Home</a></li>
+            <li><a href="#">About</a></li>
+            <li><a href="#">Services</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main>
+      <section>
+        <div class="subsection sub1">
+          <h1 class="heading_label">Tiffin Service Management App</h1>
+          <span class="heading">Simplyfing Tiffin Business Management</span>
+          <p>This is the first flex</p>
+        </div>
+        <div class="subsection sub2">
+          <h1>Flex 2</h1>
+          <p>Here it may be image</p>
+        </div>
+      </section>
+    </main>
+    <script>
+      const hamburger = document.getElementById("hamburger");
+      const navContainer = document.getElementById("navContainer");
+
+      hamburger.addEventListener("click", () => {
+        hamburger.classList.toggle("active");
+        navContainer.classList.toggle("show");
+      });
+      window.addEventListener("scroll", function () {
+        const header = document.getElementById("header");
+
+        if (window.scrollY > 50) {
+          // Start effect when user scrolls down 50px
+          header.classList.add("header-scrolled");
+        } else {
+          header.classList.remove("header-scrolled");
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,142 @@
+.pp2-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 50;
+  padding: 1rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.pp2-modal-content {
+  background: var(--bg-primary);
+  padding: 2rem;
+  border-radius: var(--border-radius-lg);
+  width: 100%;
+  max-width: 440px;
+  position: relative;
+  animation: modalSlide 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-lg);
+}
+
+.pp2-close {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  background: var(--accent-light);
+  border: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: var(--transition-all);
+}
+
+.pp2-close:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: rotate(90deg);
+}
+
+.pp2-calculator {
+  margin-top: 1.5rem;
+}
+
+.pp2-calculator-field {
+  margin-bottom: 1.5rem;
+}
+
+.pp2-calculator-field label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+#orderSlider {
+  width: 100%;
+  margin: 1rem 0;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: var(--accent-light);
+  border-radius: 3px;
+  outline: none;
+}
+
+#orderSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.2s ease;
+}
+
+#orderSlider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.2s ease;
+}
+
+#orderSlider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+#orderSlider::-moz-range-thumb:hover {
+  transform: scale(1.15);
+}
+
+.pp2-slider-value {
+  text-align: center;
+  font-size: 1rem;
+  color: var(--text-primary);
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+.pp2-calculated-price {
+  margin-top: 1.5rem;
+  text-align: center;
+  padding: 1.25rem;
+  background: var(--accent-light);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--accent-dark);
+}
+
+@keyframes modalSlide {
+  from {
+    opacity: 0;
+    transform: translateY(1rem) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 480px) {
+  .pp2-modal-content {
+    padding: 1.5rem;
+  }
+}

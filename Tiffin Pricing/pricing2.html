@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pricing Calculator</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+      }
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .result {
+        margin-top: 20px;
+        padding: 10px;
+        background: #e9f5ff;
+        border: 1px solid #b2d9ff;
+        border-radius: 4px;
+      }
+      .result p {
+        margin: 5px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Pricing Calculator</h1>
+      <div class="form-group">
+        <label for="country">Country:</label>
+        <select id="country">
+          <option value="India">India</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="orders">Daily Orders:</label>
+        <input type="number" id="orders" min="0" value="30" />
+      </div>
+      <div class="form-group">
+        <label for="billing">Billing Duration:</label>
+        <select id="billing">
+          <option value="yearly">Yearly</option>
+          <option value="quarterly" selected>Quarterly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+      <div class="result">
+        <p>
+          <strong>Monthly Effective Price:</strong>
+          <span id="monthlyPrice">0</span>
+        </p>
+        <p>
+          <strong>Our Quarterly Charges:</strong>
+          <span id="quarterlyCharges">0</span>
+        </p>
+        <p>
+          <strong>Final Bill (With Taxes):</strong>
+          <span id="finalBill">0</span>
+        </p>
+      </div>
+    </div>
+
+    <script>
+      function calculatePricing() {
+        const country = document.getElementById("country").value;
+        const orders = parseInt(document.getElementById("orders").value);
+        const billing = document.getElementById("billing").value;
+
+        const basePricePerOrder = 7.5;
+        const extraPricePerOrder = country === "Other" ? 15 : 7.5;
+
+        // Calculate chargeable orders
+        let chargeableOrders = Math.max(0, orders - 25);
+
+        // Calculate charges
+        let monthlyCharges = chargeableOrders * basePricePerOrder;
+        let quarterlyCharges = monthlyCharges * 3;
+
+        // Apply billing adjustments
+        if (billing === "yearly") {
+          monthlyCharges *= 12;
+          monthlyCharges *= 0.9; // 10% discount for yearly billing
+        } else if (billing === "monthly") {
+          // Monthly charges are already calculated
+        } else if (billing === "quarterly") {
+          // Quarterly charges are already calculated
+        }
+
+        // Calculate final bill including taxes
+        const taxes = 0.18; // 18% tax
+        const finalBill =
+          billing === "monthly"
+            ? monthlyCharges * (1 + taxes)
+            : quarterlyCharges * (1 + taxes);
+
+        // Update HTML content
+        document.getElementById(
+          "monthlyPrice"
+        ).textContent = `₹${monthlyCharges.toFixed(2)}`;
+        document.getElementById(
+          "quarterlyCharges"
+        ).textContent = `₹${quarterlyCharges.toFixed(2)}`;
+        document.getElementById(
+          "finalBill"
+        ).textContent = `₹${finalBill.toFixed(2)}`;
+      }
+
+      document
+        .getElementById("country")
+        .addEventListener("change", calculatePricing);
+      document
+        .getElementById("orders")
+        .addEventListener("input", calculatePricing);
+      document
+        .getElementById("billing")
+        .addEventListener("change", calculatePricing);
+
+      // Initial calculation
+      calculatePricing();
+    </script>
+  </body>
+</html>

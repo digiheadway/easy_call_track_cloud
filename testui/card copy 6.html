@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Card Variations</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        /* Responsive Scale Variables */
+        :root {
+            --scale: 1;
+        }
+
+        /* Scale down on smaller screens */
+        @media (max-width: 1024px) {
+            :root {
+                --scale: 0.9;
+            }
+        }
+
+        @media (max-width: 768px) {
+            :root {
+                --scale: 0.8;
+            }
+        }
+
+        @media (max-width: 640px) {
+            :root {
+                --scale: 0.75;
+            }
+        }
+
+        @media (max-width: 480px) {
+            :root {
+                --scale: 0.7;
+            }
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            font-size: calc(16px * var(--scale));
+            min-width: 100%;
+            overflow-x: auto;
+        }
+
+        h1,
+        h2,
+        h3,
+        .font-heading {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Apply responsive scaling to all elements */
+        * {
+            --base-scale: var(--scale);
+        }
+
+        /* Override Tailwind utilities with scaled values */
+        .max-w-4xl {
+            max-width: calc(56rem * var(--scale));
+        }
+
+        .space-y-8> :not([hidden])~ :not([hidden]) {
+            margin-top: calc(2rem * var(--scale));
+        }
+
+        .space-y-4> :not([hidden])~ :not([hidden]) {
+            margin-top: calc(1rem * var(--scale));
+        }
+
+        .space-y-2> :not([hidden])~ :not([hidden]) {
+            margin-top: calc(0.5rem * var(--scale));
+        }
+
+        .space-y-1> :not([hidden])~ :not([hidden]) {
+            margin-top: calc(0.25rem * var(--scale));
+        }
+
+        .space-y-0\.5> :not([hidden])~ :not([hidden]) {
+            margin-top: calc(0.125rem * var(--scale));
+        }
+
+        /* Padding */
+        .p-4 {
+            padding: calc(1rem * var(--scale));
+        }
+
+        .p-6 {
+            padding: calc(1.5rem * var(--scale));
+        }
+
+        .px-1\.5 {
+            padding-left: calc(0.375rem * var(--scale));
+            padding-right: calc(0.375rem * var(--scale));
+        }
+
+        .px-2 {
+            padding-left: calc(0.5rem * var(--scale));
+            padding-right: calc(0.5rem * var(--scale));
+        }
+
+        .px-3 {
+            padding-left: calc(0.75rem * var(--scale));
+            padding-right: calc(0.75rem * var(--scale));
+        }
+
+        .px-4 {
+            padding-left: calc(1rem * var(--scale));
+            padding-right: calc(1rem * var(--scale));
+        }
+
+        .py-0\.5 {
+            padding-top: calc(0.125rem * var(--scale));
+            padding-bottom: calc(0.125rem * var(--scale));
+        }
+
+        .py-1 {
+            padding-top: calc(0.25rem * var(--scale));
+            padding-bottom: calc(0.25rem * var(--scale));
+        }
+
+        .pt-3 {
+            padding-top: calc(0.75rem * var(--scale));
+        }
+
+        .pt-12 {
+            padding-top: calc(3rem * var(--scale));
+        }
+
+        .pb-2 {
+            padding-bottom: calc(0.5rem * var(--scale));
+        }
+
+        .pb-24 {
+            padding-bottom: calc(6rem * var(--scale));
+        }
+
+        .pl-3 {
+            padding-left: calc(0.75rem * var(--scale));
+        }
+
+        .pl-0 {
+            padding-left: 0;
+        }
+
+        /* Margins */
+        .mb-1 {
+            margin-bottom: calc(0.25rem * var(--scale));
+        }
+
+        .mb-2 {
+            margin-bottom: calc(0.5rem * var(--scale));
+        }
+
+        .mb-4 {
+            margin-bottom: calc(1rem * var(--scale));
+        }
+
+        .mb-8 {
+            margin-bottom: calc(2rem * var(--scale));
+        }
+
+        .mt-1 {
+            margin-top: calc(0.25rem * var(--scale));
+        }
+
+        .mt-3 {
+            margin-top: calc(0.75rem * var(--scale));
+        }
+
+        .mt-4 {
+            margin-top: calc(1rem * var(--scale));
+        }
+
+        /* Gap */
+        .gap-1 {
+            gap: calc(0.25rem * var(--scale));
+        }
+
+        .gap-2 {
+            gap: calc(0.5rem * var(--scale));
+        }
+
+        .gap-4 {
+            gap: calc(1rem * var(--scale));
+        }
+
+        .gap-6 {
+            gap: calc(1.5rem * var(--scale));
+        }
+
+        /* Width & Height */
+        .w-12 {
+            width: calc(3rem * var(--scale));
+        }
+
+        .h-12 {
+            height: calc(3rem * var(--scale));
+        }
+
+        .w-40 {
+            width: calc(10rem * var(--scale));
+        }
+
+        .h-40 {
+            height: calc(10rem * var(--scale));
+        }
+
+        .w-48 {
+            width: calc(12rem * var(--scale));
+        }
+
+        .h-48 {
+            height: calc(12rem * var(--scale));
+        }
+
+        .min-w-\[140px\] {
+            min-width: calc(140px * var(--scale));
+        }
+
+        .min-w-\[150px\] {
+            min-width: calc(150px * var(--scale));
+        }
+
+        /* Border Radius */
+        .rounded {
+            border-radius: calc(0.25rem * var(--scale));
+        }
+
+        .rounded-lg {
+            border-radius: calc(0.5rem * var(--scale));
+        }
+
+        .rounded-xl {
+            border-radius: calc(0.75rem * var(--scale));
+        }
+
+        .rounded-2xl {
+            border-radius: calc(1rem * var(--scale));
+        }
+
+        .rounded-full {
+            border-radius: calc(9999px * var(--scale));
+        }
+
+        /* Font Sizes */
+        .text-xs {
+            font-size: calc(0.75rem * var(--scale));
+            line-height: calc(1rem * var(--scale));
+        }
+
+        .text-sm {
+            font-size: calc(0.875rem * var(--scale));
+            line-height: calc(1.25rem * var(--scale));
+        }
+
+        .text-lg {
+            font-size: calc(1.125rem * var(--scale));
+            line-height: calc(1.75rem * var(--scale));
+        }
+
+        .text-xl {
+            font-size: calc(1.25rem * var(--scale));
+            line-height: calc(1.75rem * var(--scale));
+        }
+
+        .text-2xl {
+            font-size: calc(1.5rem * var(--scale));
+            line-height: calc(2rem * var(--scale));
+        }
+
+        .text-3xl {
+            font-size: calc(1.875rem * var(--scale));
+            line-height: calc(2.25rem * var(--scale));
+        }
+
+        .text-\[10px\] {
+            font-size: calc(10px * var(--scale));
+        }
+
+        /* Icons - scale based on parent font size */
+        i.fa-solid,
+        i.fa-regular {
+            font-size: inherit;
+            transform: scale(var(--scale));
+            display: inline-block;
+        }
+
+        /* Smooth transition for hover effects */
+        .hover-lift {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .hover-lift:hover {
+            transform: translateY(calc(-4px * var(--scale)));
+            box-shadow: 0 calc(15px * var(--scale)) calc(30px * var(--scale)) calc(-5px * var(--scale)) rgba(0, 0, 0, 0.1),
+                0 calc(8px * var(--scale)) calc(10px * var(--scale)) calc(-5px * var(--scale)) rgba(0, 0, 0, 0.04);
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(calc(10px * var(--scale)));
+        }
+
+        /* Hide scrollbar for horizontal scrolling elements */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Border width scaling */
+        .border {
+            border-width: calc(1px * var(--scale));
+        }
+
+        .border-2 {
+            border-width: calc(2px * var(--scale));
+        }
+
+        .border-t {
+            border-top-width: calc(1px * var(--scale));
+        }
+
+        .border-l-2 {
+            border-left-width: calc(2px * var(--scale));
+        }
+
+        .border-b {
+            border-bottom-width: calc(1px * var(--scale));
+        }
+
+        /* Shadow scaling */
+        .shadow-sm {
+            box-shadow: 0 calc(1px * var(--scale)) calc(2px * var(--scale)) 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .shadow-xl {
+            box-shadow: 0 calc(20px * var(--scale)) calc(25px * var(--scale)) calc(-5px * var(--scale)) rgba(0, 0, 0, 0.1),
+                0 calc(10px * var(--scale)) calc(10px * var(--scale)) calc(-5px * var(--scale)) rgba(0, 0, 0, 0.04);
+        }
+
+        .shadow-md {
+            box-shadow: 0 calc(4px * var(--scale)) calc(6px * var(--scale)) calc(-1px * var(--scale)) rgba(0, 0, 0, 0.1),
+                0 calc(2px * var(--scale)) calc(4px * var(--scale)) calc(-1px * var(--scale)) rgba(0, 0, 0, 0.06);
+        }
+
+        /* Blur effect scaling */
+        .blur-3xl {
+            --tw-blur: blur(calc(64px * var(--scale)));
+        }
+
+        /* Positioned elements */
+        .-top-24 {
+            top: calc(-6rem * var(--scale));
+        }
+
+        .-right-24 {
+            right: calc(-6rem * var(--scale));
+        }
+
+        .-top-10 {
+            top: calc(-2.5rem * var(--scale));
+        }
+
+        .-left-10 {
+            left: calc(-2.5rem * var(--scale));
+        }
+
+        /* Override responsive layout changes - keep layout consistent */
+        /* Force desktop layout on all screen sizes */
+        .flex-col.sm\:flex-row {
+            flex-direction: row !important;
+        }
+
+        .sm\:items-start {
+            align-items: flex-start !important;
+        }
+
+        .sm\:items-end {
+            align-items: flex-end !important;
+        }
+
+        .items-center.sm\:items-end {
+            align-items: flex-end !important;
+        }
+
+        .justify-between.sm\:justify-start {
+            justify-content: flex-start !important;
+        }
+
+        .border-t.sm\:border-t-0 {
+            border-top-width: 0 !important;
+        }
+
+        .pt-3.sm\:pt-0 {
+            padding-top: 0 !important;
+        }
+
+        .pl-0.sm\:pl-4 {
+            padding-left: calc(1rem * var(--scale)) !important;
+        }
+
+        .hidden.sm\:block {
+            display: block !important;
+        }
+
+        .flex-row.sm\:flex-col {
+            flex-direction: column !important;
+        }
+
+        .mt-1.sm\:mt-0 {
+            margin-top: 0 !important;
+        }
+
+        /* Medium screens */
+        .flex-col.md\:flex-row {
+            flex-direction: row !important;
+        }
+
+        .md\:text-right {
+            text-align: right !important;
+        }
+
+        .mt-4.md\:mt-0 {
+            margin-top: 0 !important;
+        }
+
+        .items-start.md\:items-end {
+            align-items: flex-end !important;
+        }
+
+        /* Prevent flex wrapping */
+        .flex-wrap {
+            flex-wrap: wrap;
+        }
+
+        /* Keep specific wrappers */
+        .flex.gap-4.flex-1 {
+            flex-wrap: nowrap;
+        }
+
+        /* Ensure cards maintain their layout */
+        .group {
+            min-width: fit-content;
+        }
+
+        /* Force single-row layout for card containers */
+        .flex.flex-col.sm\\:flex-row,
+        .flex-col.sm\\:flex-row {
+            min-width: max-content;
+        }
+
+        /* Prevent title and tags from wrapping separately */
+        .flex-1.min-w-0 {
+            min-width: 300px;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen pt-12 pb-24 px-4 sm:px-6">
+
+    <div class="max-w-4xl mx-auto space-y-8">
+
+        <!-- Header -->
+        <div class="text-center space-y-2 mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Property Card</h1>
+            <p class="text-gray-500">Luxury penthouse for sale</p>
+        </div>
+
+        <!-- Light Theme Card (Penthouse) -->
+        <section class="space-y-4">
+            <div class="flex items-center justify-between border-b border-gray-200 pb-2">
+                <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-widest">Penthouse
+                </h3>
+                <span class="px-2 py-0.5 rounded bg-purple-100 text-purple-700 text-xs font-medium">Exclusive</span>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 relative overflow-hidden group shadow-xl border border-gray-200">
+                <!-- Decorative BG glow -->
+                <div
+                    class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-purple-100/50 to-transparent opacity-50">
+                </div>
+                <div
+                    class="absolute -top-10 -left-10 w-40 h-40 bg-purple-200/30 rounded-full blur-3xl group-hover:bg-purple-200/40 transition-all duration-500">
+                </div>
+
+                <div class="relative z-10">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-start gap-4">
+                            <div
+                                class="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center border border-purple-200 flex-shrink-0">
+                                <i class="fa-solid fa-building text-purple-600 text-lg"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-gray-900 text-xl font-heading font-semibold">250 Gaj | Sector 24
+                                    <span class="ml-1 text-xs bg-green-50 px-1 py-0.5 rounded"><i
+                                            class="fa-solid fa-check text-green-500 text-[10px]"> </i> Verified</span>
+                                </h2>
+                                <p class="text-gray-500 text-xs mt-1">Residential House - #567</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="">
+                                <p class="text-purple-600 text-lg font-bold font-heading">₹ 6.50 Cr</p>
+
+                            </div>
+                            <p class="text-gray-500 text-xs mt-1">₹ 14,500 <span class="text-gray-400">/ sq.ft</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <p class="text-gray-700 text-sm mb-4 ">
+                        Experience the pinnacle of luxury living on the 45th floor. 360-degree views of the city
+                        skyline, private elevator access, and a dedicated sky lounge.
+                    </p>
+
+
+                    <div class="flex items-center justify-between border-t border-gray-200 pt-3">
+                        <div class="flex flex-wrap gap-2">
+                            <span
+                                class="bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 transition-colors cursor-default border border-gray-200 flex items-center gap-1">
+                                <i class="fa-solid fa-road text-gray-500 text-[10px]"></i> Corner
+                            </span>
+                            <span
+                                class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs hover:bg-purple-200 transition-colors cursor-default border border-purple-200 flex items-center gap-1">My
+                                Property</span>
+                            <span
+                                class="bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 transition-colors cursor-default border border-gray-200 flex items-center gap-1">
+                                <i class="fa-solid fa-globe text-gray-500 text-[10px]"></i> Public
+                            </span>
+                            <span
+                                class="bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 transition-colors cursor-default border border-gray-200 flex items-center gap-1">
+                                <i class="fa-solid fa-heart text-red-500 text-[10px]"></i> Saved
+                            </span>
+                            <span
+                                class="bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 transition-colors cursor-default border border-gray-200 flex items-center gap-1">
+                                <i class="fa-solid fa-comment text-gray-500 text-[10px]"></i> Plot 600
+                            </span>
+                        </div>
+
+                        <div class="text-right space-y-0.5">
+                            <span class="text-[10px] text-gray-500 block"> <i
+                                    class="fa-solid fa-clock text-gray-500 text-[10px]"></i> Updated just now</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+</body>
+
+</html>

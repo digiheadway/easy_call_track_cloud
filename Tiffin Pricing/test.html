@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tiffin CRM Pricing Calculator</title>
+    <style>
+      :root {
+        --My-Gradient: linear-gradient(90deg, #6078fe 0%, #4b13e9 100%);
+      }
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f7f7f7;
+        margin: 0;
+        padding: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .container {
+        background-color: #fff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        width: 350px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 20px;
+        font-size: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 10px;
+        color: #555;
+      }
+
+      input[type="range"] {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+
+      select {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+      }
+
+      .results {
+        font-size: 18px;
+        color: #333;
+        text-align: center;
+      }
+
+      .results span {
+        font-weight: bold;
+      }
+      .results_mini {
+        font-size: 12px;
+        color: #6d6a6a;
+      }
+    </style>
+    <style>
+      .price-box {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        background: var(--My-Gradient);
+      }
+
+      .price-box-column {
+        flex: 1;
+        text-align: center;
+      }
+
+      .price-box-column-left .price-box-big-number,
+      .price-box-column-right .price-box-big-number {
+        font-size: 40px;
+        font-weight: bold;
+        color: #f5f5f5;
+      }
+
+      .price-box-column-left .price-box-mini-title,
+      .price-box-column-right .price-box-mini-title {
+        font-size: 1rem;
+        color: #d2c3ff;
+      }
+
+      .price-box-separator {
+        width: 1px;
+        height: 80px;
+        background: rgb(105, 95, 255);
+        margin: 5px 5px;
+      }
+      /* Style the track of the slider */
+      input[type="range"] {
+        -webkit-appearance: none; /* Remove default styling */
+        width: 100%; /* Full-width slider */
+        height: 1px; /* Track height */
+        background: #dddddd; /* Track color */
+        border-radius: 5px; /* Rounded corners */
+        outline: none; /* Remove default outline */
+        opacity: 0.7; /* Slightly transparent */
+        transition: opacity 0.15s ease-in-out; /* Smooth transition */
+      }
+
+      /* Style the slider thumb (circle) */
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none; /* Remove default styling */
+        appearance: none; /* Remove default styling */
+        width: 20px; /* Thumb width */
+        height: 20px; /* Thumb height */
+        background: var(--My-Gradient);
+        border-radius: 50%; /* Circular thumb */
+        cursor: pointer; /* Pointer cursor on hover */
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.3); /* Shadow around the thumb */
+      }
+
+      input[type="range"]::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        background: #4caf50;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+      }
+
+      input[type="range"]::-ms-thumb {
+        width: 20px;
+        height: 20px;
+        background: #4caf50;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+      }
+
+      /* Style the range input container */
+      .range-container {
+        margin: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Tiffin CRM Pricing Calculator</h1>
+
+      <div class="calculator">
+        <label for="country">Country:</label>
+        <select id="country" onchange="updatePricing()">
+          <option value="India" selected>India</option>
+          <option value="International">Outside India</option>
+        </select>
+
+        <label for="orders"
+          >Daily Orders: <span id="orderCount">..</span></label
+        >
+        <input
+          type="range"
+          id="orders"
+          min="0"
+          max="400"
+          step="5"
+          value="25"
+          oninput="updatePricing()"
+        />
+
+        <label for="billing">Billing Duration:</label>
+        <select id="billing" onchange="updatePricing()">
+          <option value="quarterly" selected>
+            Quarterly (-16.5% Discount)
+          </option>
+          <option value="monthly">Monthly</option>
+          <option value="yearly">Yearly (-26.5% Discount)</option>
+        </select>
+
+        <div class="results">
+          <p class="results_mini">
+            ₹<t id="perOrderCost">0</t> per each processed order
+          </p>
+
+          <div class="price-box">
+            <div class="price-box-column price-box-column-left">
+              <div class="price-box-big-number" id="orderCount_big"></div>
+              <div class="price-box-mini-title">Daily Orders</div>
+            </div>
+            <div class="price-box-separator"></div>
+            <div class="price-box-column price-box-column-right">
+              <div class="price-box-big-number">
+                ₹<span id="monthlyPricing"></span>
+              </div>
+              <div class="price-box-mini-title">/month</div>
+            </div>
+          </div>
+          <p>
+            <t id="billingDuration" style="text-transform: capitalize"></t>
+            Charges ₹<span id="ourCharges">0</span>
+          </p>
+          <p class="results_mini">
+            Final Bill (including taxes): ₹<span id="finalBill">0</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </body>
+  <script>
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    function updateRangeInput() {
+      const defaultValue = getQueryParam("orders");
+      if (defaultValue) {
+        const rangeInput = document.getElementById("orders");
+        rangeInput.value = defaultValue;
+      }
+    }
+    updateRangeInput();
+    function updatePricing() {
+      const country = document.getElementById("country").value;
+      const orders = parseInt(document.getElementById("orders").value);
+      const billing = document.getElementById("billing").value;
+
+      let perOrderPrice = country === "India" ? 7.5 : 15;
+      let MonthlyPrice = 0;
+      let ourCharges = 0;
+      let finalBill = 0;
+
+      if (orders < 26) {
+        MonthlyPrice = 0;
+        effectiveMonthlyPrice = 0;
+        perOrderCost = 0;
+        ourCharges = 0;
+        finalBill = 0;
+      } else {
+        MonthlyPrice = orders * perOrderPrice - 26;
+        switch (billing) {
+          case "monthly":
+            ourCharges = MonthlyPrice * 1.2;
+            effectiveMonthlyPrice = ourCharges / 1;
+            break;
+          case "quarterly":
+            ourCharges = MonthlyPrice * 3;
+            effectiveMonthlyPrice = ourCharges / 3;
+            break;
+          case "yearly":
+            ourCharges = MonthlyPrice * 12 * 0.88;
+            effectiveMonthlyPrice = ourCharges / 12;
+            break;
+        }
+        finalBill = ourCharges * 1.18;
+        perOrderCost = effectiveMonthlyPrice / (orders * 30);
+      }
+
+      document.getElementById("orderCount").textContent = orders;
+      document.getElementById("orderCount_big").textContent = orders;
+      document.getElementById("perOrderCost").textContent =
+        perOrderCost.toFixed(2);
+      document.getElementById("monthlyPricing").textContent =
+        effectiveMonthlyPrice.toFixed(0);
+      document.getElementById("ourCharges").textContent = ourCharges.toFixed(2);
+      document.getElementById("finalBill").textContent = finalBill.toFixed(2);
+
+      document.getElementById("billingDuration").textContent = billing;
+      update_range();
+    }
+
+    // Initial update
+    updatePricing();
+
+    function update_range() {
+      const rangeInput = document.getElementById("orders");
+      const currentValue = parseInt(rangeInput.value);
+      const minValue = parseInt(rangeInput.min);
+      const maxValue = parseInt(rangeInput.max);
+      const triggermax = maxValue - 100;
+
+      if (currentValue < 26) {
+        rangeInput.step = 1;
+      }
+      if (currentValue > 24) {
+        rangeInput.step = 5;
+      }
+      if (currentValue > 29) {
+        rangeInput.step = 10;
+      }
+      if (currentValue > triggermax) {
+        rangeInput.max = currentValue + 100;
+      }
+      if (currentValue > 2000) {
+        alert("Contact Us to Discuss this");
+      }
+
+      // Ensure that max is always greater than min
+      if (parseInt(rangeInput.max) <= parseInt(rangeInput.min)) {
+        rangeInput.max = parseInt(rangeInput.min) + 100;
+      }
+    }
+  </script>
+</html>

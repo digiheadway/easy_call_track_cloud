@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMeals User Registeration</title>
+    <link rel="stylesheet" href="base.css?<?php echo filemtime($_SERVER['DOCUMENT_ROOT'] . 'base.css'); ?>">
+    <link rel="stylesheet" href="style.css?<?php echo filemtime($_SERVER['DOCUMENT_ROOT'] . 'style.css'); ?>">
+    <script src="https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.mjs" type="module"></script>
+    <link rel="preload" href="https://lottie.host/0bce2892-f33a-4e03-8723-084484b362c7/sDnHjQ79oG.json" as="fetch"
+        type="application/json" crossorigin="anonymous">
+    <link rel="preload" href="https://lottie.host/dcc2ef95-baa4-4c58-bc6c-96cd7ad39738/Q5JyZC9T9T.json" as="fetch"
+        type="application/json" crossorigin="anonymous">
+
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js"></script>
+</head>
+<style>
+    .plans {
+        width: 100%;
+        user-select: none;
+        align-items: center;
+    }
+
+
+
+    .plan_info {
+        background-color: transparent;
+        color: var(--secondary);
+        font-weight: 500;
+        border: 1px solid var(--light);
+        padding: 15px;
+        border-radius: 8px;
+        cursor: pointer;
+        width: 100%;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .plan_info img {
+        max-width: 70px;
+    }
+
+    .plans input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        margin-right: 10px;
+        cursor: pointer;
+
+    }
+
+    /* Target the div and change its background when checkbox is checked */
+    .plans input[type="checkbox"]:checked~.plan_info {
+        border: 1px solid var(--primary);
+        /* color: var(--primary); */
+        background-color: #dce4ff;
+
+    }
+
+    /* When the checkbox is checked, change the whole div's color */
+    .plans input[type="checkbox"]:checked~label {
+        /* color: var(--primary); */
+    }
+
+    .plans input[type="checkbox"]:checked~.plan_info span {
+        background: transparent;
+    }
+
+
+
+    /* Ensure clicking on div toggles checkbox */
+    .plans input[type="checkbox"] {
+        position: block;
+        left: 20px;
+        display: none;
+    }
+
+    fieldset {
+        border: none;
+        ;
+    }
+</style>
+
+<body>
+    <main>
+        <section class="full_section">
+
+            <div class="page_info">
+                <img src="https://momscanteen.in/wp-content/uploads/2021/09/moms_canteen_logo.png" alt="" width="100px">
+                <h2>Select Your Meal Plans</h2>
+                <span>Hello Shubham,</span>
+                <span>Please Add Meal Plan to Your Account</span>
+            </div>
+        </section>
+        <section class="full_section">
+            <div class="form_container">
+                <form id="signup_form" action="#">
+
+                    <div class="input_field_container">
+                        <label for="zoney">Meal Plan Types</label>
+                        <select name="zone" id="zone">
+                            <option value="" selected>All</option>
+                            <option value="Area 1">Veg</option>
+                            <option value="Area 2">Non Veg</option>
+                        </select>
+                        <small id="zone_error" class="error_message"></small>
+                    </div>
+
+
+                    <div class="input_field_container">
+
+                        <label for="meal_plans">Meal Plans</label>
+                        <br>
+                        <fieldset>
+                            <div class="c-flex ali-c gap-2">
+                                <div class="plans r-flex ali-c jut-c gap-1" id="plans">
+                                    <input class="plan_checkbox" type="checkbox" id="plan3" name="meal_plans"
+                                        value="plan3">
+                                    <label for="plan3" class="plan_info r-flex ali-c jut-sb gap-1">
+                                        <div class="c-flex gap-05">
+                                            <span class="w6">Plan 3</span>
+                                            <span>Daily Lunch</span>
+                                            <span>4 Roti, Sabji 1, Sabji 2</span>
+                                            <span class="w4">This is a plan Description</span>
+                                        </div>
+                                        <div class="c-flex ali-c gap-1">
+                                            <img src="https://cdn-icons-png.flaticon.com/512/2771/2771401.png" alt="">
+                                            <span>₹200/Meal</span>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div class="plans r-flex ali-c jut-c gap-1" id="plans">
+                                    <input class="plan_checkbox" type="checkbox" id="plan4" name="meal_plans"
+                                        value="plan4">
+                                    <label for="plan4" class="plan_info r-flex ali-c jut-sb gap-1">
+                                        <div class="c-flex gap-05">
+                                            <span class="w6">Plan 4</span>
+                                            <span>Daily Lunch</span>
+                                            <span>4 Roti, Sabji 1, Sabji 2</span>
+                                            <span class="w4">This is a plan Description</span>
+                                        </div>
+                                        <div class="c-flex ali-c gap-1">
+                                            <img src="https://cdn-icons-png.flaticon.com/512/2771/2771401.png" alt="">
+                                            <span>₹200/Meal</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+                    <span class="input_desc pointer" onclick="contact_support()" id="manual_entry_desc">You
+                        can Request Edits Via Contacting us on
+                        <span style="text-decoration: underline;">Whatsapp</span></span>
+                    <small id="location_error" class="error_message"></small>
+
+                    <div class="input_field_container">
+                        <button type="submit" class="submit_btn r-flex ali-c jut-c gap-1">Add Selected Meal Plans
+                            <iconify-icon icon="ooui:arrow-next-ltr" height="14"></iconify-icon></button>
+                    </div>
+                </form>
+            </div>
+        </section>
+        <section class="full_section">
+            <div class="extra_btn_container">
+                <div class="c-flex ali-c">
+                    <hr style="width: 100%;">
+                    <span class="or_text">OR</span>
+                </div>
+                <button class="secondary_btn">Check Our Plans</button>
+            </div>
+            <div class="need_help_container">
+                <span>Need Help?</span>
+                <a href="#">Contact Us</a>
+            </div>
+        </section>
+    </main>
+    <div id="overlay" class="overlay">
+        <div class="overlay-content page_info">
+            <dotlottie-player id="lottiePlayer"
+                src="https://lottie.host/0bce2892-f33a-4e03-8723-084484b362c7/sDnHjQ79oG.json" background="transparent"
+                speed="1" style="width: 300px; height: 200px;" speed="2" loop autoplay></dotlottie-player>
+            <h3 id="overlay_title">Signing Up...</h3>
+            <br>
+            <span id="overlay_desc">Your Details are being checked.. </span>
+            <button id="overlay_btn" class="submit_btn" style="display: none;">Add Yor Meal Plan Now</button>
+            <!-- <button onclick="changeLottie()">Change Lottie</button> -->
+            <span id="closeOverlay">Close</span>
+        </div>
+    </div>
+</body>
+<script>
+    // Function to get user location
+    function get_user_location() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function (position) {
+                var latitude = position.coords.latitude;
+                var longitude = position.coords.longitude;
+                console.log("Latitude: " + latitude);
+                console.log("Longitude: " + longitude);
+                document.getElementById("location").value = latitude + "," + longitude;
+                document.getElementById("manual_entry_desc").innerHTML = "Fetched your Location as " + latitude + "," + longitude;
+            }, function (error) {
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        alert("User denied the request for Geolocation.");
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        alert("Location information is unavailable.");
+                        break;
+                    case error.TIMEOUT:
+                        alert("The request to get user location timed out.");
+                        break;
+                    case error.UNKNOWN_ERROR:
+                        alert("An unknown error occurred.");
+                        break;
+                }
+            });
+        } else {
+            alert("Geolocation is not supported by this browser.");
+        }
+    }
+    // Function to enable manual entry
+    function enableManualEntry(caller) {
+        document.getElementById("location").setAttribute("type", "text");
+        caller.style.display = "none";
+    }
+
+    function show_this_hide_me(caller, ele) {
+        document.getElementById(ele).style.display = "block";  // Show the target element
+        caller.style.display = "none";  // Hide the calling element
+    }
+
+
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const fields = [
+            { id: 'name', errorId: 'name_error', event: 'input', validation: value => value.trim() !== "" },
+            { id: 'phone', errorId: 'phone_error', event: 'input', validation: value => value.trim().length > 5 },
+            { id: 'zone', errorId: 'zone_error', event: 'change', validation: value => value !== "" },
+            { id: 'address', errorId: 'address_error', event: 'input', validation: value => value.trim() !== "" },
+        ];
+
+        // Add event listeners for input validation
+        fields.forEach(field => {
+            document.getElementById(field.id).addEventListener(field.event, function () {
+                if (field.validation(this.value)) {
+                    document.getElementById(field.errorId).innerText = "";
+                }
+            });
+        });
+
+        // Handle location validation through button click
+        const locationInput = document.getElementById('location');
+        document.getElementById('get_location_btn').addEventListener('click', function () {
+            // Assuming this button fetches and inserts the location value
+            const locationValue = ""; // Replace this with the actual location fetching logic
+            locationInput.value = locationValue;
+            document.getElementById('location_error').innerText = ""; // Clear error if location is set
+        });
+
+        // Add event listener for dietary preference
+        document.querySelectorAll('input[name="diet_pref"]').forEach(option => {
+            option.addEventListener('change', function () {
+                document.getElementById('diet_pref_error').innerText = "";
+            });
+        });
+
+        // Form submission event listener
+        document.getElementById('signup_form').addEventListener('submit', function (event) {
+            event.preventDefault(); // Prevent form submission to allow validation
+            let isValid = true;
+
+            // Validate fields
+            fields.forEach(field => {
+                const value = document.getElementById(field.id).value;
+                if (!field.validation(value)) {
+                    document.getElementById(field.errorId).innerText = `Valid ${field.id.replace('_', ' ')} is required.`;
+                    isValid = false;
+                }
+            });
+
+            // Location Validation
+            if (locationInput.value.trim() === "") {
+                document.getElementById('location_error').innerText = "Delivery location is required.";
+                isValid = false;
+            }
+
+            // Dietary Preference Validation
+            const dietPref = document.querySelector('input[name="diet_pref"]:checked');
+            if (!dietPref) {
+                document.getElementById('diet_pref_error').innerText = "Please select a dietary preference.";
+                isValid = false;
+            }
+
+            if (isValid) {
+                // Create an object with the form values
+                const formData = {
+                    name: document.getElementById('name').value,
+                    phone: document.getElementById('phone').value,
+                    zone: document.getElementById('zone').value,
+                    location: locationInput.value,
+                    address: document.getElementById('address').value,
+                    diet_pref: dietPref ? dietPref.value : null
+                };
+
+
+                const overlay_desc = document.getElementById('overlay_desc');
+                const overlay_title = document.getElementById('overlay_title');
+                const player = document.getElementById('lottiePlayer');
+                document.getElementById("overlay").style.display = "flex"; // Show the overlay
+                document.body.classList.add('noscroll'); // Prevent background scrolling
+
+                const overlay_btn = document.getElementById('overlay_btn');
+                overlay_title.innerText = "Checking Info...";
+                overlay_desc.innerText = "Sending your details to account creation bot..."; // Show loading message
+                overlay_desc.style.display = 'block'; // Make loading message visible
+
+                // Submit the form data using Fetch API
+                fetch('https://digiheadway.in/tester/imeals/signup_info.php', {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json' // Indicate we are sending JSON
+                    },
+                    body: JSON.stringify(formData), // Convert formData to JSON string
+                })
+                    .then(response => {
+                        overlay_title.innerText = "Got Something...";
+                        overlay_desc.innerText = "Showing it to you...";
+
+                        // Check if the response is OK (status in the range 200-299)
+                        if (response.ok) {
+                            return response.text(); // or response.json() if your server returns JSON
+                        } else {
+                            throw new Error(`Error: ${response.status}`);
+                        }
+                    })
+                    .then(data => {
+                        player.load("https://lottie.host/dcc2ef95-baa4-4c58-bc6c-96cd7ad39738/Q5JyZC9T9T.json"); // New Lottie animation URL
+                        player.play();
+                        overlay_title.innerText = "Account created";
+                        overlay_desc.innerText = "Your account has been created. Now Add your Meal Plan to it and balance as well";
+                        overlay_btn.onclick = add_meal_plan;
+                        overlay_btn.style.display = 'block';
+                        console.log(data); // Log response from signup_info.php
+                    })
+                    .catch(error => {
+                        player.load("https://lottie.host/56727919-60ee-4dae-9119-0f1b5883e8d9/y1MHYvXsoV.json"); // New Lottie animation URL
+                        player.play();
+                        overlay_title.innerText = "Ops Error Found..";
+                        overlay_desc.innerText = "Error: " + error; // Show error message in loading
+                        overlay_btn.style.display = 'block'; // Ensure the message is visible
+                        overlay_btn.onclick = contact_support;
+                        overlay_btn.innerText = 'Contact Support';
+                        console.error("Error:", error); // Handle errors
+                    });
+            } else {
+                console.log("Form is invalid. Correct the errors above.");
+            }
+        });
+    });
+
+    document.getElementById("login").addEventListener("click", function (event) {
+        // document.getElementById("signup_form").style.display = "none";
+        document.body.classList.add('noscroll'); // Prevent background scrolling
+        document.getElementById("overlay").style.display = "flex"; // Show the overlay
+    });
+
+    document.getElementById("closeOverlay").addEventListener("click", function () {
+        document.getElementById("overlay").style.display = "none"; // Hide the overlay
+        document.body.classList.remove('noscroll'); // Prevent background scrolling
+    });
+    // document.getElementById("overlay").style.display = "flex"; // Show the overlay
+    function changeLottie() {
+        const player = document.getElementById('lottiePlayer');
+        player.load("https://lottie.host/dcc2ef95-baa4-4c58-bc6c-96cd7ad39738/Q5JyZC9T9T.json");
+    }
+
+    function contact_support() {
+        const phoneNumber = '9253029002';
+        const message = 'Contact support.';
+        const whatsappLink = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+        window.open(whatsappLink, '_blank');
+    }
+
+    function add_meal_plan() {
+        alert('Thank you for adding your meal plan. You can now enjoy your meal plan. :)')
+    }
+
+
+</script>
+
+</html>

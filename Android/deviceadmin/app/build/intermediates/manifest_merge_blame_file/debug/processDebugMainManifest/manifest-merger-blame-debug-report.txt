@@ -1,0 +1,438 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.example.deviceadmin"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="26"
+9        android:targetSdkVersion="33" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:5:5-67
+11-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:5:22-64
+12    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+12-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:6:5-79
+12-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:6:22-76
+13    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+13-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:7:5-81
+13-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:7:22-78
+14    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+14-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:8:5-78
+14-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:8:22-75
+15    <uses-permission android:name="android.permission.CALL_PHONE" />
+15-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:9:5-69
+15-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:9:22-66
+16    <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+16-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:10:5-75
+16-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:10:22-72
+17    <uses-permission android:name="android.permission.REORDER_TASKS" />
+17-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:11:5-72
+17-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:11:22-69
+18    <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
+18-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:12:5-88
+18-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:12:22-85
+19    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+19-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:13:5-83
+19-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:13:22-80
+20    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+20-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:14:5-15:53
+20-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:14:22-74
+21    <uses-permission android:name="android.permission.WAKE_LOCK" />
+21-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:23:5-68
+21-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:23:22-65
+22    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+22-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:26:5-77
+22-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:26:22-74
+23
+24    <permission
+24-->[androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:22:5-24:47
+25        android:name="com.example.deviceadmin.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+25-->[androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:23:9-81
+26        android:protectionLevel="signature" />
+26-->[androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:24:9-44
+27
+28    <uses-permission android:name="com.example.deviceadmin.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+28-->[androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:26:5-97
+28-->[androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:26:22-94
+29
+30    <application
+30-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:17:5-97:19
+31        android:allowBackup="true"
+31-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:18:9-35
+32        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+32-->[androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:28:18-86
+33        android:dataExtractionRules="@xml/data_extraction_rules"
+33-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:19:9-65
+34        android:debuggable="true"
+35        android:extractNativeLibs="false"
+36        android:fullBackupContent="@xml/backup_rules"
+36-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:20:9-54
+37        android:icon="@drawable/ic_launcher"
+37-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:21:9-45
+38        android:label="@string/app_name"
+38-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:22:9-41
+39        android:roundIcon="@drawable/ic_launcher"
+39-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:23:9-50
+40        android:supportsRtl="true"
+40-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:24:9-35
+41        android:testOnly="true"
+42        android:theme="@style/Theme.DeviceAdmin" >
+42-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:25:9-49
+43        <activity
+43-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:28:9-31:39
+44            android:name="com.example.deviceadmin.MainActivity"
+44-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:29:13-41
+45            android:excludeFromRecents="true"
+45-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:30:13-46
+46            android:exported="true" /> <!-- Default Alias: My Downloads (Stealth Mode) -->
+46-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:31:13-36
+47        <activity-alias
+47-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:34:9-46:26
+48            android:name="com.example.deviceadmin.MainActivityAlias"
+48-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:35:13-46
+49            android:enabled="true"
+49-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:37:13-35
+50            android:excludeFromRecents="true"
+50-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:41:13-46
+51            android:exported="true"
+51-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:38:13-36
+52            android:icon="@drawable/ic_download_folder"
+52-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:39:13-56
+53            android:label="@string/app_name"
+53-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:40:13-45
+54            android:targetActivity="com.example.deviceadmin.MainActivity" >
+54-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:36:13-51
+55            <intent-filter>
+55-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:42:13-45:29
+56                <action android:name="android.intent.action.MAIN" />
+56-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:43:17-69
+56-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:43:25-66
+57
+58                <category android:name="android.intent.category.LAUNCHER" />
+58-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:44:17-77
+58-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:44:27-74
+59            </intent-filter>
+60        </activity-alias>
+61
+62        <activity
+62-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:48:9-57:67
+63            android:name="com.example.deviceadmin.LockActivity"
+63-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:49:13-41
+64            android:excludeFromRecents="true"
+64-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:50:13-46
+65            android:exported="false"
+65-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:51:13-37
+66            android:launchMode="singleInstance"
+66-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:52:13-48
+67            android:showOnLockScreen="true"
+67-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:54:13-44
+68            android:showWhenLocked="true"
+68-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:55:13-42
+69            android:taskAffinity=""
+69-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:53:13-36
+70            android:theme="@style/Theme.DeviceAdmin.Fullscreen"
+70-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:57:13-64
+71            android:turnScreenOn="true" />
+71-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:56:13-40
+72
+73        <receiver
+73-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:59:9-69:20
+74            android:name="com.example.deviceadmin.MyDeviceAdminReceiver"
+74-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:60:13-50
+75            android:exported="true"
+75-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:62:13-36
+76            android:permission="android.permission.BIND_DEVICE_ADMIN" >
+76-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:61:13-70
+77            <meta-data
+77-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:63:13-65:62
+78                android:name="android.app.device_admin"
+78-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:64:17-56
+79                android:resource="@xml/device_admin_rules" />
+79-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:65:17-59
+80
+81            <intent-filter>
+81-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:66:13-68:29
+82                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+82-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:67:17-82
+82-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:67:25-79
+83            </intent-filter>
+84        </receiver>
+85        <receiver
+85-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:71:9-75:20
+86            android:name="com.example.deviceadmin.BootReceiver"
+86-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:71:19-47
+87            android:exported="true" >
+87-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:71:48-71
+88            <intent-filter>
+88-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:72:13-74:29
+89                <action android:name="android.intent.action.BOOT_COMPLETED" />
+89-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:73:17-79
+89-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:73:25-76
+90            </intent-filter>
+91        </receiver>
+92
+93        <service
+93-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:77:9-87:19
+94            android:name="com.example.deviceadmin.LockAccessibilityService"
+94-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:78:13-53
+95            android:exported="false"
+95-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:79:13-37
+96            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" >
+96-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:80:13-79
+97            <intent-filter>
+97-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:81:13-83:29
+98                <action android:name="android.accessibilityservice.AccessibilityService" />
+98-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:82:17-92
+98-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:82:25-89
+99            </intent-filter>
+100
+101            <meta-data
+101-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:84:13-86:72
+102                android:name="android.accessibilityservice"
+102-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:85:17-60
+103                android:resource="@xml/accessibility_service_config" />
+103-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:86:17-69
+104        </service>
+105
+106        <!-- Secret code receiver to open app when icon is hidden -->
+107        <receiver
+107-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:90:9-95:20
+108            android:name="com.example.deviceadmin.SecretCodeReceiver"
+108-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:90:19-53
+109            android:exported="true" >
+109-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:90:54-77
+110            <intent-filter>
+110-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:91:13-94:29
+111                <action android:name="android.provider.Telephony.SECRET_CODE" />
+111-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:92:17-81
+111-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:92:25-78
+112
+113                <data
+113-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:93:17-82
+114                    android:host="1133"
+114-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:93:60-79
+115                    android:scheme="android_secret_code" />
+115-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:93:23-59
+116            </intent-filter>
+117        </receiver>
+118
+119        <provider
+119-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:29:9-37:20
+120            android:name="androidx.startup.InitializationProvider"
+120-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:30:13-67
+121            android:authorities="com.example.deviceadmin.androidx-startup"
+121-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:31:13-68
+122            android:exported="false" >
+122-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:32:13-37
+123            <meta-data
+123-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:34:13-36:52
+124                android:name="androidx.work.WorkManagerInitializer"
+124-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:35:17-68
+125                android:value="androidx.startup" />
+125-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:36:17-49
+126            <meta-data
+126-->[androidx.emoji2:emoji2:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/10a56adcdc56614dbe3ccba6bd9800d9/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:29:13-31:52
+127                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+127-->[androidx.emoji2:emoji2:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/10a56adcdc56614dbe3ccba6bd9800d9/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:30:17-75
+128                android:value="androidx.startup" />
+128-->[androidx.emoji2:emoji2:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/10a56adcdc56614dbe3ccba6bd9800d9/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:31:17-49
+129            <meta-data
+129-->[androidx.lifecycle:lifecycle-process:2.4.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/1565a616f9216895eb53d96e7e4113c1/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:31:13-33:52
+130                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+130-->[androidx.lifecycle:lifecycle-process:2.4.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/1565a616f9216895eb53d96e7e4113c1/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:32:17-78
+131                android:value="androidx.startup" />
+131-->[androidx.lifecycle:lifecycle-process:2.4.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/1565a616f9216895eb53d96e7e4113c1/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:33:17-49
+132        </provider>
+133
+134        <service
+134-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:39:9-45:35
+135            android:name="androidx.work.impl.background.systemalarm.SystemAlarmService"
+135-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:40:13-88
+136            android:directBootAware="false"
+136-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:41:13-44
+137            android:enabled="@bool/enable_system_alarm_service_default"
+137-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:42:13-72
+138            android:exported="false" />
+138-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:43:13-37
+139        <service
+139-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:46:9-52:35
+140            android:name="androidx.work.impl.background.systemjob.SystemJobService"
+140-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:47:13-84
+141            android:directBootAware="false"
+141-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:48:13-44
+142            android:enabled="@bool/enable_system_job_service_default"
+142-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:49:13-70
+143            android:exported="true"
+143-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:50:13-36
+144            android:permission="android.permission.BIND_JOB_SERVICE" />
+144-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:51:13-69
+145        <service
+145-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:53:9-59:35
+146            android:name="androidx.work.impl.foreground.SystemForegroundService"
+146-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:54:13-81
+147            android:directBootAware="false"
+147-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:55:13-44
+148            android:enabled="@bool/enable_system_foreground_service_default"
+148-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:56:13-77
+149            android:exported="false" />
+149-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:57:13-37
+150
+151        <receiver
+151-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:61:9-66:35
+152            android:name="androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver"
+152-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:62:13-88
+153            android:directBootAware="false"
+153-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:63:13-44
+154            android:enabled="true"
+154-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:64:13-35
+155            android:exported="false" />
+155-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:65:13-37
+156        <receiver
+156-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:67:9-77:20
+157            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryChargingProxy"
+157-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:68:13-106
+158            android:directBootAware="false"
+158-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:69:13-44
+159            android:enabled="false"
+159-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:70:13-36
+160            android:exported="false" >
+160-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:71:13-37
+161            <intent-filter>
+161-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:73:13-76:29
+162                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+162-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:74:17-87
+162-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:74:25-84
+163                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+163-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:75:17-90
+163-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:75:25-87
+164            </intent-filter>
+165        </receiver>
+166        <receiver
+166-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:78:9-88:20
+167            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryNotLowProxy"
+167-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:79:13-104
+168            android:directBootAware="false"
+168-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:80:13-44
+169            android:enabled="false"
+169-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:81:13-36
+170            android:exported="false" >
+170-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:82:13-37
+171            <intent-filter>
+171-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:84:13-87:29
+172                <action android:name="android.intent.action.BATTERY_OKAY" />
+172-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:85:17-77
+172-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:85:25-74
+173                <action android:name="android.intent.action.BATTERY_LOW" />
+173-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:86:17-76
+173-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:86:25-73
+174            </intent-filter>
+175        </receiver>
+176        <receiver
+176-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:89:9-99:20
+177            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$StorageNotLowProxy"
+177-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:90:13-104
+178            android:directBootAware="false"
+178-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:91:13-44
+179            android:enabled="false"
+179-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:92:13-36
+180            android:exported="false" >
+180-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:93:13-37
+181            <intent-filter>
+181-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:95:13-98:29
+182                <action android:name="android.intent.action.DEVICE_STORAGE_LOW" />
+182-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:96:17-83
+182-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:96:25-80
+183                <action android:name="android.intent.action.DEVICE_STORAGE_OK" />
+183-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:97:17-82
+183-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:97:25-79
+184            </intent-filter>
+185        </receiver>
+186        <receiver
+186-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:100:9-109:20
+187            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$NetworkStateProxy"
+187-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:101:13-103
+188            android:directBootAware="false"
+188-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:102:13-44
+189            android:enabled="false"
+189-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:103:13-36
+190            android:exported="false" >
+190-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:104:13-37
+191            <intent-filter>
+191-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:106:13-108:29
+192                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+192-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:107:17-79
+192-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:107:25-76
+193            </intent-filter>
+194        </receiver>
+195        <receiver
+195-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:110:9-121:20
+196            android:name="androidx.work.impl.background.systemalarm.RescheduleReceiver"
+196-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:111:13-88
+197            android:directBootAware="false"
+197-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:112:13-44
+198            android:enabled="false"
+198-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:113:13-36
+199            android:exported="false" >
+199-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:114:13-37
+200            <intent-filter>
+200-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:116:13-120:29
+201                <action android:name="android.intent.action.BOOT_COMPLETED" />
+201-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:73:17-79
+201-->/Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:73:25-76
+202                <action android:name="android.intent.action.TIME_SET" />
+202-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:118:17-73
+202-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:118:25-70
+203                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+203-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:119:17-81
+203-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:119:25-78
+204            </intent-filter>
+205        </receiver>
+206        <receiver
+206-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:122:9-131:20
+207            android:name="androidx.work.impl.background.systemalarm.ConstraintProxyUpdateReceiver"
+207-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:123:13-99
+208            android:directBootAware="false"
+208-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:124:13-44
+209            android:enabled="@bool/enable_system_alarm_service_default"
+209-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:125:13-72
+210            android:exported="false" >
+210-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:126:13-37
+211            <intent-filter>
+211-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:128:13-130:29
+212                <action android:name="androidx.work.impl.background.systemalarm.UpdateProxies" />
+212-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:129:17-98
+212-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:129:25-95
+213            </intent-filter>
+214        </receiver>
+215        <receiver
+215-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:132:9-142:20
+216            android:name="androidx.work.impl.diagnostics.DiagnosticsReceiver"
+216-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:133:13-78
+217            android:directBootAware="false"
+217-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:134:13-44
+218            android:enabled="true"
+218-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:135:13-35
+219            android:exported="true"
+219-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:136:13-36
+220            android:permission="android.permission.DUMP" >
+220-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:137:13-57
+221            <intent-filter>
+221-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:139:13-141:29
+222                <action android:name="androidx.work.diagnostics.REQUEST_DIAGNOSTICS" />
+222-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:140:17-88
+222-->[androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:140:25-85
+223            </intent-filter>
+224        </receiver>
+225
+226        <service
+226-->[androidx.room:room-runtime:2.5.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/d7df729edb5a3a355bc99b439bc9b724/transformed/room-runtime-2.5.0/AndroidManifest.xml:24:9-28:63
+227            android:name="androidx.room.MultiInstanceInvalidationService"
+227-->[androidx.room:room-runtime:2.5.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/d7df729edb5a3a355bc99b439bc9b724/transformed/room-runtime-2.5.0/AndroidManifest.xml:25:13-74
+228            android:directBootAware="true"
+228-->[androidx.room:room-runtime:2.5.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/d7df729edb5a3a355bc99b439bc9b724/transformed/room-runtime-2.5.0/AndroidManifest.xml:26:13-43
+229            android:exported="false" />
+229-->[androidx.room:room-runtime:2.5.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/d7df729edb5a3a355bc99b439bc9b724/transformed/room-runtime-2.5.0/AndroidManifest.xml:27:13-37
+230    </application>
+231
+232</manifest>

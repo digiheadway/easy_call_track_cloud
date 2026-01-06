@@ -1,0 +1,70 @@
+[
+    {
+        "merged": "com.deviceadmin.app-debug-41:/xml_data_extraction_rules.xml.flat",
+        "source": "com.deviceadmin.app-main-43:/xml/data_extraction_rules.xml"
+    },
+    {
+        "merged": "com.deviceadmin.app-debug-41:/layout_dialog_pin_input.xml.flat",
+        "source": "com.deviceadmin.app-main-43:/layout/dialog_pin_input.xml"
+    },
+    {
+        "merged": "com.deviceadmin.app-debug-41:/drawable_ic_device.xml.flat",
+        "source": "com.deviceadmin.app-main-43:/drawable/ic_device.xml"
+    },
+    {
+        "merged": "com.deviceadmin.app-debug-41:/drawable_badge_pending.xml.flat",
+        "source": "com.deviceadmin.app-main-43:/drawable/badge_pending.xml"
+    },
+    {
+        "merged": "com.deviceadmin.app-debug-41:/drawable_ic_launcher.xml.flat",
+        "source": "com.deviceadmin.app-main-43:/drawable/ic_launcher.xml"
+    },
+    {
+        "merged": "com.deviceadmin.app-debug-41:/drawable_button_circular.xml.flat",
+        "source": "com.deviceadmin.app-main-43:/drawable/button_circular.xml"
+    },
+    {
+        "merged": "com.deviceadmin.app-debug-41:/drawable_ic_check_circle.xml.flat",
+        "source": "com.deviceadmin.app-main-43:/drawable/ic_check_circle.xml"
+    },
+    {
+        "merged": "com.deviceadmin.app-debug-41:/drawable_ic_download_folder.xml.flat",
+        "source": "com.deviceadmin.app-main-43:/drawable/ic_download_folder.xml"
+    },
+    {
+        "merged": "com.deviceadmin.app-debug-41:/drawable_badge_granted.xml.flat",
+        "source": "com.deviceadmin.app-main-43:/drawable/badge_granted.xml"
+    },
+    {
+        "merged": "com.deviceadmin.app-debug-41:/layout_item_permission_row.xml.flat",
+        "source": "com.deviceadmin.app-main-43:/layout/item_permission_row.xml"
+    },
+    {
+        "merged": "com.deviceadmin.app-debug-41:/drawable_ic_edit.xml.flat",
+        "source": "com.deviceadmin.app-main-43:/drawable/ic_edit.xml"
+    },
+    {
+        "merged": "com.deviceadmin.app-debug-41:/drawable_ic_lock.xml.flat",
+        "source": "com.deviceadmin.app-main-43:/drawable/ic_lock.xml"
+    },
+    {
+        "merged": "com.deviceadmin.app-debug-41:/xml_device_admin_policies.xml.flat",
+        "source": "com.deviceadmin.app-main-43:/xml/device_admin_policies.xml"
+    },
+    {
+        "merged": "com.deviceadmin.app-debug-41:/xml_accessibility_config.xml.flat",
+        "source": "com.deviceadmin.app-main-43:/xml/accessibility_config.xml"
+    },
+    {
+        "merged": "com.deviceadmin.app-debug-41:/layout_activity_setup.xml.flat",
+        "source": "com.deviceadmin.app-main-43:/layout/activity_setup.xml"
+    },
+    {
+        "merged": "com.deviceadmin.app-debug-41:/layout_activity_lock_screen.xml.flat",
+        "source": "com.deviceadmin.app-main-43:/layout/activity_lock_screen.xml"
+    },
+    {
+        "merged": "com.deviceadmin.app-debug-41:/xml_backup_rules.xml.flat",
+        "source": "com.deviceadmin.app-main-43:/xml/backup_rules.xml"
+    }
+]

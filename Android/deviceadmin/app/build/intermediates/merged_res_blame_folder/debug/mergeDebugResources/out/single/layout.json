@@ -1,0 +1,14 @@
+[
+    {
+        "merged": "com.example.deviceadmin.app-mergeDebugResources-3:/layout/dialog_pin_input.xml",
+        "source": "com.example.deviceadmin.app-main-6:/layout/dialog_pin_input.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-mergeDebugResources-3:/layout/activity_lock.xml",
+        "source": "com.example.deviceadmin.app-main-6:/layout/activity_lock.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-mergeDebugResources-3:/layout/activity_main.xml",
+        "source": "com.example.deviceadmin.app-main-6:/layout/activity_main.xml"
+    }
+]

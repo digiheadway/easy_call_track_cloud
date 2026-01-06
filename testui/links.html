@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Uptown Properties - Premium Real Estate in Panipat</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            color: #1a1a1a;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+            /* background: #ffffff; */
+            min-height: 100vh;
+            /* box-shadow: 0 0 60px rgba(0, 0, 0, 0.08); */
+        }
+
+        /* Header Section */
+        .header {
+            background: black;
+            padding: 50px 10px 30px 10px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            margin: 10px;
+            border-radius: 20px;
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            -moz-backdrop-filter: blur(10px);
+            -ms-backdrop-filter: blur(10px);
+            -o-backdrop-filter: blur(10px);
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="none"/><path d="M0 0L100 100M100 0L0 100" stroke="rgba(255,255,255,0.03)" stroke-width="1"/></svg>');
+            opacity: 0.5;
+        }
+
+        .logo-container {
+            position: relative;
+            z-index: 1;
+            margin-bottom: 25px;
+        }
+
+        .logo-container img {
+            max-width: 240px;
+            width: 100%;
+            height: auto;
+            filter: brightness(1.1);
+        }
+
+        .tagline {
+            color: #ffffff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: 0.3px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .services-line {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.9rem;
+            font-weight: 400;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Property Types Strip */
+        .property-strip {
+            padding: 0;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .property-scroll {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 0 30px;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .property-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .property-tag {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 8px 16px;
+            color: #ffffff;
+            font-size: 0.8rem;
+            font-weight: 500;
+            white-space: nowrap;
+            flex-shrink: 0;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .property-tag:hover {
+                background: rgba(255, 255, 255, 0.3);
+                border-color: rgba(255, 255, 255, 0.4);
+            }
+        }
+
+        .property-tag:active {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(0.95);
+        }
+
+        /* Content Section */
+        .content {
+            padding: 0 10px 40px;
+        }
+
+        /* Contact Actions */
+        .contact-actions {
+            display: grid;
+            grid-template-columns: 8fr 2fr;
+            gap: 12px;
+        }
+
+        .contact-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+            color: #ffffff;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        .contact-btn.whatsapp {
+            background: #25D366;
+        }
+
+        .contact-btn.whatsapp:hover {
+            background: #22c55e;
+            transform: translateY(-1px);
+        }
+
+        .contact-btn.whatsapp:active {
+            background: #1ea750;
+            transform: translateY(0) scale(0.98);
+        }
+
+        .contact-btn.call {
+            background: #3b82f6;
+        }
+
+        .contact-btn.call:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .contact-btn.call:active {
+            background: #1d4ed8;
+            transform: translateY(0) scale(0.98);
+        }
+
+        .contact-btn i {
+            font-size: 1.2rem;
+        }
+
+        .contact-btn.call i {
+            transform: rotate(90deg);
+        }
+
+        .contact-btn.call span {
+            display: none;
+        }
+
+        /* Contact Modal */
+        .contact-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.3s ease;
+        }
+
+        .contact-modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+        }
+
+        /* Mobile bottom sheet style */
+        @media (max-width: 768px) {
+            .contact-modal {
+                align-items: flex-end;
+            }
+
+            .modal-content {
+                width: 100%;
+                max-width: 100%;
+                border-radius: 20px 20px 0 0;
+                max-height: 70vh;
+                transform: translateY(100%);
+                padding: 24px 20px;
+                padding-bottom: max(24px, env(safe-area-inset-bottom));
+            }
+
+            .contact-modal.show .modal-content {
+                transform: translateY(0);
+            }
+
+            .modal-close {
+                top: 16px;
+                right: 16px;
+            }
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+
+        .modal-subtitle {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #6c757d;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+            transition: all 0.15s ease;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .modal-close:hover {
+                color: #1a1a1a;
+                transform: scale(1.1);
+            }
+        }
+
+        .modal-close:active {
+            color: #000000;
+            transform: scale(0.95);
+        }
+
+        .contact-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            border-radius: 12px;
+            background: #f8f9fa;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-decoration: none;
+            color: inherit;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .contact-option:hover {
+                background: #e9ecef;
+                transform: translateX(4px);
+            }
+        }
+
+        .contact-option:active {
+            background: #dee2e6;
+            transform: scale(0.98);
+        }
+
+        .contact-option-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .contact-option-icon.whatsapp {
+            background: #d1fae5;
+            color: #25D366;
+        }
+
+        .contact-option-icon.call {
+            background: #dbeafe;
+            color: #3b82f6;
+        }
+
+        .contact-option-text {
+            flex: 1;
+        }
+
+        .contact-option-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 2px;
+        }
+
+        .contact-option-phone {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+        /* Links */
+        .links-container {
+            padding: 15px 0;
+        }
+
+        .link-card {
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 14px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .link-card:hover {
+                border-color: #cbd5e0;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+                transform: translateY(-1px);
+            }
+        }
+
+        .link-main {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 18px 20px;
+            text-decoration: none;
+            color: #1a1a1a;
+            cursor: pointer;
+            transition: background 0.15s ease;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .link-main:hover {
+                background: #f8f9fa;
+            }
+        }
+
+        .link-main:active {
+            background: #e9ecef;
+            transform: scale(0.99);
+        }
+
+        .link-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
+        }
+
+        .link-card:hover .link-icon {
+            transform: scale(1.05);
+        }
+
+        .icon-red {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .icon-blue {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .icon-green {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .icon-orange {
+            background: #fed7aa;
+            color: #ea580c;
+        }
+
+        .icon-purple {
+            background: #e9d5ff;
+            color: #9333ea;
+        }
+
+        .icon-pink {
+            background: #fce7f3;
+            color: #ec4899;
+        }
+
+        .icon-indigo {
+            background: #e0e7ff;
+            color: #4f46e5;
+        }
+
+        .icon-yellow {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .icon-teal {
+            background: #ccfbf1;
+            color: #0d9488;
+        }
+
+        .icon-cyan {
+            background: #cffafe;
+            color: #0891b2;
+        }
+
+        .icon-gradient {
+            background: linear-gradient(135deg, #F58529 0%, #DD2A7B 50%, #8134AF 100%);
+            color: #ffffff;
+        }
+
+        .link-text {
+            flex: 1;
+        }
+
+        .link-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 2px;
+            color: #1a1a1a;
+        }
+
+        .link-subtitle {
+            font-size: 0.8rem;
+            color: #6c757d;
+            font-weight: 400;
+        }
+
+        .link-arrow {
+            color: #cbd5e0;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .link-main:hover .link-arrow {
+                color: #94a3b8;
+                transform: translateX(3px);
+            }
+        }
+
+        .expand-arrow {
+            color: #cbd5e0;
+            transition: transform 0.3s ease;
+        }
+
+        .expand-arrow.expanded {
+            transform: rotate(180deg);
+        }
+
+        /* Sub Links */
+        .sub-links {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .sub-links.expanded {
+            max-height: 800px;
+        }
+
+        .sub-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            text-decoration: none;
+            color: #1a1a1a;
+            transition: all 0.15s ease;
+            border-bottom: 1px solid #e9ecef;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        .sub-link:last-child {
+            border-bottom: none;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .sub-link:hover {
+                background: #ffffff;
+                padding-left: 25px;
+            }
+        }
+
+        .sub-link:active {
+            background: #e9ecef;
+            transform: scale(0.98);
+        }
+
+        .sub-link-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            flex-shrink: 0;
+        }
+
+        .sub-link-icon.instagram {
+            background: linear-gradient(135deg, #F58529 0%, #DD2A7B 50%, #8134AF 100%);
+            color: #ffffff;
+        }
+
+        .sub-link-icon.facebook {
+            background: #e0e7ff;
+            color: #4267B2;
+        }
+
+        .sub-link-icon.youtube {
+            background: #fee2e2;
+            color: #FF0000;
+        }
+
+        .sub-link-icon.location {
+            background: #fed7aa;
+            color: #ea580c;
+        }
+
+        .sub-link-content {
+            flex: 1;
+        }
+
+        .sub-link-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 2px;
+        }
+
+        .sub-link-followers {
+            font-size: 0.75rem;
+            color: #6c757d;
+        }
+
+        .sub-link-arrow {
+            color: #cbd5e0;
+            font-size: 0.85rem;
+        }
+
+        /* Section Divider */
+        .section-divider {
+            margin: 35px 0 25px;
+            text-align: center;
+            position: relative;
+        }
+
+        .section-divider::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 100%;
+            height: 1px;
+            background: #e9ecef;
+        }
+
+        .section-title {
+            display: inline-block;
+            background: #ffffff;
+            padding: 0 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            position: relative;
+        }
+
+        /* Footer */
+        .footer {
+            padding: 40px 30px;
+            text-align: center;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .footer-text {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+
+        .footer-brand {
+            font-size: 0.8rem;
+            color: #adb5bd;
+            font-weight: 500;
+        }
+
+        /* Global Button Styles */
+        button {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            transition: all 0.15s ease;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .link-card {
+            animation: fadeInUp 0.5s ease-out backwards;
+        }
+
+        .link-card:nth-child(1) {
+            animation-delay: 0.05s;
+        }
+
+        .link-card:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .link-card:nth-child(3) {
+            animation-delay: 0.15s;
+        }
+
+        .link-card:nth-child(4) {
+            animation-delay: 0.2s;
+        }
+
+        .link-card:nth-child(5) {
+            animation-delay: 0.25s;
+        }
+
+        .link-card:nth-child(6) {
+            animation-delay: 0.3s;
+        }
+
+        .link-card:nth-child(7) {
+            animation-delay: 0.35s;
+        }
+
+        .link-card:nth-child(8) {
+            animation-delay: 0.4s;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .header {
+                padding: 40px 25px 25px;
+            }
+
+            .logo-container img {
+                max-width: 200px;
+            }
+
+            .tagline {
+                font-size: 1rem;
+            }
+
+            .services-line {
+                font-size: 0.85rem;
+            }
+
+            .property-scroll {
+                padding: 0 25px;
+            }
+
+            .contact-btn {
+                padding: 15px;
+            }
+
+            .contact-btn span {
+                font-size: 0.9rem;
+            }
+
+            /* Reduce link text sizes on mobile */
+            .link-title {
+                font-size: 0.85rem;
+            }
+
+            .link-subtitle {
+                font-size: 0.75rem;
+            }
+
+            .sub-link-title {
+                font-size: 0.8rem;
+            }
+
+            /* Modal adjustments for mobile */
+            .modal-title {
+                font-size: 1.05rem;
+            }
+
+            .modal-subtitle {
+                font-size: 0.8rem;
+            }
+
+            .contact-option-name {
+                font-size: 0.85rem;
+            }
+
+            .contact-option-phone {
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .services-line {
+                font-size: 0.8rem;
+            }
+
+            .property-tag {
+                font-size: 0.75rem;
+                padding: 6px 14px;
+            }
+
+            /* Further reduce on very small screens */
+            .link-title {
+                font-size: 0.8rem;
+            }
+
+            .link-subtitle {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo-container">
+                <img src="https://uptownproperties.in/uptown-logo-white-with-slogan.png" alt="Uptown Properties">
+            </div>
+            <div class="tagline">#1 Real Estate Group in Panipat</div>
+            <div class="services-line">
+                <span class="services-full">Buy | Sell | Invest | Construction | Interior | Insurance</span>
+            </div>
+
+            <!-- Property Types Strip -->
+            <div class="property-strip">
+                <div class="property-scroll">
+                    <div class="property-tag">Huda</div>
+                    <div class="property-tag">Townships</div>
+                    <div class="property-tag">Projects</div>
+                    <div class="property-tag">Factory</div>
+                    <div class="property-tag">Agriculture Land</div>
+                    <div class="property-tag">Commercial</div>
+                    <div class="property-tag">Residential</div>
+                    <div class="property-tag">Plots</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Contact Actions -->
+            <div class="contact-actions">
+                <a href="#" class="contact-btn whatsapp" onclick="openContactModal(event, 'whatsapp')">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>WhatsApp</span>
+                </a>
+                <a href="#" class="contact-btn call" onclick="openContactModal(event, 'call')">
+                    <i class="fas fa-phone-alt"></i>
+                    <span>Call Now</span>
+                </a>
+            </div>
+
+            <!-- Links -->
+            <div class="links-container">
+                <!-- Save Contact -->
+                <div class="link-card">
+                    <a class="link-main" href="#" onclick="saveContact(event)">
+                        <div class="link-icon icon-red">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="link-text">
+                            <div class="link-title">Save to Contacts</div>
+                            <div class="link-subtitle">Add us to your phonebook</div>
+                        </div>
+                        <i class="fas fa-chevron-right link-arrow"></i>
+                    </a>
+                </div>
+
+                <!-- WhatsApp Broadcast -->
+                <div class="link-card">
+                    <a class="link-main" href="#" onclick="showBroadcastSteps(event)">
+                        <div class="link-icon"
+                            style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); color: white;">
+                            <i class="fab fa-whatsapp"></i>
+                        </div>
+                        <div class="link-text">
+                            <div class="link-title">Get Latest Updates</div>
+                            <div class="link-subtitle">Join our WhatsApp broadcast</div>
+                        </div>
+                        <i class="fas fa-chevron-right link-arrow"></i>
+                    </a>
+                </div>
+
+                <!-- Explore Properties -->
+                <div class="link-card">
+                    <a class="link-main" href="#"
+                        onclick="event.preventDefault(); alert('Coming Soon! Stay tuned for our property listings.');">
+                        <div class="link-icon icon-blue">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <div class="link-text">
+                            <div class="link-title">Explore Properties</div>
+                            <div class="link-subtitle">Coming Soon</div>
+                        </div>
+                        <i class="fas fa-chevron-right link-arrow"></i>
+                    </a>
+                </div>
+
+                <!-- About Us -->
+                <div class="link-card">
+                    <a class="link-main" href="https://hello.uptownproperties.in/" target="_blank">
+                        <div class="link-icon icon-green">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <div class="link-text">
+                            <div class="link-title">About Us</div>
+                            <div class="link-subtitle">Learn about our journey</div>
+                        </div>
+                        <i class="fas fa-chevron-right link-arrow"></i>
+                    </a>
+                </div>
+
+                <!-- Office Address -->
+                <div class="link-card">
+                    <div class="link-main" onclick="toggleSubLinks(event, 'officeLinks')">
+                        <div class="link-icon icon-orange">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div class="link-text">
+                            <div class="link-title">Office Address</div>
+                            <div class="link-subtitle">Visit our offices in Panipat</div>
+                        </div>
+                        <i class="fas fa-chevron-down expand-arrow" id="officeLinksArrow"></i>
+                    </div>
+                    <div class="sub-links" id="officeLinks">
+                        <a href="https://maps.app.goo.gl/y24QcrYjBqLJi6jeA" class="sub-link" target="_blank">
+                            <div class="sub-link-icon location"><i class="fas fa-map-pin"></i></div>
+                            <div class="sub-link-content">
+                                <div class="sub-link-title">Dharm Singh Market, Sanoli Road</div>
+                            </div>
+                            <i class="fas fa-external-link-alt sub-link-arrow"></i>
+                        </a>
+                        <a href="https://maps.app.goo.gl/3AJGkvSnig9nAKDJ8" class="sub-link" target="_blank">
+                            <div class="sub-link-icon location"><i class="fas fa-map-pin"></i></div>
+                            <div class="sub-link-content">
+                                <div class="sub-link-title">SCO 83, Sector 15, Panipat</div>
+                            </div>
+                            <i class="fas fa-external-link-alt sub-link-arrow"></i>
+                        </a>
+                        <a href="https://maps.app.goo.gl/RKNUu99mMFx7QVca6" class="sub-link" target="_blank">
+                            <div class="sub-link-icon location"><i class="fas fa-map-pin"></i></div>
+                            <div class="sub-link-content">
+                                <div class="sub-link-title">2nd Floor, Mittal Mall</div>
+                            </div>
+                            <i class="fas fa-external-link-alt sub-link-arrow"></i>
+                        </a>
+                        <a href="https://maps.app.goo.gl/93rGxZ8sSuNQjhyQ8" class="sub-link" target="_blank">
+                            <div class="sub-link-icon location"><i class="fas fa-map-pin"></i></div>
+                            <div class="sub-link-content">
+                                <div class="sub-link-title">Bal Vikash Road, Virat Nagar</div>
+                            </div>
+                            <i class="fas fa-external-link-alt sub-link-arrow"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Visit Website -->
+                <div class="link-card">
+                    <a class="link-main" href="https://uptownproperties.in" target="_blank">
+                        <div class="link-icon icon-purple">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <div class="link-text">
+                            <div class="link-title">Visit Website</div>
+                            <div class="link-subtitle">Explore online</div>
+                        </div>
+                        <i class="fas fa-chevron-right link-arrow"></i>
+                    </a>
+                </div>
+
+                <!-- Social Media -->
+                <div class="link-card">
+                    <div class="link-main" onclick="toggleSubLinks(event, 'socialLinks')">
+                        <div class="link-icon icon-gradient">
+                            <i class="fas fa-share-alt"></i>
+                        </div>
+                        <div class="link-text">
+                            <div class="link-title">Our Social Handles</div>
+                            <div class="link-subtitle">1 Lakh+ people following us</div>
+                        </div>
+                        <i class="fas fa-chevron-down expand-arrow" id="socialLinksArrow"></i>
+                    </div>
+                    <div class="sub-links" id="socialLinks">
+                        <!-- Instagram Accounts -->
+                        <a href="https://www.instagram.com/panipat_properties_uptown/" class="sub-link" target="_blank">
+                            <div class="sub-link-icon instagram"><i class="fab fa-instagram"></i></div>
+                            <div class="sub-link-content">
+                                <div class="sub-link-title">Panipat Properties - Uptown</div>
+                            </div>
+                            <i class="fas fa-external-link-alt sub-link-arrow"></i>
+                        </a>
+                        <a href="https://www.instagram.com/yogesh_bhardwaj_pnp/" class="sub-link" target="_blank">
+                            <div class="sub-link-icon instagram"><i class="fab fa-instagram"></i></div>
+                            <div class="sub-link-content">
+                                <div class="sub-link-title">Yogesh Bhardwaj PNP</div>
+                            </div>
+                            <i class="fas fa-external-link-alt sub-link-arrow"></i>
+                        </a>
+                        <a href="https://www.instagram.com/mohit_uptown_properties/" class="sub-link" target="_blank">
+                            <div class="sub-link-icon instagram"><i class="fab fa-instagram"></i></div>
+                            <div class="sub-link-content">
+                                <div class="sub-link-title">Mohit - Uptown Properties</div>
+                            </div>
+                            <i class="fas fa-external-link-alt sub-link-arrow"></i>
+                        </a>
+
+                        <!-- Facebook -->
+                        <a href="https://www.facebook.com/panipatpropertyuptown/" class="sub-link" target="_blank">
+                            <div class="sub-link-icon facebook"><i class="fab fa-facebook-f"></i></div>
+                            <div class="sub-link-content">
+                                <div class="sub-link-title">Panipat Property - Uptown</div>
+                            </div>
+                            <i class="fas fa-external-link-alt sub-link-arrow"></i>
+                        </a>
+
+                        <!-- YouTube -->
+                        <a href="https://www.youtube.com/@uptownproperties" class="sub-link" target="_blank">
+                            <div class="sub-link-icon youtube"><i class="fab fa-youtube"></i></div>
+                            <div class="sub-link-content">
+                                <div class="sub-link-title">Uptown Properties</div>
+                            </div>
+                            <i class="fas fa-external-link-alt sub-link-arrow"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other Resources Section -->
+            <div class="section-divider">
+                <span class="section-title">Helpful Resources</span>
+            </div>
+
+            <div class="links-container">
+                <div class="link-card">
+                    <a class="link-main"
+                        href="https://drive.google.com/file/d/1fzFz6AoygGDNaLlYzMLWFbwNKu7q2Yry/view?usp=drive_link"
+                        target="_blank">
+                        <div class="link-icon icon-purple">
+                            <i class="fas fa-map"></i>
+                        </div>
+                        <div class="link-text">
+                            <div class="link-title">Layout of Panipat Areas</div>
+                            <div class="link-subtitle">View detailed city layout</div>
+                        </div>
+                        <i class="fas fa-chevron-right link-arrow"></i>
+                    </a>
+                </div>
+
+                <div class="link-card">
+                    <a class="link-main" href="https://panipat.gov.in/colector-rate-2024-2025/" target="_blank">
+                        <div class="link-icon icon-teal">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                        </div>
+                        <div class="link-text">
+                            <div class="link-title">Collector Rates 2024-25</div>
+                            <div class="link-subtitle">Official property rates</div>
+                        </div>
+                        <i class="fas fa-chevron-right link-arrow"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-text">© 2024 Uptown Properties. All rights reserved.</div>
+            <div class="footer-brand">Your Trusted Real Estate Partner</div>
+        </div>
+    </div>
+
+    <!-- Contact Selection Modal -->
+    <div id="contactModal" class="contact-modal" onclick="closeContactModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()" style="position: relative;">
+            <button class="modal-close" onclick="closeContactModal()">&times;</button>
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">Choose Contact</div>
+                <div class="modal-subtitle" id="modalSubtitle">Select who you'd like to connect with</div>
+            </div>
+            <div id="modalOptions">
+                <!-- Options will be inserted here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle Sub Links
+        function toggleSubLinks(event, linkId) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const subLinks = document.getElementById(linkId);
+            const arrow = document.getElementById(linkId + 'Arrow');
+
+            subLinks.classList.toggle('expanded');
+            arrow.classList.toggle('expanded');
+        }
+
+        // Contact data
+        const contacts = [
+            { name: 'Uptown Property Panipat', phone: '+919518091945' },
+            { name: 'Yogesh Bhardwaj', phone: '+919138331357' },
+            { name: 'Mohit Bhardwaj', phone: '+919971085800' }
+        ];
+
+        // Open Contact Modal
+        function openContactModal(event, type) {
+            event.preventDefault();
+            const modal = document.getElementById('contactModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalSubtitle = document.getElementById('modalSubtitle');
+            const modalOptions = document.getElementById('modalOptions');
+
+            if (type === 'whatsapp') {
+                modalTitle.textContent = 'WhatsApp';
+                modalSubtitle.textContent = 'Select who you\'d like to connect with';
+                modalSubtitle.style.display = 'block';
+                modalOptions.innerHTML = contacts.map((contact, index) => `
+                    <a href="https://wa.me/${contact.phone.replace(/\+/g, '')}" 
+                       class="contact-option" 
+                       target="_blank"
+                       onclick="closeContactModal()">
+                        <div class="contact-option-icon whatsapp">
+                            <i class="fab fa-whatsapp"></i>
+                        </div>
+                        <div class="contact-option-text">
+                            <div class="contact-option-name">${contact.name}</div>
+                            <div class="contact-option-phone">${contact.phone}</div>
+                        </div>
+                    </a>
+                `).join('');
+            } else if (type === 'call') {
+                modalTitle.textContent = 'Call';
+                modalSubtitle.textContent = 'Select who you\'d like to connect with';
+                modalSubtitle.style.display = 'block';
+                modalOptions.innerHTML = contacts.map((contact, index) => `
+                    <a href="tel:${contact.phone}" 
+                       class="contact-option"
+                       onclick="closeContactModal()">
+                        <div class="contact-option-icon call">
+                            <i class="fas fa-phone-alt"></i>
+                        </div>
+                        <div class="contact-option-text">
+                            <div class="contact-option-name">${contact.name}</div>
+                            <div class="contact-option-phone">${contact.phone}</div>
+                        </div>
+                    </a>
+                `).join('');
+            }
+
+            modal.classList.add('show');
+        }
+
+        // Close Contact Modal
+        function closeContactModal(event) {
+            const modal = document.getElementById('contactModal');
+            modal.classList.remove('show');
+        }
+
+        // Save Contact Function - Creates 1 vCard file with all 3 contacts
+        function saveContact(event) {
+            event.preventDefault();
+
+            // Create a single vCard with all 3 contacts
+            let vcardContent = '';
+
+            contacts.forEach((contact) => {
+                vcardContent += `BEGIN:VCARD
+VERSION:3.0
+FN:${contact.name}
+ORG:Uptown Properties
+TEL;TYPE=WORK,VOICE:${contact.phone}
+EMAIL:info@uptownproperties.in
+URL:https://uptownproperties.in
+ADR;TYPE=WORK:;;Panipat;Haryana;;131001;India
+NOTE:#1 Real Estate Group in Panipat - Buy | Sell | Invest | Construction | Interior | Insurance
+END:VCARD
+`;
+            });
+
+            const blob = new Blob([vcardContent], { type: 'text/vcard' });
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'Uptown_Properties_Team.vcf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            // Show instructions in modal
+            setTimeout(() => {
+                const modal = document.getElementById('contactModal');
+                const modalTitle = document.getElementById('modalTitle');
+                const modalSubtitle = document.getElementById('modalSubtitle');
+                const modalOptions = document.getElementById('modalOptions');
+
+                modalTitle.innerHTML = '✅ Contact File Downloaded!';
+                modalSubtitle.style.display = 'none';
+                modalOptions.innerHTML = `
+                    <div style="padding: 10px 0;">
+                        <div style="font-size: 1rem; font-weight: 600; color: #1a1a1a; margin-bottom: 16px;">
+                            📱 How to save:
+                        </div>
+                        <div style="background: #f8f9fa; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 12px;">
+                                <div style="width: 28px; height: 28px; background: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.85rem; flex-shrink: 0;">1</div>
+                                <div style="flex: 1; padding-top: 4px; color: #1a1a1a;">Open the downloaded <strong>.vcf</strong> file</div>
+                            </div>
+                            <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 12px;">
+                                <div style="width: 28px; height: 28px; background: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.85rem; flex-shrink: 0;">2</div>
+                                <div style="flex: 1; padding-top: 4px; color: #1a1a1a;">Your phone will show all 3 contacts</div>
+                            </div>
+                            <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 12px;">
+                                <div style="width: 28px; height: 28px; background: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.85rem; flex-shrink: 0;">3</div>
+                                <div style="flex: 1; padding-top: 4px; color: #1a1a1a;">Tap <strong>"Add All"</strong> or <strong>"Save All"</strong></div>
+                            </div>
+                            <div style="display: flex; align-items: start; gap: 12px;">
+                                <div style="width: 28px; height: 28px; background: #25D366; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.85rem; flex-shrink: 0;">✓</div>
+                                <div style="flex: 1; padding-top: 4px; color: #059669; font-weight: 600;">All team members saved!</div>
+                            </div>
+                        </div>
+                        <div style="font-size: 0.9rem; font-weight: 600; color: #1a1a1a; margin-bottom: 10px;">
+                            Contacts included:
+                        </div>
+                        <div style="background: #f8f9fa; border-radius: 12px; padding: 14px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: #1a1a1a;">
+                                <i class="fas fa-user" style="color: #3b82f6; width: 16px;"></i>
+                                <span>Uptown Property Panipat</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: #1a1a1a;">
+                                <i class="fas fa-user" style="color: #3b82f6; width: 16px;"></i>
+                                <span>Yogesh Bhardwaj</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px; color: #1a1a1a;">
+                                <i class="fas fa-user" style="color: #3b82f6; width: 16px;"></i>
+                                <span>Mohit Bhardwaj</span>
+                            </div>
+                        </div>
+                        <button onclick="closeContactModal()" style="width: 100%; margin-top: 20px; padding: 14px; background: #3b82f6; color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 0.95rem;">
+                            Got it!
+                        </button>
+                    </div>
+                `;
+
+                modal.classList.add('show');
+            }, 500);
+        }
+
+        // Show WhatsApp Broadcast Steps
+        function showBroadcastSteps(event) {
+            event.preventDefault();
+
+            const modal = document.getElementById('contactModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalSubtitle = document.getElementById('modalSubtitle');
+            const modalOptions = document.getElementById('modalOptions');
+
+            modalTitle.innerHTML = 'Join Broadcast';
+            modalSubtitle.innerHTML = 'Get Latest Property Updates';
+            modalSubtitle.style.display = 'block';
+            modalOptions.innerHTML = `
+                <div style="padding: 10px 0;">
+                    <!-- Broadcast Profile Section -->
+                    <div style="text-align: center; padding: 20px 0; margin-bottom: 24px;">
+                        <div style="width: 80px; height: 80px; margin: 0 auto 16px; background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(37, 211, 102, 0.3);">
+                            <i class="fas fa-bullhorn" style="font-size: 2rem; color: white;"></i>
+                        </div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: #1a1a1a; margin-bottom: 6px;">
+                            Uptown Properties Broadcast
+                        </div>
+                        <div style="font-size: 0.9rem; color: #6c757d;">
+                            For Traders, Investors & Real Estate Enthusiasts
+                        </div>
+                    </div>
+
+                    <!-- Join Broadcast Button -->
+                    <a href="https://wa.me/919518091945?text=Hi%2C%20I%20want%20to%20join%20the%20WhatsApp%20broadcast%20for%20property%20updates" 
+                       target="_blank"
+                       onclick="closeContactModal()"
+                       style="width: 100%; padding: 16px; background: #25D366; color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3); transition: all 0.2s ease;">
+                        <i class="fab fa-whatsapp" style="font-size: 1.3rem;"></i>
+                        <span>Join Broadcast</span>
+                    </a>
+
+                    <!-- Important Notice -->
+                    <div style="background: #fff3cd; border-radius: 12px; padding: 16px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
+                        <div style="display: flex; align-items: start; gap: 12px;">
+                            <i class="fas fa-exclamation-triangle" style="color: #ffc107; font-size: 1.2rem; margin-top: 2px; flex-shrink: 0;"></i>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; color: #856404; margin-bottom: 6px; font-size: 0.95rem;">Important!</div>
+                                <div style="color: #856404; font-size: 0.88rem; line-height: 1.5;">Must save our contact to receive WhatsApp messages</div>
+                                <button onclick="saveContact(event); event.stopPropagation();" style="margin-top: 12px; padding: 10px 16px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 8px;">
+                                    <i class="fas fa-user-plus"></i>
+                                    <span>Save Contact Now</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- What You Will Get Container -->
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 20px; margin-bottom: 16px; color: white;">
+                        <div style="font-size: 1.05rem; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-gift"></i>
+                            <span>What You'll Get</span>
+                        </div>
+                        <div style="font-size: 0.9rem; line-height: 1.8;">
+                            <div style="display: flex; align-items: start; gap: 10px; margin-bottom: 8px;">
+                                <i class="fas fa-check-circle" style="margin-top: 4px; flex-shrink: 0;"></i>
+                                <span>Latest property listings in Panipat</span>
+                            </div>
+                            <div style="display: flex; align-items: start; gap: 10px; margin-bottom: 8px;">
+                                <i class="fas fa-check-circle" style="margin-top: 4px; flex-shrink: 0;"></i>
+                                <span>Exclusive deals & offers</span>
+                            </div>
+                            <div style="display: flex; align-items: start; gap: 10px; margin-bottom: 8px;">
+                                <i class="fas fa-check-circle" style="margin-top: 4px; flex-shrink: 0;"></i>
+                                <span>Market updates & insights</span>
+                            </div>
+                            <div style="display: flex; align-items: start; gap: 10px;">
+                                <i class="fas fa-check-circle" style="margin-top: 4px; flex-shrink: 0;"></i>
+                                <span>Investment opportunities</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="closeContactModal()" style="width: 100%; padding: 14px; background: #e9ecef; color: #495057; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 0.95rem;">
+                        Close
+                    </button>
+                </div>
+            `;
+
+            modal.classList.add('show');
+        }
+
+        // Auto-scroll animation for property strip - Seamless infinite scroll
+        const propertyScroll = document.querySelector('.property-scroll');
+
+        // Duplicate the tags for seamless scrolling
+        const scrollContent = propertyScroll.innerHTML;
+        propertyScroll.innerHTML += scrollContent;
+
+        let scrollInterval;
+        let scrollPosition = 0;
+
+        function startAutoScroll() {
+            scrollInterval = setInterval(() => {
+                scrollPosition += 1;
+                propertyScroll.scrollLeft = scrollPosition;
+
+                // When we've scrolled halfway (original content width), reset seamlessly
+                const halfWidth = propertyScroll.scrollWidth / 2;
+                if (scrollPosition >= halfWidth) {
+                    scrollPosition = 0;
+                    propertyScroll.scrollLeft = 0;
+                }
+            }, 30);
+        }
+
+        propertyScroll.addEventListener('mouseenter', () => {
+            clearInterval(scrollInterval);
+        });
+
+        propertyScroll.addEventListener('mouseleave', () => {
+            scrollPosition = propertyScroll.scrollLeft;
+            startAutoScroll();
+        });
+
+        // Smooth animations on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            const cards = document.querySelectorAll('.link-card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.05}s`;
+            });
+
+            // Start auto-scroll animation
+            startAutoScroll();
+        });
+    </script>
+</body>
+
+</html>

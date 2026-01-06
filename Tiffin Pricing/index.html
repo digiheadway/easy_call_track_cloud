@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 400px;
+        margin: auto;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        text-align: center;
+      }
+
+      label {
+        display: block;
+        margin: 15px 0 5px;
+      }
+
+      input[type="range"] {
+        width: 100%;
+      }
+
+      .result {
+        margin-top: 20px;
+      }
+
+      .result p {
+        font-size: 18px;
+        font-weight: bold;
+        margin: 5px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Pricing Calculator</h1>
+
+      <label for="country">Select Country:</label>
+      <select id="country" onchange="calculatePricing()">
+        <option value="india">India</option>
+        <option value="outside">Outside India</option>
+      </select>
+
+      <label for="dailyOrders">Select Daily Orders:</label>
+      <input
+        type="range"
+        id="dailyOrders"
+        min="0"
+        max="100"
+        value="30"
+        oninput="updateOrderCount()"
+      />
+      <span id="orderCount">30</span> Orders
+
+      <label for="billingDuration">Billing Duration:</label>
+      <select id="billingDuration" onchange="calculatePricing()">
+        <option value="monthly">Monthly</option>
+        <option value="quarterly">Quarterly</option>
+        <option value="annual">Annual</option>
+      </select>
+
+      <div class="result">
+        <p>Monthly Price: <span id="finalPrice">₹0</span></p>
+        <p>
+          Our Charges:
+          <span id="chargesPerBillingPeriod">₹0 (Quarterly)</span>
+        </p>
+        <p>TO Pay with Taxes (18%): <span id="billingPrice">₹0</span></p>
+      </div>
+    </div>
+  </body>
+  <script>
+    function updateOrderCount() {
+      const dailyOrders = document.getElementById("dailyOrders").value;
+      document.getElementById("orderCount").textContent = dailyOrders;
+      calculatePricing();
+    }
+
+    function calculatePricing() {
+      const dailyOrders = parseInt(
+        document.getElementById("dailyOrders").value
+      );
+      const country = document.getElementById("country").value;
+      const billingDuration = document.getElementById("billingDuration").value;
+
+      let pricePerOrder = 7.5;
+      if (country === "outside") {
+        pricePerOrder = 15;
+      }
+
+      let basePrice = 0;
+
+      // Calculate base price based on daily orders
+      if (dailyOrders > 25) {
+        basePrice = (dailyOrders - 25) * pricePerOrder; // Monthly base price
+      }
+
+      let chargesPerBillingPeriod = 0;
+
+      // Adjust pricing based on billing duration
+      if (billingDuration === "monthly") {
+        chargesPerBillingPeriod = basePrice; // Monthly price
+        chargesPerBillingPeriod *= 1.2; // Monthly price with 20% increase
+      } else if (billingDuration === "quarterly") {
+        chargesPerBillingPeriod = basePrice * 3; // Quarterly price
+      } else if (billingDuration === "annual") {
+        chargesPerBillingPeriod = basePrice * 12 * 0.9; // Annual price with 10% discount
+      }
+
+      // Calculate final billing price with tax
+      const finalPriceWithTax = (chargesPerBillingPeriod * 1.18).toFixed(2); // 18% tax
+
+      // Update UI with calculated prices
+      document.getElementById("finalPrice").textContent = `₹${basePrice.toFixed(
+        2
+      )}/month`;
+      document.getElementById(
+        "chargesPerBillingPeriod"
+      ).textContent = `₹${chargesPerBillingPeriod.toFixed(2)} (${
+        billingDuration.charAt(0).toUpperCase() + billingDuration.slice(1)
+      })`;
+      document.getElementById(
+        "billingPrice"
+      ).textContent = `₹${finalPriceWithTax}`;
+    }
+
+    // Initial calculation on page load
+    calculatePricing();
+  </script>
+</html>

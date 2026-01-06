@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iMeals - Login to Manage Your Tiffin Deliveries</title>
+  <meta name="description"
+    content="Manage Your Daily Deliveries from Your Tiffin Service. With IMeals you can Pause you all delvieries, or any specific deliveries or any repeat order." />
+  <link rel="icon" href="/assets/app_icons/favicon.ico" sizes="any" />
+  <link rel="apple-touch-icon" href="/assets/app_icons/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.json?v2" />
+  <meta name="theme-color" content="#2e069c" />
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-P1TX491DF5"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+    gtag("js", new Date());
+
+    gtag("config", "G-P1TX491DF5");
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&family=Roboto+Flex:opsz,wght@8..144,100..1000&display=swap"
+    rel="stylesheet" />
+  <meta robots="index, follow" />
+  <style>
+    body {
+      background: #faf9ff;
+      padding: 10px;
+      font-family: "Inter", sans-serif;
+      font-optical-sizing: auto;
+      color: #313131;
+    }
+
+    .heading_box h2,
+    .heading_box p,
+    .heading_box svg {
+      margin: 2px auto;
+    }
+
+    .container {
+      max-width: 800px;
+      padding: 20px 0px;
+      width: 100%;
+      margin: 2px auto;
+    }
+
+    .heading_box {
+      padding: 20px;
+      text-align: center;
+      border-radius: 5px;
+      border: 1px solid #e5e5e5;
+      background: #fff;
+      margin: 0px auto;
+      display: flex;
+      /* Make the container a flexbox */
+      flex-direction: row;
+      /* Set the flex direction to column */
+      justify-content: center;
+    }
+
+    h2 {
+      color: #313131;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    p {
+      color: #313131;
+      font-size: 14px;
+    }
+
+    .form_div {
+      margin-top: 60px;
+    }
+
+    .input_styling {
+      width: 100%;
+      padding: 18px;
+      font-size: 16px;
+      border: 1px solid #e5e5e5;
+      margin-top: 8px;
+      box-sizing: border-box;
+      /* Add this line */
+      border-radius: 5px;
+    }
+
+    input:focus {
+      outline-color: #2e069c;
+      /* This will change the color of the focus outline to blue when you click on an input field */
+    }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+      /* Optional - removes the margin for Firefox */
+    }
+
+    .input_div label {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .input_div {
+      margin: 20px auto;
+    }
+
+    .button {
+      border-radius: 5px;
+      border: 1px solid #dfdfdf;
+      background: linear-gradient(90deg, #6078fe 0%, #2e069c 100%);
+      color: #f3f3f3;
+      font-weight: 600;
+      font-size: 16px;
+      text-align: center;
+    }
+
+    .hideit {
+      display: none;
+    }
+
+    .cur {
+      cursor: pointer;
+    }
+
+    .response {
+      text-align: center;
+      font-size: 16px;
+      color: #353535;
+      font-weight: 500;
+    }
+
+    .lottieimg {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 30vh;
+      margin: 20px auto;
+      align-items: center;
+      width: 70%;
+    }
+
+    /* Full-page overlay style */
+    .loading-layer {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Loader animation style */
+    .loader {
+      border: 8px solid #f3f3f3;
+      /* Light grey */
+      border-top: 8px solid #3498db;
+      /* Blue */
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 2s linear infinite;
+    }
+
+    /* Loader animation */
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+  <style>
+    /* Snackbar container */
+    #snackbar {
+      visibility: hidden;
+      /* Hidden by default */
+      min-width: 250px;
+      /* Minimum width */
+      margin-left: -125px;
+      /* Center the snackbar */
+      background-color: #333;
+      /* Black background color */
+      color: #fff;
+      /* White text color */
+      text-align: center;
+      /* Centered text */
+      border-radius: 2px;
+      /* Rounded borders */
+      padding: 16px;
+      /* Some padding */
+      position: fixed;
+      /* Sit on top of the screen */
+      z-index: 1;
+      /* Add a z-index if needed */
+      left: 50%;
+      /* Center the snackbar horizontally */
+      bottom: 30px;
+      /* 30px from the bottom */
+      font-size: 17px;
+      /* Increase font size */
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    /* Colors for different types */
+    .snackbar-success {
+      background-color: #4caf50;
+      /* Green */
+    }
+
+    .snackbar-warning {
+      background-color: #ffc107;
+      /* Yellow */
+    }
+
+    .snackbar-error {
+      background-color: #f44336;
+      /* Red */
+    }
+
+    /* Progress bar */
+    .snackbar-progress {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      height: 4px;
+      background-color: #ddd;
+      width: 100%;
+      transition: width linear;
+    }
+
+    .snackbar-progress-inner {
+      height: 100%;
+      background-color: #fff;
+    }
+
+    /* Close button */
+    .snackbar-close {
+      margin-left: 20px;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    /* Responsive adjustments */
+    @media screen and (max-width: 600px) {
+      #snackbar {
+        width: 90%;
+        /* 90% of the viewport width */
+        margin-left: 0;
+        left: 5%;
+      }
+    }
+  </style>
+  <style>
+    .top-bar {
+      width: 100%;
+      background: linear-gradient(90deg, #6078FE 0%, #2e069c 100%);
+      color: white;
+      padding: 15px;
+      text-align: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      font-family: Arial, sans-serif;
+      font-size: 18px;
+    }
+
+
+    /* Style for the rotating circle */
+    .circle {
+      width: 16px;
+      height: 16px;
+      border: 3px solid white;
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: spin 1.2s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+      margin-right: 10px;
+    }
+
+    /* Keyframes for rotating animation */
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Style for the animated dots */
+    .dots::after {
+      content: " ";
+      animation: dots 1.5s ease-in-out infinite;
+    }
+
+    /* Keyframes for dots animation */
+    @keyframes dots {
+
+      0%,
+      20% {
+        content: "";
+      }
+
+      40% {
+        content: ".";
+      }
+
+      60% {
+        content: "..";
+      }
+
+      80%,
+      100% {
+        content: "...";
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Top bar with rotating circle and message -->
+  <div class="top-bar">
+    <div class="circle"></div>
+    <span id="message">Automatically Login in</span>
+    <span class="dots"></span>
+  </div>
+
+  <div id="snackbar"></div>
+
+  <button onclick="showSnackbar('success', 'This is a success message!', 5000)">
+    Show Success Snackbar
+  </button>
+  <button onclick="showSnackbar('warning', 'This is a warning message!', 5000)">
+    Show Warning Snackbar
+  </button>
+  <button onclick="showSnackbar('error', 'This is an error message!', 5000)">
+    Show Error Snackbar
+  </button>
+  <script>
+    function showSnackbar(type, message, duration = 5000) {
+      const snackbar = document.getElementById("snackbar");
+
+      // Clear any previous snackbar content
+      snackbar.innerHTML = "";
+
+      // Set the appropriate class for the type
+      snackbar.className = `snackbar-${type}`;
+
+      // Create message text
+      const text = document.createElement("span");
+      text.innerText = message;
+
+      // Create progress bar
+      const progressBar = document.createElement("div");
+      progressBar.className = "snackbar-progress";
+      const progressBarInner = document.createElement("div");
+      progressBarInner.className = "snackbar-progress-inner";
+      progressBar.appendChild(progressBarInner);
+
+      // Create close button
+      const closeButton = document.createElement("button");
+      closeButton.className = "snackbar-close";
+      closeButton.innerText = "✖";
+      closeButton.onclick = function () {
+        hideSnackbar();
+      };
+
+      // Add text, progress bar, and close button to the snackbar
+      snackbar.appendChild(text);
+      snackbar.appendChild(progressBar);
+      snackbar.appendChild(closeButton);
+
+      // Show the snackbar
+      snackbar.style.visibility = "visible";
+
+      // Animate the progress bar
+      progressBarInner.style.width = "100%";
+      setTimeout(() => {
+        progressBarInner.style.width = "0%";
+      }, 100);
+
+      // Auto-dismiss after the specified duration
+      setTimeout(() => {
+        hideSnackbar();
+      }, duration);
+    }
+
+    function hideSnackbar() {
+      const snackbar = document.getElementById("snackbar");
+      snackbar.style.visibility = "hidden";
+    }
+  </script>
+  <div class="container">
+    <div class="heading_box">
+      <div style="display: flex; align-items: center">
+        <img style="width: 45px; border-radius: 5px; margin-right: 10px" class="header_box_img"
+          src="https://imeals.in/assets/app-icons/icon-512-maskable.png" alt="" />
+      </div>
+      <div>
+        <h2>Login to iMeals</h2>
+        <p>Manage Your Meals Here</p>
+      </div>
+    </div>
+    <div class="lottieimg">
+      <script src="https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.mjs"
+        type="module"></script>
+
+      <dotlottie-player src="https://lottie.host/fd83d672-da49-40d7-8a82-8ee48c0b72a9/pt5Afb8HSV.json"
+        background="transparent" speed="1" style="width: 300px; height: 300px" loop autoplay></dotlottie-player>
+    </div>
+    <div class="form_div">
+      <div id="phone_section">
+        <div class="input_div">
+          <label for="phone">Mobile Number</label>
+          <input type="number" name="phone" id="phoneNumber" class="input_styling"
+            placeholder="Enter Your Registered Phone Number" onclick="truecaller_push();" required />
+          <div class="input_div">
+            <button class="input_styling cur button" id="send_otp" onclick="check_number()">
+              Get OTP
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="otp_section" class="hideit">
+        <div class="input_div" id="otp">
+          <label for="otp">OTP</label>
+          <input type="number" name="otp" id="otpInput" placeholder="Enter 4 Digit OTP here" min="1000" max="9999"
+            maxlength="4" class="input_styling" required />
+        </div>
+        <div class="input_div">
+          <button class="input_styling cur button" onclick="getOTP()">
+            Login Now
+          </button>
+        </div>
+        <p id="resultMessage" class="hideit response">Result Here</p>
+      </div>
+    </div>
+    <p id="show_response" class="response"></p>
+  </div>
+  <div id="loadingLayer" class="loading-layer">
+    <div class="loader"></div>
+  </div>
+</body>
+
+</html>
+<script>
+  function sendOTP() {
+    var phoneNumber = document.getElementById("phoneNumber").value;
+    document.getElementById("phoneNumber").disabled = true;
+    document.getElementById("send_otp").classList.add("hideit");
+    document.getElementById("otp_section").classList.remove("hideit");
+
+    fetch("/php/send_otp.php", {
+      method: "POST",
+      body: JSON.stringify({ phoneNumber: phoneNumber }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log(data); // Log the response from the server
+      })
+      .catch((error) => console.error("Error:", error));
+  }
+
+  function getOTP() {
+    var enteredOTP = document.getElementById("otpInput").value;
+
+    var otpPattern = /^\d{4}$/;
+    if (!otpPattern.test(enteredOTP)) {
+      alert("Please enter a valid otp"); // Display error message
+    } else {
+      fetch("/php/verify_otp.php", {
+        method: "POST",
+        body: JSON.stringify({ otp: enteredOTP }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("Response from server:", data); // Log response data for debugging
+
+          if (
+            data.hasOwnProperty("message") &&
+            data.message === "OTP Verified successfully!"
+          ) {
+            console.log(
+              "OTP verification successful. Redirecting to logged-in page..."
+            );
+            window.location.href = "user.php";
+          } else {
+            // If OTP verification fails, display an error message to the user
+            document.getElementById("resultMessage").innerText = data.message;
+            document.getElementById("resultMessage").classList.remove("hideit");
+          }
+        })
+        .catch((error) => console.error("Error:", error));
+    }
+  }
+
+  function check_number() {
+    var phoneNumber = document.getElementById("phoneNumber").value;
+    // Regular expression to validate phone number format (E.164 format)
+    var phoneNumberPattern = /^\d{10}$/;
+
+    if (phoneNumberPattern.test(phoneNumber)) {
+      sendOTP(); // If phone number format is correct, proceed to send OTP
+    } else {
+      alert("Please enter a valid phone number"); // Display error message
+    }
+  }
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("/sw2.js")
+        .then((registration) => {
+          console.log(
+            "Service Worker registered with scope:",
+            registration.scope
+          );
+        })
+        .catch((error) => {
+          console.error("Service Worker registration failed:", error);
+        });
+    });
+  }
+</script>
+<script>
+  let truecaller_request_id = null; // Initialize as null
+  let isSuccess = false; // Global success flag
+  let retryCount = 0; // Retry attempt counter
+  let pushed_truecaller = false;
+  function try_truecaller_login() {
+    const partnerName = "Imeals";
+    const privacyUrl = "https://imeals.in/privacy-policy";
+    const termsUrl = "https://imeals.in/terms";
+    const loginPrefix = "proceed";
+    const loginSuffix = "verifymobile";
+    const ctaPrefix = "proceedwith";
+    const ctaColor = encodeURIComponent("default");
+    const ctaTextColor = encodeURIComponent("default");
+    const btnShape = "round";
+    const skipOption = "manualdetails";
+    const ttl = 60000;
+    const randomid = Math.floor(Math.random() * 1000000);
+    truecaller_request_id = randomid + Date.now(); // Set global request ID
+    // document.getElementById("request_id").innerHTML = truecaller_request_id;
+    // Properly formatted URL
+    window.location = `truecallersdk://truesdk/web_verify?type=btmsheet&requestNonce=${truecaller_request_id}&partnerKey=Wxruhf8a1644c5276496993024a726dc506f1&partnerName=${partnerName}&lang=en&privacyUrl=${privacyUrl}&termsUrl=${termsUrl}&loginPrefix=${loginPrefix}&loginSuffix=${loginSuffix}&ctaPrefix=${ctaPrefix}&ctaColor=${ctaColor}&ctaTextColor=${ctaTextColor}&btnShape=${btnShape}&skipOption=${skipOption}&ttl=${ttl}`;
+    setTimeout(function () {
+      if (document.hasFocus()) {
+        // Truecaller app not present on the device and you redirect the user
+        // to your alternate verification page
+      } else {
+        page_loading(true);
+        // Add an event listener to the window for the 'focus' event
+        window.addEventListener("focus", function () {
+          get_truecaller_response();
+        });
+      }
+    }, 600);
+  }
+
+  // Add event listener to the button
+  function get_truecaller_response() {
+    if (truecaller_request_id) {
+      page_loading(true);
+      // Make a POST request to the PHP endpoint to fetch user info
+      fetch("https://imeals.in/truecaller/get_response.php", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          truecaller_request_id,
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.status === "ok") {
+            // Display the user info in HTML
+            isSuccess = true;
+
+            const userInfo = data.data.userInfo;
+
+            // Prepare HTML output
+            let htmlContent = `<p>${JSON.stringify(data.data, null, 2)}</p>
+`;
+            // Inject the HTML content into the userInfo div
+            // document.getElementById(
+            //   "userInfo"
+            // ).innerHTML = `<pre>${htmlContent}</pre>`;
+            // Store data in localStorage
+            localStorage.setItem("userInfoData", JSON.stringify(data.data));
+            page_loading(false);
+            window.location.href =
+              "http://imeals.in/?utm_source=truecaller_login";
+          } else {
+            // Display error message
+            retryRequest(retryCount + 1); // Call retryRequest
+            // document.getElementById(
+            //   "response"
+            // ).innerHTML = `<p style="color: red;">Error: ${data.message}</p>`;
+          }
+        })
+
+        .catch((error) => {
+          console.error("Fetch error:", error);
+          //   document.getElementById(
+          //     "userInfo"
+          //   ).innerHTML = `<p style="color: red;">Error: ${error}</p>`;
+        });
+      page_loading(false);
+    } else {
+      // Display an error if truecaller_request_id is empty
+      //   document.getElementById(
+      //     "userInfo"
+      //   ).innerHTML = `<p style="color: red;">Please enter a Request ID.</p>`;
+      //   page_loading(false);
+    }
+  }
+  function retryRequest(attempt) {
+    const maxAttempts = 30;
+    const interval = attempt <= 20 ? 3000 : attempt <= 25 ? 6000 : 60000;
+
+    if (attempt <= maxAttempts && !isSuccess) {
+      setTimeout(() => {
+        retryCount = attempt; // Update retry count
+        get_truecaller_response(); // Retry fetching response
+      }, interval);
+    }
+  }
+  function page_loading(isLoading) {
+    var loadingLayer = document.getElementById("loadingLayer");
+    if (isLoading) {
+      loadingLayer.style.display = "flex";
+    } else {
+      loadingLayer.style.display = "none";
+    }
+  }
+  function truecaller_push() {
+    if (!pushed_truecaller) {
+      // Check if the user is on a mobile device and using Android
+      var isAndroid = /Android/i.test(navigator.userAgent);
+
+      if (isAndroid) {
+        try_truecaller_login();
+        pushed_truecaller = true;
+      }
+    }
+  }
+</script>
+<script>
+  (function () {
+    let cookieEnabled = false;
+    let localStorageEnabled = false;
+    let sessionSupported = false;
+
+    // Check if cookies are supported
+    try {
+      document.cookie = "testcookie=1; max-age=60";
+      cookieEnabled = document.cookie.indexOf("testcookie=1") !== -1;
+    } catch (e) {
+      cookieEnabled = false;
+    }
+
+    // Check if localStorage is supported
+    try {
+      localStorage.setItem("testLS", "1");
+      localStorageEnabled = localStorage.getItem("testLS") === "1";
+    } catch (e) {
+      localStorageEnabled = false;
+    }
+
+    // Check if sessionStorage is supported
+    try {
+      sessionStorage.setItem("testSession", "1");
+      sessionSupported = sessionStorage.getItem("testSession") === "1";
+    } catch (e) {
+      sessionSupported = false;
+    }
+
+    // Run the check only if not already tested
+    try {
+      if (!localStorage.getItem("browserChecked")) {
+        if (!cookieEnabled || !localStorageEnabled || !sessionSupported) {
+          alert(
+            "Your browser doesn't fully support cookies, local storage, or session persistence. Some features may not work."
+          );
+        }
+        localStorage.setItem("browserChecked", "true");
+      }
+    } catch (e) {
+      // If localStorage access fails, still alert the user
+      if (!cookieEnabled || !localStorageEnabled || !sessionSupported) {
+        alert(
+          "Your browser doesn't fully support cookies, local storage, or session persistence. Some features may not work."
+        );
+      }
+    }
+  })();
+</script>

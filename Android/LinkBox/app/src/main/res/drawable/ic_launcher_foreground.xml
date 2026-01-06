@@ -1,0 +1,51 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Shadow for depth -->
+    <path
+        android:fillColor="#22000000"
+        android:pathData="M32,38 L54,26 L76,38 L76,70 L54,82 L32,70z"
+        android:strokeWidth="0"/>
+    
+    <!-- 3D Box - Back faces -->
+    <path
+        android:fillColor="#E8EAF6"
+        android:pathData="M54,28 L74,40 L74,68 L54,80 L34,68 L34,40z"/>
+    
+    <!-- 3D Box - Left face -->
+    <path
+        android:fillColor="#C5CAE9"
+        android:pathData="M34,40 L54,28 L54,56 L54,80 L34,68z"/>
+    
+    <!-- 3D Box - Right face -->
+    <path
+        android:fillColor="#9FA8DA"
+        android:pathData="M74,40 L54,28 L54,56 L54,80 L74,68z"/>
+    
+    <!-- 3D Box - Top face -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,40 L54,28 L74,40 L54,52z"/>
+    
+    <!-- Chain link - left ring -->
+    <path
+        android:fillColor="#7C4DFF"
+        android:pathData="M44,48 C40,48 37,51 37,55 C37,59 40,62 44,62 L48,62 C48,64 48,66 48,66 L44,66 C38,66 33,61 33,55 C33,49 38,44 44,44 L48,44 L48,48z"
+        android:strokeWidth="0"/>
+    
+    <!-- Chain link - right ring -->
+    <path
+        android:fillColor="#7C4DFF"
+        android:pathData="M64,48 C68,48 71,51 71,55 C71,59 68,62 64,62 L60,62 C60,64 60,66 60,66 L64,66 C70,66 75,61 75,55 C75,49 70,44 64,44 L60,44 L60,48z"
+        android:strokeWidth="0"/>
+    
+    <!-- Chain link - connecting bar -->
+    <path
+        android:fillColor="#7C4DFF"
+        android:pathData="M46,53 L62,53 L62,57 L46,57z"
+        android:strokeWidth="0"/>
+    
+</vector>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Scanner</title>
+  <link rel="stylesheet" href="popup.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>Data Scanner</h1>
+    </header>
+
+    <div class="detection-options">
+      <label class="checkbox-label">
+        <input type="checkbox" id="detectPhone" checked>
+        <span>Detect Phone</span>
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox" id="detectEmail" checked>
+        <span>Detect Email</span>
+      </label>
+    </div>
+
+    <div class="phone-settings" id="phoneSettings">
+      <div class="range-control">
+        <div class="range-header">
+          <label class="range-label">Phone Digits Range:</label>
+        </div>
+
+        <div class="digit-inputs">
+          <div class="input-wrapper">
+            <label for="minDigits">Min:</label>
+            <input type="number" id="minDigits" min="6" max="20" value="10">
+          </div>
+          <div class="input-wrapper">
+            <label for="maxDigits">Max:</label>
+            <input type="number" id="maxDigits" min="6" max="20" value="12">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="startBtn" class="btn primary">Start Scanner</button>
+      <button id="stopBtn" class="btn secondary hidden">Stop Scanner</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="phones">
+        Phones <span class="tab-count" id="phoneTabCount">0</span>
+      </button>
+      <button class="tab-btn" data-tab="emails">
+        Emails <span class="tab-count" id="emailTabCount">0</span>
+      </button>
+    </div>
+
+    <div class="tab-content active" id="phones-tab">
+      <div class="table-container" id="phonesTable">
+        <div class="empty-state">No phones collected yet</div>
+      </div>
+      <div class="tab-actions">
+        <button id="downloadPhones" class="btn outline">Download Phones CSV</button>
+        <button id="clearPhones" class="btn danger">Clear</button>
+      </div>
+    </div>
+
+    <div class="tab-content" id="emails-tab">
+      <div class="table-container" id="emailsTable">
+        <div class="empty-state">No emails collected yet</div>
+      </div>
+      <div class="tab-actions">
+        <button id="downloadEmails" class="btn outline">Download Emails CSV</button>
+        <button id="clearEmails" class="btn danger">Clear</button>
+      </div>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMeals User Registeration</title>
+    <link rel="stylesheet" href="base.css?<?php echo filemtime($_SERVER['DOCUMENT_ROOT'] . 'base.css'); ?>">
+    <link rel="stylesheet" href="assets/style.css">
+    <script src="https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.mjs" type="module"></script>
+    <link rel="preload" href="https://lottie.host/0bce2892-f33a-4e03-8723-084484b362c7/sDnHjQ79oG.json" as="fetch"
+        type="application/json" crossorigin="anonymous">
+    <link rel="preload" href="https://lottie.host/dcc2ef95-baa4-4c58-bc6c-96cd7ad39738/Q5JyZC9T9T.json" as="fetch"
+        type="application/json" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2.1.0/dist/iconify-icon.min.js"></script>
+</head>
+
+<body>
+    <main>
+        <section class="full_section">
+
+            <div class="page_info">
+                <img src="https://momscanteen.in/wp-content/uploads/2021/09/moms_canteen_logo.png" alt="" width="100px">
+                <h2>Login/Signup</h2>
+                <span>Welcome to Mom's Canteen</span>
+                <span>Enter your Phone number to login/signup</span>
+            </div>
+        </section>
+        <section class="full_section">
+            <div class="form_container">
+                <form id="signup_form" action="#">
+
+                    <div class="input_field_container">
+                        <label for="phone">Phone Number</label>
+                        <input type="number" name="phone" id="phone" placeholder="Enter Your Phone Number here"
+                            value=9068062563>
+                        <span class="input_desc">Without Country Code</span>
+                        <small id="phone_error" class="error_message"></small>
+                    </div>
+                    <div class="input_field_container">
+                        <button type="submit" class="submit_btn r-flex ali-c jut-c gap-1">Get OTP<iconify-icon
+                                icon="ooui:arrow-next-ltr" height="14"></iconify-icon></button>
+                    </div>
+                </form>
+            </div>
+        </section>
+        <section class="full_section">
+            <div class="extra_btn_container">
+                <div class="c-flex ali-c">
+                    <hr style="width: 100%;">
+                    <span class="or_text">OR</span>
+                </div>
+                <button class="secondary_btn">Check Our Plans</button>
+            </div>
+            <div class="need_help_container">
+                <span>Need Help?</span>
+                <a href="#">Contact Us</a>
+            </div>
+        </section>
+    </main>
+    <div id="overlay" class="overlay">
+        <div class="overlay-content page_info">
+            <dotlottie-player id="lottiePlayer"
+                src="https://lottie.host/0bce2892-f33a-4e03-8723-084484b362c7/sDnHjQ79oG.json" background="transparent"
+                speed="1" style="width: 300px; height: 200px;" speed="2" loop autoplay></dotlottie-player>
+            <h3 id="overlay_title">Signing Up...</h3>
+            <br>
+            <span id="overlay_desc">Your Details are being checked.. </span>
+            <button id="overlay_btn" class="submit_btn" style="display: none;">Add Yor Meal Plan Now</button>
+            <!-- <button onclick="changeLottie()">Change Lottie</button> -->
+            <span id="closeOverlay">Close</span>
+        </div>
+    </div>
+</body>
+
+<script>
+
+
+</script>
+
+</html>

@@ -1,0 +1,104 @@
+name: tiffincrm
+description: "A new Flutter project."
+
+# Prevent accidental publishing to pub.dev.
+publish_to: 'none'
+
+version: 1.0.4+60
+
+environment:
+  sdk: '>=3.2.4 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  # android_play_install_referrer: ^0.4.0  # Discontinued package causing build errors
+  country_picker: ^2.0.26
+  google_sign_in: ^6.2.1
+  firebase_analytics: ^11.2.1 
+  firebase_crashlytics: ^4.0.4
+  firebase_core: ^3.3.0
+  firebase_messaging: ^15.0.4
+  flutter_local_notifications: ^17.2.2
+  fast_contacts: ^4.0.0
+  flutter_phone_direct_caller: ^2.1.1
+  flutter_keyboard_visibility: ^6.0.0
+  geolocator: ^12.0.0
+  google_maps_flutter: ^2.9.0
+  google_places_flutter: ^2.0.9
+  http: ^1.2.2
+  intl: ^0.19.0
+  in_app_update: ^4.2.3
+  introduction_screen: ^3.1.14
+  open_filex: ^4.6.0
+  otp_autofill: ^4.0.0
+  permission_handler: ^11.3.1
+  screenshot: ^3.0.0
+  share_plus: ^10.0.0
+  shared_preferences: ^2.3.2
+  table_sticky_headers: ^2.0.5
+  textfield_tags: ^3.0.1
+  url_launcher: ^6.3.0
+  webview_flutter: ^4.9.0
+  youtube_player_flutter: ^9.1.1
+  in_app_review: ^2.0.9
+  google_fonts: ^6.2.1
+  flutter_svg: ^2.0.10+1
+  flutter_widget_from_html: ^0.15.3
+  fl_chart: ^0.69.0
+  path_provider: ^2.1.5
+  whatsapp_share: ^2.0.2
+  facebook_app_events: ^0.19.4
+  core_utils: ^1.0.5
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.1
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/icon/splash_light.png
+  color_dark: "#121212"
+  image_dark: assets/icon/splash_dark.png
+  android_12:
+    image: assets/icon/splash_light.png
+    image_dark: assets/icon/splash_dark.png
+    color: "#ffffff"
+    icon_background_color: "#ffffff"
+    icon_background_color_dark: "#121212"
+  fullscreen: true
+  web: false
+  ios: false
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false
+  web:
+    generate: true
+    image_path: "assets/icon/splash_dark.png"
+    background_color: "#FFFFFF"
+    theme_color: "#4E21EC"
+  adaptive_icon_background: "#FF4E21EC"
+  adaptive_icon_foreground: "assets/icon/splash_dark.png"
+  image_path: "assets/icon/splash_dark.png"
+  min_sdk_android: 21 # android min sdk min:16, default 21
+
+
+flutter:
+  uses-material-design: true
+
+  # Enable generation of localized Strings from arb files.
+  generate: true
+
+  assets:
+    # Add assets from the images directory to the application.
+    - assets/icon/
+    - assets/images/intro/
+    - assets/images/

@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
+    <meta
+      name="meta-description"
+      content="Meet your new AI Assistant. Generate unlimited content and get unlimited ideas faster."
+    />
+
+    <meta
+      property="og:title"
+      content="AI Suggests - Unlimited Content. Faster."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ai-suggests.com/" />
+    <meta
+      property="og:image"
+      content="https://ai-suggests.com/assets/img/social.png"
+    />
+
+    <link rel="icon" type="image/png" href="/assets/img/favicon.png" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN"
+      crossorigin="anonymous"
+    ></script>
+    <script type="text/javascript">
+      window.$crisp = [];
+      window.CRISP_WEBSITE_ID = "6d548002-ba0a-406d-961f-27554c4f1d83";
+      (function () {
+        d = document;
+        s = d.createElement("script");
+        s.src = "https://client.crisp.chat/l.js";
+        s.async = 1;
+        d.getElementsByTagName("head")[0].appendChild(s);
+      })();
+    </script>
+    <script>
+      (function (h, o, t, j, a, r) {
+        h.hj =
+          h.hj ||
+          function () {
+            (h.hj.q = h.hj.q || []).push(arguments);
+          };
+        h._hjSettings = { hjid: 3409175, hjsv: 6 };
+        a = o.getElementsByTagName("head")[0];
+        r = o.createElement("script");
+        r.async = 1;
+        r.src = t + h._hjSettings.hjid + j + h._hjSettings.hjsv;
+        a.appendChild(r);
+      })(window, document, "https://static.hotjar.com/c/hotjar-", ".js?sv=");
+    </script>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-373629WHWN"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+
+      gtag("config", "G-373629WHWN");
+    </script>
+
+    <title>AI Suggests - Unlimited Content. Faster.</title>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6,
+      h1 + p,
+      h2 + p,
+      h3 + p,
+      .navbar-nav .nav-link span {
+        font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
+      }
+      @media (min-width: 1200px) {
+        .container {
+          max-width: 1040px;
+        }
+        .h1,
+        h1 {
+          font-size: 4rem;
+        }
+        .h2,
+        h2 {
+          font-size: 3rem;
+        }
+      }
+      .text-primary {
+        color: #3f40e9 !important;
+      }
+      .highlighted {
+        background-image: linear-gradient(80deg, #3f40e9, #3f40e9);
+        background-repeat: no-repeat;
+        background-size: 100% 0.15em;
+        background-position: 0 88%;
+        transition: all 0.4s ease-in;
+      }
+      .img-fluid {
+        border-radius: 25px;
+      }
+      b,
+      strong {
+        font-weight: 500;
+      }
+      .my-6 {
+        margin-top: 8rem;
+        margin-bottom: 8rem;
+      }
+      .my-7 {
+        margin-top: 11rem;
+        margin-bottom: 11rem;
+      }
+      .video-overlay {
+        position: relative;
+        cursor: pointer;
+      }
+      .player {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        background: #3f40e9;
+        border-radius: 80px;
+        width: 80px;
+        height: 80px;
+        border: 3px solid #fff;
+      }
+      .btn-primary {
+        --bs-btn-bg: #3f40e9;
+        --bs-btn-hover-bg: #3f40e9;
+        --bs-btn-disabled-bg: #3f40e9;
+        --bs-btn-active-bg: #3f40e9;
+        color: #fff;
+      }
+      .btn {
+        padding: 15px 30px !important;
+        border-radius: 15px;
+        font-weight: 600;
+        border: none;
+      }
+      .box {
+        padding: 2.2rem 3rem;
+        border-radius: 15px;
+        background: #f5f5f5;
+      }
+      .pulse {
+        background: #5fd164;
+        border-radius: 50%;
+        box-shadow: 0 0 0 0 rgba(95, 209, 100, 1);
+        margin: 0 0 10px 5px;
+        height: 10px;
+        width: 10px;
+        transform: scale(1);
+        animation: pulse-green 2s infinite;
+      }
+
+      @keyframes pulse-green {
+        0% {
+          transform: scale(0.95);
+          box-shadow: 0 0 0 0 rgba(95, 209, 100, 0.7);
+        }
+
+        70% {
+          transform: scale(1);
+          box-shadow: 0 0 0 10px rgba(95, 209, 100, 0);
+        }
+
+        100% {
+          transform: scale(0.95);
+          box-shadow: 0 0 0 0 rgba(95, 209, 100, 0);
+        }
+      }
+
+      .bi-bg {
+        display: inline-block;
+        width: 60px;
+        height: 60px;
+        line-height: 60px;
+        background: #f7f7f7;
+        border-radius: 16px;
+      }
+      .bg-grid {
+        width: 100%;
+        height: 700px;
+        position: absolute;
+        top: -185px;
+        display: block;
+        z-index: -1;
+        -webkit-mask-image: radial-gradient(
+          60% 60% at 50% 55%,
+          white,
+          transparent
+        );
+        mask-image: radial-gradient(60% 60% at 50% 55%, white, transparent);
+        background-color: #ffffff;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23c0c0c0' fill-opacity='0.4'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3Cpath d='M6 5V0H5v5H0v1h5v94h1V6h94V5H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        background-position: top center;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="bg-grid"></div>
+    <nav class="navbar navbar-expand-lg">
+      <div class="container">
+        <a class="navbar-brand mx-auto text-primary" href="/"
+          ><i class="bi bi-rocket-takeoff fs-1"></i
+        ></a>
+        <div
+          class="collapse navbar-collapse justify-content-end"
+          id="navbarSupportedContent"
+        >
+          <a href="/login" class="btn btn-primary btn-sm"
+            ><i class="bi bi-box-arrow-up-right me-1"></i> Open app</a
+          >
+        </div>
+      </div>
+    </nav>
+    <div class="container" style="padding-top: 140px">
+      <div
+        class="col-12 col-md-10 mx-auto text-center mb-5"
+        style="margin-bottom: 8rem !important"
+      >
+        <h1 class="mb-3 fw-bold">
+          Get Best Fit content.<br />Unlimited ideas.
+          <span class="highlighted">Faster</span>.
+        </h1>
+        <p class="col-12 col-md-11 fs-5 mx-auto text-secondary mb-5">
+          Generate tons of ready-to-use content and new ideas for your business
+          instantly - without ever running out of inspiration.
+        </p>
+        <a href="/login" class="btn btn-primary"
+          ><i class="bi bi-arrow-right me-1"></i> Start generating content</a
+        >
+        <div class="users mt-4">
+          <img
+            src="https://lh3.googleusercontent.com/a/ACg8ocJlVi3qA7c41uiREttpIuHelAg0AIwwlkvv70sQ30gMOA1F3JY=s96-c"
+            class="img-fluid d-inline-block"
+            style="
+              width: 40px;
+              height: 40px;
+              margin-left: -15px;
+              border-radius: 30px;
+              border: 2px solid #fff;
+            "
+          />
+          <img
+            src="https://lh3.googleusercontent.com/a/ACg8ocJEsAsJh92bF5ib6dWzbuJ1QjuelWuLH-mHYGyNCp4Eb3vTWw=s96-c"
+            class="img-fluid d-inline-block"
+            style="
+              width: 40px;
+              height: 40px;
+              margin-left: -15px;
+              border-radius: 30px;
+              border: 2px solid #fff;
+            "
+          />
+          <img
+            src="https://lh3.googleusercontent.com/a/ACg8ocKzKg7Sg1_PzTTIMSk2c1PJO1hy1xHuRFQnVtPNMjlEFLfcTD611w=s96-c"
+            class="img-fluid d-inline-block"
+            style="
+              width: 40px;
+              height: 40px;
+              margin-left: -15px;
+              border-radius: 30px;
+              border: 2px solid #fff;
+            "
+          />
+          <img
+            src="https://lh3.googleusercontent.com/a/ACg8ocKYNdG2Lg7nA3Er1893FoOXTdWrU-NmreGVV_CPoJcyLSo1-Q=s96-c"
+            class="img-fluid d-inline-block"
+            style="
+              width: 40px;
+              height: 40px;
+              margin-left: -15px;
+              border-radius: 30px;
+              border: 2px solid #fff;
+            "
+          />
+          <img
+            src="https://lh3.googleusercontent.com/a/ACg8ocKl1e-zDyvTArMGzFolqXV5tDKkdNl3LoFytLI6xU8r38WA5nXY=s96-c"
+            class="img-fluid d-inline-block"
+            style="
+              width: 40px;
+              height: 40px;
+              margin-left: -15px;
+              border-radius: 30px;
+              border: 2px solid #fff;
+            "
+          />
+          <img
+            src="https://lh3.googleusercontent.com/a/ACg8ocKGovFvmx5RShb5Ub3OY436tz2DGjkCoZsmLEWzBiJyP4t5gpMP=s96-c"
+            class="img-fluid d-inline-block"
+            style="
+              width: 40px;
+              height: 40px;
+              margin-left: -15px;
+              border-radius: 30px;
+              border: 2px solid #fff;
+            "
+          />
+          <img
+            src="https://lh3.googleusercontent.com/a/ACg8ocKUZLPoqxM0lw5nd0eWRLar7uVe_aINVF5-QJaUt6dwggddRA=s96-c"
+            class="img-fluid d-inline-block"
+            style="
+              width: 40px;
+              height: 40px;
+              margin-left: -15px;
+              border-radius: 30px;
+              border: 2px solid #fff;
+            "
+          />
+          <img
+            src="https://lh3.googleusercontent.com/a/ACg8ocIP8gHIVdUjkcyjRpJIcMOjsyAtnpjKMhXBQHT1tmPc2q_tZA=s96-c"
+            class="img-fluid d-inline-block"
+            style="
+              width: 40px;
+              height: 40px;
+              margin-left: -15px;
+              border-radius: 30px;
+              border: 2px solid #fff;
+            "
+          />
+          <img
+            src="https://lh3.googleusercontent.com/a/ACg8ocKK0NmLFeHT47bsgOlORh6k8ZC1n-Zxu09C3JqgNqhnHkwRIYy-wg=s96-c"
+            class="img-fluid d-inline-block"
+            style="
+              width: 40px;
+              height: 40px;
+              margin-left: -15px;
+              border-radius: 30px;
+              border: 2px solid #fff;
+            "
+          />
+          <img
+            src="https://lh3.googleusercontent.com/a/ACg8ocLm86LPT-TmkowpRE5VZ3ahocjJPUeBWEakooO4SLxD7zUyxg=s96-c"
+            class="img-fluid d-inline-block"
+            style="
+              width: 40px;
+              height: 40px;
+              margin-left: -15px;
+              border-radius: 30px;
+              border: 2px solid #fff;
+            "
+          />
+          <div
+            class="pulse d-inline-block"
+            data-bs-toggle="tooltip"
+            data-bs-title="Real time users"
+          ></div>
+          <small class="col-12 col-md-4 mx-auto d-block mt-2 text-secondary"
+            ><strong>Join 11384 web creators</strong> and start making your
+            first content today</small
+          >
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fluid">
+      <div class="container">
+        <div class="col-12 col-md-9 mx-auto text-center">
+          <h2 class="mb-3 fw-bold">
+            Tired of spending hours brainstorming content for your business?
+          </h2>
+          <p class="col-12 col-md-11 fs-5 mx-auto text-secondary mb-5">
+            With our state-of-the-art tool, we can help you generate fresh and
+            unique content in matter of seconds.
+          </p>
+        </div>
+        <div class="video-overlay mb-4" id="video-player">
+          <video
+            playsinline
+            poster="https://ai-suggests.com/assets/img/poster.png"
+            class="w-100 img-fluid shadow-lg object-fit-fill"
+            id="video"
+          >
+            <source
+              src="https://ai-suggests.com/assets/img/demo.mp4"
+              type="video/mp4"
+            />
+          </video>
+          <button class="player text-white fs-1" id="play-btn">
+            <i class="bi bi-play" style="margin-right: -5px"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <main class="container">
+      <div class="col-12 col-md-9 mx-auto my-7 text-center">
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Ask Anything</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Niches</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Instagram Caption</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Video Titles</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >LinkedIn Post</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Keywords</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Color Scheme</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Tweets</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Startup Names</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Ecommerce Products</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Blog Titles</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Facebook Ads</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Product Description</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Paraphrase</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Hashtags</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Blog Outline</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Short Story</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Meta Description</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Domain Names</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Email Lines</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >About Us</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Google Ads</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Recipes</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Summarize</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >SEO Extractor</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Spell Checker</span
+        >
+        <span class="badge rounded-pill text-bg-dark fs-6 me-2 mb-2"
+          >Review</span
+        >
+      </div>
+
+      <div class="col-12 col-md-8 mx-auto my-6 text-center">
+        <h2 class="mb-4 fw-bold">
+          Get ready to never run out of ideas again...
+        </h2>
+        <p class="col-12 col-md-11 fs-5 mb-4 mx-auto text-secondary">
+          Made for content creator, revolutionize the way you build the web.
+          Meet your new AI assistant and generate content for all your needs,
+          just by asking.
+        </p>
+        <img
+          class="img-fluid shadow-sm"
+          src="https://ai-suggests.com/assets/img/feature.gif"
+        />
+      </div>
+
+      <div class="col-12 col-md-8 mx-auto my-7">
+        <div class="row">
+          <div class="col-6 col-md-3 text-center">
+            <i class="bi bi-grid fs-1"></i>
+            <span class="d-block h5">20+ templates</span>
+          </div>
+          <div class="col-6 col-md-3 text-center">
+            <i class="bi bi-robot fs-1"></i>
+            <span class="d-block h5">GPT-3.5 model</span>
+          </div>
+          <div class="col-6 col-md-3 text-center">
+            <i class="bi bi-chat-left-dots fs-1"></i>
+            <span class="d-block h5">Support any time</span>
+          </div>
+          <div class="col-6 col-md-3 text-center">
+            <i class="bi bi-file-earmark-text fs-1"></i>
+            <span class="d-block h5">Save important documents</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="row align-items-center my-6">
+        <div class="col-12 col-md-6">
+          <span class="badge text-bg-success mb-3">SOCIAL</span>
+          <h3 class="fw-bold">Always keep an idea of post</h3>
+          <p class="fs-5 text-secondary">
+            Keep your audience active. AI Suggests helps you
+            <strong>always have content</strong> in store for your social
+            accounts!
+          </p>
+        </div>
+        <div class="col-12 col-md-5 offset-md-1">
+          <img
+            class="img-fluid shadow-sm"
+            src="https://ai-suggests.com/assets/img/feature-1.png"
+          />
+        </div>
+      </div>
+
+      <div class="row align-items-center my-6">
+        <div class="col-12 col-md-5">
+          <img
+            class="img-fluid shadow-sm"
+            src="https://ai-suggests.com/assets/img/keywords.png"
+          />
+        </div>
+        <div class="col-12 col-md-6 offset-md-1">
+          <span class="badge text-bg-warning mb-3">SEO FRIENDLY</span>
+          <h3 class="fw-bold">Give your SEO a hand</h3>
+          <p class="fs-5 text-secondary">
+            Get headlines, titles, meta descriptions or keywords designed to
+            <strong>meet the needs</strong> of your blog content.
+          </p>
+        </div>
+      </div>
+
+      <div class="row align-items-center my-6">
+        <div class="col-12 col-md-6">
+          <span class="badge text-bg-info mb-3">EFFORTLESS</span>
+          <h3 class="fw-bold">Ready for marketing?</h3>
+          <p class="fs-5 text-secondary">
+            Intuitive help to create or improve your marketing campaigns and ads
+            copy.
+          </p>
+        </div>
+        <div class="col-12 col-md-5 offset-md-1">
+          <img
+            class="img-fluid shadow-sm"
+            src="https://ai-suggests.com/assets/img/feature-3.png"
+          />
+        </div>
+      </div>
+
+      <div class="col-12 col-md-9 mx-auto my-7 text-center">
+        <h2 class="mb-3">
+          No subscription. The <span class="highlighted">best way</span> to stay
+          in control.
+        </h2>
+        <p class="col-12 col-md-11 fs-5 mx-auto text-secondary mb-3">
+          Have peace of mind, no subscription is required to use AI Suggests.
+          You can generate months of advance content for free, or go further
+          with credits!
+        </p>
+        <a href="/login" class="btn btn-primary mb-2"
+          ><i class="bi bi-box-arrow-up-right me-1"></i> Open the app</a
+        >
+        <small class="d-block text-secondary"
+          >No credit card. Unlimited usage!</small
+        >
+      </div>
+
+      <div class="col-12 col-md-9 mx-auto my-6 box">
+        <h2 class="h3 fw-bold mb-5 text-center">
+          Got a question before trying?
+        </h2>
+        <div class="d-flex mb-4">
+          <div class="fs-3 me-3 text-primary" style="margin-top: -3px">
+            <i class="bi bi-1-circle"></i>
+          </div>
+          <div>
+            <h3 class="h5 mb-0">Is AI Suggests free to use?</h3>
+            <p>
+              Yes! Registration is completely free and you can use it to
+              generate tons of text without paying. If you want to go further
+              and unlock more templates, you can easily buy credits.
+            </p>
+          </div>
+        </div>
+        <div class="d-flex mb-4">
+          <div class="fs-3 me-3 text-primary" style="margin-top: -3px">
+            <i class="bi bi-2-circle"></i>
+          </div>
+          <div>
+            <h3 class="h5 mb-0">What is a credit?</h3>
+            <p>
+              A credit is used every time you generate content. You can get free
+              credit or add credits in your account.
+            </p>
+          </div>
+        </div>
+
+        <div class="d-flex mb-4">
+          <div class="fs-3 me-3 text-primary" style="margin-top: -3px">
+            <i class="bi bi-3-circle"></i>
+          </div>
+          <div>
+            <h3 class="h5 mb-0">Who is this for?</h3>
+            <p>
+              AI Suggests is designed for creators, influencers, marketers,
+              bloggers, indie makers... You feel concerned? You will find
+              something to suit you!
+            </p>
+          </div>
+        </div>
+
+        <div class="d-flex mb-4">
+          <div class="fs-3 me-3 text-primary" style="margin-top: -3px">
+            <i class="bi bi-4-circle"></i>
+          </div>
+          <div>
+            <h3 class="h5 mb-0">Where does the content come from?</h3>
+            <p>
+              The content is generated using artificial intelligence. It is
+              designed to best meet your needs as a web creator.
+            </p>
+          </div>
+        </div>
+
+        <div class="d-flex mb-4">
+          <div class="fs-3 me-3 text-primary" style="margin-top: -3px">
+            <i class="bi bi-5-circle"></i>
+          </div>
+          <div>
+            <h3 class="h5 mb-0">Who made this AI tool?</h3>
+            <p>
+              My name is Thomas! I am a young man who loves building things. You
+              can text with me at anytimes, I'm easy to get in touch with.
+            </p>
+          </div>
+        </div>
+
+        <div class="d-flex">
+          <div class="fs-3 me-3 text-primary" style="margin-top: -3px">
+            <i class="bi bi-6-circle"></i>
+          </div>
+          <div>
+            <h3 class="h5 mb-0">How can I contact you?</h3>
+            <p>
+              Through the chat window at the bottom right of your screen or by
+              email accessible from the dashboard.
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      var video = document.getElementById("video");
+      var start = document.getElementById("video-player");
+      var play_btn = document.getElementById("play-btn");
+
+      start.addEventListener("click", function (e) {
+        if (video.paused) {
+          video.play();
+          play_btn.style.display = "none";
+        } else {
+          video.pause();
+          play_btn.style.display = "block";
+        }
+      });
+    </script>
+    <script>
+      const tooltipTriggerList = document.querySelectorAll(
+        '[data-bs-toggle="tooltip"]'
+      );
+      const tooltipList = [...tooltipTriggerList].map(
+        (tooltipTriggerEl) => new bootstrap.Tooltip(tooltipTriggerEl)
+      );
+    </script>
+    <footer class="my-5 text-center">
+      <a
+        href="https://twitter.com/aipiwel"
+        class="btn btn-light btn-sm text-secondary mb-3"
+        ><i class="bi bi-twitter me-1"></i> Follow me on Twitter</a
+      >
+      <small class="text-secondary d-block"
+        >Made with ♥ by Thomas<br />
+        <a href="/affiliate" class="text-secondary">Partner</a>
+        -
+        <a href="/disclaimer" class="text-secondary">Disclaimer</a>
+        -
+        <a href="/terms" class="text-secondary">Terms & Conditions</a></small
+      >
+    </footer>
+  </body>
+</html>

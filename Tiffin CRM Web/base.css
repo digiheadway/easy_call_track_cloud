@@ -1,0 +1,184 @@
+/* ========== universel sleecter ============= */
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+  scroll-padding-top: 90px;
+  scroll-snap-stop: always;
+  font-family: "DM Sans", sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+.noscroll {
+  overflow: hidden;
+}
+.hide-cont {
+  display: none;
+}
+.show_content {
+  display: block;
+  /* height: 100vh; */
+  overflow: auto;
+}
+.show_content::-webkit-scrollbar {
+  display: none;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+/* ================= fonts =============== */
+
+/* ============= normal user clases ================= */
+
+.w-100 {
+  width: 100%;
+}
+.pos-r {
+  position: relative;
+}
+.pos-a {
+  position: absolute;
+}
+.pos-sty {
+  position: sticky;
+}
+.pos-f {
+  position: fixed;
+}
+.r-flex {
+  display: flex;
+  flex-direction: row;
+}
+
+.c-flex {
+  display: flex;
+  flex-direction: column;
+}
+.flex-w {
+  flex-wrap: wrap;
+}
+.wh-no {
+  white-space: nowrap;
+}
+/* =============== justify content ============ */
+.jut-c {
+  justify-content: center;
+}
+.jut-fe {
+  justify-content: flex-end;
+}
+.jut-fs {
+  justify-content: flex-start;
+}
+.jut-sb {
+  justify-content: space-between;
+}
+
+.jut-se {
+  justify-content: space-evenly;
+}
+
+.jut-sa {
+  justify-content: space-around;
+}
+
+/* =============== alinge item ============ */
+.ali-c {
+  align-items: center;
+}
+
+.ali-fs {
+  align-items: flex-start;
+}
+
+.ali-fe {
+  align-items: flex-end;
+}
+
+.ali-s {
+  align-items: stretch;
+}
+.ali-base {
+  align-items: baseline;
+}
+
+.ali-unset {
+  align-items: unset;
+}
+
+/* =================== containers ================ */
+.container {
+  max-width: 1200px;
+  width: 100%;
+  margin: auto;
+  padding: 0px 0px;
+}
+.breadcrumbs {
+  color: var(--lite-gry);
+}
+.breadcrumbs > a {
+  color: var(--lite-font);
+}
+
+/* =================== fonts sizes =============== */
+h1 {
+  font-size: 35px;
+}
+
+h2 {
+  font-size: 26px;
+}
+
+h3 {
+  font-size: 24px;
+}
+
+h4 {
+  font-size: 20px;
+}
+
+h5 {
+  font-size: 18px;
+}
+
+h6 {
+  font-size: 16px;
+}
+
+p {
+  font-size: 15px;
+}
+
+a {
+  text-decoration: none;
+}
+li {
+  list-style: none;
+}
+.overly-touch {
+  width: 100%;
+  max-width: 1200px;
+  height: 100vh;
+  position: fixed;
+  background-color: #00000033;
+}
+.gap-3 {
+  gap: 30px;
+}
+.gap-2 {
+  gap: 20px;
+}
+.gap-1 {
+  gap: 10px;
+}
+.gap-15 {
+  gap: 15px;
+}
+.gap-05 {
+  gap: 5px;
+}
+.pointer {
+  cursor: pointer;
+}

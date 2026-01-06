@@ -1,0 +1,188 @@
+<!--
+  Copyright (c) 2017-present, Facebook, Inc.
+  All rights reserved.
+
+  This source code is licensed under the license found in the
+  LICENSE file in the root directory of this source tree.
+-->
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="full-screen" content="yes" />
+    <meta name="screen-orientation" content="portrait" />
+    <meta name="viewport" content="user-scalable=no" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin-top: 50px;
+        color: #000;
+        background-color: aliceblue;
+      }
+      canvas {
+        border: 1px solid #ddd;
+      }
+    </style>
+  </head>
+
+  <body>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <!-- build:js -->
+    <script src="https://www.facebook.com/assets.php/en_US/fbinstant.latest.js"></script>
+    <!-- endbuild -->
+    <script type="text/javascript">
+      const assets = [
+        "img/asset1.png",
+        "img/asset2.png",
+        "img/asset3.png",
+        "img/asset4.png",
+      ];
+
+      window.onload = function () {
+        $("#info-section").hide();
+
+        // When the window loads, start to initialize the SDK
+        FBInstant.initializeAsync().then(function () {
+          // We can start to load assets
+          for (let i in assets) {
+            // When preloading assets, make sure to report the progress
+            FBInstant.setLoadingProgress((i / assets.length) * 100);
+          }
+
+          // Now that assets are loaded, call startGameAsync
+          FBInstant.startGameAsync().then(onStart);
+        });
+      };
+
+      function onStart() {
+        // This is called when the user has tapped Play
+        // Information from the SDK can now be accessed
+
+        const player_name_local = "Yogesh";
+        const player_img_url_local =
+          "https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=1710251316416861&gaming_photo_type=unified_picture&ext=1729118884&hash=Abb1xCujTCfXhfFNHfUSd8jA";
+        const player_name = FBInstant.player.getName();
+        const player_img_url = FBInstant.player.getPhoto();
+
+        loadUserImage(player_img_url);
+        $("#title").html(player_name);
+
+        // $("#imageUrl").attr("value", FBInstant.player.getPhoto());
+        // $("#player-name").html(FBInstant.player.getName());
+        // $("#player-id").html(FBInstant.player.getID());
+        // $("#context-type").html(FBInstant.context.getType());
+        try {
+          $("#entrypointdata").html(
+            JSON.stringify(FBInstant.getEntryPointData())
+          );
+        } catch (e) {
+          console.log(e);
+        }
+        $("#info-section").show();
+      }
+    </script>
+
+    <header>
+      <h2 id="title">Test!</h2>
+    </header>
+    <button>Try</button> <br />
+    <section id="info-section">
+      <p>
+        If you can see this, then FBInstant initialized properly and the game
+        has started!
+      </p>
+
+      <!-- <img id="photo" class="profile_picture" /> -->
+
+      <!-- <table>
+        <tr>
+          <th>Player Name</th>
+          <td id="player-name"></td>
+        </tr>
+        <tr>
+          <th>Player ID</th>
+          <td id="player-id"></td>
+        </tr>
+        <tr>
+          <th>Context Type</th>
+          <td id="context-type"></td>
+        </tr>
+        <tr>
+          <th>Entrypoint Data</th>
+          <td id="entrypointdata"></td>
+        </tr>
+      </table> -->
+    </section>
+    <canvas id="canvas" width="500" height="500"></canvas>
+    <br /><br />
+
+    <script>
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const downloadBtn = document.getElementById("downloadBtn");
+
+      // Overlay image that will be on top (your provided image layer)
+      const overlayImageSrc = "bg2.png"; // Replace with your image layer
+      const overlayImage = new Image();
+      overlayImage.src = overlayImageSrc;
+
+      // User image settings (you can adjust these dynamically)
+      let userImageX = 110; // X position of the user image
+      let userImageY = 90; // Y position of the user image
+      let userImageScale = 0.3; // Scale of the user image
+      let overlayOnTop = false; // Set to true if you want the overlay image on top
+
+      // Function to load and process the user image
+      function loadUserImage(imageUrl) {
+        const userImage = new Image();
+        userImage.src = imageUrl;
+
+        userImage.onload = function () {
+          // Clear the canvas before drawing
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          const imgWidth = userImage.width * userImageScale;
+          const imgHeight = userImage.height * userImageScale;
+
+          // Draw based on overlayOnTop flag
+          if (overlayOnTop) {
+            // Draw user image first, then overlay on top
+            ctx.drawImage(
+              userImage,
+              userImageX,
+              userImageY,
+              imgWidth,
+              imgHeight
+            );
+            overlayImage.onload = function () {
+              ctx.drawImage(overlayImage, 0, 0, canvas.width, canvas.height);
+            };
+            ctx.drawImage(overlayImage, 0, 0, canvas.width, canvas.height);
+          } else {
+            // Draw overlay first, then user image on top
+            overlayImage.onload = function () {
+              ctx.drawImage(overlayImage, 0, 0, canvas.width, canvas.height);
+            };
+            ctx.drawImage(overlayImage, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(
+              userImage,
+              userImageX,
+              userImageY,
+              imgWidth,
+              imgHeight
+            );
+          }
+        };
+
+        userImage.onerror = function () {
+          alert(
+            "Failed to load image from the provided link. Please try a valid image URL."
+          );
+        };
+      }
+    </script>
+  </body>
+</html>

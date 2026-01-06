@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Catch the Ball Game - Facebook Instant Game</title>
+    <style>
+      body {
+        text-align: center;
+        font-family: Arial, sans-serif;
+      }
+      canvas {
+        border: 2px solid black;
+        display: block;
+        margin: 20px auto;
+      }
+      h1 {
+        font-size: 24px;
+      }
+      #gameOverMessage {
+        display: none;
+        font-size: 20px;
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Catch the Ball Game</h1>
+    <canvas id="gameCanvas" width="400" height="500"></canvas>
+    <div id="gameOverMessage">Game Over! Press F5 to Restart.</div>
+
+    <!-- Include Facebook Instant Games SDK -->
+    <script src="https://connect.facebook.net/en_US/fbinstant.6.2.js"></script>
+
+    <script>
+      // Facebook Instant Game initialization
+      FBInstant.initializeAsync().then(function () {
+        console.log("FBInstant initialized");
+
+        // Set loading progress (required for Facebook Instant Games)
+        FBInstant.setLoadingProgress(100);
+
+        FBInstant.startGameAsync().then(function () {
+          // The game starts here
+
+          // Select the canvas and its context
+          const canvas = document.getElementById("gameCanvas");
+          const ctx = canvas.getContext("2d");
+
+          // Paddle properties
+          const paddle = {
+            width: 100,
+            height: 20,
+            x: canvas.width / 2 - 50,
+            y: canvas.height - 30,
+            speed: 10,
+            dx: 0,
+          };
+
+          // Ball properties
+          const ball = {
+            x: Math.random() * canvas.width,
+            y: 0,
+            radius: 10,
+            speed: 4,
+            dy: 4,
+          };
+
+          // Game variables
+          let score = 0;
+          let gameOver = false;
+
+          // Draw the paddle
+          function drawPaddle() {
+            ctx.fillStyle = "blue";
+            ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+          }
+
+          // Draw the ball
+          function drawBall() {
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = "red";
+            ctx.fill();
+            ctx.closePath();
+          }
+
+          // Draw the score
+          function drawScore() {
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "black";
+            ctx.fillText("Score: " + score, 10, 20);
+          }
+
+          // Move the paddle
+          function movePaddle() {
+            paddle.x += paddle.dx;
+
+            // Prevent the paddle from going off the edges of the canvas
+            paddle.x = Math.max(
+              0,
+              Math.min(paddle.x, canvas.width - paddle.width)
+            );
+          }
+
+          // Move the ball
+          function moveBall() {
+            ball.y += ball.dy;
+
+            // Check for catching the ball with the paddle
+            if (
+              ball.y + ball.radius > paddle.y &&
+              ball.x > paddle.x &&
+              ball.x < paddle.x + paddle.width
+            ) {
+              score++;
+              resetBall();
+              FBInstant.setScoreAsync(score).then(function () {
+                console.log("Score saved:", score);
+              });
+            }
+
+            // Check for game over (ball hits bottom)
+            if (ball.y + ball.radius > canvas.height) {
+              gameOver = true;
+            }
+          }
+
+          // Reset ball position and speed
+          function resetBall() {
+            ball.x = Math.random() * canvas.width;
+            ball.y = 0;
+            ball.speed = Math.min(ball.speed + 0.5, 10); // Cap speed at 10
+            ball.dy = ball.speed;
+          }
+
+          // Draw everything on the canvas
+          function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPaddle();
+            drawBall();
+            drawScore();
+          }
+
+          // Update game elements
+          function update() {
+            if (gameOver) {
+              document.getElementById("gameOverMessage").style.display =
+                "block";
+              return; // Stop the game loop if game is over
+            }
+            movePaddle();
+            moveBall();
+            draw();
+            requestAnimationFrame(update);
+          }
+
+          // Handle keydown events for paddle movement
+          function keyDown(e) {
+            if (e.key === "ArrowRight") {
+              paddle.dx = paddle.speed;
+            } else if (e.key === "ArrowLeft") {
+              paddle.dx = -paddle.speed;
+            }
+          }
+
+          // Handle keyup events
+          function keyUp(e) {
+            if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+              paddle.dx = 0;
+            }
+          }
+
+          // Handle touch events for mobile controls
+          canvas.addEventListener("touchstart", handleTouch);
+          canvas.addEventListener("touchmove", handleTouch);
+
+          function handleTouch(e) {
+            const touch = e.touches[0];
+            const touchX = touch.clientX - canvas.offsetLeft;
+            paddle.x = touchX - paddle.width / 2;
+          }
+
+          // Event listeners for keypresses
+          document.addEventListener("keydown", keyDown);
+          document.addEventListener("keyup", keyUp);
+
+          // Start the game loop
+          update();
+        });
+      });
+    </script>
+  </body>
+</html>

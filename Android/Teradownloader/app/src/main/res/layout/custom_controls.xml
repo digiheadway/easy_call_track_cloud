@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:background="@android:color/transparent"
+    android:fitsSystemWindows="true"
+    android:layout_width="match_parent"
+    android:layout_gravity="bottom"
+    android:gravity="bottom"
+    android:orientation="vertical"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_above="@id/linearLayout2"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingTop="4dp"
+        android:layout_centerHorizontal="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <ImageButton
+            android:id="@+id/exo_rew"
+            android:background="@drawable/btn_selector"
+            android:layout_width="@dimen/exo_media_button_width"
+            android:layout_height="@dimen/exo_media_button_height"
+            app:srcCompat="@drawable/ic_menu_round_replay" />
+
+        <ImageButton
+            android:id="@id/exo_play_pause"
+            style="@style/ExoMediaButton.Pause"
+            android:background="@drawable/btn_selector"
+            android:layout_centerInParent="true" />
+
+        <ImageButton
+            android:id="@+id/exo_pause"
+            android:background="@drawable/btn_selector"
+            android:visibility="gone"
+            style="@style/ExoMediaButton.Pause" />
+
+        <ImageButton
+            android:id="@+id/exo_ffwd"
+            android:background="@drawable/btn_selector"
+            android:layout_width="@dimen/exo_media_button_width"
+            android:layout_height="@dimen/exo_media_button_height"
+            android:layout_marginEnd="12dp"
+            app:srcCompat="@drawable/ic_menu_round_forward" />
+
+        <ImageButton
+            android:id="@+id/cast_button"
+            android:background="@drawable/btn_selector"
+            android:layout_width="@dimen/exo_media_button_width"
+            android:layout_height="@dimen/exo_media_button_height"
+            app:srcCompat="@drawable/ic_menu_cast" />
+
+        <ImageButton
+            android:id="@+id/select_tracks_button"
+            android:background="@drawable/btn_selector"
+            android:layout_width="@dimen/exo_media_button_width"
+            android:layout_height="@dimen/exo_media_button_height"
+            app:srcCompat="@drawable/ic_menu_settings" />
+
+        <ImageButton
+            android:id="@+id/resize_mode"
+            android:background="@drawable/btn_selector"
+            android:layout_width="@dimen/exo_media_button_width"
+            android:layout_height="@dimen/exo_media_button_height"
+            app:srcCompat="@drawable/ic_menu_aspect_ratio" />
+
+    </LinearLayout>
+
+    <LinearLayout
+
+        android:layout_alignParentBottom="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:id="@+id/linearLayout2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#ffbebebe"
+            android:id="@+id/exo_position"
+            android:paddingLeft="4dp"
+            android:paddingRight="4dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false" />
+
+        <com.google.android.exoplayer2.ui.DefaultTimeBar
+            android:id="@+id/exo_progress"
+            android:background="@drawable/btn_selector"
+            android:layout_width="0dp"
+            android:layout_height="26dp"
+            android:layout_weight="1"
+            app:buffered_color="#ff0000"
+            app:played_color="#ffffff" />
+
+        <TextView
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#ffbebebe"
+            android:id="@+id/exo_duration"
+            android:paddingLeft="4dp"
+            android:paddingRight="4dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false" />
+    </LinearLayout>
+</RelativeLayout>

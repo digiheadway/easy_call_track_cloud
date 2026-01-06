@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "main": "index.html",
+  "assets": {
+    "files": {
+      "game": {
+        "paths": ["index.html"]
+      }
+    }
+  },
+  "locales": ["en_US"],
+  "orientation": "portrait",
+  "supported": {
+    "modes": ["SINGLE_PLAYER"]
+  }
+}

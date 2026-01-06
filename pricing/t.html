@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trial Confirmation Modal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex justify-center items-center min-h-screen">
+
+    <!-- Button to trigger the modal -->
+    <button id="openModal" class="bg-blue-600 text-white py-2 px-6 rounded-md shadow-lg hover:bg-blue-700 transition duration-300">Start Trial</button>
+
+    <!-- Modal -->
+    <div id="confirmationModal" class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 w-full max-w-lg mx-4 sm:w-96">
+            <div class="flex flex-col space-y-4">
+                <!-- Modal Header -->
+                <h2 class="text-2xl font-semibold text-gray-800 text-center">Start Your Free Trial</h2>
+                <p class="text-gray-600 text-center">Are you sure you want to start the trial with the selected plan? You will be charged after the trial ends unless cancelled.</p>
+
+                <!-- Plan Details -->
+                <div class="bg-gray-50 p-4 rounded-md shadow-md">
+                    <h3 class="text-lg font-semibold text-gray-800">Plan: Premium Plan</h3>
+                    <p class="text-gray-600">Duration: 30 Days</p>
+                    <p class="text-gray-600">Price after trial: $20/month</p>
+                </div>
+
+                <!-- Modal Actions -->
+                <div class="flex justify-between space-x-4 mt-4">
+                    <button id="cancelButton" class="bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition duration-200">Cancel</button>
+                    <button id="confirmButton" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-300">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get modal elements
+        const modal = document.getElementById("confirmationModal");
+        const openModalButton = document.getElementById("openModal");
+        const cancelButton = document.getElementById("cancelButton");
+        const confirmButton = document.getElementById("confirmButton");
+
+        // Function to simulate the trial start action
+        function startTrial() {
+            // This is where you handle the trial start logic, for example:
+            // Make an API call, update user data, or log the action
+            console.log("Trial started with Premium Plan!");
+            
+            // For now, we just show a confirmation message
+            alert("Your trial has started! Enjoy the Premium Plan.");
+        }
+
+        // Show modal when 'Start Trial' button is clicked
+        openModalButton.addEventListener("click", () => {
+            modal.classList.remove("hidden");
+        });
+
+        // Hide modal when 'Cancel' button is clicked
+        cancelButton.addEventListener("click", () => {
+            modal.classList.add("hidden");
+        });
+
+        // Handle confirmation when 'Confirm' button is clicked
+        confirmButton.addEventListener("click", () => {
+            startTrial();  // Trigger the action (e.g., starting the trial)
+            modal.classList.add("hidden");  // Hide the modal after confirming
+        });
+    </script>
+
+    <style>
+        /* Custom animation for mobile: Modal sliding up */
+        @media (max-width: 640px) {
+            #confirmationModal {
+                animation: slideUp 0.3s ease-out;
+            }
+
+            @keyframes slideUp {
+                0% {
+                    transform: translateY(100%);
+                }
+                100% {
+                    transform: translateY(0);
+                }
+            }
+        }
+    </style>
+</body>
+</html>

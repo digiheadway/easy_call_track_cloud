@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tera Link ID Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .response-box {
+            border: 2px solid #007bff;
+            padding: 15px;
+            margin-top: 20px;
+            background-color: #e9f3ff;
+            border-radius: 5px;
+            display: none;
+            /* Hidden until we get a response */
+        }
+
+        .playstore-btn {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            display: none;
+            /* Hidden until the response is shown */
+        }
+
+        .playstore-btn:hover {
+            background-color: #218838;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+    <script>
+        // Function to generate TeraLinkId
+        function createTeraLinkId() {
+            var timestamp = Date.now();
+            var randomNum = String(Math.floor(1e8 * Math.random())).padStart(8, "0");
+            var teraLinkId = timestamp + "-" + randomNum;
+            return teraLinkId;
+        }
+
+        // Function to copy text to clipboard
+        function copyToClipboard(text) {
+            var tempInput = document.createElement("textarea");
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+        }
+
+        // Function to handle the link generation, GET data, and display response
+        function handleTeraLink() {
+            var surl = "yHftaLAwlwPx4hD1KkFgQg"; // provided surl
+            var teraLinkId = createTeraLinkId();
+
+            // Prepare the clipboard text
+            var clipboardText = `&surl=${surl}&tera_link_id=${teraLinkId}&tera_link_type=1`;
+            // Copy the text to clipboard
+            copyToClipboard(clipboardText);
+
+            // Show that we're fetching data
+            var responseBox = document.getElementById("response-box");
+            responseBox.style.display = "block";
+            responseBox.textContent = "Sending data to analytics...";
+
+            // Prepare the URL with query parameters for the GET request
+            var initialUrl = `https://digiheadway.in/tester/tera/api.php?surl=${encodeURIComponent(surl)}&link_id=${encodeURIComponent(teraLinkId)}`;
+            responseBox.textContent = `Analytics Response: ${initialUrl}`;
+
+            // Fetch the URL with GET request
+            fetch(initialUrl)
+                .then(response => response.text())
+                .then(data => {
+                    // Show the response in the response-box
+                    responseBox.textContent = `Analytics Response: ${data}`;
+
+                    // Show the "Go to Play Store" button after the response is displayed
+                    document.getElementById("playstore-btn").style.display = "inline-block";
+                })
+                .catch(err => {
+                    console.error('Error fetching the URL:', err);
+                    responseBox.textContent = "Failed to send data to analytics.";
+                });
+        }
+
+        // Function to redirect to Play Store link
+        function goToPlayStore() {
+            var surl = "yHftaLAwlwPx4hD1KkFgQg"; // provided surl
+            var teraLinkId = createTeraLinkId();
+
+            // Redirect with the generated link ID
+            var newUrl = `market://details?id=com.dubox.drive&referrer=utm_source=tera_sharelink&utm_campaign=header_button&surl=yHftaLAwlwPx4hD1KkFgQg&tera_link_id=${teraLinkId}&tera_link_type=1&c=https://www.1024tera.com/wap/share/filelist?surl=yHftaLAwlwPx4hD1KkFgQg&af_dp=dubox://share_detail?shareid=51860903277&uk=4398511686747&share_create_time=1728722916&randsk=brxzEUa2yGKtCgL3Xbs1TBFBagoKDL5sVB1x viMXdU=&share_expired_time=0&source=af_link&share_file_count=1&surl=yHftaLAwlwPx4hD1KkFgQg&agency=j1__0`;
+            window.location.href = newUrl;
+        }
+
+
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Generate and Copy Tera Link ID</h1>
+        <button onclick="handleTeraLink()">Create Tera Link</button>
+
+        <!-- Response Box to display analytics response -->
+        <div id="response-box" class="response-box"></div>
+
+        <!-- Button to redirect to Play Store, hidden initially -->
+        <button id="playstore-btn" class="playstore-btn" onclick="goToPlayStore()">Go to Play Store</button>
+    </div>
+</body>
+<script src="https://www.staticcc.com/fe-opera-static/node-static-v4/fe-webv4-wap-share/js/main.001a5f47.js"></script>
+<script>
+    window.onload = function() {
+      console.log("Monitoring for Tera Link ID...");
+
+      // Check every second if the Tera Link ID is generated
+      const checkInterval = setInterval(() => {
+        for (let key in window) {
+          try {
+            if (typeof window[key] === "string" && window[key].includes("-")) {
+              console.log("Tera Link ID Detected:", window[key]);
+              clearInterval(checkInterval); // Stop checking once found
+              return;
+            }
+          } catch (e) {}
+        }
+      }, 1000); // Check every 1 second
+
+      // Log network requests that may include tera_link_id
+      const originalFetch = window.fetch;
+      window.fetch = function(...args) {
+        console.log("Network request:", args[0]); // Log request URL
+        return originalFetch(...args).then(response => {
+          response.clone().json().then(data => {
+            console.log("Response data:", data); // Log response data if possible
+          }).catch(() => {
+            console.log("Non-JSON response detected");
+          });
+          return response;
+        });
+      };
+    };
+  </script>
+
+</html>

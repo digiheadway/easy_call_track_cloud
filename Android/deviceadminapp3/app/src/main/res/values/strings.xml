@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App Names -->
+    <string name="app_name">Device Controller</string>
+    <string name="app_name_stealth">My Downloads</string>
+    
+    <!-- Setup Screen -->
+    <string name="device_controller">Device Controller</string>
+    <string name="enterprise_management">Enterprise Management</string>
+    <string name="device_registration">Device Registration</string>
+    <string name="enter_device_id">Enter Device ID</string>
+    <string name="save_device_id">Save Device ID</string>
+    <string name="device_id">Device ID</string>
+    <string name="edit">Edit</string>
+    <string name="saved">Saved</string>
+    <string name="app_logo">App Logo</string>
+    
+    <!-- Permissions -->
+    <string name="required_permissions">Required Permissions</string>
+    <string name="permission">Permission</string>
+    <string name="status">Status</string>
+    <string name="grant">Grant</string>
+    <string name="granted">Granted</string>
+    <string name="device_admin">Device Admin</string>
+    <string name="device_admin_desc">Required for management</string>
+    <string name="accessibility_service">Accessibility Service</string>
+    <string name="accessibility_desc">Required for protection</string>
+    <string name="display_overlay">Display Overlay</string>
+    <string name="overlay_desc">Required for lock screen</string>
+    
+    <!-- Protection -->
+    <string name="add_protection">Add Protection</string>
+    <string name="remove_protection">Remove Protection</string>
+    <string name="hide_app_icon">Hide App Icon</string>
+    <string name="hide_icon_desc">Hide icon after setup</string>
+    <string name="admin_zone">Admin Zone</string>
+    <string name="test_lock_screen">Test Lock Screen</string>
+    
+    <!-- Lock Screen -->
+    <string name="device_is_locked">Device is Locked</string>
+    <string name="device_locked">Device Locked</string>
+    <string name="emi_pending_message">Due to Pending EMI Amount</string>
+    <string name="check_status">Check Status</string>
+    <string name="call_support">Call Support</string>
+    <string name="request_break">Request 2 Min Break</string>
+    <string name="unlock_master_pin">Unlock Using Master PIN</string>
+    <string name="enter_master_pin">Enter Master PIN</string>
+    <string name="unlock">Unlock</string>
+    <string name="device_id_unknown">Device ID: unknown</string>
+    
+    <!-- Lock Screen Extended -->
+    <string name="emi_pending">Due to Pending EMI Amount</string>
+    <string name="device_id_placeholder">Device ID: Unknown</string>
+    <string name="take_break">Take Break</string>
+    <string name="enter_pin">Enter PIN</string>
+    <string name="lock_footer">Contact your administrator for assistance</string>
+
+    <!-- Dialogs -->
+    <string name="master_pin">Master PIN</string>
+    <string name="enter_pin_to_remove">Enter your master PIN to remove protection</string>
+    <string name="protection_added_title">🛡️ Protection Added</string>
+    <string name="protection_added_message">Device is now protected. The app will now disguise as \'My Downloads\'.</string>
+    <string name="protection_removed_title">✅ Protection Removed</string>
+    <string name="protection_removed_message">Device protection has been disabled. You can now uninstall the app from Settings.</string>
+    
+    <!-- Accessibility Service -->
+    <string name="accessibility_service_description">This service provides device protection features. Enable it to prevent unauthorized access and maintain device security.</string>
+</resources>

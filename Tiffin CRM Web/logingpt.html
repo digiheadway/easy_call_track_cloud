@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTP Login/Signup</title>
+    <style>
+        .error_message {
+            color: red;
+        }
+
+        .input_desc {
+            font-size: 12px;
+            color: grey;
+        }
+    </style>
+</head>
+
+<body>
+
+    <form id="signup_form" action="#">
+        <div class="input_field_container">
+            <label for="phone">Phone Number</label>
+            <input type="number" name="phone" id="phone" placeholder="Enter Your Phone Number here" value="9068062563">
+            <span class="input_desc">Without Country Code</span>
+            <small id="phone_error" class="error_message"></small>
+        </div>
+        <div class="input_field_container">
+            <button type="submit" class="submit_btn">Get OTP</button>
+        </div>
+    </form>
+
+    <form id="otp_form" action="#" style="display:none;">
+        <div class="input_field_container">
+            <label for="otp">Enter OTP</label>
+            <input type="number" name="otp" id="otp" placeholder="Enter OTP">
+            <small id="otp_error" class="error_message"></small>
+        </div>
+        <div class="input_field_container">
+            <button type="submit" class="submit_btn">Verify OTP</button>
+        </div>
+    </form>
+
+    <script>
+        const signupForm = document.getElementById('signup_form');
+        const otpForm = document.getElementById('otp_form');
+        const phoneInput = document.getElementById('phone');
+        const otpInput = document.getElementById('otp');
+        const phoneError = document.getElementById('phone_error');
+        const otpError = document.getElementById('otp_error');
+
+        signupForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const phone = phoneInput.value.trim();
+
+            // Basic phone number validation
+            if (phone === '' || phone.length !== 10) {
+                phoneError.textContent = 'Please enter a valid 10-digit phone number.';
+                return;
+            }
+            phoneError.textContent = '';
+
+            // Send phone number to webhook for OTP generation
+            fetch('https://webhook.site/3844eaa9-7726-4f29-91f3-c330e985b10b', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    phone: phone,
+                    action: 'generate_otp'
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('OTP has been sent to your phone.');
+                        signupForm.style.display = 'none';
+                        otpForm.style.display = 'block';
+                    } else {
+                        phoneError.textContent = 'Failed to send OTP. Please try again.';
+                    }
+                })
+                .catch(error => {
+                    phoneError.textContent = 'An error occurred. Please try again later.';
+                });
+        });
+
+        otpForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const otp = otpInput.value.trim();
+
+            // Basic OTP validation
+            if (otp === '' || otp.length !== 6) {
+                otpError.textContent = 'Please enter a valid 6-digit OTP.';
+                return;
+            }
+            otpError.textContent = '';
+
+            // Send OTP to webhook for verification
+            fetch('https://webhook.site/3844eaa9-7726-4f29-91f3-c330e985b10b', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    otp: otp,
+                    action: 'verify_otp'
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('OTP verified successfully. You are logged in.');
+                    } else {
+                        otpError.textContent = 'Invalid OTP. Please try again.';
+                    }
+                })
+                .catch(error => {
+                    otpError.textContent = 'An error occurred. Please try again later.';
+                });
+        });
+    </script>
+
+</body>
+
+</html>

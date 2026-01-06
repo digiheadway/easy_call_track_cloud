@@ -1,0 +1,39 @@
+{
+  "instant_games": {
+    "platform_version": "RICH_GAMEPLAY",
+    "orientation": "PORTRAIT",
+    "override_web_orientation": "LANDSCAPE",
+    "navigation_menu_version": "NAV_BAR",
+    "custom_update_templates": {
+      "pass_score": {
+        "example": "Player X just scored 100 and passed Player Y's highscore!"
+      },
+      "play_turn": {
+        "example": "Player X just played and now it's Player Y's turn!"
+      }
+    },
+    "surfaceable_stats": {
+      "rank": {
+        "priority": 1,
+        "order": 1,
+        "label": {
+          "localizations": {
+            "en_US": "Rank",
+            "th_TH": "\\u0E22\\u0E28"
+          },
+          "fallback": "Rank"
+        },
+        "values": {
+          "0": "Unranked",
+          "1": "Bronze",
+          "2": "Silver",
+          "3": "Gold"
+        }
+      }
+    },
+    "match_player_config": {
+      "min_context_size": 2,
+      "max_context_size": 20
+    }
+  }
+}

@@ -1,0 +1,137 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1A1A2E"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="32dp">
+
+        <!-- Lock Icon -->
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@android:drawable/ic_lock_lock"
+            android:tint="#FF5252"
+            android:layout_marginBottom="32dp" />
+
+        <!-- Lock Message -->
+        <TextView
+            android:id="@+id/lockMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Device is Locked"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:textAlignment="center"
+            android:layout_marginBottom="16dp" />
+
+        <!-- EMI Amount Message -->
+        <TextView
+            android:id="@+id/emiMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Due to Pending EMI Amount of ₹4500"
+            android:textSize="18sp"
+            android:textColor="#FFD54F"
+            android:textAlignment="center"
+            android:layout_marginBottom="48dp" />
+
+        <!-- Check Status Button (Big) -->
+        <Button
+            android:id="@+id/checkStatusButton"
+            android:layout_width="280dp"
+            android:layout_height="60dp"
+            android:text="Check Status"
+            android:textSize="18sp"
+            android:textAllCaps="false"
+            android:backgroundTint="#2196F3"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Call Support Button -->
+        <Button
+            android:id="@+id/callSupportButton"
+            android:layout_width="280dp"
+            android:layout_height="60dp"
+            android:text="Call Support"
+            android:textSize="18sp"
+            android:textAllCaps="false"
+            android:backgroundTint="#4CAF50"
+            android:visibility="gone"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Break Button (requires PIN) -->
+        <Button
+            android:id="@+id/breakButton"
+            android:layout_width="280dp"
+            android:layout_height="50dp"
+            android:text="Request 2 Min Break"
+            android:textSize="16sp"
+            android:textAllCaps="false"
+            android:backgroundTint="#FF9800"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Master PIN Unlock (Text Button) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/masterPinButton"
+            android:layout_width="280dp"
+            android:layout_height="50dp"
+            android:text="Unlock Using Master PIN"
+            android:textSize="14sp"
+            android:textAllCaps="false"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:textColor="#64B5F6"
+            android:layout_marginBottom="16dp" />
+
+        <!-- PIN Input Dialog Container (Hidden by default) -->
+        <LinearLayout
+            android:id="@+id/pinContainer"
+            android:layout_width="280dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:background="#2A2A40"
+            android:padding="16dp"
+            android:layout_marginTop="16dp">
+
+            <EditText
+                android:id="@+id/pinInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Enter Master PIN"
+                android:textColorHint="#888888"
+                android:textColor="#FFFFFF"
+                android:inputType="numberPassword"
+                android:gravity="center"
+                android:textSize="20sp"
+                android:background="#3A3A50"
+                android:padding="12dp"
+                android:layout_marginBottom="12dp" />
+
+            <Button
+                android:id="@+id/unlockButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Unlock"
+                android:textAllCaps="false"
+                android:backgroundTint="#4CAF50" />
+
+        </LinearLayout>
+
+        <!-- Device ID Display -->
+        <TextView
+            android:id="@+id/deviceIdDisplay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Device ID: unknown"
+            android:textSize="14sp"
+            android:textColor="#AAAAAA"
+            android:layout_marginTop="32dp" />
+
+    </LinearLayout>
+</ScrollView>

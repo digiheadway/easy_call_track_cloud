@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Responsive Data List</title>
+</head>
+<body class="bg-gray-100 p-4">
+  <div class="max-w-screen-xl mx-auto">
+    <div class="mb-6 space-y-4">
+      <div class="flex flex-col md:flex-row gap-4">
+        <input 
+          id="searchInput"
+          type="text" 
+          placeholder="Search by name or business name..." 
+          class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+        <select id="statusFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <option value="">All Status</option>
+          <option value="Paid Customer">Paid Customer</option>
+          <option value="On Trial">On Trial</option>
+          <option value="Free User">Free User</option>
+          <option value="Planning to Use">Planning to Use</option>
+        </select>
+        <select id="sortBy" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <option value="name">Sort by Name</option>
+          <option value="daily_orders">Sort by Daily Orders</option>
+          <option value="created_time">Sort by Date</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="dataList" class="space-y-4">
+      <!-- Data will be dynamically inserted here -->
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modalOverlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 opacity-0 pointer-events-none transition-opacity duration-300 z-50">
+    <div id="modalContent" class="fixed bottom-0 left-0 right-0 bg-white rounded-t-xl max-h-[90vh] overflow-y-auto transform transition-transform duration-300 translate-y-full">
+      <div class="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+        <h2 class="text-xl font-semibold" id="modalTitle">Prospect Details</h2>
+        <button id="closeModalBtn" class="text-gray-500 hover:text-gray-700">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
+        </button>
+      </div>
+      <div class="p-6" id="modalBody">
+        <!-- Modal content will be inserted here -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "https://backend123.tiffincrm.com/sales1/data.php?action=get";
+    const dataList = document.getElementById("dataList");
+    const searchInput = document.getElementById("searchInput");
+    const statusFilter = document.getElementById("statusFilter");
+    const sortBySelect = document.getElementById("sortBy");
+
+    let currentData = [];
+
+    // Function to fetch data
+    async function fetchData(url) {
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        return data.success ? data.data : [];
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        return [];
+      }
+    }
+
+    // Function to fetch individual prospect
+    async function fetchProspect(id) {
+      try {
+        const response = await fetch(`${API_URL}&id=${id}`);
+        const data = await response.json();
+        return data.success ? data.data[0] : null;
+      } catch (error) {
+        console.error('Error fetching prospect:', error);
+        return null;
+      }
+    }
+
+    // Function to update prospect
+    async function updateProspect(id, updates) {
+      try {
+        const queryParams = new URLSearchParams({ action: 'update', id });
+        Object.entries(updates).forEach(([key, value]) => {
+          queryParams.append(key, value);
+        });
+
+        const response = await fetch(`https://backend123.tiffincrm.com/sales1/data.php?${queryParams}`);
+        const data = await response.json();
+        return data.success;
+      } catch (error) {
+        console.error('Error updating prospect:', error);
+        return false;
+      }
+    }
+
+    // Function to render data list
+    function renderDataList(data) {
+      dataList.innerHTML = "";
+
+      if (data.length === 0) {
+        dataList.innerHTML = '<div class="text-center text-gray-500">No results found</div>';
+        return;
+      }
+
+      data.forEach(item => {
+        const card = document.createElement("div");
+        card.className = "bg-white shadow rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer";
+        card.onclick = () => openModal(item.id);
+        card.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="text-lg font-medium text-gray-900">${item.name}</h3>
+              <p class="text-sm text-gray-500">${item.business_name}</p>
+            </div>
+            <span class="px-2 py-1 text-xs rounded-full ${getStatusColor(item.status)}">${item.status}</span>
+          </div>
+          <div class="mt-4 grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm text-gray-500">Location</p>
+              <p class="text-sm font-medium">${item.location || 'N/A'}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">Daily Orders</p>
+              <p class="text-sm font-medium">${item.daily_orders || '0'}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">Next Follow-up</p>
+              <p class="text-sm font-medium">${item.next_follow_up_at || 'Not scheduled'}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">Action</p>
+              <p class="text-sm font-medium">${item.action || 'N/A'}</p>
+            </div>
+          </div>
+          <div class="mt-4 flex gap-2">
+            <a href="tel:${item.phone}" 
+              class="text-green-600 hover:text-green-700" 
+              onclick="event.stopPropagation()">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+              </svg>
+            </a>
+            <a href="https://wa.me/${item.phone}" 
+              target="_blank" 
+              class="text-[#25D366] hover:text-[#128C7E]"
+              onclick="event.stopPropagation()">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+            </a>
+          </div>
+        `;
+        dataList.appendChild(card);
+      });
+    }
+
+    function getStatusColor(status) {
+      const colors = {
+        'Paid Customer': 'bg-green-100 text-green-800',
+        'On Trial': 'bg-blue-100 text-blue-800',
+        'Free User': 'bg-yellow-100 text-yellow-800',
+        'Planning to Use': 'bg-purple-100 text-purple-800'
+      };
+      return colors[status] || 'bg-gray-100 text-gray-800';
+    }
+
+    // Filter and sort data
+    function filterAndSortData(data) {
+      let filtered = [...data];
+      
+      const statusValue = statusFilter.value;
+      if (statusValue) {
+        filtered = filtered.filter(item => item.status === statusValue);
+      }
+
+      const sortValue = sortBySelect.value;
+      filtered.sort((a, b) => {
+        if (sortValue === 'daily_orders') {
+          return (parseInt(b.daily_orders) || 0) - (parseInt(a.daily_orders) || 0);
+        }
+        if (sortValue === 'created_time') {
+          return new Date(b.created_time) - new Date(a.created_time);
+        }
+        return a.name.localeCompare(b.name);
+      });
+
+      return filtered;
+    }
+
+    // Initial data fetch
+    async function init() {
+      currentData = await fetchData(API_URL);
+      renderDataList(filterAndSortData(currentData));
+    }
+
+    // Event listeners
+    searchInput.addEventListener("input", async (e) => {
+      const query = e.target.value.trim();
+
+      if (query === "") {
+        currentData = await fetchData(API_URL);
+      } else {
+        const searchUrl = `${API_URL}&where=${encodeURIComponent(query)}`;
+        currentData = await fetchData(searchUrl);
+      }
+      
+      renderDataList(filterAndSortData(currentData));
+    });
+
+    statusFilter.addEventListener("change", () => {
+      renderDataList(filterAndSortData(currentData));
+    });
+
+    sortBySelect.addEventListener("change", () => {
+      renderDataList(filterAndSortData(currentData));
+    });
+
+    init();
+  </script>
+<script>
+    // Wait for DOM to be fully loaded
+document.addEventListener('DOMContentLoaded', () => {
+  // Modal elements
+  const modalOverlay = document.getElementById("modalOverlay");
+  const modalContent = document.getElementById("modalContent");
+  const closeModalBtn = document.getElementById("closeModalBtn");
+  const modalBody = document.getElementById("modalBody");
+
+  // Function to open modal
+  window.openModal = async function(id) {
+    const prospect = await fetchProspect(id);
+    if (!prospect) return;
+
+    modalOverlay.classList.remove('pointer-events-none', 'opacity-0');
+    modalContent.classList.remove('translate-y-full');
+
+    const formFields = [
+      { label: 'Name', key: 'name', type: 'text' },
+      { label: 'Business Name', key: 'business_name', type: 'text' },
+      { label: 'Location', key: 'location', type: 'text' },
+      { label: 'Daily Orders', key: 'daily_orders', type: 'number' },
+      { label: 'Phone', key: 'phone', type: 'tel' },
+      { label: 'Email', key: 'email', type: 'email' },
+      { label: 'Future Status', key: 'future_status', type: 'select', options: ["Don't Know", "Will Not Use", "May Use", "Will Use"] },
+      { label: 'Action', key: 'action', type: 'select', options: ["Follow Up", "Keep Connected", "Don't Follow Up", "Unsubscribed"] },
+      { label: 'Status', key: 'status', type: 'select', options: ["Paid Customer", "On Trial", "Free User", "Planning to Use"] },
+      { label: 'Usage Status', key: 'his_usage', type: 'select', options: ["Using", "Not Started Using", "Stop Using", "Will Start Soon"] },
+      { label: 'Note', key: 'note', type: 'textarea' }
+    ];
+
+    const formHTML = formFields.map(field => {
+      let inputElement = '';
+      const value = prospect[field.key] || '';
+
+      if (field.type === 'select') {
+        inputElement = `
+          <select name="${field.key}" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+            ${field.options.map(option => 
+              `<option value="${option}" ${option === value ? 'selected' : ''}>${option}</option>`
+            ).join('')}
+          </select>`;
+      } else if (field.type === 'textarea') {
+        inputElement = `
+          <textarea name="${field.key}" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" rows="4">${value}</textarea>`;
+      } else {
+        inputElement = `
+          <input type="${field.type}" name="${field.key}" value="${value}" 
+            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">`;
+      }
+
+      return `
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">${field.label}</label>
+          ${inputElement}
+        </div>`;
+    }).join('');
+
+    const modalContentHTML = `
+      <div class="space-y-4">
+        <div class="flex gap-4 mb-6">
+          <a href="tel:${prospect.phone}" 
+            class="flex-1 flex items-center justify-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+            </svg>
+            Call
+          </a>
+          <a href="https://wa.me/${prospect.phone}" target="_blank"
+            class="flex-1 flex items-center justify-center gap-2 bg-[#25D366] text-white px-4 py-2 rounded-lg hover:bg-[#128C7E]">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            WhatsApp
+          </a>
+        </div>
+        <form id="updateForm" onsubmit="handleUpdate(event, ${prospect.id})">
+          ${formHTML}
+          <div class="mt-6 flex justify-end">
+            <button type="submit" 
+              class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400">
+              Update
+            </button>
+          </div>
+        </form>
+      </div>`;
+
+    modalBody.innerHTML = modalContentHTML;
+  };
+
+  // Function to close modal
+  function closeModal() {
+    modalContent.classList.add('translate-y-full');
+    modalOverlay.classList.add('opacity-0', 'pointer-events-none');
+  }
+
+  // Function to handle update
+  window.handleUpdate = async function(event, id) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const updates = Object.fromEntries(formData);
+    
+    const success = await updateProspect(id, updates);
+    if (success) {
+      closeModal();
+      init(); // Refresh the list
+    }
+  };
+
+  // Event listeners
+  modalOverlay.addEventListener("click", (e) => {
+    if (e.target === modalOverlay) {
+      closeModal();
+    }
+  });
+
+  closeModalBtn.addEventListener("click", closeModal);
+});
+</script>
+</body>
+</html>

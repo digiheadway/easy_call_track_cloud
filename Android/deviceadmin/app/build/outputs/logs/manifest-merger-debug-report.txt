@@ -1,0 +1,648 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:2:1-99:12
+INJECTED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:2:1-99:12
+INJECTED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:2:1-99:12
+INJECTED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:2:1-99:12
+MERGED from [androidx.databinding:viewbinding:8.8.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/2f8dc0b8730e8e1ae0ddc60a5b3b7a4d/transformed/jetified-viewbinding-8.8.0/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.work:work-runtime-ktx:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/4383b7db949931a98bd71f5d4eab8cae/transformed/work-runtime-ktx-2.8.1/AndroidManifest.xml:17:1-22:12
+MERGED from [com.google.android.material:material:1.9.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/18427d56baa30ce77b3fabd588ef9a93/transformed/material-1.9.0/AndroidManifest.xml:17:1-26:12
+MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/8725530625c2302c23640e78ce52bff0/transformed/constraintlayout-2.1.4/AndroidManifest.xml:2:1-11:12
+MERGED from [androidx.appcompat:appcompat-resources:1.6.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/0ed820b1ea92fa610d163632eb6af6fd/transformed/jetified-appcompat-resources-1.6.1/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.appcompat:appcompat:1.6.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/de2c61410bb4ba3a96cfae855bbf34ce/transformed/appcompat-1.6.1/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.viewpager2:viewpager2:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/88ff0152200fd8b9da5e6d7148fd0454/transformed/jetified-viewpager2-1.0.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.fragment:fragment:1.3.6] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/b1be0063762d3ed6401c545b374eaa9d/transformed/fragment-1.3.6/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.activity:activity:1.6.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/9d4c313efeba47d1abc2a15af514d9bf/transformed/jetified-activity-1.6.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.dynamicanimation:dynamicanimation:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/38de80a535b763f85113d8df6095455e/transformed/dynamicanimation-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.legacy:legacy-support-core-utils:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/b577806b46c2f10e8834c415139a371f/transformed/legacy-support-core-utils-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.loader:loader:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f268a3610c97e27df27d32ba5515ea26/transformed/loader-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-viewmodel:2.5.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/3da1a5576b0f307660a110f89e88b603/transformed/lifecycle-viewmodel-2.5.1/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.5.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/344a66b6c81591d384c3df6611f22e86/transformed/jetified-lifecycle-viewmodel-savedstate-2.5.1/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:17:1-145:12
+MERGED from [androidx.room:room-runtime:2.5.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/d7df729edb5a3a355bc99b439bc9b724/transformed/room-runtime-2.5.0/AndroidManifest.xml:17:1-31:12
+MERGED from [androidx.emoji2:emoji2-views-helper:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/7e1adb4ff9d7d3826df5554746a1b06b/transformed/jetified-emoji2-views-helper-1.2.0/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.emoji2:emoji2:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/10a56adcdc56614dbe3ccba6bd9800d9/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:17:1-35:12
+MERGED from [androidx.drawerlayout:drawerlayout:1.1.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/3f2a262b3d4533683413b98e4eccc77b/transformed/drawerlayout-1.1.1/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.coordinatorlayout:coordinatorlayout:1.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/268b9ee5e0bdb3c6d32f493adb4ac6c1/transformed/coordinatorlayout-1.1.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.transition:transition:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/8289edcece2ae2cca4c5bc269667916b/transformed/transition-1.2.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/349206d9c56137cc9f5f3178a94bfc22/transformed/vectordrawable-animated-1.1.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.vectordrawable:vectordrawable:1.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/9b6c1c6d35b026da87c5511874101234/transformed/vectordrawable-1.1.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.viewpager:viewpager:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/26593d11c60ffca180f2ddceed07ec40/transformed/viewpager-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.recyclerview:recyclerview:1.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/0f63a87fb4aad0609693142d37403459/transformed/recyclerview-1.1.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.customview:customview:1.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/64dd848c323cff849405b64ea7744a2b/transformed/customview-1.1.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:17:1-30:12
+MERGED from [androidx.core:core-ktx:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/57dc2a127079dca30ca4a9982702766f/transformed/jetified-core-ktx-1.10.1/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/c10762bfc8381eae2f7f3fec4b35a10c/transformed/cursoradapter-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-process:2.4.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/1565a616f9216895eb53d96e7e4113c1/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:17:1-37:12
+MERGED from [androidx.lifecycle:lifecycle-service:2.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/292de16e362988dab3c54992361da4f4/transformed/jetified-lifecycle-service-2.1.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.5.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f889210163b70ae0bb9c9fbc8b6a6b3d/transformed/lifecycle-runtime-2.5.1/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.savedstate:savedstate:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f89ab684ee4b6c48b39db83900864de0/transformed/jetified-savedstate-1.2.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.cardview:cardview:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/419f081468b0b81666ffd3280a5abd23/transformed/cardview-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.interpolator:interpolator:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/c2abc96586b0ae7d8cf24440e1dfeef5/transformed/interpolator-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/7fef89dde227e935ff4ee28c00bda89f/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:17:1-27:12
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/3a0426ce5b0347a180f4bf8d1bb4d722/transformed/jetified-startup-runtime-1.1.1/AndroidManifest.xml:17:1-33:12
+MERGED from [androidx.tracing:tracing:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/a18dd63d863ca00ac27e1b59faf5c12d/transformed/jetified-tracing-1.0.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.lifecycle:lifecycle-livedata:2.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/09e5adb4239ba4f86fe5168bd2a700d5/transformed/lifecycle-livedata-2.1.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.5.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/64502018b88ff3e20ba44a6e25264d21/transformed/lifecycle-livedata-core-2.5.1/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.arch.core:core-runtime:2.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/731ea5004bed41a992416911ddd0b7a5/transformed/core-runtime-2.1.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.sqlite:sqlite-framework:2.3.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/89a494e514432489ce1b7257c2c96ed8/transformed/sqlite-framework-2.3.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.documentfile:documentfile:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/2c9aedab6e18d1e40aeca0a82144ead7/transformed/documentfile-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/ee7f091264f02021e245da68759f9c06/transformed/localbroadcastmanager-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.print:print:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/2453b9e8548b46b936c7f4bd01a3a777/transformed/print-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.sqlite:sqlite:2.3.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/31909daf3a32647792686bb73cf173ba/transformed/sqlite-2.3.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.annotation:annotation-experimental:1.3.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/6f97dcbc59f2e2d01c0512ad92fc3ce7/transformed/jetified-annotation-experimental-1.3.0/AndroidManifest.xml:17:1-22:12
+	package
+		INJECTED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml
+	android:versionName
+		INJECTED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml
+	xmlns:tools
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:3:5-51
+	android:versionCode
+		INJECTED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:2:11-69
+uses-permission#android.permission.INTERNET
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:5:5-67
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:5:22-64
+uses-permission#android.permission.ACCESS_NETWORK_STATE
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:6:5-79
+MERGED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:24:5-79
+MERGED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:24:5-79
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:6:22-76
+uses-permission#android.permission.RECEIVE_BOOT_COMPLETED
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:7:5-81
+MERGED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:25:5-81
+MERGED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:25:5-81
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:7:22-78
+uses-permission#android.permission.SYSTEM_ALERT_WINDOW
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:8:5-78
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:8:22-75
+uses-permission#android.permission.CALL_PHONE
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:9:5-69
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:9:22-66
+uses-permission#android.permission.DISABLE_KEYGUARD
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:10:5-75
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:10:22-72
+uses-permission#android.permission.REORDER_TASKS
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:11:5-72
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:11:22-69
+uses-permission#android.permission.DOWNLOAD_WITHOUT_NOTIFICATION
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:12:5-88
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:12:22-85
+uses-permission#android.permission.REQUEST_INSTALL_PACKAGES
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:13:5-83
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:13:22-80
+uses-permission#android.permission.QUERY_ALL_PACKAGES
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:14:5-15:53
+	tools:ignore
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:15:9-50
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:14:22-74
+application
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:17:5-97:19
+INJECTED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:17:5-97:19
+MERGED from [com.google.android.material:material:1.9.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/18427d56baa30ce77b3fabd588ef9a93/transformed/material-1.9.0/AndroidManifest.xml:24:5-20
+MERGED from [com.google.android.material:material:1.9.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/18427d56baa30ce77b3fabd588ef9a93/transformed/material-1.9.0/AndroidManifest.xml:24:5-20
+MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/8725530625c2302c23640e78ce52bff0/transformed/constraintlayout-2.1.4/AndroidManifest.xml:9:5-20
+MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/8725530625c2302c23640e78ce52bff0/transformed/constraintlayout-2.1.4/AndroidManifest.xml:9:5-20
+MERGED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:28:5-143:19
+MERGED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:28:5-143:19
+MERGED from [androidx.room:room-runtime:2.5.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/d7df729edb5a3a355bc99b439bc9b724/transformed/room-runtime-2.5.0/AndroidManifest.xml:23:5-29:19
+MERGED from [androidx.room:room-runtime:2.5.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/d7df729edb5a3a355bc99b439bc9b724/transformed/room-runtime-2.5.0/AndroidManifest.xml:23:5-29:19
+MERGED from [androidx.emoji2:emoji2:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/10a56adcdc56614dbe3ccba6bd9800d9/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.emoji2:emoji2:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/10a56adcdc56614dbe3ccba6bd9800d9/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:28:5-89
+MERGED from [androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:28:5-89
+MERGED from [androidx.lifecycle:lifecycle-process:2.4.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/1565a616f9216895eb53d96e7e4113c1/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:25:5-35:19
+MERGED from [androidx.lifecycle:lifecycle-process:2.4.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/1565a616f9216895eb53d96e7e4113c1/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:25:5-35:19
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/7fef89dde227e935ff4ee28c00bda89f/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/7fef89dde227e935ff4ee28c00bda89f/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/3a0426ce5b0347a180f4bf8d1bb4d722/transformed/jetified-startup-runtime-1.1.1/AndroidManifest.xml:25:5-31:19
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/3a0426ce5b0347a180f4bf8d1bb4d722/transformed/jetified-startup-runtime-1.1.1/AndroidManifest.xml:25:5-31:19
+	android:extractNativeLibs
+		INJECTED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml
+	android:appComponentFactory
+		ADDED from [androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:28:18-86
+	android:supportsRtl
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:24:9-35
+	android:label
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:22:9-41
+	android:fullBackupContent
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:20:9-54
+	android:roundIcon
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:23:9-50
+	tools:targetApi
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:26:9-29
+	android:icon
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:21:9-45
+	android:allowBackup
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:18:9-35
+	android:theme
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:25:9-49
+	android:dataExtractionRules
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:19:9-65
+activity#com.example.deviceadmin.MainActivity
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:28:9-31:39
+	android:excludeFromRecents
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:30:13-46
+	android:exported
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:31:13-36
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:29:13-41
+activity-alias#com.example.deviceadmin.MainActivityAlias
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:34:9-46:26
+	android:enabled
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:37:13-35
+	android:label
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:40:13-45
+	android:excludeFromRecents
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:41:13-46
+	android:exported
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:38:13-36
+	android:targetActivity
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:36:13-51
+	android:icon
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:39:13-56
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:35:13-46
+intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:42:13-45:29
+action#android.intent.action.MAIN
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:43:17-69
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:43:25-66
+category#android.intent.category.LAUNCHER
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:44:17-77
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:44:27-74
+activity#com.example.deviceadmin.LockActivity
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:48:9-57:67
+	android:turnScreenOn
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:56:13-40
+	android:excludeFromRecents
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:50:13-46
+	android:showWhenLocked
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:55:13-42
+	android:launchMode
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:52:13-48
+	android:exported
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:51:13-37
+	android:showOnLockScreen
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:54:13-44
+	android:theme
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:57:13-64
+	android:taskAffinity
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:53:13-36
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:49:13-41
+receiver#com.example.deviceadmin.MyDeviceAdminReceiver
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:59:9-69:20
+	android:exported
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:62:13-36
+	android:permission
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:61:13-70
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:60:13-50
+meta-data#android.app.device_admin
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:63:13-65:62
+	android:resource
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:65:17-59
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:64:17-56
+intent-filter#action:name:android.app.action.DEVICE_ADMIN_ENABLED
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:66:13-68:29
+action#android.app.action.DEVICE_ADMIN_ENABLED
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:67:17-82
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:67:25-79
+receiver#com.example.deviceadmin.BootReceiver
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:71:9-75:20
+	android:exported
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:71:48-71
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:71:19-47
+intent-filter#action:name:android.intent.action.BOOT_COMPLETED
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:72:13-74:29
+action#android.intent.action.BOOT_COMPLETED
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:73:17-79
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:73:25-76
+service#com.example.deviceadmin.LockAccessibilityService
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:77:9-87:19
+	android:exported
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:79:13-37
+	android:permission
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:80:13-79
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:78:13-53
+intent-filter#action:name:android.accessibilityservice.AccessibilityService
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:81:13-83:29
+action#android.accessibilityservice.AccessibilityService
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:82:17-92
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:82:25-89
+meta-data#android.accessibilityservice
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:84:13-86:72
+	android:resource
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:86:17-69
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:85:17-60
+receiver#com.example.deviceadmin.SecretCodeReceiver
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:90:9-95:20
+	android:exported
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:90:54-77
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:90:19-53
+intent-filter#action:name:android.provider.Telephony.SECRET_CODE+data:host:1133+data:scheme:android_secret_code
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:91:13-94:29
+action#android.provider.Telephony.SECRET_CODE
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:92:17-81
+	android:name
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:92:25-78
+data
+ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:93:17-82
+	android:host
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:93:60-79
+	android:scheme
+		ADDED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml:93:23-59
+uses-sdk
+INJECTED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml
+INJECTED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml
+MERGED from [androidx.databinding:viewbinding:8.8.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/2f8dc0b8730e8e1ae0ddc60a5b3b7a4d/transformed/jetified-viewbinding-8.8.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.databinding:viewbinding:8.8.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/2f8dc0b8730e8e1ae0ddc60a5b3b7a4d/transformed/jetified-viewbinding-8.8.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.work:work-runtime-ktx:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/4383b7db949931a98bd71f5d4eab8cae/transformed/work-runtime-ktx-2.8.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.work:work-runtime-ktx:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/4383b7db949931a98bd71f5d4eab8cae/transformed/work-runtime-ktx-2.8.1/AndroidManifest.xml:20:5-44
+MERGED from [com.google.android.material:material:1.9.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/18427d56baa30ce77b3fabd588ef9a93/transformed/material-1.9.0/AndroidManifest.xml:20:5-22:41
+MERGED from [com.google.android.material:material:1.9.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/18427d56baa30ce77b3fabd588ef9a93/transformed/material-1.9.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/8725530625c2302c23640e78ce52bff0/transformed/constraintlayout-2.1.4/AndroidManifest.xml:5:5-7:41
+MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/8725530625c2302c23640e78ce52bff0/transformed/constraintlayout-2.1.4/AndroidManifest.xml:5:5-7:41
+MERGED from [androidx.appcompat:appcompat-resources:1.6.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/0ed820b1ea92fa610d163632eb6af6fd/transformed/jetified-appcompat-resources-1.6.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.appcompat:appcompat-resources:1.6.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/0ed820b1ea92fa610d163632eb6af6fd/transformed/jetified-appcompat-resources-1.6.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.appcompat:appcompat:1.6.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/de2c61410bb4ba3a96cfae855bbf34ce/transformed/appcompat-1.6.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.appcompat:appcompat:1.6.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/de2c61410bb4ba3a96cfae855bbf34ce/transformed/appcompat-1.6.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.viewpager2:viewpager2:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/88ff0152200fd8b9da5e6d7148fd0454/transformed/jetified-viewpager2-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.viewpager2:viewpager2:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/88ff0152200fd8b9da5e6d7148fd0454/transformed/jetified-viewpager2-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.fragment:fragment:1.3.6] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/b1be0063762d3ed6401c545b374eaa9d/transformed/fragment-1.3.6/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.fragment:fragment:1.3.6] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/b1be0063762d3ed6401c545b374eaa9d/transformed/fragment-1.3.6/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.activity:activity:1.6.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/9d4c313efeba47d1abc2a15af514d9bf/transformed/jetified-activity-1.6.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.activity:activity:1.6.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/9d4c313efeba47d1abc2a15af514d9bf/transformed/jetified-activity-1.6.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.dynamicanimation:dynamicanimation:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/38de80a535b763f85113d8df6095455e/transformed/dynamicanimation-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.dynamicanimation:dynamicanimation:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/38de80a535b763f85113d8df6095455e/transformed/dynamicanimation-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.legacy:legacy-support-core-utils:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/b577806b46c2f10e8834c415139a371f/transformed/legacy-support-core-utils-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.legacy:legacy-support-core-utils:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/b577806b46c2f10e8834c415139a371f/transformed/legacy-support-core-utils-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.loader:loader:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f268a3610c97e27df27d32ba5515ea26/transformed/loader-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.loader:loader:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f268a3610c97e27df27d32ba5515ea26/transformed/loader-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel:2.5.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/3da1a5576b0f307660a110f89e88b603/transformed/lifecycle-viewmodel-2.5.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.lifecycle:lifecycle-viewmodel:2.5.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/3da1a5576b0f307660a110f89e88b603/transformed/lifecycle-viewmodel-2.5.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.5.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/344a66b6c81591d384c3df6611f22e86/transformed/jetified-lifecycle-viewmodel-savedstate-2.5.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.5.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/344a66b6c81591d384c3df6611f22e86/transformed/jetified-lifecycle-viewmodel-savedstate-2.5.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:21:5-44
+MERGED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:21:5-44
+MERGED from [androidx.room:room-runtime:2.5.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/d7df729edb5a3a355bc99b439bc9b724/transformed/room-runtime-2.5.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.room:room-runtime:2.5.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/d7df729edb5a3a355bc99b439bc9b724/transformed/room-runtime-2.5.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.emoji2:emoji2-views-helper:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/7e1adb4ff9d7d3826df5554746a1b06b/transformed/jetified-emoji2-views-helper-1.2.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.emoji2:emoji2-views-helper:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/7e1adb4ff9d7d3826df5554746a1b06b/transformed/jetified-emoji2-views-helper-1.2.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.emoji2:emoji2:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/10a56adcdc56614dbe3ccba6bd9800d9/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.emoji2:emoji2:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/10a56adcdc56614dbe3ccba6bd9800d9/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.drawerlayout:drawerlayout:1.1.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/3f2a262b3d4533683413b98e4eccc77b/transformed/drawerlayout-1.1.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.drawerlayout:drawerlayout:1.1.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/3f2a262b3d4533683413b98e4eccc77b/transformed/drawerlayout-1.1.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.coordinatorlayout:coordinatorlayout:1.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/268b9ee5e0bdb3c6d32f493adb4ac6c1/transformed/coordinatorlayout-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.coordinatorlayout:coordinatorlayout:1.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/268b9ee5e0bdb3c6d32f493adb4ac6c1/transformed/coordinatorlayout-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.transition:transition:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/8289edcece2ae2cca4c5bc269667916b/transformed/transition-1.2.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.transition:transition:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/8289edcece2ae2cca4c5bc269667916b/transformed/transition-1.2.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/349206d9c56137cc9f5f3178a94bfc22/transformed/vectordrawable-animated-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/349206d9c56137cc9f5f3178a94bfc22/transformed/vectordrawable-animated-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.vectordrawable:vectordrawable:1.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/9b6c1c6d35b026da87c5511874101234/transformed/vectordrawable-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.vectordrawable:vectordrawable:1.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/9b6c1c6d35b026da87c5511874101234/transformed/vectordrawable-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.viewpager:viewpager:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/26593d11c60ffca180f2ddceed07ec40/transformed/viewpager-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.viewpager:viewpager:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/26593d11c60ffca180f2ddceed07ec40/transformed/viewpager-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.recyclerview:recyclerview:1.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/0f63a87fb4aad0609693142d37403459/transformed/recyclerview-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.recyclerview:recyclerview:1.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/0f63a87fb4aad0609693142d37403459/transformed/recyclerview-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.customview:customview:1.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/64dd848c323cff849405b64ea7744a2b/transformed/customview-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.customview:customview:1.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/64dd848c323cff849405b64ea7744a2b/transformed/customview-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.core:core-ktx:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/57dc2a127079dca30ca4a9982702766f/transformed/jetified-core-ktx-1.10.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.core:core-ktx:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/57dc2a127079dca30ca4a9982702766f/transformed/jetified-core-ktx-1.10.1/AndroidManifest.xml:5:5-44
+MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/c10762bfc8381eae2f7f3fec4b35a10c/transformed/cursoradapter-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/c10762bfc8381eae2f7f3fec4b35a10c/transformed/cursoradapter-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-process:2.4.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/1565a616f9216895eb53d96e7e4113c1/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:21:5-23:41
+MERGED from [androidx.lifecycle:lifecycle-process:2.4.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/1565a616f9216895eb53d96e7e4113c1/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:21:5-23:41
+MERGED from [androidx.lifecycle:lifecycle-service:2.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/292de16e362988dab3c54992361da4f4/transformed/jetified-lifecycle-service-2.1.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-service:2.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/292de16e362988dab3c54992361da4f4/transformed/jetified-lifecycle-service-2.1.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.5.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f889210163b70ae0bb9c9fbc8b6a6b3d/transformed/lifecycle-runtime-2.5.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.5.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f889210163b70ae0bb9c9fbc8b6a6b3d/transformed/lifecycle-runtime-2.5.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.savedstate:savedstate:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f89ab684ee4b6c48b39db83900864de0/transformed/jetified-savedstate-1.2.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.savedstate:savedstate:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f89ab684ee4b6c48b39db83900864de0/transformed/jetified-savedstate-1.2.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.cardview:cardview:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/419f081468b0b81666ffd3280a5abd23/transformed/cardview-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.cardview:cardview:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/419f081468b0b81666ffd3280a5abd23/transformed/cardview-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.interpolator:interpolator:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/c2abc96586b0ae7d8cf24440e1dfeef5/transformed/interpolator-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.interpolator:interpolator:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/c2abc96586b0ae7d8cf24440e1dfeef5/transformed/interpolator-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/7fef89dde227e935ff4ee28c00bda89f/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/7fef89dde227e935ff4ee28c00bda89f/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/3a0426ce5b0347a180f4bf8d1bb4d722/transformed/jetified-startup-runtime-1.1.1/AndroidManifest.xml:21:5-23:41
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/3a0426ce5b0347a180f4bf8d1bb4d722/transformed/jetified-startup-runtime-1.1.1/AndroidManifest.xml:21:5-23:41
+MERGED from [androidx.tracing:tracing:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/a18dd63d863ca00ac27e1b59faf5c12d/transformed/jetified-tracing-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.tracing:tracing:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/a18dd63d863ca00ac27e1b59faf5c12d/transformed/jetified-tracing-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.lifecycle:lifecycle-livedata:2.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/09e5adb4239ba4f86fe5168bd2a700d5/transformed/lifecycle-livedata-2.1.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata:2.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/09e5adb4239ba4f86fe5168bd2a700d5/transformed/lifecycle-livedata-2.1.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.5.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/64502018b88ff3e20ba44a6e25264d21/transformed/lifecycle-livedata-core-2.5.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.5.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/64502018b88ff3e20ba44a6e25264d21/transformed/lifecycle-livedata-core-2.5.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.arch.core:core-runtime:2.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/731ea5004bed41a992416911ddd0b7a5/transformed/core-runtime-2.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.arch.core:core-runtime:2.1.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/731ea5004bed41a992416911ddd0b7a5/transformed/core-runtime-2.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.sqlite:sqlite-framework:2.3.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/89a494e514432489ce1b7257c2c96ed8/transformed/sqlite-framework-2.3.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.sqlite:sqlite-framework:2.3.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/89a494e514432489ce1b7257c2c96ed8/transformed/sqlite-framework-2.3.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.documentfile:documentfile:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/2c9aedab6e18d1e40aeca0a82144ead7/transformed/documentfile-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.documentfile:documentfile:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/2c9aedab6e18d1e40aeca0a82144ead7/transformed/documentfile-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/ee7f091264f02021e245da68759f9c06/transformed/localbroadcastmanager-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/ee7f091264f02021e245da68759f9c06/transformed/localbroadcastmanager-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.print:print:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/2453b9e8548b46b936c7f4bd01a3a777/transformed/print-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.print:print:1.0.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/2453b9e8548b46b936c7f4bd01a3a777/transformed/print-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.sqlite:sqlite:2.3.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/31909daf3a32647792686bb73cf173ba/transformed/sqlite-2.3.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.sqlite:sqlite:2.3.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/31909daf3a32647792686bb73cf173ba/transformed/sqlite-2.3.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.annotation:annotation-experimental:1.3.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/6f97dcbc59f2e2d01c0512ad92fc3ce7/transformed/jetified-annotation-experimental-1.3.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.annotation:annotation-experimental:1.3.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/6f97dcbc59f2e2d01c0512ad92fc3ce7/transformed/jetified-annotation-experimental-1.3.0/AndroidManifest.xml:20:5-44
+	android:targetSdkVersion
+		INJECTED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /Users/ygs/Documents/Code/Android/deviceadmin/app/src/main/AndroidManifest.xml
+uses-permission#android.permission.WAKE_LOCK
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:23:5-68
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:23:22-65
+uses-permission#android.permission.FOREGROUND_SERVICE
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:26:5-77
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:26:22-74
+provider#androidx.startup.InitializationProvider
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:29:9-37:20
+MERGED from [androidx.emoji2:emoji2:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/10a56adcdc56614dbe3ccba6bd9800d9/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.emoji2:emoji2:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/10a56adcdc56614dbe3ccba6bd9800d9/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.lifecycle:lifecycle-process:2.4.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/1565a616f9216895eb53d96e7e4113c1/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:26:9-34:20
+MERGED from [androidx.lifecycle:lifecycle-process:2.4.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/1565a616f9216895eb53d96e7e4113c1/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:26:9-34:20
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/3a0426ce5b0347a180f4bf8d1bb4d722/transformed/jetified-startup-runtime-1.1.1/AndroidManifest.xml:26:9-30:34
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/3a0426ce5b0347a180f4bf8d1bb4d722/transformed/jetified-startup-runtime-1.1.1/AndroidManifest.xml:26:9-30:34
+	tools:node
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:33:13-31
+	android:authorities
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:31:13-68
+	android:exported
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:32:13-37
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:30:13-67
+meta-data#androidx.work.WorkManagerInitializer
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:34:13-36:52
+	android:value
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:36:17-49
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:35:17-68
+service#androidx.work.impl.background.systemalarm.SystemAlarmService
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:39:9-45:35
+	android:enabled
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:42:13-72
+	android:exported
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:43:13-37
+	tools:ignore
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:44:13-60
+	tools:targetApi
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:45:13-32
+	android:directBootAware
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:41:13-44
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:40:13-88
+service#androidx.work.impl.background.systemjob.SystemJobService
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:46:9-52:35
+	android:enabled
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:49:13-70
+	android:exported
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:50:13-36
+	android:permission
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:51:13-69
+	tools:targetApi
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:52:13-32
+	android:directBootAware
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:48:13-44
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:47:13-84
+service#androidx.work.impl.foreground.SystemForegroundService
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:53:9-59:35
+	android:enabled
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:56:13-77
+	android:exported
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:57:13-37
+	tools:ignore
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:58:13-60
+	tools:targetApi
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:59:13-32
+	android:directBootAware
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:55:13-44
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:54:13-81
+receiver#androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:61:9-66:35
+	android:enabled
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:64:13-35
+	android:exported
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:65:13-37
+	tools:targetApi
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:66:13-32
+	android:directBootAware
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:63:13-44
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:62:13-88
+receiver#androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryChargingProxy
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:67:9-77:20
+	android:enabled
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:70:13-36
+	android:exported
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:71:13-37
+	tools:targetApi
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:72:13-32
+	android:directBootAware
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:69:13-44
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:68:13-106
+intent-filter#action:name:android.intent.action.ACTION_POWER_CONNECTED+action:name:android.intent.action.ACTION_POWER_DISCONNECTED
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:73:13-76:29
+action#android.intent.action.ACTION_POWER_CONNECTED
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:74:17-87
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:74:25-84
+action#android.intent.action.ACTION_POWER_DISCONNECTED
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:75:17-90
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:75:25-87
+receiver#androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryNotLowProxy
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:78:9-88:20
+	android:enabled
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:81:13-36
+	android:exported
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:82:13-37
+	tools:targetApi
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:83:13-32
+	android:directBootAware
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:80:13-44
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:79:13-104
+intent-filter#action:name:android.intent.action.BATTERY_LOW+action:name:android.intent.action.BATTERY_OKAY
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:84:13-87:29
+action#android.intent.action.BATTERY_OKAY
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:85:17-77
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:85:25-74
+action#android.intent.action.BATTERY_LOW
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:86:17-76
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:86:25-73
+receiver#androidx.work.impl.background.systemalarm.ConstraintProxy$StorageNotLowProxy
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:89:9-99:20
+	android:enabled
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:92:13-36
+	android:exported
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:93:13-37
+	tools:targetApi
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:94:13-32
+	android:directBootAware
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:91:13-44
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:90:13-104
+intent-filter#action:name:android.intent.action.DEVICE_STORAGE_LOW+action:name:android.intent.action.DEVICE_STORAGE_OK
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:95:13-98:29
+action#android.intent.action.DEVICE_STORAGE_LOW
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:96:17-83
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:96:25-80
+action#android.intent.action.DEVICE_STORAGE_OK
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:97:17-82
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:97:25-79
+receiver#androidx.work.impl.background.systemalarm.ConstraintProxy$NetworkStateProxy
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:100:9-109:20
+	android:enabled
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:103:13-36
+	android:exported
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:104:13-37
+	tools:targetApi
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:105:13-32
+	android:directBootAware
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:102:13-44
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:101:13-103
+intent-filter#action:name:android.net.conn.CONNECTIVITY_CHANGE
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:106:13-108:29
+action#android.net.conn.CONNECTIVITY_CHANGE
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:107:17-79
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:107:25-76
+receiver#androidx.work.impl.background.systemalarm.RescheduleReceiver
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:110:9-121:20
+	android:enabled
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:113:13-36
+	android:exported
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:114:13-37
+	tools:targetApi
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:115:13-32
+	android:directBootAware
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:112:13-44
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:111:13-88
+intent-filter#action:name:android.intent.action.BOOT_COMPLETED+action:name:android.intent.action.TIMEZONE_CHANGED+action:name:android.intent.action.TIME_SET
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:116:13-120:29
+action#android.intent.action.TIME_SET
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:118:17-73
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:118:25-70
+action#android.intent.action.TIMEZONE_CHANGED
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:119:17-81
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:119:25-78
+receiver#androidx.work.impl.background.systemalarm.ConstraintProxyUpdateReceiver
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:122:9-131:20
+	android:enabled
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:125:13-72
+	android:exported
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:126:13-37
+	tools:targetApi
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:127:13-32
+	android:directBootAware
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:124:13-44
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:123:13-99
+intent-filter#action:name:androidx.work.impl.background.systemalarm.UpdateProxies
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:128:13-130:29
+action#androidx.work.impl.background.systemalarm.UpdateProxies
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:129:17-98
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:129:25-95
+receiver#androidx.work.impl.diagnostics.DiagnosticsReceiver
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:132:9-142:20
+	android:enabled
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:135:13-35
+	android:exported
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:136:13-36
+	android:permission
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:137:13-57
+	tools:targetApi
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:138:13-32
+	android:directBootAware
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:134:13-44
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:133:13-78
+intent-filter#action:name:androidx.work.diagnostics.REQUEST_DIAGNOSTICS
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:139:13-141:29
+action#androidx.work.diagnostics.REQUEST_DIAGNOSTICS
+ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:140:17-88
+	android:name
+		ADDED from [androidx.work:work-runtime:2.8.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/f2d64d24d89a18b725337c01f688b086/transformed/work-runtime-2.8.1/AndroidManifest.xml:140:25-85
+service#androidx.room.MultiInstanceInvalidationService
+ADDED from [androidx.room:room-runtime:2.5.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/d7df729edb5a3a355bc99b439bc9b724/transformed/room-runtime-2.5.0/AndroidManifest.xml:24:9-28:63
+	android:exported
+		ADDED from [androidx.room:room-runtime:2.5.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/d7df729edb5a3a355bc99b439bc9b724/transformed/room-runtime-2.5.0/AndroidManifest.xml:27:13-37
+	tools:ignore
+		ADDED from [androidx.room:room-runtime:2.5.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/d7df729edb5a3a355bc99b439bc9b724/transformed/room-runtime-2.5.0/AndroidManifest.xml:28:13-60
+	android:directBootAware
+		ADDED from [androidx.room:room-runtime:2.5.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/d7df729edb5a3a355bc99b439bc9b724/transformed/room-runtime-2.5.0/AndroidManifest.xml:26:13-43
+	android:name
+		ADDED from [androidx.room:room-runtime:2.5.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/d7df729edb5a3a355bc99b439bc9b724/transformed/room-runtime-2.5.0/AndroidManifest.xml:25:13-74
+meta-data#androidx.emoji2.text.EmojiCompatInitializer
+ADDED from [androidx.emoji2:emoji2:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/10a56adcdc56614dbe3ccba6bd9800d9/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:29:13-31:52
+	android:value
+		ADDED from [androidx.emoji2:emoji2:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/10a56adcdc56614dbe3ccba6bd9800d9/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:31:17-49
+	android:name
+		ADDED from [androidx.emoji2:emoji2:1.2.0] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/10a56adcdc56614dbe3ccba6bd9800d9/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:30:17-75
+permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:22:5-24:47
+	android:protectionLevel
+		ADDED from [androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:24:9-44
+	android:name
+		ADDED from [androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:23:9-81
+permission#com.example.deviceadmin.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:22:5-24:47
+	android:protectionLevel
+		ADDED from [androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:24:9-44
+	android:name
+		ADDED from [androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:23:9-81
+uses-permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:26:5-97
+	android:name
+		ADDED from [androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:26:22-94
+uses-permission#com.example.deviceadmin.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:26:5-97
+	android:name
+		ADDED from [androidx.core:core:1.10.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/359894ac9e8a81f2780a80dcc2ed4afe/transformed/core-1.10.1/AndroidManifest.xml:26:22-94
+meta-data#androidx.lifecycle.ProcessLifecycleInitializer
+ADDED from [androidx.lifecycle:lifecycle-process:2.4.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/1565a616f9216895eb53d96e7e4113c1/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:31:13-33:52
+	android:value
+		ADDED from [androidx.lifecycle:lifecycle-process:2.4.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/1565a616f9216895eb53d96e7e4113c1/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:33:17-49
+	android:name
+		ADDED from [androidx.lifecycle:lifecycle-process:2.4.1] /Users/ygs/Library/Java/JavaVirtualMachines/jbr-17.0.12/Contents/Home/caches/8.10.2/transforms/1565a616f9216895eb53d96e7e4113c1/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:32:17-78

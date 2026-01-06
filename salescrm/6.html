@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Responsive Data List</title>
+    <style>
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      .filters-container {
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
+      }
+
+      .filter-item {
+        scroll-snap-align: start;
+      }
+    </style>
+  </head>
+
+  <body class="bg-gray-100 p-4">
+    <div class="max-w-screen-xl mx-auto">
+      <div class="mb-6 space-y-4">
+        <div class="flex flex-col gap-4">
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="Search by name or business name..."
+            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+          <div class="relative">
+            <div
+              class="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-gray-100 pointer-events-none"
+            ></div>
+            <div
+              class="filters-container flex gap-2 overflow-x-auto no-scrollbar p-2"
+            >
+              <select
+                id="statusFilter"
+                class="filter-item min-w-[160px] px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+              >
+                <option value="">All Status</option>
+                <option value="Paid Customer">Paid Customer</option>
+                <option value="On Trial">On Trial</option>
+                <option value="Free User">Free User</option>
+                <option value="Plan Expired">Plan Expired</option>
+                <option value="Trial Expired">Trial Expired</option>
+              </select>
+              <select
+                id="futureStatusFilter"
+                class="filter-item min-w-[160px] px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+              >
+                <option value="">All Future Status</option>
+                <option value="Don't Know">Don't Know</option>
+                <option value="Will Not Use">Will Not Use</option>
+                <option value="May Use">May Use</option>
+                <option value="Will Use">Will Use</option>
+                <option value="Continue Using">Continue Using</option>
+                <option value="May not Continue">May not Continue</option>
+                <option value="Irrelevant">Irrelevant</option>
+              </select>
+              <select
+                id="actionFilter"
+                class="filter-item min-w-[160px] px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+              >
+                <option value="">All Actions</option>
+                <option value="Follow Up">Follow Up</option>
+                <option value="Keep Connected">Keep Connected</option>
+                <option value="Don't Follow Up">Don't Follow Up</option>
+                <option value="Delete Account">Delete Account</option>
+                <option value="Unsubscribed">Unsubscribed</option>
+              </select>
+              <select
+                id="usageStatusFilter"
+                class="filter-item min-w-[160px] px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+              >
+                <option value="">All Usage Status</option>
+                <option value="Using">Using</option>
+                <option value="Not Started Using">Not Started Using</option>
+                <option value="Stop Using">Stop Using</option>
+                <option value="May Stop Using">May Stop Using</option>
+              </select>
+              <select
+                id="sortBy"
+                class="filter-item min-w-[160px] px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+              >
+                <option value="name_asc">Name (A-Z)</option>
+                <option value="name_desc">Name (Z-A)</option>
+                <option value="daily_orders_asc">
+                  Daily Orders (Low-High)
+                </option>
+                <option value="daily_orders_desc">
+                  Daily Orders (High-Low)
+                </option>
+                <option value="created_time_asc">Date (Oldest)</option>
+                <option value="created_time_desc">Date (Newest)</option>
+                <option value="id_asc">ID (Low-High)</option>
+                <option value="id_desc">ID (High-Low)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="dataList" class="space-y-4">
+        <!-- Data will be dynamically inserted here -->
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div
+      id="modalOverlay"
+      class="fixed inset-0 bg-gray-600 bg-opacity-50 opacity-0 pointer-events-none transition-opacity duration-300 z-50"
+    >
+      <div
+        id="modalContent"
+        class="fixed inset-x-0 bottom-0 sm:inset-auto sm:top-[10%] sm:left-1/2 sm:-translate-x-1/2 bg-white rounded-t-xl sm:rounded-xl h-[80vh] w-full sm:max-w-3xl overflow-hidden transform transition-all duration-300 translate-y-full sm:translate-y-0 sm:scale-95"
+      >
+        <!-- Modal content will be inserted here -->
+      </div>
+    </div>
+
+    <script>
+      const API_URL =
+        "https://backend123.tiffincrm.com/sales1/data.php?actiontype=get";
+      const dataList = document.getElementById("dataList");
+      const searchInput = document.getElementById("searchInput");
+      const statusFilter = document.getElementById("statusFilter");
+      const futureStatusFilter = document.getElementById("futureStatusFilter");
+      const actionFilter = document.getElementById("actionFilter");
+      const usageStatusFilter = document.getElementById("usageStatusFilter");
+      const sortBySelect = document.getElementById("sortBy");
+
+      let currentData = [];
+
+      // Function to fetch data
+      async function fetchData(url) {
+        try {
+          const response = await fetch(url);
+          const data = await response.json();
+          return data.success ? data.data : [];
+        } catch (error) {
+          console.error("Error fetching data:", error);
+          return [];
+        }
+      }
+
+      // Function to fetch individual prospect
+      async function fetchProspect(id) {
+        try {
+          const response = await fetch(`${API_URL}&id=${id}`);
+          const data = await response.json();
+          return data.success ? data.data[0] : null;
+        } catch (error) {
+          console.error("Error fetching prospect:", error);
+          return null;
+        }
+      }
+
+      // Function to render data list
+      function renderDataList(data) {
+        dataList.innerHTML = "";
+
+        if (data.length === 0) {
+          dataList.innerHTML =
+            '<div class="text-center text-gray-500">No results found</div>';
+          return;
+        }
+
+        data.forEach((item) => {
+          const hasUpcomingFollowUp =
+            item.next_follow_up_at &&
+            new Date(item.next_follow_up_at) > new Date();
+          const card = document.createElement("div");
+          card.className =
+            "bg-white shadow rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer select-none";
+          card.onclick = () => openModal(item.id);
+          card.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="text-lg font-medium text-gray-900">${item.name}</h3>
+              <p class="text-sm text-gray-500">${item.business_name}</p>
+              ${
+                item.note
+                  ? `<p class="mt-2 text-sm text-gray-600">${item.note}</p>`
+                  : ""
+              }
+            </div>
+            <span class="px-2 py-1 text-xs rounded-full ${getStatusColor(
+              item.status
+            )}">${item.status}</span>
+          </div>
+          <div class="mt-4 grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm text-gray-500">Location</p>
+              <p class="text-sm font-medium">${item.location || "N/A"}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">Daily Orders</p>
+              <p class="text-sm font-medium">${item.daily_orders || "0"}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">Next Follow-up</p>
+              <p class="text-sm font-medium ${
+                hasUpcomingFollowUp ? "text-blue-600 font-bold" : ""
+              }">${item.next_follow_up_at || "Not scheduled"}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">Action</p>
+              <p class="text-sm font-medium">${item.action || "N/A"}</p>
+            </div>
+          </div>
+          <div class="mt-4 flex gap-2">
+            <a href="tel:${item.phone}" 
+              class="text-green-600 hover:text-green-700" 
+              onclick="event.stopPropagation()">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+              </svg>
+            </a>
+             <boltAction type="file" filePath="index.html">            <a href="https://wa.me/${
+               item.phone
+             }" 
+              target="_blank" 
+              class="text-[#25D366] hover:text-[#128C7E]"
+              onclick="event.stopPropagation()">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+            </a>
+          </div>
+        `;
+          dataList.appendChild(card);
+        });
+      }
+
+      function getStatusColor(status) {
+        const colors = {
+          "Paid Customer": "bg-green-100 text-green-800",
+          "On Trial": "bg-blue-100 text-blue-800",
+          "Free User": "bg-yellow-100 text-yellow-800",
+          "Planning to Use": "bg-purple-100 text-purple-800",
+        };
+        return colors[status] || "bg-gray-100 text-gray-800";
+      }
+
+      // Filter and sort data
+      function filterAndSortData(data) {
+        let filtered = [...data];
+
+        const statusValue = statusFilter.value;
+        if (statusValue) {
+          filtered = filtered.filter((item) => item.status === statusValue);
+        }
+
+        const futureStatusValue = futureStatusFilter.value;
+        if (futureStatusValue) {
+          filtered = filtered.filter(
+            (item) => item.future_status === futureStatusValue
+          );
+        }
+
+        const actionValue = actionFilter.value;
+        if (actionValue) {
+          filtered = filtered.filter((item) => item.action === actionValue);
+        }
+
+        const usageStatusValue = usageStatusFilter.value;
+        if (usageStatusValue) {
+          filtered = filtered.filter(
+            (item) => item.his_usage === usageStatusValue
+          );
+        }
+
+        const [sortField, sortDirection] = sortBySelect.value.split("_");
+        filtered.sort((a, b) => {
+          if (sortField === "daily_orders") {
+            const aValue = parseInt(a.daily_orders) || 0;
+            const bValue = parseInt(b.daily_orders) || 0;
+            return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
+          }
+          if (sortField === "created_time") {
+            const aDate = new Date(a.created_time);
+            const bDate = new Date(b.created_time);
+            return sortDirection === "asc" ? aDate - bDate : bDate - aDate;
+          }
+          if (sortField === "id") {
+            return sortDirection === "asc" ? a.id - b.id : b.id - a.id;
+          }
+          return sortDirection === "asc"
+            ? a.name.localeCompare(b.name)
+            : b.name.localeCompare(a.name);
+        });
+
+        return filtered;
+      }
+
+      // Initial data fetch
+      async function init() {
+        currentData = await fetchData(API_URL);
+        renderDataList(filterAndSortData(currentData));
+      }
+
+      // Event listeners
+      searchInput.addEventListener("input", async (e) => {
+        const query = e.target.value.trim();
+
+        if (query === "") {
+          currentData = await fetchData(API_URL);
+        } else {
+          const searchUrl = `${API_URL}&where=${encodeURIComponent(query)}`;
+          currentData = await fetchData(searchUrl);
+        }
+
+        renderDataList(filterAndSortData(currentData));
+      });
+
+      [
+        statusFilter,
+        futureStatusFilter,
+        actionFilter,
+        usageStatusFilter,
+        sortBySelect,
+      ].forEach((filter) => {
+        filter.addEventListener("change", () => {
+          renderDataList(filterAndSortData(currentData));
+        });
+      });
+
+      init();
+    </script>
+    <script>
+      // Wait for DOM to be fully loaded
+      document.addEventListener("DOMContentLoaded", () => {
+        // Modal elements
+        const modalOverlay = document.getElementById("modalOverlay");
+        const modalContent = document.getElementById("modalContent");
+
+        // Function to show notification
+        function showNotification(message, isSuccess = true) {
+          const notification = document.createElement("div");
+          notification.className = `fixed top-4 right-4 p-4 rounded-lg text-white ${
+            isSuccess ? "bg-green-500" : "bg-red-500"
+          } transition-opacity duration-300 z-50`;
+          notification.textContent = message;
+          document.body.appendChild(notification);
+          setTimeout(() => {
+            notification.style.opacity = "0";
+            setTimeout(() => notification.remove(), 300);
+          }, 3000);
+        }
+
+        // Function to create editable field
+        function createEditableField(
+          label,
+          value,
+          onSave,
+          type = "text",
+          hideLabel = false
+        ) {
+          const field = document.createElement("div");
+          field.className = "relative";
+
+          const display = document.createElement("div");
+          display.className =
+            "cursor-pointer p-2 rounded hover:bg-gray-100 transition-colors";
+
+          display.innerHTML = `
+      ${
+        hideLabel
+          ? ""
+          : `<label class="block text-sm font-medium text-gray-700">${label}</label>`
+      }
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-gray-900">${value || "N/A"}</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+        </svg>
+      </div>
+    `;
+
+          display.addEventListener("click", async () => {
+            const newValue = prompt(label || "Enter new value:", value);
+            if (newValue !== null && newValue.trim() !== value) {
+              await onSave(newValue.trim());
+              display.querySelector("span").textContent =
+                newValue.trim() || "N/A";
+            }
+          });
+
+          field.appendChild(display);
+          return field;
+        }
+
+        // Function to create notes field with direct editing
+        function createNotesField(value, onSave) {
+          const field = document.createElement("div");
+          field.className = "space-y-2";
+
+          const textarea = document.createElement("textarea");
+          textarea.className =
+            "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[100px]";
+          textarea.placeholder = "Add notes...";
+          textarea.value = value || "";
+
+          const saveBtn = document.createElement("button");
+          saveBtn.className =
+            "mt-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 hidden";
+          saveBtn.textContent = "Save Changes";
+
+          let originalValue = value || "";
+
+          textarea.addEventListener("input", () => {
+            if (textarea.value.trim() !== originalValue) {
+              saveBtn.classList.remove("hidden");
+            } else {
+              saveBtn.classList.add("hidden");
+            }
+          });
+
+          saveBtn.addEventListener("click", async () => {
+            const newValue = textarea.value.trim();
+            if (newValue !== originalValue) {
+              await onSave(newValue);
+              originalValue = newValue;
+              saveBtn.classList.add("hidden");
+              showNotification("Notes updated successfully!");
+            }
+          });
+
+          field.appendChild(textarea);
+          field.appendChild(saveBtn);
+          return field;
+        }
+
+        // Function to update prospect
+        async function updateProspect(id, updates) {
+          try {
+            const queryParams = new URLSearchParams({
+              actiontype: "update",
+              id: id,
+              ...updates,
+            });
+
+            const response = await fetch(
+              `https://backend123.tiffincrm.com/sales1/data.php?${queryParams.toString()}`
+            );
+            const data = await response.json();
+
+            if (!data.success) {
+              throw new Error(data.message || "Update failed");
+            }
+
+            return true;
+          } catch (error) {
+            console.error("Error updating prospect:", error);
+            return false;
+          }
+        }
+
+        // Function to handle individual field update
+        async function handleFieldUpdate(id, key, value) {
+          if (!id || !key) {
+            showNotification("Invalid update parameters", false);
+            return;
+          }
+
+          const updates = { [key]: value };
+          const success = await updateProspect(id, updates);
+
+          if (success) {
+            showNotification("Updated successfully!");
+            // Refresh the list to show updated data
+            currentData = await fetchData(API_URL);
+            renderDataList(filterAndSortData(currentData));
+          } else {
+            showNotification("Update failed", false);
+          }
+        }
+
+        // Make handleFieldUpdate available globally
+        window.handleFieldUpdate = handleFieldUpdate;
+
+        // Function to create editable text with prompt
+        function createEditableText(text, label, onSave) {
+          const element = document.createElement("div");
+          element.className =
+            "cursor-pointer hover:bg-gray-100 rounded p-1 -m-1 group flex items-center gap-2";
+          element.innerHTML = `
+      <span>${text || "N/A"}</span>
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+      </svg>
+    `;
+
+          element.addEventListener("click", async () => {
+            const newValue = prompt(label, text);
+            if (newValue !== null && newValue.trim() !== text) {
+              await onSave(newValue.trim());
+              element.querySelector("span").textContent =
+                newValue.trim() || "N/A";
+            }
+          });
+
+          return element;
+        }
+
+        // Function to open modal
+        async function openModal(id) {
+          const prospect = await fetchProspect(id);
+          if (!prospect) return;
+
+          modalOverlay.classList.remove("pointer-events-none", "opacity-0");
+          modalContent.classList.remove("translate-y-full", "sm:scale-95");
+          modalContent.classList.add("sm:scale-100");
+
+          const modalContentHTML = `
+      <div class="flex flex-col h-full">
+        <!-- Header -->
+        <div class="flex-none sticky top-0 bg-white border-b p-4 z-20">
+          <div class="flex justify-between items-start">
+            <div class="flex-grow space-y-0" id="headerInfo">
+              <!-- Name and business name will be inserted here -->
+            </div>
+            <button id="closeModalBtn" class="text-gray-500 hover:text-gray-700 ml-10">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable Content -->
+        <div class="flex-grow overflow-y-auto">
+          <div class="p-4 space-y-4">
+           
+            <!-- Follow Up Section -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <h3 class="text-lg font-semibold mb-4">Follow Up Information</h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <select 
+                  id="action"
+                  class="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  onchange="handleFieldUpdate('${
+                    prospect.id
+                  }', 'action', this.value)"
+                >
+                  ${[
+                    "Follow Up",
+                    "Keep Connected",
+                    "Don't Follow up",
+                    "Delete Account",
+                    "Unsubscribed",
+                  ]
+                    .map(
+                      (option) =>
+                        `<option value="${option}" ${
+                          option === prospect.action ? "selected" : ""
+                        }>${option}</option>`
+                    )
+                    .join("")}
+                </select>
+                <input 
+                  type="datetime-local" 
+                  class="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  value="${
+                    prospect.next_follow_up_at
+                      ? prospect.next_follow_up_at.slice(0, 16)
+                      : ""
+                  }"
+                  onchange="handleFieldUpdate('${
+                    prospect.id
+                  }', 'next_follow_up_at', this.value)"
+                />
+              </div>
+            </div>
+            <!-- Notes Section -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <h3 class="text-lg font-semibold mb-4">Notes</h3>
+              <div id="notesField"></div>
+            </div>
+             <!-- Status Section -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <h3 class="text-lg font-semibold mb-4">Status Information</h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <select 
+                  id="status"
+                  class="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  onchange="handleFieldUpdate('${
+                    prospect.id
+                  }', 'status', this.value)"
+                >
+                  ${[
+                    "Paid Customer",
+                    "On Trial",
+                    "Free User",
+                    "Plan Expired",
+                    "Trial Expired",
+                  ]
+                    .map(
+                      (option) =>
+                        `<option value="${option}" ${
+                          option === prospect.status ? "selected" : ""
+                        }>${option}</option>`
+                    )
+                    .join("")}
+                </select>
+                <select 
+                  id="future_status"
+                  class="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  onchange="handleFieldUpdate('${
+                    prospect.id
+                  }', 'future_status', this.value)"
+                >
+                  ${[
+                    "Don't Know",
+                    "Will Not Use",
+                    "May Use",
+                    "Will Use",
+                    "Continue Using",
+                    "May not Continue",
+                    "Irrelevant",
+                  ]
+                    .map(
+                      (option) =>
+                        `<option value="${option}" ${
+                          option === prospect.future_status ? "selected" : ""
+                        }>${option}</option>`
+                    )
+                    .join("")}
+                </select>
+              </div>
+            </div>
+
+            <!-- Other Info Section -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <h3 class="text-lg font-semibold mb-4">Other Information</h3>
+              <div class="grid grid-cols-1 gap-4">
+                <select 
+                  id="his_usage"
+                  class="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  onchange="handleFieldUpdate('${
+                    prospect.id
+                  }', 'his_usage', this.value)"
+                >
+                  ${[
+                    "Using",
+                    "Not Started Using",
+                    "Stop Using",
+                    "May Stop Using",
+                  ]
+                    .map(
+                      (option) =>
+                        `<option value="${option}" ${
+                          option === prospect.his_usage ? "selected" : ""
+                        }>${option}</option>`
+                    )
+                    .join("")}
+                </select>
+                <div class="cursor-pointer p-2 rounded hover:bg-gray-100 transition-colors">
+      <label class="block text-sm font-medium text-gray-700">Actual Usage</label>
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-gray-900">${prospect.actual_usage || "N/A"}</span>
+      </div>
+    </div>
+                <div id="dailyOrdersField" class="p-2"></div>
+              </div>
+            </div>
+
+            <!-- Basic Info Section -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <h3 class="text-lg font-semibold mb-4">Basic Information</h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Phone</label>
+                  <p class="text-gray-900">${prospect.phone || "N/A"}</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Email</label>
+                  <p class="text-gray-900">${prospect.email || "N/A"}</p>
+                </div>
+                <div id="cityField"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex-none sticky bottom-0 bg-white border-t p-4 z-20">
+          <div class="flex gap-4 overflow-x-auto no-scrollbar">
+            <a href="tel:${prospect.phone}" 
+              class="flex-shrink-0 flex items-center justify-center gap-2 bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              </svg>
+              Call
+            </a>
+            <a href="https://wa.me/${prospect.phone}" target="_blank"
+              class="flex-shrink-0 flex items-center justify-center gap-2 bg-[#25D366] text-white px-6 py-2 rounded-lg hover:bg-[#128C7E]">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.1.824zm-3.423-14.416c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm.029 18.88c-1.161 0-2.305-.292-3.318-.844l-3.677.964.984-3.595c-.607-1.052-.927-2.246-.926-3.468.001-3.825 3.113-6.937 6.937-6.937 1.856.001 3.598.723 4.907 2.034 1.31 1.311 2.031 3.054 2.03 4.908-.001 3.825-3.113 6.938-6.937 6.938z"/>
+              </svg>
+              WhatsApp
+            </a>
+            <a href="sms:${prospect.phone}" 
+              class="flex-shrink-0 flex items-center justify-center gap-2 bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              Message
+            </a>
+            <a href="https://backend123.tiffincrm.com/tools/activities.php?vendor_id=${
+              prospect.id
+            }" 
+              target="_blank"
+              class="flex-shrink-0 flex items-center justify-center gap-2 bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Activity
+            </a>
+          </div>
+        </div>
+      </div>
+    `;
+
+          modalContent.innerHTML = modalContentHTML;
+
+          // Add editable name and business name
+          const headerInfo = document.getElementById("headerInfo");
+          const nameElement = createEditableText(
+            prospect.name,
+            "Enter name:",
+            (value) => handleFieldUpdate(prospect.id, "name", value)
+          );
+          const businessElement = createEditableText(
+            prospect.business_name,
+            "Enter business name:",
+            (value) => handleFieldUpdate(prospect.id, "business_name", value)
+          );
+          nameElement.className += " text-xl font-bold";
+          businessElement.className += " text-gray-600";
+          headerInfo.appendChild(nameElement);
+          headerInfo.appendChild(businessElement);
+
+          // Add editable city field
+          const cityField = document.getElementById("cityField");
+          const cityElement = createEditableText(
+            prospect.location,
+            "Enter city:",
+            (value) => handleFieldUpdate(prospect.id, "location", value)
+          );
+          cityField.innerHTML =
+            '<label class="block text-sm font-medium text-gray-700">City</label>';
+          cityField.appendChild(cityElement);
+
+          // Add editable daily orders field
+          const dailyOrdersField = document.getElementById("dailyOrdersField");
+          const dailyOrdersElement = createEditableText(
+            prospect.daily_orders,
+            "Enter daily orders:",
+            (value) => handleFieldUpdate(prospect.id, "daily_orders", value)
+          );
+          dailyOrdersField.innerHTML =
+            '<label class="block text-sm font-medium text-gray-700">Daily Orders</label>';
+          dailyOrdersField.appendChild(dailyOrdersElement);
+
+          // Add notes field separately to maintain its functionality
+          const notesField = document.getElementById("notesField");
+          notesField.appendChild(
+            createNotesField(prospect.note, (value) =>
+              handleFieldUpdate(prospect.id, "note", value)
+            )
+          );
+
+          // Reattach close button event listener
+          document
+            .getElementById("closeModalBtn")
+            .addEventListener("click", closeModal);
+        }
+
+        // Make openModal available globally
+        window.openModal = openModal;
+
+        // Function to close modal
+        function closeModal() {
+          modalContent.classList.add("translate-y-full", "sm:scale-95");
+          modalContent.classList.remove("sm:scale-100");
+          modalOverlay.classList.add("opacity-0", "pointer-events-none");
+        }
+
+        // Event listeners
+        modalOverlay.addEventListener("click", (e) => {
+          if (e.target === modalOverlay) {
+            closeModal();
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

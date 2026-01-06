@@ -1,0 +1,20 @@
+/* .brand {
+  display: none !important;
+}
+.area {
+  padding: var(--small-padding);
+  padding-top: 30px;
+}
+.label,
+.control {
+  z-index: 99;
+}
+.header-container {
+  z-index: 9999999999;
+}
+
+@media screen and (max-width: 768px) {
+  .content {
+    padding: 0;
+  }
+} */

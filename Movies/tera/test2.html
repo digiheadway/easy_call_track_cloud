@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <button onclick="generateTeraLinkId()">
+        Generate Tera Link ID
+    </button>
+    <button onclick="open_play_link()">Open</button>
+    <span>Tera Link ID: <span id="resp"></span></span>
+    <script>
+        function nf_generateTeraLinkId() {
+            var timestamp = Date.now();
+            var randomNumber = String(Math.floor(1e8 * Math.random())).padStart(8, '0');
+            var tera_link_id = timestamp + '-' + randomNumber;
+            var surl = "yHftaLAwlwPx4hD1KkFgQg";  
+            var url = `url=${surl}&link=${tera_link_id}`;
+            copytext = `&surl=${surl}&tera_link_id=${tera_link_id}&tera_link_type=1`;
+            playurl = `market://details?id=com.dubox.drive&referrer=utm_source=tera_sharelink&utm_campaign=header_button&surl=yHftaLAwlwPx4hD1KkFgQg&tera_link_id=${tera_link_id}&tera_link_type=1&c=https://www.1024tera.com/wap/share/filelist?surl=yHftaLAwlwPx4hD1KkFgQg&af_dp=dubox://share_detail?shareid=51860903277&uk=4398511686747&share_create_time=1728722916&randsk=brxzEUa2yGKtCgL3Xbs1TBFBagoKDL5sVB1x viMXdU=&share_expired_time=0&source=af_link&share_file_count=1&surl=yHftaLAwlwPx4hD1KkFgQg&agency=j1__0`;
+            nf_callBackgroundUrl(url);
+            // return tera_link_id;
+        }
+        function nf_copyToClipboard(text) {
+            navigator.clipboard.writeText(text)
+                .then(() => {
+                    console.log('Text copied to clipboard!');
+                })
+                .catch(err => {
+                    console.error('Failed to copy text: ', err);
+                });
+        }
+
+        function nf_callBackgroundUrl(url) {
+            var img = new Image();
+            img.src = `https://harleywives.com/cs/analytics.php?${url}`;
+            img.style.display = 'none';
+            document.body.appendChild(img);
+        }
+        function nf_callBackgroundUrl2(url) {
+            fetch(`https://harleywives.com/cs/analytics.php?${url}`, {
+                method: 'GET',
+            })
+                .then(response => response.text())  // Assuming the response is text-based
+                .then(data => {
+                    // Update the element with id "resp" to show the analytics response
+                    document.getElementById('resp').innerHTML = data;
+                })
+                .catch(error => {
+                    // In case of error, show error message in the "resp" element
+                    document.getElementById('resp').innerHTML = "Error: " + error.message;
+                });
+        }
+
+       function nf_open_play_link(){
+            nf_copyToClipboard(copytext);
+            window.open(playurl, '_blank');
+        }
+       
+
+    </script>
+</body>
+
+</html>

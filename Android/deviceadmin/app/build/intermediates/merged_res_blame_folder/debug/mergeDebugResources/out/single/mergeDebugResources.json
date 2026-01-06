@@ -1,0 +1,74 @@
+[
+    {
+        "merged": "com.example.deviceadmin.app-debug-4:/drawable_ic_download_folder.xml.flat",
+        "source": "com.example.deviceadmin.app-main-6:/drawable/ic_download_folder.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-debug-4:/layout_dialog_pin_input.xml.flat",
+        "source": "com.example.deviceadmin.app-main-6:/layout/dialog_pin_input.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-debug-4:/drawable_permission_badge_granted.xml.flat",
+        "source": "com.example.deviceadmin.app-main-6:/drawable/permission_badge_granted.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-debug-4:/drawable_edit_button_background.xml.flat",
+        "source": "com.example.deviceadmin.app-main-6:/drawable/edit_button_background.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-debug-4:/drawable_checkbox_background.xml.flat",
+        "source": "com.example.deviceadmin.app-main-6:/drawable/checkbox_background.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-debug-4:/layout_activity_lock.xml.flat",
+        "source": "com.example.deviceadmin.app-main-6:/layout/activity_lock.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-debug-4:/xml_accessibility_service_config.xml.flat",
+        "source": "com.example.deviceadmin.app-main-6:/xml/accessibility_service_config.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-debug-4:/xml_device_admin_rules.xml.flat",
+        "source": "com.example.deviceadmin.app-main-6:/xml/device_admin_rules.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-debug-4:/drawable_status_indicator_green.xml.flat",
+        "source": "com.example.deviceadmin.app-main-6:/drawable/status_indicator_green.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-debug-4:/layout_activity_main.xml.flat",
+        "source": "com.example.deviceadmin.app-main-6:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-debug-4:/drawable_ic_settings.xml.flat",
+        "source": "com.example.deviceadmin.app-main-6:/drawable/ic_settings.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-debug-4:/drawable_ic_launcher.xml.flat",
+        "source": "com.example.deviceadmin.app-main-6:/drawable/ic_launcher.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-debug-4:/drawable_ic_check_circle.xml.flat",
+        "source": "com.example.deviceadmin.app-main-6:/drawable/ic_check_circle.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-debug-4:/xml_data_extraction_rules.xml.flat",
+        "source": "com.example.deviceadmin.app-main-6:/xml/data_extraction_rules.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-debug-4:/drawable_status_indicator_red.xml.flat",
+        "source": "com.example.deviceadmin.app-main-6:/drawable/status_indicator_red.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-debug-4:/drawable_ic_edit.xml.flat",
+        "source": "com.example.deviceadmin.app-main-6:/drawable/ic_edit.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-debug-4:/drawable_permission_badge_pending.xml.flat",
+        "source": "com.example.deviceadmin.app-main-6:/drawable/permission_badge_pending.xml"
+    },
+    {
+        "merged": "com.example.deviceadmin.app-debug-4:/xml_backup_rules.xml.flat",
+        "source": "com.example.deviceadmin.app-main-6:/xml/backup_rules.xml"
+    }
+]

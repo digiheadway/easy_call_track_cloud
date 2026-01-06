@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dismissable Snackbar</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #f4f4f4;
+      }
+
+      button {
+        padding: 12px 24px;
+        margin: 10px;
+        cursor: pointer;
+        border: none;
+        border-radius: 5px;
+        background-color: #007bff;
+        color: white;
+        font-size: 16px;
+        transition: background-color 0.3s ease;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      #snackbar-container {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .snackbar {
+        min-width: 300px;
+        max-width: 100%;
+        margin: 5px 0;
+        padding: 16px;
+        background-color: #323232;
+        color: white;
+        text-align: center;
+        border-radius: 8px;
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+        position: relative;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        animation: fadeInUp 0.5s ease-out, fadeOut 0.5s ease-out 4.5s;
+        overflow: hidden;
+      }
+
+      .snackbar .message {
+        flex: 1;
+        padding-right: 10px;
+      }
+
+      .snackbar .close {
+        margin-left: 20px;
+        cursor: pointer;
+        font-size: 20px;
+        font-weight: bold;
+      }
+
+      .snackbar .progress {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 4px;
+        background-color: #4caf50;
+        border-radius: 4px 4px 0 0;
+        width: 100%;
+        transition: width linear;
+      }
+
+      .snackbar.success {
+        background-color: #4caf50;
+      }
+      .snackbar.warning {
+        background-color: #ff9800;
+      }
+      .snackbar.error {
+        background-color: #f44336;
+      }
+
+      @media (max-width: 500px) {
+        .snackbar {
+          min-width: 90%;
+          padding: 12px;
+          border-radius: 5px;
+        }
+
+        button {
+          padding: 10px 20px;
+          font-size: 14px;
+        }
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes fadeOut {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <button onclick="showSnackbar('success', 'This is a success message!')">
+      Show Success Snackbar
+    </button>
+    <button onclick="showSnackbar('warning', 'This is a warning message!')">
+      Show Warning Snackbar
+    </button>
+    <button onclick="showSnackbar('error', 'This is an error message!')">
+      Show Error Snackbar
+    </button>
+
+    <div id="snackbar-container"></div>
+
+    <script>
+      function showSnackbar(type, message, duration = 5000) {
+        const snackbarContainer = document.getElementById("snackbar-container");
+
+        const snackbar = document.createElement("div");
+        snackbar.className = `snackbar ${type}`;
+
+        const messageDiv = document.createElement("div");
+        messageDiv.className = "message";
+        messageDiv.textContent = message;
+
+        const closeButton = document.createElement("div");
+        closeButton.className = "close";
+        closeButton.innerHTML = "&times;";
+        closeButton.onclick = () => {
+          clearInterval(interval);
+          snackbar.remove();
+        };
+
+        const progressBar = document.createElement("div");
+        progressBar.className = "progress";
+
+        snackbar.appendChild(messageDiv);
+        snackbar.appendChild(closeButton);
+        snackbar.appendChild(progressBar);
+
+        snackbarContainer.appendChild(snackbar);
+
+        let startTime = Date.now();
+
+        const interval = setInterval(() => {
+          const elapsedTime = Date.now() - startTime;
+          const progress =
+            (Math.max(0, duration - elapsedTime) / duration) * 100;
+          progressBar.style.width = `${progress}%`;
+
+          if (elapsedTime >= duration) {
+            clearInterval(interval);
+            snackbar.style.opacity = 0;
+            setTimeout(() => snackbar.remove(), 500);
+          }
+        }, 100);
+
+        setTimeout(() => {
+          clearInterval(interval);
+          snackbar.style.opacity = 0;
+          setTimeout(() => snackbar.remove(), 500);
+        }, duration);
+      }
+    </script>
+  </body>
+</html>

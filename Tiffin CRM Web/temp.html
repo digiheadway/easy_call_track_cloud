@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Validation Example</title>
+    <style>
+        .error_message {
+            color: red;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <form id="signup_form">
+        <div class="input_field_container">
+            <label for="name">Full Name</label>
+            <input type="text" name="name" id="name" placeholder="Enter Name Here">
+            <small id="name_error" class="error_message"></small>
+        </div>
+        <div class="input_field_container">
+            <label for="phone">Phone Number</label>
+            <input type="number" name="phone" id="phone" placeholder="Enter Your Phone Number here">
+            <span class="input_desc">Without Country Code</span>
+            <small id="phone_error" class="error_message"></small>
+        </div>
+        <div class="input_field_container">
+            <label for="zone">Select Zone/Area</label>
+            <select name="zone" id="zone">
+                <option value="">Select Area</option>
+                <option value="Area 1">Area 1</option>
+                <option value="Area 2">Area 2</option>
+            </select>
+            <small id="zone_error" class="error_message"></small>
+        </div>
+        <div class="input_field_container">
+            <label for="location">Delivery Location</label>
+            <input type="hidden" name="location" id="location" placeholder="Latitude,Longitude">
+            <button type="button" class="get_location_btn r-flex ali-c jut-c gap-1" id="get_location_btn"
+                onclick="get_user_location()">Get Current Location</button>
+            <span class="input_desc">You can enter it manually as well</span>
+            <small id="location_error" class="error_message"></small>
+        </div>
+        <div class="input_field_container">
+            <label for="address">Address</label>
+            <input type="text" name="address" id="address" placeholder="Enter your address">
+            <small id="address_error" class="error_message"></small>
+        </div>
+        <div class="input_field_container">
+            <label for="diet_pref">Dietary Preference</label>
+            <br>
+            <div class="r-flex ali-c gap-2">
+                <div class="r-flex ali-c jut-c gap-1">
+                    <input type="radio" id="veg" name="diet_pref" value="Vegetarian">
+                    <label for="veg">Vegetarian</label>
+                </div>
+                <div class="r-flex ali-c jut-c gap-1">
+                    <input type="radio" id="non_veg" name="diet_pref" value="Non-Vegetarian">
+                    <label for="non_veg">Non-Veg</label>
+                </div>
+            </div>
+            <small id="diet_pref_error" class="error_message"></small>
+        </div>
+        <div class="input_field_container">
+            <button type="submit" class="submit_btn r-flex ali-c jut-c gap-1">Signup Now</button>
+        </div>
+    </form>
+
+    <script>
+        document.getElementById('signup_form').addEventListener('submit', function (event) {
+            event.preventDefault(); // Prevent form submission to allow validation
+            let isValid = true;
+
+            // Full Name Validation
+            const name = document.getElementById('name').value;
+            if (name.trim() === "") {
+                document.getElementById('name_error').innerText = "Full Name is required.";
+                isValid = false;
+            } else {
+                document.getElementById('name_error').innerText = "";
+            }
+
+            // Phone Number Validation
+            const phone = document.getElementById('phone').value;
+            if (phone.trim() === "" || phone.length !== 10) {
+                document.getElementById('phone_error').innerText = "Valid 10-digit phone number is required.";
+                isValid = false;
+            } else {
+                document.getElementById('phone_error').innerText = "";
+            }
+
+            // Zone/Area Validation
+            const zone = document.getElementById('zone').value;
+            if (zone === "") {
+                document.getElementById('zone_error').innerText = "Please select a zone/area.";
+                isValid = false;
+            } else {
+                document.getElementById('zone_error').innerText = "";
+            }
+
+            // Location Validation
+            const location = document.getElementById('location').value;
+            if (location.trim() === "") {
+                document.getElementById('location_error').innerText = "Delivery location is required.";
+                isValid = false;
+            } else {
+                document.getElementById('location_error').innerText = "";
+            }
+
+            // Address Validation
+            const address = document.getElementById('address').value;
+            if (address.trim() === "") {
+                document.getElementById('address_error').innerText = "Address is required.";
+                isValid = false;
+            } else {
+                document.getElementById('address_error').innerText = "";
+            }
+
+            // Dietary Preference Validation
+            const dietPref = document.querySelector('input[name="diet_pref"]:checked');
+            if (!dietPref) {
+                document.getElementById('diet_pref_error').innerText = "Please select a dietary preference.";
+                isValid = false;
+            } else {
+                document.getElementById('diet_pref_error').innerText = "";
+            }
+
+            if (isValid) {
+                // If form is valid, log it and you can proceed with submission
+                alert("Form is valid! Submitting...");
+            } else {
+                console.log("Form is invalid. Correct the errors above.");
+            }
+        });
+    </script>
+
+</body>
+
+</html>

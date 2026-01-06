@@ -1,0 +1,18 @@
+[
+    {
+        "merged": "com.deviceadmin.app-mergeDebugResources-40:/layout/item_permission_row.xml",
+        "source": "com.deviceadmin.app-main-43:/layout/item_permission_row.xml"
+    },
+    {
+        "merged": "com.deviceadmin.app-mergeDebugResources-40:/layout/activity_setup.xml",
+        "source": "com.deviceadmin.app-main-43:/layout/activity_setup.xml"
+    },
+    {
+        "merged": "com.deviceadmin.app-mergeDebugResources-40:/layout/dialog_pin_input.xml",
+        "source": "com.deviceadmin.app-main-43:/layout/dialog_pin_input.xml"
+    },
+    {
+        "merged": "com.deviceadmin.app-mergeDebugResources-40:/layout/activity_lock_screen.xml",
+        "source": "com.deviceadmin.app-main-43:/layout/activity_lock_screen.xml"
+    }
+]

@@ -1,0 +1,1 @@
+fix: prevent unintended user logout when offline by distinguishing network and authentication errors in API and auth context.

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Responsive Data List</title>
+</head>
+<body class="bg-gray-100 p-4">
+  <div class="max-w-screen-md mx-auto">
+    <div class="mb-4 flex items-center gap-2">
+      <input 
+        id="searchInput"
+        type="text" 
+        placeholder="Search by name or business name..." 
+        class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+
+    </div>
+
+    <div id="dataList" class="space-y-4">
+      <!-- Data will be dynamically inserted here -->
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "https://backend123.tiffincrm.com/sales1/data.php?action=get";
+    const dataList = document.getElementById("dataList");
+    const searchInput = document.getElementById("searchInput");
+
+    // Function to fetch data
+    async function fetchData(url) {
+      const response = await fetch(url);
+      const data = await response.json();
+      return data.success ? data.data : [];
+    }
+
+    // Function to render data list
+    function renderDataList(data) {
+      dataList.innerHTML = "";
+
+      if (data.length === 0) {
+        dataList.innerHTML = '<div class="text-center text-gray-500">No results found</div>';
+        return;
+      }
+
+      data.forEach(item => {
+        const card = document.createElement("div");
+        card.className = "bg-white shadow rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer";
+        card.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div>
+                <h3 class="text-lg font-medium text-gray-900">${item.name}</h3>
+                <p class="text-sm text-gray-500">${item.business_name}</p>
+            </div><span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">${item.status}</span>
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-4">
+            <div>
+                <p class="text-sm text-gray-500">Location</p>
+                <p class="text-sm font-medium">${item.location}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Daily Orders</p>
+                <p class="text-sm font-medium">${item.daily_orders}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Next Follow-up</p>
+                <p class="text-sm font-medium">Not scheduled</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Action</p>
+                <p class="text-sm font-medium">${item.action}</p>
+            </div>
+        </div>
+        `;
+        dataList.appendChild(card);
+      });
+    }
+
+    // Initial data fetch
+    async function init() {
+      const data = await fetchData(API_URL);
+      renderDataList(data);
+    }
+
+    // Search functionality
+    searchInput.addEventListener("input", async (e) => {
+      const query = e.target.value.trim();
+
+      if (query === "") {
+        init();
+        return;
+      }
+
+      const searchUrl = `${API_URL}&where=${encodeURIComponent(query)}`;
+      const filteredData = await fetchData(searchUrl);
+      renderDataList(filteredData);
+    });
+
+    init();
+  </script>
+</body>
+</html>

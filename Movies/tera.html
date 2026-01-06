@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Construct Decoded URL</title>
+    <span>&surl=yHftaLAwlwPx4hD1KkFgQg&tera_link_id=1728724299877-30972322&tera_link_type=1</span>
+    <span>&surl=yHftaLAwlwPx4hD1KkFgQg&tera_link_id=1728724304366-13486242&tera_link_type=1</span>
+    <span>&surl=yHftaLAwlwPx4hD1KkFgQg&tera_link_id=1728724304366-13486242&tera_link_type=1</span>
+    <span>&surl=yHftaLAwlwPx4hD1KkFgQg&tera_link_id=1728724423463-86720728&tera_link_type=1</span>
+    <span>&surl=yHftaLAwlwPx4hD1KkFgQg&tera_link_id=1728724446047-24033180&tera_link_type=1</span>
+    <span>&surl=yHftaLAwlwPx4hD1KkFgQg&tera_link_id=1728724600963-75346073&tera_link_type=1</span>
+    <br>
+    <span>&surl=yHftaLAwlwPx4hD1KkFgQg&tera_link_id=1728748067611-55329759&tera_link_type=1</span>
+    <span>&surl=yHftaLAwlwPx4hD1KkFgQg&tera_link_id=1728745838000-67817738&tera_link_type=1</span>
+    market://details?id=com.dubox.drive&referrer=utm_source%253Dtera_sharelink%2526utm_campaign%253Dheader_button%2526surl%253DyHftaLAwlwPx4hD1KkFgQg%2526tera_link_id%253D1728745838000-67817738%2526tera_link_type%253D1%2526c%253Dhttps%25253A%25252F%25252Fwww.1024tera.com%25252Fwap%25252Fshare%25252Ffilelist%25253Fsurl%25253DyHftaLAwlwPx4hD1KkFgQg%2526af_dp%253Ddubox%25253A%25252F%25252Fshare_detail%25253Fshareid%25253D51860903277%252526uk%25253D4398511686747%252526share_create_time%25253D1728722916%252526randsk%25253DbrxzEUa2yGKtCgL3Xbs1TBFBagoKDL5sVB1x%2525252BviMXdU%2525253D%252526share_expired_time%25253D0%252526source%25253Daf_link%252526share_file_count%25253D1%252526surl%25253DyHftaLAwlwPx4hD1KkFgQg%2526agency%253Dj1__0
+</head>
+
+<body>
+
+    <a id="download-link" href="#">Download</a>
+
+    <script>
+        // Define each parameter in its URL-decoded form
+        const baseUrl = "market://details?id=com.dubox.drive";
+
+        // Decoded referrer parameters
+        const utmSource = "utm_source=tera_sharelink";
+        const utmCampaign = "utm_campaign=header_button";
+        const surl = "surl=yHftaLAwlwPx4hD1KkFgQg";
+        const teraLinkId = "tera_link_id=1728723422729-19643072";
+        const teraLinkType = "tera_link_type=1";
+
+        // Decoded c parameter (actual URL without encoding)
+        const cParam = "c=https://www.1024tera.com/wap/share/filelist?surl=yHftaLAwlwPx4hD1KkFgQg";
+
+        // Decoded af_dp (App deep link without encoding)
+        const af_dp = "af_dp=dubox://share_detail?shareid=51860903277&uk=4398511686747";
+
+        // Decoded share parameters
+        const shareCreateTime = "share_create_time=1728722916";
+        const randsk = "randsk=brxzEUa2yGKtCgL3Xbs1TBFBagoKDL5sVB1x+viMXdU=";
+
+        // Decoded share expiration and file details
+        const shareExpiredTime = "share_expired_time=0";
+        const source = "source=af_link";
+        const shareFileCount = "share_file_count=1";
+        const finalSurl = "surl=yHftaLAwlwPx4hD1KkFgQg";
+
+        // Decoded agency parameter
+        const agency = "agency=j1__0";
+
+        // Combine all the variables to form the final URL
+        const fullUrl = `${baseUrl}&referrer=${utmSource}&${utmCampaign}&${surl}&${teraLinkId}&${teraLinkType}&${cParam}&${af_dp}&${shareCreateTime}&${randsk}&${shareExpiredTime}&${source}&${shareFileCount}&${finalSurl}&${agency}`;
+
+        // Insert the URL into the HTML DOM
+        document.getElementById("download-link").setAttribute("href", fullUrl);
+        document.getElementById("download-link").innerText = "Click here to download from Dubox";
+
+        // Optionally log the full URL for debugging purposes
+        console.log(fullUrl);
+    </script>
+
+</body>
+
+</html>

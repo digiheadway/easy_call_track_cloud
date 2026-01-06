@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Adsterra Stats</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
+    />
+    <style>
+      body {
+        padding: 20px;
+      }
+      .table-container {
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="text-center">Adsterra Stats</h1>
+      <div class="row">
+        <div class="col-md-4">
+          <label for="start-date" class="form-label">Start Date</label>
+          <input type="date" id="start-date" class="form-control" />
+        </div>
+        <div class="col-md-4">
+          <label for="finish-date" class="form-label">Finish Date</label>
+          <input type="date" id="finish-date" class="form-control" />
+        </div>
+        <div class="col-md-4">
+          <label for="group-by" class="form-label">Group By</label>
+          <select id="group-by" class="form-select">
+            <option value="date" selected>Date</option>
+            <option value="placement">Placement</option>
+          </select>
+        </div>
+      </div>
+      <div class="text-center mt-3">
+        <button id="fetch-data" class="btn btn-primary">Fetch Data</button>
+      </div>
+      <div class="table-container">
+        <table class="table table-bordered table-hover">
+          <thead>
+            <tr>
+              <th>Placement</th>
+              <th>Impression</th>
+              <th>Clicks</th>
+              <th>CTR (%)</th>
+              <th>CPM</th>
+              <th>Revenue ($)</th>
+            </tr>
+          </thead>
+          <tbody id="data-table-body">
+            <!-- Data rows will be inserted here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+      $(document).ready(function () {
+        // Set the default date range to the last 7 days
+        const today = new Date();
+        const endDate = today.toISOString().split("T")[0];
+        const startDate = new Date(today.setDate(today.getDate() - 6))
+          .toISOString()
+          .split("T")[0];
+
+        $("#start-date").val(startDate);
+        $("#finish-date").val(endDate);
+
+        function fetchData() {
+          const startDate = $("#start-date").val();
+          const finishDate = $("#finish-date").val();
+          const groupBy = $("#group-by").val();
+
+          const apiKey = "3f3408268ab64537ef5a3b30a1d60bc5"; // Replace with your actual API key
+          const url = `https://api3.adsterratools.com/publisher/stats.json?start_date=${startDate}&finish_date=${finishDate}&group_by=${groupBy}&placement=23967337`;
+
+          $.ajax({
+            url: url,
+            type: "GET",
+            headers: {
+              Accept: "application/json",
+              "X-API-Key": apiKey,
+            },
+            success: function (response) {
+              const items = response.items;
+              let tableRows = "";
+
+              items.forEach((item) => {
+                tableRows += `
+                        <tr>
+                            <td>${item.date || item.placement_sub_id}</td>
+                            <td>${item.impression}</td>
+                            <td>${item.clicks}</td>
+                            <td>${item.ctr}</td>
+                            <td>${item.cpm}</td>
+                            <td>${item.revenue}</td>
+                        </tr>
+                    `;
+              });
+
+              $("#data-table-body").html(tableRows);
+            },
+            error: function () {
+              alert("Failed to fetch data.");
+            },
+          });
+        }
+
+        // Fetch data initially with the last 7 days
+        fetchData();
+
+        // Fetch data on button click
+        $("#fetch-data").on("click", function () {
+          fetchData();
+        });
+      });
+    </script>
+  </body>
+</html>

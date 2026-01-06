@@ -1,0 +1,188 @@
+<?php
+$url = "https://backend123.tiffincrm.com/api.php?a"; // Replace with the URL you want to check
+
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HEADER, true);
+curl_setopt($ch, CURLOPT_NOBODY, true); // Exclude body, only get the headers
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true); // Verify the SSL certificate
+curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2); // Verify the host name
+
+$response = curl_exec($ch);
+
+if ($response === false) {
+    // Get the error code and message
+    $error = curl_error($ch);
+    $errorCode = curl_errno($ch);
+    
+    $Server_level_ssl = "SSL check failed. cURL error: $error (Error Code: $errorCode)";
+} else {
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    if ($httpCode == 200) {
+        $Server_level_ssl =  "SSL is properly connected.";
+    } else {
+        $Server_level_ssl =  "SSL check passed, but server returned HTTP status code $httpCode.";
+    }
+}
+
+curl_close($ch);
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Diagnose Page</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f4f8;
+        color: #333;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #fff;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+      }
+      h1 {
+        text-align: center;
+        color: #4caf50;
+      }
+      .info {
+        margin-bottom: 20px;
+      }
+      .info span {
+        font-weight: 400;
+      }
+      .info div {
+        margin-bottom: 10px;
+      }
+      .ssl-warning {
+        color: red;
+        font-weight: bold;
+      }
+      .traits {
+        font-weight: bold !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>User Information</h1>
+      <div class="info">
+        <div>
+          <span class="traits">User ID:</span> <span id="userId"></span>
+        </div>
+        <div>
+          <span class="traits">IP Address:</span> <span id="ipAddress"></span>
+        </div>
+        <div>
+          <span class="traits">Browser:</span> <span id="browserInfo"></span>
+        </div>
+        <div>
+          <span class="traits">Operating System:</span>
+          <span id="osInfo"></span>
+        </div>
+        <div>
+          <span class="traits">Timezone:</span> <span id="timezone"></span>
+        </div>
+        <div>
+          <span class="traits">User Agent:</span> <span id="userAgent"></span>
+        </div>
+
+        <div>
+          <span class="traits">Using SSL: </span> <span id="sslStatus"></span>
+        </div>
+        <div>
+          <span class="traits">SSL Status: </span>
+          <span id="sslStatus2"><?php echo $Server_level_ssl; ?></span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Function to get user IP using a third-party service
+      async function getUserIP() {
+        let response = await fetch("https://api.ipify.org?format=json");
+        let data = await response.json();
+        document.getElementById("ipAddress").textContent = data.ip;
+      }
+
+      // Function to get browser and OS info
+      function getUserAgentInfo() {
+        var userAgent = navigator.userAgent;
+        var browser = "Unknown";
+        var os = "Unknown";
+
+        // Simple checks for browser
+        if (userAgent.indexOf("Firefox") > -1) browser = "Firefox";
+        else if (userAgent.indexOf("Chrome") > -1) browser = "Chrome";
+        else if (userAgent.indexOf("Safari") > -1) browser = "Safari";
+        else if (
+          userAgent.indexOf("MSIE") > -1 ||
+          userAgent.indexOf("Trident") > -1
+        )
+          browser = "Internet Explorer";
+
+        // Simple checks for OS
+        if (userAgent.indexOf("Windows NT") > -1) os = "Windows";
+        else if (userAgent.indexOf("Mac OS X") > -1) os = "Mac";
+        else if (userAgent.indexOf("Linux") > -1) os = "Linux";
+        else if (userAgent.indexOf("Android") > -1) os = "Android";
+        else if (
+          userAgent.indexOf("iPhone") > -1 ||
+          userAgent.indexOf("iPad") > -1
+        )
+          os = "iOS";
+
+        return { browser: browser, os: os, userAgent: userAgent };
+      }
+
+      // Function to check SSL status
+      function checkSSLStatus() {
+        if (location.protocol !== "https:") {
+          document.getElementById("sslStatus").innerHTML =
+            '<span class="ssl-warning">Not Using HTTPS</span>';
+        } else {
+          document.getElementById("sslStatus").innerHTML =
+            '<span style="color: green;">Using HTTPS</span>';
+        }
+      }
+
+      // Function to get the User ID from the URL
+      function getUserIdFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get("user") || "Unknown";
+      }
+
+      // Function to display user details
+      function displayUserDetails() {
+        var timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        var userAgentInfo = getUserAgentInfo();
+
+        document.getElementById("timezone").textContent = timezone;
+        document.getElementById("browserInfo").textContent =
+          userAgentInfo.browser;
+        document.getElementById("osInfo").textContent = userAgentInfo.os;
+        document.getElementById("userAgent").textContent =
+          userAgentInfo.userAgent;
+
+        // Display User ID from URL
+        document.getElementById("userId").textContent = getUserIdFromURL();
+
+        // Check SSL status
+        checkSSLStatus();
+      }
+
+      // Execute functions on page load
+      getUserIP();
+      displayUserDetails();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,79 @@
+plugins {
+    alias(libs.plugins.android.application)
+//    id 'com.android.application'
+    id 'com.google.gms.google-services'
+}
+
+android {
+    namespace 'tera.videodownloader.box'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "tera.videodownloader.box"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    buildFeatures {
+        viewBinding true
+    }
+}
+
+dependencies {
+
+    implementation libs.appcompat
+    implementation libs.material
+    implementation libs.constraintlayout
+    implementation libs.lifecycle.livedata.ktx
+    implementation libs.lifecycle.viewmodel.ktx
+    implementation libs.navigation.fragment
+    implementation libs.navigation.ui
+    implementation libs.activity
+    testImplementation libs.junit
+    androidTestImplementation libs.ext.junit
+    androidTestImplementation libs.espresso.core
+
+    implementation 'com.github.bumptech.glide:glide:4.15.1'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.15.1'
+
+    implementation 'com.android.volley:volley:1.2.1'
+    implementation 'com.makeramen:roundedimageview:2.3.0'
+    implementation 'com.github.JeffMony:VideoDownloader:5.8.0'
+
+    implementation 'com.github.JeffMony:JeffM3U8Lib:1.2.0'
+    implementation 'com.github.iamyashchouhan:YMGToolsSDK:1.0.3'
+    implementation 'com.github.solodroid-dev:simple-ads-sdk:1.+'
+
+    implementation 'com.onesignal:OneSignal:[5.0.0, 5.99.99]'
+
+    //exoplayer
+    implementation 'com.google.android.exoplayer:exoplayer-core:2.17.1'
+    implementation 'com.google.android.exoplayer:exoplayer-dash:2.17.1'
+    implementation 'com.google.android.exoplayer:exoplayer-hls:2.17.1'
+    implementation 'com.google.android.exoplayer:exoplayer-ui:2.17.1'
+    implementation 'com.google.android.exoplayer:exoplayer-rtsp:2.17.1'
+
+    //ads
+    implementation 'androidx.lifecycle:lifecycle-process:2.7.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime:2.7.0'
+    implementation 'androidx.lifecycle:lifecycle-common-java8:2.7.0'
+    implementation 'androidx.multidex:multidex:2.0.1'
+
+    implementation platform('com.google.firebase:firebase-bom:33.7.0')
+    implementation 'com.google.firebase:firebase-analytics'
+
+}
