@@ -80,7 +80,8 @@ fun CallsScreen(
     onOpenDialer: () -> Unit = {},
     syncStatusBar: @Composable () -> Unit = {},
     personDetailsPhone: String? = null,
-    onClearPersonDetails: () -> Unit = {}
+    onClearPersonDetails: () -> Unit = {},
+    isDialerEnabled: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val settingsState by settingsViewModel.uiState.collectAsState()
@@ -216,12 +217,14 @@ fun CallsScreen(
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onOpenDialer,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(Icons.Default.Dialpad, contentDescription = "Dialer")
+            if (isDialerEnabled) {
+                FloatingActionButton(
+                    onClick = onOpenDialer,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Icon(Icons.Default.Dialpad, contentDescription = "Dialer")
+                }
             }
         }
     ) { padding ->
@@ -231,7 +234,9 @@ fun CallsScreen(
                 onSearchClick = viewModel::toggleSearchVisibility,
                 onFilterClick = viewModel::toggleFiltersVisibility,
                 isSearchActive = uiState.isSearchVisible,
-                isFilterActive = uiState.isFiltersVisible
+                isFilterActive = uiState.isFiltersVisible,
+                dateRange = uiState.dateRange,
+                onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) }
             )
             
             syncStatusBar()
@@ -268,9 +273,8 @@ fun CallsScreen(
                     onConnectedFilterChange = viewModel::setConnectedFilter,
                     onNotesFilterChange = viewModel::setNotesFilter,
                     onContactsFilterChange = viewModel::setContactsFilter,
+
                     onAttendedFilterChange = viewModel::setAttendedFilter,
-                    dateRange = uiState.dateRange,
-                    onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) },
                     labelFilter = uiState.labelFilter,
                     onLabelFilterChange = viewModel::setLabelFilter,
                     availableLabels = remember(uiState.persons) { 
@@ -285,7 +289,7 @@ fun CallsScreen(
             }
             
             // Content
-            OnboardingGuide(
+            SetupGuide(
                 asEmptyState = true,
                 modifier = Modifier.weight(1f)
             ) {
@@ -381,7 +385,9 @@ fun CallsHeader(
     onSearchClick: () -> Unit,
     onFilterClick: () -> Unit,
     isSearchActive: Boolean,
-    isFilterActive: Boolean
+    isFilterActive: Boolean,
+    dateRange: DateRange,
+    onDateRangeChange: (DateRange, Long?, Long?) -> Unit
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
@@ -405,6 +411,9 @@ fun CallsHeader(
             
             // Action Icons
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // Date Range Icon
+                DateRangeHeaderAction(dateRange, onDateRangeChange)
+                
                 // Search Icon
                 IconButton(onClick = onSearchClick) {
                     Icon(
@@ -564,7 +573,9 @@ fun PersonsScreen(
             onSearchClick = viewModel::toggleSearchVisibility,
             onFilterClick = viewModel::toggleFiltersVisibility,
             isSearchActive = uiState.isSearchVisible,
-            isFilterActive = uiState.isFiltersVisible
+            isFilterActive = uiState.isFiltersVisible,
+            dateRange = uiState.dateRange,
+            onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) }
         )
         
         syncStatusBar()
@@ -598,8 +609,7 @@ fun PersonsScreen(
                 onNotesFilterChange = viewModel::setNotesFilter,
                 onContactsFilterChange = viewModel::setContactsFilter,
                 onAttendedFilterChange = viewModel::setAttendedFilter,
-                dateRange = uiState.dateRange,
-                onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) },
+
                 labelFilter = uiState.labelFilter,
                 onLabelFilterChange = viewModel::setLabelFilter,
                 availableLabels = remember(uiState.persons) { 
@@ -614,7 +624,7 @@ fun PersonsScreen(
         }
         
         // Content
-        OnboardingGuide(
+        SetupGuide(
             asEmptyState = true,
             modifier = Modifier.weight(1f)
         ) {
@@ -706,7 +716,9 @@ fun PersonsHeader(
     onSearchClick: () -> Unit,
     onFilterClick: () -> Unit,
     isSearchActive: Boolean,
-    isFilterActive: Boolean
+    isFilterActive: Boolean,
+    dateRange: DateRange,
+    onDateRangeChange: (DateRange, Long?, Long?) -> Unit
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
@@ -730,6 +742,9 @@ fun PersonsHeader(
             
             // Action Icons
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // Date Range Icon
+                DateRangeHeaderAction(dateRange, onDateRangeChange)
+
                 IconButton(onClick = onSearchClick) {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -1411,6 +1426,12 @@ fun ReportsScreen(
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
+                // Date Range Icon
+                DateRangeHeaderAction(
+                    dateRange = uiState.dateRange,
+                    onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) }
+                )
+
                 // Filter Icon
                 IconButton(onClick = viewModel::toggleFiltersVisibility) {
                     Icon(
@@ -1441,8 +1462,7 @@ fun ReportsScreen(
                 onNotesFilterChange = viewModel::setNotesFilter,
                 onContactsFilterChange = viewModel::setContactsFilter,
                 onAttendedFilterChange = viewModel::setAttendedFilter,
-                dateRange = uiState.dateRange,
-                onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) },
+
                 labelFilter = uiState.labelFilter,
                 onLabelFilterChange = viewModel::setLabelFilter,
                 availableLabels = remember(uiState.persons) { 
@@ -1789,24 +1809,10 @@ fun FilterChipsRow(
     onNotesFilterChange: (NotesFilter) -> Unit,
     onContactsFilterChange: (ContactsFilter) -> Unit,
     onAttendedFilterChange: (AttendedFilter) -> Unit,
-    dateRange: DateRange,
-    onDateRangeChange: (DateRange, Long?, Long?) -> Unit,
     labelFilter: String,
     onLabelFilterChange: (String) -> Unit,
     availableLabels: List<String> = emptyList()
 ) {
-    var showDatePicker by remember { mutableStateOf(false) }
-    
-    if (showDatePicker) {
-        CustomDateRangePickerDialog(
-            onDismiss = { showDatePicker = false },
-            onDateRangeSelected = { start, end ->
-                onDateRangeChange(DateRange.CUSTOM, start, end)
-                showDatePicker = false
-            }
-        )
-    }
-
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         tonalElevation = 1.dp
@@ -1818,35 +1824,6 @@ fun FilterChipsRow(
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Date Range Filter
-            FilterDropdownChip(
-                label = when (dateRange) {
-                    DateRange.TODAY -> "Today"
-                    DateRange.LAST_3_DAYS -> "Last 3 Days"
-                    DateRange.LAST_7_DAYS -> "Last 7 Days"
-                    DateRange.LAST_14_DAYS -> "Last 14 Days"
-                    DateRange.LAST_30_DAYS -> "Last 30 Days"
-                    DateRange.THIS_MONTH -> "This Month"
-                    DateRange.PREVIOUS_MONTH -> "Prev Month"
-                    DateRange.CUSTOM -> "Custom Range"
-                    DateRange.ALL -> "Date: All"
-                },
-                icon = Icons.Default.CalendarToday,
-                isActive = dateRange != DateRange.ALL,
-                options = listOf(
-                    FilterOption("Today", Icons.Default.Today, dateRange == DateRange.TODAY) { onDateRangeChange(DateRange.TODAY, null, null) },
-                    FilterOption("Last 3 Days", Icons.Default.Event, dateRange == DateRange.LAST_3_DAYS) { onDateRangeChange(DateRange.LAST_3_DAYS, null, null) },
-                    FilterOption("Last 7 Days", Icons.Default.Event, dateRange == DateRange.LAST_7_DAYS) { onDateRangeChange(DateRange.LAST_7_DAYS, null, null) },
-                    FilterOption("Last 14 Days", Icons.Default.Event, dateRange == DateRange.LAST_14_DAYS) { onDateRangeChange(DateRange.LAST_14_DAYS, null, null) },
-                    FilterOption("Last 30 Days", Icons.Default.Event, dateRange == DateRange.LAST_30_DAYS) { onDateRangeChange(DateRange.LAST_30_DAYS, null, null) },
-                    FilterOption("This Month", Icons.Default.CalendarMonth, dateRange == DateRange.THIS_MONTH) { onDateRangeChange(DateRange.THIS_MONTH, null, null) },
-                    FilterOption("Previous Month", Icons.Default.CalendarMonth, dateRange == DateRange.PREVIOUS_MONTH) { onDateRangeChange(DateRange.PREVIOUS_MONTH, null, null) },
-                    FilterOption("Custom", Icons.Default.DateRange, dateRange == DateRange.CUSTOM) { 
-                        showDatePicker = true
-                    },
-                    FilterOption("All Time", Icons.Default.AllInclusive, dateRange == DateRange.ALL) { onDateRangeChange(DateRange.ALL, null, null) }
-                )
-            )
 
             // Label Filter
             if (availableLabels.isNotEmpty() || labelFilter.isNotEmpty()) {

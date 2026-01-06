@@ -34,6 +34,8 @@ data class PersonRemoteUpdate(
     val personNote: String?,
     val label: String?,
     val name: String?,
+    val excludeFromSync: Boolean? = null,
+    val excludeFromList: Boolean? = null,
     val serverUpdatedAt: Long
 )
 
@@ -282,12 +284,25 @@ class CallDataRepository private constructor(private val context: Context) {
                 val existing = personDataDao.getByPhoneNumber(normalized)
                 if (existing != null) {
                     personDataDao.updateFromServer(normalized, update.personNote, update.label, update.name, update.serverUpdatedAt)
+                    
+                    // Update exclusion if provided
+                    if (update.excludeFromSync != null && update.excludeFromList != null) {
+                        personDataDao.updateExclusionType(normalized, update.excludeFromSync, update.excludeFromList)
+                        @Suppress("DEPRECATION")
+                        personDataDao.updateExclusion(normalized, update.excludeFromSync && update.excludeFromList)
+                    }
                 } else {
+                    val excludeSync = update.excludeFromSync ?: false
+                    val excludeList = update.excludeFromList ?: false
+                    
                     personDataDao.insert(PersonDataEntity(
                         phoneNumber = normalized,
                         contactName = update.name,
                         personNote = update.personNote,
                         label = update.label,
+                        excludeFromSync = excludeSync,
+                        excludeFromList = excludeList,
+                        isExcluded = excludeSync && excludeList,
                         serverUpdatedAt = update.serverUpdatedAt
                     ))
                 }
@@ -422,6 +437,24 @@ class CallDataRepository private constructor(private val context: Context) {
      * Get excluded persons as Flow
      */
     fun getExcludedPersonsFlow(): Flow<List<PersonDataEntity>> = personDataDao.getExcludedPersonsFlow()
+    
+    /**
+     * Get "No Tracking" persons (excluded from both sync and list)
+     */
+    fun getNoTrackingPersonsFlow(): Flow<List<PersonDataEntity>> = personDataDao.getNoTrackingPersonsFlow()
+    
+    /**
+     * Get "Excluded from lists" only persons (hidden from UI but still tracked)
+     */
+    fun getExcludedFromListOnlyPersonsFlow(): Flow<List<PersonDataEntity>> = personDataDao.getExcludedFromListOnlyPersonsFlow()
+    
+    /**
+     * Check if a number should be excluded from sync/tracking
+     */
+    suspend fun isExcludedFromSync(phoneNumber: String): Boolean = withContext(Dispatchers.IO) {
+        val normalized = normalizePhoneNumber(phoneNumber)
+        personDataDao.isExcludedFromSync(normalized) ?: false
+    }
     
     /**
      * Get all persons (one-time fetch)
@@ -599,19 +632,61 @@ class CallDataRepository private constructor(private val context: Context) {
     }
     
     /**
-     * Update exclusion status for a phone number
+     * Update exclusion status for a phone number (legacy - sets both types for "No Tracking")
      */
+    @Suppress("DEPRECATION")
     suspend fun updateExclusion(phoneNumber: String, isExcluded: Boolean) = withContext(Dispatchers.IO) {
         val normalized = normalizePhoneNumber(phoneNumber)
         val existing = personDataDao.getByPhoneNumber(normalized)
         if (existing != null) {
+            // Update both legacy and new columns
             personDataDao.updateExclusion(normalized, isExcluded)
+            personDataDao.updateExclusionType(normalized, isExcluded, isExcluded) // "No Tracking" = both true
         } else {
             // Create person entry if doesn't exist
             personDataDao.insert(PersonDataEntity(
                 phoneNumber = normalized,
-                isExcluded = isExcluded
+                isExcluded = isExcluded,
+                excludeFromSync = isExcluded,
+                excludeFromList = isExcluded
             ))
+        }
+    }
+    
+    /**
+     * Update exclusion type for a phone number (granular control)
+     * @param excludeFromSync - true to stop tracking/syncing calls for this number ("No Tracking")
+     * @param excludeFromList - true to hide from call lists UI ("Excluded from lists")
+     */
+    @Suppress("DEPRECATION")
+    suspend fun updateExclusionType(phoneNumber: String, excludeFromSync: Boolean, excludeFromList: Boolean) = withContext(Dispatchers.IO) {
+        val normalized = normalizePhoneNumber(phoneNumber)
+        val existing = personDataDao.getByPhoneNumber(normalized)
+        if (existing != null) {
+            personDataDao.updateExclusionType(normalized, excludeFromSync, excludeFromList)
+            // Also update legacy column for backward compatibility
+            personDataDao.updateExclusion(normalized, excludeFromSync && excludeFromList)
+        } else {
+            // Create person entry if doesn't exist
+            personDataDao.insert(PersonDataEntity(
+                phoneNumber = normalized,
+                isExcluded = excludeFromSync && excludeFromList,
+                excludeFromSync = excludeFromSync,
+                excludeFromList = excludeFromList
+            ))
+        }
+    }
+    
+    /**
+     * Remove exclusion (clear both exclusion types)
+     */
+    suspend fun removeExclusion(phoneNumber: String) = withContext(Dispatchers.IO) {
+        val normalized = normalizePhoneNumber(phoneNumber)
+        val existing = personDataDao.getByPhoneNumber(normalized)
+        if (existing != null) {
+            personDataDao.updateExclusionType(normalized, false, false)
+            @Suppress("DEPRECATION")
+            personDataDao.updateExclusion(normalized, false)
         }
     }
     
@@ -777,6 +852,8 @@ class CallDataRepository private constructor(private val context: Context) {
                 createdAt = existing?.createdAt ?: System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis(),
                 isExcluded = existing?.isExcluded ?: false,
+                excludeFromSync = existing?.excludeFromSync ?: false,
+                excludeFromList = existing?.excludeFromList ?: false,
                 needsSync = existing?.needsSync ?: false
             )
             

@@ -10,14 +10,28 @@ interface PersonDataDao {
     // QUERIES
     // ============================================
     
-    @Query("SELECT * FROM person_data WHERE isExcluded = 0 ORDER BY lastCallDate DESC")
+    // Get all non-excluded persons (for main call list)
+    @Query("SELECT * FROM person_data WHERE excludeFromList = 0 ORDER BY lastCallDate DESC")
     fun getAllPersonsFlow(): Flow<List<PersonDataEntity>>
     
-    @Query("SELECT * FROM person_data WHERE isExcluded = 0 ORDER BY lastCallDate DESC")
+    @Query("SELECT * FROM person_data WHERE excludeFromList = 0 ORDER BY lastCallDate DESC")
     suspend fun getAllPersons(): List<PersonDataEntity>
     
+    // Legacy: Get persons excluded with old isExcluded flag (for migration compatibility)
     @Query("SELECT * FROM person_data WHERE isExcluded = 1 ORDER BY lastCallDate DESC")
+    fun getLegacyExcludedPersonsFlow(): Flow<List<PersonDataEntity>>
+    
+    // Get persons with any form of exclusion
+    @Query("SELECT * FROM person_data WHERE (excludeFromSync = 1 OR excludeFromList = 1) ORDER BY lastCallDate DESC")
     fun getExcludedPersonsFlow(): Flow<List<PersonDataEntity>>
+    
+    // Get "No Tracking" persons (excluded from both sync and list)
+    @Query("SELECT * FROM person_data WHERE excludeFromSync = 1 AND excludeFromList = 1 ORDER BY lastCallDate DESC")
+    fun getNoTrackingPersonsFlow(): Flow<List<PersonDataEntity>>
+    
+    // Get "Excluded from lists" only persons (hidden from UI but still tracked)
+    @Query("SELECT * FROM person_data WHERE excludeFromSync = 0 AND excludeFromList = 1 ORDER BY lastCallDate DESC")
+    fun getExcludedFromListOnlyPersonsFlow(): Flow<List<PersonDataEntity>>
     
     @Query("SELECT * FROM person_data WHERE phoneNumber = :phoneNumber")
     suspend fun getByPhoneNumber(phoneNumber: String): PersonDataEntity?
@@ -27,6 +41,10 @@ interface PersonDataDao {
     
     @Query("SELECT * FROM person_data WHERE personNote IS NOT NULL AND personNote != ''")
     suspend fun getPersonsWithNotes(): List<PersonDataEntity>
+    
+    // Check if number should be excluded from sync
+    @Query("SELECT excludeFromSync FROM person_data WHERE phoneNumber = :phoneNumber")
+    suspend fun isExcludedFromSync(phoneNumber: String): Boolean?
     
     // ============================================
     // INSERTS & UPDATES
@@ -47,8 +65,14 @@ interface PersonDataDao {
     @Query("UPDATE person_data SET contactName = :name, photoUri = :photoUri, updatedAt = :timestamp WHERE phoneNumber = :phoneNumber")
     suspend fun updateContactInfo(phoneNumber: String, name: String?, photoUri: String?, timestamp: Long = System.currentTimeMillis())
     
+    // Legacy exclusion update (kept for backward compatibility)
+    @Deprecated("Use updateExclusionType instead")
     @Query("UPDATE person_data SET isExcluded = :isExcluded, updatedAt = :timestamp WHERE phoneNumber = :phoneNumber")
     suspend fun updateExclusion(phoneNumber: String, isExcluded: Boolean, timestamp: Long = System.currentTimeMillis())
+    
+    // Granular exclusion update
+    @Query("UPDATE person_data SET excludeFromSync = :excludeFromSync, excludeFromList = :excludeFromList, updatedAt = :timestamp WHERE phoneNumber = :phoneNumber")
+    suspend fun updateExclusionType(phoneNumber: String, excludeFromSync: Boolean, excludeFromList: Boolean, timestamp: Long = System.currentTimeMillis())
 
     @Query("UPDATE person_data SET label = :label, updatedAt = :timestamp, needsSync = 1 WHERE phoneNumber = :phoneNumber")
     suspend fun updateLabel(phoneNumber: String, label: String?, timestamp: Long = System.currentTimeMillis())

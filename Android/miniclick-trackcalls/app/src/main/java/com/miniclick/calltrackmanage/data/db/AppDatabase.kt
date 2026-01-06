@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         CallDataEntity::class,
         PersonDataEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -164,6 +164,22 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
         
+        // Migration from version 8 to version 9 (granular exclusion types)
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add new exclusion columns
+                database.execSQL("ALTER TABLE person_data ADD COLUMN excludeFromSync INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE person_data ADD COLUMN excludeFromList INTEGER NOT NULL DEFAULT 0")
+                
+                // Migrate existing isExcluded data -> set both excludeFromSync and excludeFromList
+                database.execSQL("UPDATE person_data SET excludeFromSync = isExcluded, excludeFromList = isExcluded")
+                
+                // Create indices for new columns
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_person_data_excludeFromSync ON person_data(excludeFromSync)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_person_data_excludeFromList ON person_data(excludeFromList)")
+            }
+        }
+        
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -171,7 +187,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "callcloud_database"
                 )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance
@@ -180,3 +196,4 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
 }
+

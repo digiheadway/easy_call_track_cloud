@@ -135,45 +135,40 @@ fun TrackSimModal(
                 else -> "Off"
             }
             
+            // Always allow saving the selection
             Button(
                 onClick = {
-                    if (anySIMNeedsSetup && nextSimToSetup != null) {
-                        // Open setup for the SIM that needs it
-                        showSetupModal = nextSimToSetup
-                    } else {
-                        // Save and close
-                        viewModel.updateSimSelection(selectedValue)
-                        onDismiss()
-                    }
+                    viewModel.updateSimSelection(selectedValue)
+                    onDismiss()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = if (anySIMNeedsSetup) 
-                    ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
-                else 
-                    ButtonDefaults.buttonColors()
+                shape = RoundedCornerShape(14.dp)
             ) {
-                if (anySIMNeedsSetup) {
-                    Icon(Icons.Default.Settings, null, Modifier.size(20.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        "Setup SIM $nextSimToSetup",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                } else {
-                    Text(
-                        if (selectedValue == "Off") "Disable Tracking" else "Save",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
+                Text(
+                    if (selectedValue == "Off") "Disable Tracking" else "Save Selection",
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
             
-            if (anySIMNeedsSetup) {
+            // If setup is needed, show secondary setup button
+            if (anySIMNeedsSetup && nextSimToSetup != null && selectedValue != "Off") {
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = { showSetupModal = nextSimToSetup },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Icon(Icons.Default.Settings, null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Setup SIM $nextSimToSetup (Optional)")
+                }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Selected SIMs need to be set up before saving",
+                    "Setup helps identify which SIM made/received each call. You can do this later.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.fillMaxWidth()

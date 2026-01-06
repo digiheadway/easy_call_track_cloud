@@ -30,8 +30,7 @@ import com.miniclick.calltrackmanage.ui.settings.JoinOrgModal
 import com.miniclick.calltrackmanage.ui.settings.AccountInfoModal
 import com.miniclick.calltrackmanage.ui.settings.SettingsUiState
 import com.miniclick.calltrackmanage.ui.settings.SettingsViewModel
-import com.miniclick.calltrackmanage.ui.settings.TrackSimModal
-import com.miniclick.calltrackmanage.ui.settings.showDatePicker
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,7 +49,6 @@ sealed class OnboardingStepType {
     object Welcome : OnboardingStepType()
     object FeatureIntro : OnboardingStepType()
     object PermissionDisclosure : OnboardingStepType()
-    object TrackingConfiguration : OnboardingStepType()
 }
 
 data class OnboardingStep(
@@ -141,20 +139,12 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                 OnboardingStepType.FeatureIntro
             ))
             
-            // NEW: Prominent Disclosure Step
+            // NEW: Prominent Disclosure Step (Final Step)
             add(OnboardingStep(
                 "Data & Permissions",
                 "To provide its core call management and dialer features, MiniClick Calls needs your permission to access specific data.",
                 Icons.Default.Security,
                 OnboardingStepType.PermissionDisclosure
-            ))
-
-            // NEW: Tracking Configuration Step
-            add(OnboardingStep(
-                "Tracking Configuration",
-                "Choose which SIMs to track and how far back you'd like to sync your call history.",
-                Icons.Default.Settings,
-                OnboardingStepType.TrackingConfiguration
             ))
             
         }
@@ -253,21 +243,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                             onContinue = onComplete
                         )
                     }
-                    is OnboardingStepType.TrackingConfiguration -> {
-                        TrackingConfigurationStepContent(
-                            uiState = uiState,
-                            viewModel = settingsViewModel,
-                            onContinue = {
-                                scope.launch {
-                                    if (page < steps.size - 1) {
-                                        pagerState.animateScrollToPage(page + 1)
-                                    } else {
-                                        onComplete()
-                                    }
-                                }
-                            }
-                        )
-                    }
+
                 }
             }
         }
@@ -651,178 +627,6 @@ fun PermissionDisclosureStepContent(
         )
         
         Spacer(Modifier.height(24.dp))
-    }
-}
-
-@Composable
-fun TrackingConfigurationStepContent(
-    uiState: SettingsUiState,
-    viewModel: SettingsViewModel,
-    onContinue: () -> Unit
-) {
-    val context = LocalContext.current
-    var showTrackSimModal by remember { mutableStateOf(false) }
-    
-    if (showTrackSimModal) {
-        TrackSimModal(
-            uiState = uiState,
-            viewModel = viewModel,
-            onDismiss = { showTrackSimModal = false }
-        )
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(Modifier.height(32.dp))
-        
-        Surface(
-            modifier = Modifier.size(80.dp),
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.tertiaryContainer
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    Icons.Default.Settings,
-                    contentDescription = null,
-                    modifier = Modifier.size(40.dp),
-                    tint = MaterialTheme.colorScheme.tertiary
-                )
-            }
-        }
-        
-        Spacer(Modifier.height(24.dp))
-        
-        Text(
-            "Tracking Setup",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        
-        Spacer(Modifier.height(16.dp))
-        
-        Text(
-            "Configure how you want to track and sync your calls. You can always change these later in settings.",
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Spacer(Modifier.height(32.dp))
-        
-        // Tracking Start Date
-        val dateString = if (uiState.trackStartDate == 0L) "Default (Yesterday)" else 
-            java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault()).format(java.util.Date(uiState.trackStartDate))
-            
-        ConfigurationItem(
-            icon = Icons.Default.CalendarToday,
-            title = "Start Tracking From",
-            value = dateString,
-            onClick = {
-                showDatePicker(context, uiState.trackStartDate) { newDate ->
-                    viewModel.updateTrackStartDate(newDate)
-                }
-            }
-        )
-        
-        Spacer(Modifier.height(16.dp))
-        
-        // SIM Selection
-        val currentSim = when(uiState.simSelection) {
-            "Off" -> "Off"
-            "Both" -> "Both SIMs"
-            else -> uiState.simSelection.replace("Sim", "SIM ")
-        }
-        
-        ConfigurationItem(
-            icon = Icons.Default.SimCard,
-            title = "SIMs to Track",
-            value = currentSim,
-            onClick = { showTrackSimModal = true }
-        )
-        
-        Spacer(Modifier.height(48.dp))
-        
-        Button(
-            onClick = onContinue,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Text("Looks Good, Continue")
-            Spacer(Modifier.width(8.dp))
-            Icon(Icons.AutoMirrored.Filled.ArrowForward, null, modifier = Modifier.size(20.dp))
-        }
-        
-        Spacer(Modifier.height(24.dp))
-    }
-}
-
-@Composable
-fun ConfigurationItem(
-    icon: ImageVector,
-    title: String,
-    value: String,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(22.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-            
-            Spacer(Modifier.width(16.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    value,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-            
-            Icon(
-                Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
     }
 }
 

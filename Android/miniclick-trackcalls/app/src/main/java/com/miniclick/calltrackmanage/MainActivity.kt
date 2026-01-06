@@ -94,13 +94,13 @@ class MainActivity : ComponentActivity() {
             }
 
             CallCloudTheme(darkTheme = darkTheme) {
-                val settingsRepository = SettingsRepository.getInstance(getApplicationContext())
-                var showOnboarding by remember { mutableStateOf(!settingsRepository.isOnboardingCompleted()) }
+                // val settingsRepository = SettingsRepository.getInstance(getApplicationContext()) // Using viewModel instead
+                val isOnboardingCompleted by viewModel.onboardingCompleted.collectAsState()
                 
-                if (showOnboarding) {
+                if (!isOnboardingCompleted) {
                     OnboardingScreen(onComplete = {
+                        val settingsRepository = SettingsRepository.getInstance(getApplicationContext())
                         settingsRepository.setOnboardingCompleted(true)
-                        showOnboarding = false
                     })
                 } else {
                     MainScreen(audioPlayer = audioPlayer)
@@ -335,7 +335,8 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                         onOpenDialer = { showDialerSheet = true },
                         syncStatusBar = syncStatusBar,
                         personDetailsPhone = personDetailsPhone,
-                        onClearPersonDetails = { viewModel.setPersonDetailsPhone(null) }
+                        onClearPersonDetails = { viewModel.setPersonDetailsPhone(null) },
+                        isDialerEnabled = settingsState.isDialerEnabled
                     )
                     AppTab.PERSONS -> PersonsScreen(
                         audioPlayer = audioPlayer,

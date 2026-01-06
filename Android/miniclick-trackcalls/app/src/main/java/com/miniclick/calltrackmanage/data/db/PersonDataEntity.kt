@@ -11,7 +11,9 @@ import androidx.room.PrimaryKey
     tableName = "person_data",
     indices = [
         androidx.room.Index("lastCallDate"),
-        androidx.room.Index("isExcluded")
+        androidx.room.Index("isExcluded"),
+        androidx.room.Index("excludeFromSync"),
+        androidx.room.Index("excludeFromList")
     ]
 )
 data class PersonDataEntity(
@@ -38,8 +40,15 @@ data class PersonDataEntity(
     val totalMissed: Int = 0,
     val totalDuration: Long = 0,
     
-    // Exclusion flag
+    // Legacy exclusion flag (kept for backward compatibility)
+    @Deprecated("Use excludeFromSync and excludeFromList instead")
     val isExcluded: Boolean = false,
+    
+    // Granular exclusion types (matching admin panel)
+    // excludeFromSync = true -> "No Tracking" - completely stop tracking calls for this number
+    // excludeFromList = true -> "Excluded from lists" - track but hide from UI
+    val excludeFromSync: Boolean = false,
+    val excludeFromList: Boolean = false,
     
     // Timestamps for sync
     val createdAt: Long = System.currentTimeMillis(),
@@ -48,4 +57,9 @@ data class PersonDataEntity(
     
     // Sync status
     val needsSync: Boolean = false
-)
+) {
+    // Helper computed properties
+    val isNoTracking: Boolean get() = excludeFromSync && excludeFromList
+    val isExcludedFromListOnly: Boolean get() = !excludeFromSync && excludeFromList
+    val hasAnyExclusion: Boolean get() = excludeFromSync || excludeFromList
+}

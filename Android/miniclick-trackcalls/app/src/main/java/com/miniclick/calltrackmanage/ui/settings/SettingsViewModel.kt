@@ -203,15 +203,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val userId = settingsRepository.getUserId()
         val pairingCode = if (orgId.isNotEmpty() && userId.isNotEmpty()) "$orgId-$userId" else ""
         
-        if (!settingsRepository.isTrackStartDateSet()) {
-            val cal = java.util.Calendar.getInstance()
-            cal.add(java.util.Calendar.DAY_OF_YEAR, -1)
-            cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
-            cal.set(java.util.Calendar.MINUTE, 0)
-            cal.set(java.util.Calendar.SECOND, 0)
-            cal.set(java.util.Calendar.MILLISECOND, 0)
-            settingsRepository.setTrackStartDate(cal.timeInMillis)
-        }
+        // Note: Default track start date is handled in SettingsRepository.getTrackStartDate()
+        // which returns yesterday if not set. We don't auto-set it here so the onboarding
+        // step can still show to let users choose their preferred start date.
         
         _uiState.update {
             it.copy(
@@ -987,6 +981,26 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Add excluded number with specific exclusion type
+     * @param isNoTracking - true for "No Tracking" (excludeFromSync=true, excludeFromList=true)
+     *                       false for "Excluded from lists" (excludeFromSync=false, excludeFromList=true)
+     */
+    fun addExcludedNumberWithType(phoneNumber: String, isNoTracking: Boolean) {
+        if (phoneNumber.isBlank()) return
+        viewModelScope.launch {
+            if (isNoTracking) {
+                // "No Tracking" - stop tracking and hide from list
+                callDataRepository.updateExclusionType(phoneNumber.trim(), excludeFromSync = true, excludeFromList = true)
+            } else {
+                // "Excluded from lists" - keep tracking but hide from UI
+                callDataRepository.updateExclusionType(phoneNumber.trim(), excludeFromSync = false, excludeFromList = true)
+            }
+            val typeLabel = if (isNoTracking) "No Tracking" else "Excluded from lists"
+            Toast.makeText(getApplication(), "$phoneNumber: $typeLabel", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     fun addExcludedNumbers(numbers: String) {
         if (numbers.isBlank()) return
         val numberList = numbers.split(",", "\n", ";")
@@ -998,6 +1012,41 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 callDataRepository.updateExclusion(number, true)
             }
             Toast.makeText(getApplication(), "${numberList.size} numbers excluded", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * Add multiple numbers with specific exclusion type
+     */
+    fun addExcludedNumbersWithType(numbers: String, isNoTracking: Boolean) {
+        if (numbers.isBlank()) return
+        val numberList = numbers.split(",", "\n", ";")
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+        
+        viewModelScope.launch {
+            numberList.forEach { number ->
+                if (isNoTracking) {
+                    callDataRepository.updateExclusionType(number, excludeFromSync = true, excludeFromList = true)
+                } else {
+                    callDataRepository.updateExclusionType(number, excludeFromSync = false, excludeFromList = true)
+                }
+            }
+            val typeLabel = if (isNoTracking) "No Tracking" else "Excluded from lists"
+            Toast.makeText(getApplication(), "${numberList.size} numbers set to: $typeLabel", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * Update exclusion type for an existing excluded number
+     */
+    fun updateExclusionType(phoneNumber: String, isNoTracking: Boolean) {
+        viewModelScope.launch {
+            if (isNoTracking) {
+                callDataRepository.updateExclusionType(phoneNumber, excludeFromSync = true, excludeFromList = true)
+            } else {
+                callDataRepository.updateExclusionType(phoneNumber, excludeFromSync = false, excludeFromList = true)
+            }
         }
     }
 
@@ -1017,7 +1066,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun unexcludeNumber(phoneNumber: String) {
         viewModelScope.launch {
-            callDataRepository.updateExclusion(phoneNumber, false)
+            callDataRepository.removeExclusion(phoneNumber)
+            Toast.makeText(getApplication(), "Exclusion removed: $phoneNumber", Toast.LENGTH_SHORT).show()
         }
     }
 

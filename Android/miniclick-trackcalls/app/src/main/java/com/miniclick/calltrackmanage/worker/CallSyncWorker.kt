@@ -105,7 +105,7 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             
             // 3a. Process Updates (One-by-one)
             for (call in updateCalls) {
-                if (settingsRepository.isNumberExcluded(call.phoneNumber)) {
+                if (callDataRepository.isExcludedFromSync(call.phoneNumber)) {
                     callDataRepository.markMetadataSynced(call.compositeId, System.currentTimeMillis())
                     continue
                 }
@@ -118,7 +118,7 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             
             // Filter locally first
             for (call in newCalls) {
-                if (settingsRepository.isNumberExcluded(call.phoneNumber)) {
+                if (callDataRepository.isExcludedFromSync(call.phoneNumber)) {
                     callDataRepository.markMetadataSynced(call.compositeId, System.currentTimeMillis())
                     callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.NOT_APPLICABLE)
                     continue
@@ -223,7 +223,20 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
                             val name = update["name"] as? String
                             val serverUpdatedAt = (update["updated_at"] as? Number)?.toLong() ?: System.currentTimeMillis()
                             
-                            PersonRemoteUpdate(phone, personNote, label, name, serverUpdatedAt)
+                            // Parse exclusion booleans helper
+                            fun parseBool(v: Any?): Boolean? {
+                                return when (v) {
+                                    is Boolean -> v
+                                    is Number -> v.toInt() == 1
+                                    is String -> v == "1" || v.equals("true", ignoreCase = true)
+                                    else -> null
+                                }
+                            }
+                            
+                            val excludeFromSync = parseBool(update["exclude_from_sync"])
+                            val excludeFromList = parseBool(update["exclude_from_list"])
+                            
+                            PersonRemoteUpdate(phone, personNote, label, name, excludeFromSync, excludeFromList, serverUpdatedAt)
                         }
                         callDataRepository.updatePersonsFromServerBatch(personUpdates)
                     }

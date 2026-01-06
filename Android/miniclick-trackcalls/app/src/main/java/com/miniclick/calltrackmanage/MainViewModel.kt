@@ -7,6 +7,7 @@ import com.miniclick.calltrackmanage.data.SettingsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -24,6 +25,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _isSessionOnboardingDismissed = MutableStateFlow(false)
     val isSessionOnboardingDismissed: StateFlow<Boolean> = _isSessionOnboardingDismissed.asStateFlow()
+
+    // Observe onboarding completion status
+    val onboardingCompleted: StateFlow<Boolean> = settingsRepository.getOnboardingCompletedFlow()
+        .stateIn(
+            scope = viewModelScope,
+            started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
+            initialValue = settingsRepository.isOnboardingCompleted()
+        )
 
     // Flag to track if we've auto-shown the cloud sync modal this session
     var hasShownCloudSyncPrompt = false

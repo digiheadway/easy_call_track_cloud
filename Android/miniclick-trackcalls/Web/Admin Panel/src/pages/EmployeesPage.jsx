@@ -251,15 +251,24 @@ export default function EmployeesPage() {
 
     const handleDeleteEmployee = async () => {
         if (!deletionEmployee) return;
-        try {
-            await api.delete(`/employees.php?id=${deletionEmployee.id}`);
-            toast.success('Employee deleted permanently');
-            setIsDeletionModalOpen(false);
-            fetchEmployees();
-        } catch (err) {
-            console.error('Failed to delete employee', err);
-            toast.error('Failed to delete employee');
-        }
+
+        setConfirmModal({
+            isOpen: true,
+            title: 'Delete Employee Permanently?',
+            message: `Are you sure you want to delete ${deletionEmployee.name}? This action cannot be undone.`,
+            isDestructive: true,
+            onConfirm: async () => {
+                try {
+                    await api.delete(`/employees.php?id=${deletionEmployee.id}`);
+                    toast.success('Employee deleted permanently');
+                    setIsDeletionModalOpen(false);
+                    fetchEmployees();
+                } catch (err) {
+                    console.error('Failed to delete employee', err);
+                    toast.error('Failed to delete employee');
+                }
+            }
+        });
     };
 
     const handleArchiveEmployee = async () => {
@@ -826,14 +835,14 @@ export default function EmployeesPage() {
                         <div className="space-y-3">
                             {/* Delete Calls & Data */}
                             <div className={`p-4 rounded-2xl border transition-all ${callsDeleted || (deletionStats.calls_count === 0 && deletionStats.contacts_count === 0)
-                                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30'
-                                    : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700'
+                                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30'
+                                : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700'
                                 }`}>
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex items-start gap-3">
                                         <div className={`p-2.5 rounded-xl ${callsDeleted || (deletionStats.calls_count === 0 && deletionStats.contacts_count === 0)
-                                                ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400'
-                                                : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                            ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400'
+                                            : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                                             }`}>
                                             {callsDeleted || (deletionStats.calls_count === 0 && deletionStats.contacts_count === 0)
                                                 ? <CheckCircle2 size={20} />
@@ -867,14 +876,14 @@ export default function EmployeesPage() {
 
                             {/* Delete Recordings */}
                             <div className={`p-4 rounded-2xl border transition-all ${recordingsDeleted || deletionStats.recordings_count === 0
-                                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30'
-                                    : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700'
+                                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30'
+                                : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700'
                                 }`}>
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex items-start gap-3">
                                         <div className={`p-2.5 rounded-xl ${recordingsDeleted || deletionStats.recordings_count === 0
-                                                ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400'
-                                                : 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                                            ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400'
+                                            : 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
                                             }`}>
                                             {recordingsDeleted || deletionStats.recordings_count === 0
                                                 ? <CheckCircle2 size={20} />
@@ -926,8 +935,8 @@ export default function EmployeesPage() {
                                         onClick={handleDeleteEmployee}
                                         disabled={!canDelete}
                                         className={`w-full p-4 rounded-2xl border transition-all flex items-center justify-between ${canDelete
-                                                ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
-                                                : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 cursor-not-allowed'
+                                            ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
+                                            : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 cursor-not-allowed'
                                             }`}
                                     >
                                         <div className="flex items-center gap-3">
@@ -953,8 +962,8 @@ export default function EmployeesPage() {
                                 onClick={handleArchiveEmployee}
                                 disabled={deletionEmployee?.status === 'inactive'}
                                 className={`w-full p-4 rounded-2xl border transition-all flex items-center gap-3 ${deletionEmployee?.status === 'inactive'
-                                        ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 cursor-not-allowed'
-                                        : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30'
+                                    ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 cursor-not-allowed'
+                                    : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30'
                                     }`}
                             >
                                 <Archive size={20} />

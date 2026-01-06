@@ -217,6 +217,17 @@ class SettingsRepository private constructor(private val context: Context) {
         prefs.edit().putLong(KEY_LAST_SYNC_TIME, time).apply()
     }
 
+    fun getOnboardingCompletedFlow(): Flow<Boolean> = callbackFlow {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
+            if (key == KEY_ONBOARDING_COMPLETED || key == KEY_ONBOARDING_OFFLINE) {
+                trySend(isOnboardingCompleted())
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(isOnboardingCompleted())
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
     fun isOnboardingCompleted(): Boolean {
         return prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false) || prefs.getBoolean(KEY_ONBOARDING_OFFLINE, false)
     }
@@ -343,7 +354,7 @@ class SettingsRepository private constructor(private val context: Context) {
     fun getLabelFilter(): String = prefs.getString(KEY_FILTER_LABEL, "") ?: ""
     fun setLabelFilter(label: String) = prefs.edit().putString(KEY_FILTER_LABEL, label).apply()
 
-    fun getDateRangeFilter(): String = prefs.getString(KEY_FILTER_DATE_RANGE, "ALL") ?: "ALL"
+    fun getDateRangeFilter(): String = prefs.getString(KEY_FILTER_DATE_RANGE, "LAST_7_DAYS") ?: "LAST_7_DAYS"
     fun setDateRangeFilter(filter: String) = prefs.edit().putString(KEY_FILTER_DATE_RANGE, filter).apply()
 
     fun getCustomStartDate(): Long = prefs.getLong(KEY_CUSTOM_START_DATE, 0L)

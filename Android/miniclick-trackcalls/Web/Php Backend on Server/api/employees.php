@@ -287,6 +287,14 @@ switch ($method) {
         if (!$employee) {
             Response::error('Employee not found', 404);
         }
+
+        // Check for existing data
+        $callsCount = Database::getOne("SELECT COUNT(*) as count FROM calls WHERE employee_id = $id AND org_id = '$orgId'")['count'];
+        $contactsCount = Database::getOne("SELECT COUNT(*) as count FROM contacts WHERE employee_id = $id AND org_id = '$orgId'")['count'];
+
+        if ($callsCount > 0 || $contactsCount > 0) {
+            Response::error('Cannot delete employee. Associated calls and contacts must be deleted first.', 400);
+        }
         
         $sql = "DELETE FROM employees WHERE id = $id";
         Database::execute($sql);

@@ -185,7 +185,13 @@ fun SettingsScreen(
             onAddNumbers = { viewModel.addExcludedNumbers(it) },
             onRemoveNumber = { viewModel.unexcludeNumber(it) },
             onDismiss = { showExcludedModal = false },
-            canAddNew = uiState.allowPersonalExclusion || uiState.pairingCode.isEmpty()
+            canAddNew = uiState.allowPersonalExclusion || uiState.pairingCode.isEmpty(),
+            onAddNumbersWithType = { numbers, isNoTracking -> 
+                viewModel.addExcludedNumbersWithType(numbers, isNoTracking) 
+            },
+            onUpdateExclusionType = { phone, isNoTracking ->
+                viewModel.updateExclusionType(phone, isNoTracking)
+            }
         )
     }
 
@@ -1287,13 +1293,21 @@ fun ExcludedContactsModal(
     onAddNumbers: (String) -> Unit,
     onRemoveNumber: (String) -> Unit,
     onDismiss: () -> Unit,
-    canAddNew: Boolean = true
+    canAddNew: Boolean = true,
+    onAddNumbersWithType: ((String, Boolean) -> Unit)? = null,
+    onUpdateExclusionType: ((String, Boolean) -> Unit)? = null
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showAddDialog by remember { mutableStateOf(false) }
     var numberInput by remember { mutableStateOf("") }
+    var selectedTab by remember { mutableStateOf(0) }
+    var addAsNoTracking by remember { mutableStateOf(true) }
+    
+    val noTrackingPersons = excludedPersons.filter { it.excludeFromSync && it.excludeFromList }
+    val excludedFromListOnlyPersons = excludedPersons.filter { !it.excludeFromSync && it.excludeFromList }
+    
+    val currentList = if (selectedTab == 0) noTrackingPersons else excludedFromListOnlyPersons
 
-    // Add Number Dialog
     if (showAddDialog) {
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
@@ -1302,7 +1316,7 @@ fun ExcludedContactsModal(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        "Enter phone numbers to exclude. Separate multiple numbers with commas or new lines.",
+                        "Enter phone numbers. Separate with commas or new lines.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1315,174 +1329,169 @@ fun ExcludedContactsModal(
                         minLines = 3,
                         maxLines = 5
                     )
+                    
+                    Spacer(Modifier.height(8.dp))
+                    
+                    Text("Exclusion Type", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium)
+                    
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = addAsNoTracking,
+                            onClick = { addAsNoTracking = true },
+                            label = { 
+                                Column {
+                                    Text("No Tracking", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
+                                    Text("Stop recording", style = MaterialTheme.typography.labelSmall)
+                                }
+                            },
+                            leadingIcon = if (addAsNoTracking) { { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) } } else null,
+                            modifier = Modifier.weight(1f)
+                        )
+                        
+                        FilterChip(
+                            selected = !addAsNoTracking,
+                            onClick = { addAsNoTracking = false },
+                            label = { 
+                                Column {
+                                    Text("Hide Only", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
+                                    Text("Keep recording", style = MaterialTheme.typography.labelSmall)
+                                }
+                            },
+                            leadingIcon = if (!addAsNoTracking) { { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) } } else null,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
+                Button(onClick = {
+                    if (onAddNumbersWithType != null) {
+                        onAddNumbersWithType(numberInput, addAsNoTracking)
+                    } else {
                         onAddNumbers(numberInput)
-                        numberInput = ""
-                        showAddDialog = false
                     }
-                ) {
-                    Text("Add")
-                }
+                    // Switch to the relevant tab so the user sees the new entry
+                    selectedTab = if (addAsNoTracking) 0 else 1
+                    
+                    numberInput = ""
+                    showAddDialog = false
+                }) { Text("Add") }
             },
             dismissButton = {
-                TextButton(onClick = { 
-                    numberInput = ""
-                    showAddDialog = false 
-                }) {
-                    Text("Cancel")
-                }
+                TextButton(onClick = { numberInput = ""; showAddDialog = false }) { Text("Cancel") }
             }
         )
     }
     
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-        ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.PersonOff,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(32.dp)
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = "Excluded Contacts",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "${excludedPersons.size} number${if (excludedPersons.size != 1) "s" else ""} excluded",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.PersonOff, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(32.dp))
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text("Privacy Exclusions", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    Text("${excludedPersons.size} number${if (excludedPersons.size != 1) "s" else ""} excluded", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
             Spacer(Modifier.height(16.dp))
+            
+            TabRow(selectedTabIndex = selectedTab, modifier = Modifier.fillMaxWidth()) {
+                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("No Tracking")
+                        Spacer(Modifier.width(6.dp))
+                        Badge { Text("${noTrackingPersons.size}") }
+                    }
+                })
+                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Hidden")
+                        Spacer(Modifier.width(6.dp))
+                        Badge { Text("${excludedFromListOnlyPersons.size}") }
+                    }
+                })
+            }
+            
+            Spacer(Modifier.height(8.dp))
+            
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = if (selectedTab == 0) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                    else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        if (selectedTab == 0) Icons.Default.CloudOff else Icons.Default.VisibilityOff,
+                        null,
+                        tint = if (selectedTab == 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        if (selectedTab == 0) "Calls won't be tracked or synced" else "Calls recorded but hidden from list",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
 
-            // Lock banner when adding is disabled
+            Spacer(Modifier.height(12.dp))
+
             if (!canAddNew) {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Lock,
-                            null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(16.dp)
-                        )
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), modifier = Modifier.fillMaxWidth()) {
+                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Lock, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text(
-                            "Adding new exclusions is disabled by your organisation",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Text("Adding new exclusions is disabled by your organisation", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 Spacer(Modifier.height(12.dp))
             }
 
-            if (excludedPersons.isEmpty()) {
-                // Empty State
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            Icons.Default.PersonOff,
-                            null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                        )
+            if (currentList.isEmpty()) {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)), modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(if (selectedTab == 0) Icons.Default.CloudOff else Icons.Default.VisibilityOff, null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
                         Spacer(Modifier.height(12.dp))
-                        Text(
-                            text = "No Excluded Numbers",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Text(if (selectedTab == 0) "No Numbers in No Tracking" else "No Hidden Numbers", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = "Tap 'Add' to exclude numbers from tracking",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                        )
+                        Text(if (selectedTab == 0) "Add numbers to stop tracking" else "Add numbers to hide from lists", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), textAlign = TextAlign.Center)
                     }
                 }
             } else {
-                // List of excluded numbers
-                Column(
-                    modifier = Modifier
-                        .weight(1f, fill = false)
-                        .heightIn(max = 400.dp)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    excludedPersons.forEach { person ->
+                Column(modifier = Modifier.weight(1f, fill = false).heightIn(max = 350.dp).verticalScroll(rememberScrollState())) {
+                    currentList.forEach { person ->
+                        val isNoTracking = person.excludeFromSync && person.excludeFromList
+                        
                         Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp)
+                            colors = CardDefaults.cardColors(containerColor = if (isNoTracking) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                         ) {
                             ListItem(
-                                headlineContent = { 
-                                    Text(
-                                        person.contactName ?: person.phoneNumber,
-                                        fontWeight = FontWeight.Medium
-                                    ) 
+                                headlineContent = { Text(person.contactName ?: person.phoneNumber, fontWeight = FontWeight.Medium) },
+                                supportingContent = {
+                                    Column {
+                                        if (person.contactName != null) Text(person.phoneNumber, style = MaterialTheme.typography.bodySmall)
+                                        Spacer(Modifier.height(4.dp))
+                                        Surface(shape = RoundedCornerShape(4.dp), color = if (isNoTracking) MaterialTheme.colorScheme.error.copy(alpha = 0.1f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)) {
+                                            Text(if (isNoTracking) "No Tracking" else "Hidden", modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = if (isNoTracking) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
+                                        }
+                                    }
                                 },
-                                supportingContent = if (person.contactName != null) {
-                                    { Text(person.phoneNumber) }
-                                } else null,
-                                leadingContent = {
-                                    Icon(
-                                        Icons.Default.Block,
-                                        null,
-                                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-                                    )
-                                },
+                                leadingContent = { Icon(if (isNoTracking) Icons.Default.CloudOff else Icons.Default.VisibilityOff, null, tint = if (isNoTracking) MaterialTheme.colorScheme.error.copy(alpha = 0.7f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)) },
                                 trailingContent = {
-                                    IconButton(onClick = { onRemoveNumber(person.phoneNumber) }) {
-                                        Icon(
-                                            Icons.Default.RemoveCircle, 
-                                            contentDescription = "Remove",
-                                            tint = MaterialTheme.colorScheme.error
-                                        )
+                                    Row {
+                                        if (onUpdateExclusionType != null) {
+                                            IconButton(onClick = { onUpdateExclusionType(person.phoneNumber, !isNoTracking) }) {
+                                                Icon(Icons.Default.SwapHoriz, "Change type", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                        }
+                                        IconButton(onClick = { onRemoveNumber(person.phoneNumber) }) {
+                                            Icon(Icons.Default.RemoveCircle, "Remove", tint = MaterialTheme.colorScheme.error)
+                                        }
                                     }
                                 }
                             )
@@ -1493,18 +1502,11 @@ fun ExcludedContactsModal(
 
             Spacer(Modifier.height(16.dp))
 
-            Spacer(Modifier.height(16.dp))
-
-            // Add Button at Bottom (only when allowed)
             if (canAddNew) {
-                Button(
-                    onClick = { showAddDialog = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(16.dp)
-                ) {
+                Button(onClick = { addAsNoTracking = selectedTab == 0; showAddDialog = true }, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(16.dp)) {
                     Icon(Icons.Default.Add, null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Add Number to Exclude", style = MaterialTheme.typography.titleMedium)
+                    Text("Add Number", style = MaterialTheme.typography.titleMedium)
                 }
             }
 
@@ -1512,6 +1514,7 @@ fun ExcludedContactsModal(
         }
     }
 }
+
 
 // ===============================================
 // PERMISSIONS MODAL

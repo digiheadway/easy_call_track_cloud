@@ -56,7 +56,7 @@ data class HomeUiState(
     val attendedFilter: AttendedFilter = AttendedFilter.ALL,
     val labelFilter: String = "",
 
-    val dateRange: DateRange = DateRange.ALL,
+    val dateRange: DateRange = DateRange.LAST_7_DAYS,
     val customStartDate: Long? = null,
     val customEndDate: Long? = null,
 
@@ -319,7 +319,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             notesFilter = nFilter,
             contactsFilter = cFilter,
             attendedFilter = aFilter,
-            dateRange = try { DateRange.valueOf(settingsRepository.getDateRangeFilter()) } catch(e: Exception) { DateRange.ALL },
+            dateRange = try { DateRange.valueOf(settingsRepository.getDateRangeFilter()) } catch(e: Exception) { DateRange.LAST_7_DAYS },
             customStartDate = settingsRepository.getCustomStartDate().let { if (it == 0L) null else it },
             customEndDate = settingsRepository.getCustomEndDate().let { if (it == 0L) null else it }
         ) }
