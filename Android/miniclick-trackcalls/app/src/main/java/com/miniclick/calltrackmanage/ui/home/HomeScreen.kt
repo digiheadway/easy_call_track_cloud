@@ -3427,9 +3427,18 @@ fun LabelPickerDialog(
     // Predefined common labels
     val predefinedLabels = listOf("VIP", "Lead", "Customer", "Spam", "Follow-up", "Important", "Personal", "Work")
     
-    // Combine predefined + existing labels (deduplicated)
+    // Count usage of each label
+    val labelUsageCount = remember(availableLabels) {
+        availableLabels.groupingBy { it }.eachCount()
+    }
+    
+    // Combine predefined + existing labels, sorted by usage (most used first), then alphabetically
     val allLabels = remember(availableLabels) {
-        (predefinedLabels + availableLabels).distinct().sorted()
+        val allUnique = (availableLabels + predefinedLabels).distinct()
+        allUnique.sortedWith(
+            compareByDescending<String> { labelUsageCount[it] ?: 0 }
+                .thenBy { it }
+        )
     }
 
     Dialog(onDismissRequest = onDismiss) {
