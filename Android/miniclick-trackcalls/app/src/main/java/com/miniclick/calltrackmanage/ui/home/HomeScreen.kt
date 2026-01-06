@@ -3419,11 +3419,6 @@ fun LabelPickerDialog(
     onDismiss: () -> Unit,
     onSave: (String) -> Unit
 ) {
-    var selectedLabel by remember { mutableStateOf(currentLabel ?: "") }
-    var showCustomInput by remember { mutableStateOf(false) }
-    var customLabel by remember { mutableStateOf("") }
-    val focusRequester = remember { FocusRequester() }
-
     // Predefined common labels
     val predefinedLabels = listOf("VIP", "Lead", "Customer", "Spam", "Follow-up", "Important", "Personal", "Work")
     
@@ -3440,137 +3435,65 @@ fun LabelPickerDialog(
                 .thenBy { it }
         )
     }
-
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp,
-            modifier = Modifier.fillMaxWidth().padding(16.dp)
-        ) {
-            Box {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Text(
-                        text = "Select Label",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    // Label chips grid
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // "None" option to clear label
-                        FilterChip(
-                            selected = selectedLabel.isEmpty(),
-                            onClick = { selectedLabel = "" },
-                            label = { Text("None") },
-                            leadingIcon = if (selectedLabel.isEmpty()) {
-                                { Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp)) }
-                            } else null,
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.errorContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        )
-
-                        allLabels.forEach { label ->
-                            FilterChip(
-                                selected = selectedLabel == label,
-                                onClick = { selectedLabel = label },
-                                label = { Text(label) },
-                                leadingIcon = if (selectedLabel == label) {
-                                    { Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp)) }
-                                } else null,
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            )
-                        }
-                        
-                        // "Custom" option
-                        FilterChip(
-                            selected = showCustomInput,
-                            onClick = { showCustomInput = !showCustomInput },
-                            label = { Text("Custom...") },
-                            leadingIcon = { Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp)) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                        )
+    
+    // Use DropdownMenu for simpler inline selection
+    DropdownMenu(
+        expanded = true,
+        onDismissRequest = onDismiss,
+        modifier = Modifier
+            .widthIn(min = 180.dp, max = 280.dp)
+            .heightIn(max = 400.dp)
+    ) {
+        // "None" option to clear label
+        DropdownMenuItem(
+            text = { 
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (currentLabel.isNullOrEmpty()) {
+                        Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(8.dp))
                     }
-
-                    // Custom label input (shown when "Custom..." is selected)
-                    AnimatedVisibility(visible = showCustomInput) {
-                        OutlinedTextField(
-                            value = customLabel,
-                            onValueChange = { 
-                                customLabel = it
-                                selectedLabel = it
-                            },
-                            label = { Text("Custom Label") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .focusRequester(focusRequester),
-                            singleLine = true,
-                            trailingIcon = {
-                                if (customLabel.isNotEmpty()) {
-                                    IconButton(onClick = { customLabel = ""; selectedLabel = "" }) {
-                                        Icon(Icons.Default.Clear, "Clear")
-                                    }
-                                }
-                            }
-                        )
-                    }
-
-                    // Action buttons
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("Cancel")
-                        }
-                        
-                        Button(
-                            onClick = { onSave(selectedLabel) },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("Save")
-                        }
-                    }
+                    Text("None", color = if (currentLabel.isNullOrEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
                 }
-
-                IconButton(
-                    onClick = onDismiss,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                ) {
+            },
+            onClick = { onSave(""); onDismiss() },
+            leadingIcon = { Icon(Icons.Default.Clear, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error) }
+        )
+        
+        HorizontalDivider()
+        
+        allLabels.forEach { label ->
+            val isSelected = currentLabel == label
+            DropdownMenuItem(
+                text = { 
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (isSelected) {
+                            Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(8.dp))
+                        }
+                        Text(label, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                        
+                        // Show usage count if > 0
+                        val count = labelUsageCount[label] ?: 0
+                        if (count > 0) {
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "($count)",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+                },
+                onClick = { onSave(label); onDismiss() },
+                leadingIcon = { 
                     Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Close",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                        Icons.AutoMirrored.Filled.Label, 
+                        null, 
+                        modifier = Modifier.size(18.dp),
+                        tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    ) 
                 }
-            }
-        }
-    }
-
-    LaunchedEffect(showCustomInput) {
-        if (showCustomInput) {
-            focusRequester.requestFocus()
+            )
         }
     }
 }
