@@ -172,6 +172,13 @@ interface CallDataDao {
 
     @Query("UPDATE call_data SET localRecordingPath = :path, updatedAt = :timestamp WHERE compositeId = :compositeId")
     suspend fun updateRecordingPath(compositeId: String, path: String?, timestamp: Long = System.currentTimeMillis())
+
+    @Transaction
+    suspend fun updateRecordingPaths(updates: Map<String, String?>, timestamp: Long = System.currentTimeMillis()) {
+        updates.forEach { (id, path) ->
+            updateRecordingPath(id, path, timestamp)
+        }
+    }
     
     // NEW: Update reviewed status (local change, mark for sync)
     @Query("UPDATE call_data SET reviewed = :reviewed, metadataSyncStatus = 'UPDATE_PENDING', updatedAt = :timestamp WHERE compositeId = :compositeId")
@@ -213,4 +220,8 @@ interface CallDataDao {
 
     @Query("DELETE FROM call_data")
     suspend fun deleteAll()
+
+    // NEW: Rescan skipped recordings (mark NOT_APPLICABLE/NOT_FOUND as PENDING)
+    @Query("UPDATE call_data SET recordingSyncStatus = 'PENDING' WHERE recordingSyncStatus IN ('NOT_APPLICABLE', 'NOT_FOUND') AND duration > 0")
+    suspend fun resetSkippedRecordings()
 }

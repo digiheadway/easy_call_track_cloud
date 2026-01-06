@@ -16,15 +16,9 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import android.annotation.SuppressLint
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.Calendar
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 
 // Filter enums for chip dropdowns
 enum class CallTypeFilter { ALL, INCOMING, OUTGOING, MISSED, REJECTED }
@@ -82,7 +76,8 @@ data class HomeUiState(
     val personSortBy: PersonSortBy = PersonSortBy.LAST_CALL,
     val personSortDirection: SortDirection = SortDirection.DESCENDING,
     val allowPersonalExclusion: Boolean = false,
-    val callRecordEnabled: Boolean = true
+    val callRecordEnabled: Boolean = true,
+    val activeRecordings: List<CallDataEntity> = emptyList()
 )
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
@@ -99,6 +94,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             refreshSettings()
             loadRecordingPath()
+            loadPersistentState()
         }
         
         // Trigger immediate sync from system CallLog on app open
@@ -106,56 +102,90 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         
         // Observe Room DB for real-time updates
         viewModelScope.launch {
-            callDataRepository.getAllCallsFlow().collect { calls ->
-                _uiState.update { it.copy(callLogs = calls) }
-                triggerFilter()
-            }
+            callDataRepository.getAllCallsFlow()
+                .distinctUntilChanged()
+                .conflate()
+                .collect { calls ->
+                    _uiState.update { it.copy(callLogs = calls) }
+                    triggerFilter()
+                }
         }
         
         viewModelScope.launch {
-            callDataRepository.getAllPersonsFlow().collect { persons ->
-                _uiState.update { it.copy(persons = persons) }
-                triggerFilter()
-            }
+            callDataRepository.getAllPersonsFlow()
+                .distinctUntilChanged()
+                .conflate()
+                .collect { persons ->
+                    _uiState.update { it.copy(persons = persons) }
+                    triggerFilter()
+                }
         }
         
 
         // Observe Pending Syncs (Calls + Persons)
         viewModelScope.launch {
-            callDataRepository.getPendingChangesCountFlow().collect { totalPending ->
-                _uiState.update { it.copy(pendingSyncCount = totalPending) }
-            }
+            callDataRepository.getPendingChangesCountFlow()
+                .distinctUntilChanged()
+                .conflate()
+                .collect { totalPending ->
+                    _uiState.update { it.copy(pendingSyncCount = totalPending) }
+                }
         }
 
         // Observe Metadata Sync Queue (Total)
         viewModelScope.launch {
-            callDataRepository.getPendingMetadataSyncCountFlow().collect { count ->
-                _uiState.update { it.copy(pendingMetadataCount = count) }
-            }
+            callDataRepository.getPendingMetadataSyncCountFlow()
+                .distinctUntilChanged()
+                .conflate()
+                .collect { count ->
+                    _uiState.update { it.copy(pendingMetadataCount = count) }
+                }
         }
 
         // Observe Granular Metadata Queues
         viewModelScope.launch {
-            callDataRepository.getPendingNewCallsCountFlow().collect { count ->
-                _uiState.update { it.copy(pendingNewCallsCount = count) }
-            }
+            callDataRepository.getPendingNewCallsCountFlow()
+                .distinctUntilChanged()
+                .conflate()
+                .collect { count ->
+                    _uiState.update { it.copy(pendingNewCallsCount = count) }
+                }
         }
         viewModelScope.launch {
-            callDataRepository.getPendingMetadataUpdatesCountFlow().collect { count ->
-                _uiState.update { it.copy(pendingMetadataUpdatesCount = count) }
-            }
+            callDataRepository.getPendingMetadataUpdatesCountFlow()
+                .distinctUntilChanged()
+                .conflate()
+                .collect { count ->
+                    _uiState.update { it.copy(pendingMetadataUpdatesCount = count) }
+                }
         }
         viewModelScope.launch {
-            callDataRepository.getPendingPersonUpdatesCountFlow().collect { count ->
-                _uiState.update { it.copy(pendingPersonUpdatesCount = count) }
-            }
+            callDataRepository.getPendingPersonUpdatesCountFlow()
+                .distinctUntilChanged()
+                .conflate()
+                .collect { count ->
+                    _uiState.update { it.copy(pendingPersonUpdatesCount = count) }
+                }
         }
 
         // Observe Recording Sync Queue
         viewModelScope.launch {
-            callDataRepository.getPendingRecordingSyncCountFlow().collect { count ->
-                _uiState.update { it.copy(pendingRecordingCount = count) }
-            }
+            callDataRepository.getPendingRecordingSyncCountFlow()
+                .distinctUntilChanged()
+                .conflate()
+                .collect { count ->
+                    _uiState.update { it.copy(pendingRecordingCount = count) }
+                }
+        }
+
+        // Observe Active Recordings (Compressing/Uploading)
+        viewModelScope.launch {
+            callDataRepository.getActiveRecordingSyncsFlow()
+                .distinctUntilChanged()
+                .conflate()
+                .collect { active ->
+                    _uiState.update { it.copy(activeRecordings = active) }
+                }
         }
         
         
@@ -235,9 +265,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         syncFromSystem()
     }
 
-    /**
-     * Get recording for a call (with caching)
-     */
     suspend fun getRecordingForLog(call: CallDataEntity): String? {
         if (!_uiState.value.callRecordEnabled) return null
         
@@ -271,27 +298,57 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private fun loadPersistentState() {
+        val searchVisible = settingsRepository.isSearchVisible()
+        val filtersVisible = settingsRepository.isFiltersVisible()
+        val searchQuery = settingsRepository.getSearchQuery()
+        val labelFilter = settingsRepository.getLabelFilter()
+        
+        val typeFilter = try { CallTypeFilter.valueOf(settingsRepository.getCallTypeFilter()) } catch(e: Exception) { CallTypeFilter.ALL }
+        val connFilter = try { ConnectedFilter.valueOf(settingsRepository.getConnectedFilter()) } catch(e: Exception) { ConnectedFilter.ALL }
+        val nFilter = try { NotesFilter.valueOf(settingsRepository.getNotesFilter()) } catch(e: Exception) { NotesFilter.ALL }
+        val cFilter = try { ContactsFilter.valueOf(settingsRepository.getContactsFilter()) } catch(e: Exception) { ContactsFilter.ALL }
+        val aFilter = try { AttendedFilter.valueOf(settingsRepository.getAttendedFilter()) } catch(e: Exception) { AttendedFilter.ALL }
+
+        _uiState.update { it.copy(
+            isSearchVisible = searchVisible,
+            isFiltersVisible = filtersVisible,
+            searchQuery = searchQuery,
+            labelFilter = labelFilter,
+            callTypeFilter = typeFilter,
+            connectedFilter = connFilter,
+            notesFilter = nFilter,
+            contactsFilter = cFilter,
+            attendedFilter = aFilter
+        ) }
+        triggerFilter()
+    }
+
     // ============================================
     // SEARCH & FILTERS
     // ============================================
     
     fun onSearchQueryChanged(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
-        applyFilters()
-        applyPersonFilters()
+        settingsRepository.setSearchQuery(query)
+        triggerFilter()
     }
 
     fun onTabSelected(tabIndex: Int) {
         _uiState.update { it.copy(selectedTab = tabIndex) }
-        applyFilters()
+        triggerFilter()
     }
     
     fun toggleSearchVisibility() {
-        _uiState.update { it.copy(isSearchVisible = !it.isSearchVisible) }
+        val newVisible = !_uiState.value.isSearchVisible
+        _uiState.update { it.copy(isSearchVisible = newVisible) }
+        settingsRepository.setSearchVisible(newVisible)
     }
     
     fun toggleFiltersVisibility() {
-        _uiState.update { it.copy(isFiltersVisible = !it.isFiltersVisible) }
+        val newVisible = !_uiState.value.isFiltersVisible
+        _uiState.update { it.copy(isFiltersVisible = newVisible) }
+        settingsRepository.setFiltersVisible(newVisible)
     }
     
     fun setViewMode(mode: ViewMode) {
@@ -300,33 +357,38 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     
     fun setCallTypeFilter(filter: CallTypeFilter) {
         _uiState.update { it.copy(callTypeFilter = filter) }
-        applyFilters()
+        settingsRepository.setCallTypeFilter(filter.name)
+        triggerFilter()
     }
     
     fun setConnectedFilter(filter: ConnectedFilter) {
         _uiState.update { it.copy(connectedFilter = filter) }
-        applyFilters()
+        settingsRepository.setConnectedFilter(filter.name)
+        triggerFilter()
     }
     
     fun setNotesFilter(filter: NotesFilter) {
         _uiState.update { it.copy(notesFilter = filter) }
-        applyFilters()
+        settingsRepository.setNotesFilter(filter.name)
+        triggerFilter()
     }
     
     fun setContactsFilter(filter: ContactsFilter) {
         _uiState.update { it.copy(contactsFilter = filter) }
-        applyFilters()
+        settingsRepository.setContactsFilter(filter.name)
+        triggerFilter()
     }
     
     fun setAttendedFilter(filter: AttendedFilter) {
         _uiState.update { it.copy(attendedFilter = filter) }
-        applyFilters()
+        settingsRepository.setAttendedFilter(filter.name)
+        triggerFilter()
     }
 
     fun setLabelFilter(label: String) {
         _uiState.update { it.copy(labelFilter = label) }
-        applyFilters()
-        applyPersonFilters() // Labels affect both lists
+        settingsRepository.setLabelFilter(label)
+        triggerFilter()
     }
 
     fun setDateRange(range: DateRange, start: Long? = null, end: Long? = null) {
@@ -336,35 +398,38 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setPersonSortBy(sortBy: PersonSortBy) {
         _uiState.update { it.copy(personSortBy = sortBy) }
-        applyPersonFilters()
+        triggerFilter()
     }
 
     fun togglePersonSortDirection() {
         _uiState.update { 
             it.copy(personSortDirection = if (it.personSortDirection == SortDirection.ASCENDING) SortDirection.DESCENDING else SortDirection.ASCENDING) 
         }
-        applyPersonFilters()
+        triggerFilter()
     }
 
     private var filterJob: kotlinx.coroutines.Job? = null
     private fun triggerFilter() {
         filterJob?.cancel()
         filterJob = viewModelScope.launch(Dispatchers.Default) {
-            // Give a tiny delay to debounce rapid updates (e.g. multi-stat updates)
-            kotlinx.coroutines.delay(16)
-            applyFilters()
-            applyPersonFilters()
+            // Debounce to prevent UI lag during rapid updates
+            kotlinx.coroutines.delay(20)
+            
+            val currentState = _uiState.value
+            val filteredLogs = applyFiltersInternal(currentState)
+            val filteredPersons = applyPersonFiltersInternal(currentState)
+            
+            _uiState.update { it.copy(
+                filteredLogs = filteredLogs,
+                filteredPersons = filteredPersons
+            ) }
         }
     }
 
     fun normalizePhoneNumber(number: String) = callDataRepository.normalizePhoneNumber(number)
 
-    private fun applyFilters() {
-        val current = _uiState.value
-        if (current.callLogs.isEmpty()) {
-            _uiState.update { it.copy(filteredLogs = emptyList()) }
-            return
-        }
+    private fun applyFiltersInternal(current: HomeUiState): List<CallDataEntity> {
+        if (current.callLogs.isEmpty()) return emptyList()
 
         val query = current.searchQuery.lowercase()
         val labelFilter = current.labelFilter
@@ -457,12 +522,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
             true
         }
-        
-        _uiState.update { it.copy(filteredLogs = filtered) }
+        return filtered
     }
 
-    private fun applyPersonFilters() {
-        val current = _uiState.value
+    private fun applyPersonFiltersInternal(current: HomeUiState): List<PersonDataEntity> {
         val query = current.searchQuery.lowercase()
         
         val filtered = if (query.isEmpty()) {
@@ -500,7 +563,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         
-        _uiState.update { it.copy(filteredPersons = sorted) }
+        return sorted
     }
 
     // ============================================
@@ -619,7 +682,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 allowPersonalExclusion = allowPersonalExclusion,
                 callRecordEnabled = callRecordEnabled
             ) }
-            applyFilters()
+            triggerFilter()
         }
     }
 

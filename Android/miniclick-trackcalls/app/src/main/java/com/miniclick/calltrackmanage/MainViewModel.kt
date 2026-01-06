@@ -22,6 +22,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _isSessionOnboardingDismissed = MutableStateFlow(false)
     val isSessionOnboardingDismissed: StateFlow<Boolean> = _isSessionOnboardingDismissed.asStateFlow()
 
+    // Flag to track if we've auto-shown the cloud sync modal this session
+    var hasShownCloudSyncPrompt = false
+        private set
+
+    fun markCloudSyncPromptShown() {
+        hasShownCloudSyncPrompt = true
+    }
+
     init {
         loadSettings()
         _isSessionOnboardingDismissed.value = settingsRepository.isOnboardingOffline()

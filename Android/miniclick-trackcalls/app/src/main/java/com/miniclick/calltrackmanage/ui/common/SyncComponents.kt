@@ -1,5 +1,6 @@
 package com.miniclick.calltrackmanage.ui.common
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -20,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import com.miniclick.calltrackmanage.data.db.CallDataEntity
 import com.miniclick.calltrackmanage.data.db.RecordingSyncStatus
+import com.miniclick.calltrackmanage.ui.settings.SettingsUiState
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -353,6 +355,7 @@ fun RecordingQueueItem(
                 RecordingSyncStatus.COMPRESSING -> "Preparing" to MaterialTheme.colorScheme.secondary
                 RecordingSyncStatus.UPLOADING -> "Uploading" to MaterialTheme.colorScheme.primary
                 RecordingSyncStatus.FAILED -> "Failed" to MaterialTheme.colorScheme.error
+                RecordingSyncStatus.NOT_FOUND -> "Not Found" to MaterialTheme.colorScheme.error
                 else -> "Waiting" to MaterialTheme.colorScheme.onSurfaceVariant
             }
             
@@ -417,3 +420,121 @@ private fun getWaitingReason(recording: CallDataEntity): String? {
         else -> "In queue, waiting for upload slot"
     }
 }
+
+@Composable
+fun GlobalSyncStatusBar(
+    modifier: Modifier = Modifier,
+    pendingNewCalls: Int,
+    pendingMetadata: Int,
+    pendingPersonUpdates: Int,
+    pendingRecordings: Int,
+    activeUploads: Int,
+    isNetworkAvailable: Boolean,
+    onSyncNow: () -> Unit,
+    onShowQueue: () -> Unit
+) {
+    val activeProcess by com.miniclick.calltrackmanage.data.ProcessMonitor.activeProcess.collectAsState()
+    
+    val totalPending = pendingNewCalls + pendingMetadata + pendingPersonUpdates
+    val showBar = activeProcess != null || totalPending > 0 || pendingRecordings > 0 || activeUploads > 0 || !isNetworkAvailable
+
+    android.util.Log.d("GlobalSyncStatusBar", "showBar: $showBar, activeProcess: ${activeProcess?.title}, totalPending: $totalPending, pendingRecordings: $pendingRecordings, activeUploads: $activeUploads, isNetworkAvailable: $isNetworkAvailable")
+
+    AnimatedVisibility(
+        visible = showBar,
+        modifier = modifier,
+        enter = expandVertically() + fadeIn(),
+        exit = shrinkVertically() + fadeOut()
+    ) {
+        val backgroundColor = if (isNetworkAvailable) 
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f) 
+        else 
+            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.95f)
+        
+        val contentColor = if (isNetworkAvailable) 
+            MaterialTheme.colorScheme.onPrimaryContainer 
+        else 
+            MaterialTheme.colorScheme.onErrorContainer
+
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onShowQueue),
+            color = backgroundColor,
+            shadowElevation = 2.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                // Determine what to show
+                val process = activeProcess
+                
+                val text = when {
+                    !isNetworkAvailable -> "No internet: ${totalPending + pendingRecordings} pending"
+                    process != null -> {
+                        val progressPct = if (process.isIndeterminate) "" else " ${(process.progress * 100).toInt()}%"
+                        "${process.title}$progressPct"
+                    }
+                    totalPending > 0 -> "Syncing $totalPending updates..."
+                    activeUploads > 0 -> "Uploading $activeUploads recordings..."
+                    pendingRecordings > 0 -> "$pendingRecordings recordings in queue"
+                    else -> "Syncing..."
+                }
+
+                val icon = when {
+                    !isNetworkAvailable -> Icons.Default.CloudOff
+                    process != null -> Icons.Default.Sync
+                    totalPending > 0 -> Icons.Default.Sync
+                    activeUploads > 0 -> Icons.Default.CloudUpload
+                    else -> Icons.Default.Mic
+                }
+
+                Icon(
+                    imageVector = icon, 
+                    contentDescription = null, 
+                    modifier = Modifier.size(14.dp), 
+                    tint = contentColor
+                )
+                
+                Spacer(Modifier.width(8.dp))
+                
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = contentColor,
+                    fontWeight = FontWeight.Medium
+                )
+                
+                if (isNetworkAvailable) {
+                    Spacer(Modifier.width(12.dp))
+                    
+                    if (process != null && !process.isIndeterminate) {
+                         LinearProgressIndicator(
+                            progress = { process.progress },
+                            modifier = Modifier
+                                .width(60.dp)
+                                .height(4.dp)
+                                .clip(CircleShape),
+                            color = contentColor,
+                            trackColor = contentColor.copy(alpha = 0.2f),
+                        )
+                    } else {
+                        LinearProgressIndicator(
+                            modifier = Modifier
+                                .width(48.dp)
+                                .height(2.dp)
+                                .clip(CircleShape),
+                            color = contentColor,
+                            trackColor = contentColor.copy(alpha = 0.2f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+

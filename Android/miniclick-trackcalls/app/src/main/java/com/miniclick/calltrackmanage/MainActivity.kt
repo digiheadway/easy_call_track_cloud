@@ -13,23 +13,22 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.miniclick.calltrackmanage.worker.RecordingUploadWorker
+import com.miniclick.calltrackmanage.ui.common.*
 import com.miniclick.calltrackmanage.ui.home.DialerScreen
 import com.miniclick.calltrackmanage.ui.home.CallsScreen
 import com.miniclick.calltrackmanage.ui.home.PersonsScreen
 import com.miniclick.calltrackmanage.ui.home.ReportsScreen
 import com.miniclick.calltrackmanage.ui.settings.SettingsScreen
 import com.miniclick.calltrackmanage.ui.theme.CallCloudTheme
-
 import com.miniclick.calltrackmanage.ui.utils.AudioPlayer
 import com.miniclick.calltrackmanage.ui.onboarding.OnboardingScreen
 import com.miniclick.calltrackmanage.data.SettingsRepository
 import com.miniclick.calltrackmanage.worker.CallSyncWorker
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.miniclick.calltrackmanage.ui.common.PhoneLookupResultModal
 import com.miniclick.calltrackmanage.ui.settings.SettingsViewModel
 import com.miniclick.calltrackmanage.data.RecordingRepository
 import com.miniclick.calltrackmanage.data.CallDataRepository
-import com.miniclick.calltrackmanage.worker.RecordingUploadWorker
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -157,34 +156,35 @@ class MainActivity : ComponentActivity() {
             if (importedFile != null) {
                 // Tiered search through recent calls to find a match
                 val searchTiers = listOf(20, 50, 100, 300, 700, 1000, 3000, 5000)
-                var matchedCall: com.miniclick.calltrackmanage.data.db.CallDataEntity? = null
                 
-                val allRecentCalls = withContext(Dispatchers.IO) {
-                    callRepo.getAllCalls().take(5000) 
-                }
-                
-                var checkedCount = 0
-                for (tier in searchTiers) {
-                    if (checkedCount >= allRecentCalls.size) break
+                val matchedCall = withContext(Dispatchers.Default) {
+                    val allRecentCalls = callRepo.getAllCalls().take(5000)
+                    var matched: com.miniclick.calltrackmanage.data.db.CallDataEntity? = null
+                    var checkedCount = 0
                     
-                    val limit = minOf(tier, allRecentCalls.size)
-                    for (i in checkedCount until limit) {
-                        val call = allRecentCalls[i]
-                        val isMatch = recordingRepo.findRecordingInList(
-                            arrayOf(importedFile),
-                            call.callDate,
-                            call.duration,
-                            call.phoneNumber,
-                            call.contactName
-                        ) != null
+                    for (tier in searchTiers) {
+                        if (checkedCount >= allRecentCalls.size) break
                         
-                        if (isMatch) {
-                            matchedCall = call
-                            break
+                        val limit = minOf(tier, allRecentCalls.size)
+                        for (i in checkedCount until limit) {
+                            val call = allRecentCalls[i]
+                            val isMatch = recordingRepo.findRecordingInList(
+                                arrayOf(importedFile),
+                                call.callDate,
+                                call.duration,
+                                call.phoneNumber,
+                                call.contactName
+                            ) != null
+                            
+                            if (isMatch) {
+                                matched = call
+                                break
+                            }
                         }
+                        if (matched != null) break
+                        checkedCount = limit
                     }
-                    if (matchedCall != null) break
-                    checkedCount = limit
+                    matched
                 }
 
                 if (matchedCall != null) {
@@ -260,6 +260,18 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
     var showDialerSheet by remember { mutableStateOf(false) }
     val dialerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     
+    // Sync Queue Modal States - Using SettingsViewModel
+    val showSyncQueue = settingsState.showSyncQueue
+    val showRecordingQueue = settingsState.showRecordingQueue
+    
+    // Debug Logging
+    val activeProcess by com.miniclick.calltrackmanage.data.ProcessMonitor.activeProcess.collectAsState()
+    LaunchedEffect(settingsState.isSyncSetup, settingsState.pendingNewCallsCount, settingsState.pendingMetadataUpdatesCount, settingsState.pendingRecordingCount, activeProcess) {
+        Log.d("MainScreen", "Sync Setup: ${settingsState.isSyncSetup}, Active: ${activeProcess?.title}, Pending: NewCalls=${settingsState.pendingNewCallsCount}, Meta=${settingsState.pendingMetadataUpdatesCount}, Person=${settingsState.pendingPersonUpdatesCount}, Rec=${settingsState.pendingRecordingCount}")
+    }
+
+    // Modals are handled inside the content Box to ensure proper layering
+
     Scaffold(
         bottomBar = {
             Column {
@@ -293,15 +305,40 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                 .padding(bottom = innerPadding.calculateBottomPadding())
         ) {
             Box(modifier = Modifier.weight(1f)) {
+                val syncStatusBar = @Composable {
+                    com.miniclick.calltrackmanage.ui.common.GlobalSyncStatusBar(
+                        pendingNewCalls = settingsState.pendingNewCallsCount,
+                        pendingMetadata = settingsState.pendingMetadataUpdatesCount,
+                        pendingPersonUpdates = settingsState.pendingPersonUpdatesCount,
+                        pendingRecordings = settingsState.pendingRecordingCount,
+                        activeUploads = settingsState.activeRecordings.count { 
+                            it.recordingSyncStatus == com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.UPLOADING || 
+                            it.recordingSyncStatus == com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.COMPRESSING 
+                        },
+                        // Only show network error if sync is actually setup
+                        isNetworkAvailable = settingsState.isNetworkAvailable || !settingsState.isSyncSetup,
+                        onSyncNow = { settingsViewModel.syncCallManually() },
+                        onShowQueue = { settingsViewModel.toggleSyncQueue(true) }
+                    )
+                }
+
                 when (selectedTab) {
                     AppTab.DIALER -> { /* No-op, should not happen */ }
                     AppTab.CALLS -> CallsScreen(
                         audioPlayer = audioPlayer, 
-                        onOpenDialer = { showDialerSheet = true }
+                        onOpenDialer = { showDialerSheet = true },
+                        syncStatusBar = syncStatusBar
                     )
-                    AppTab.PERSONS -> PersonsScreen(audioPlayer = audioPlayer)
-                    AppTab.REPORTS -> ReportsScreen()
-                    AppTab.SETTINGS -> SettingsScreen()
+                    AppTab.PERSONS -> PersonsScreen(
+                        audioPlayer = audioPlayer,
+                        syncStatusBar = syncStatusBar
+                    )
+                    AppTab.REPORTS -> ReportsScreen(
+                        syncStatusBar = syncStatusBar
+                    )
+                    AppTab.SETTINGS -> SettingsScreen(
+                        syncStatusBar = syncStatusBar
+                    )
                 }
 
                 if (lookupPhoneNumber != null) {
@@ -332,6 +369,29 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                              )
                         }
                     }
+                }
+
+                // Sync Queue Modals
+                if (showSyncQueue) {
+                    SyncQueueModal(
+                        pendingNewCalls = settingsState.pendingNewCallsCount,
+                        pendingRelatedData = settingsState.pendingMetadataUpdatesCount + settingsState.pendingPersonUpdatesCount,
+                        pendingRecordings = settingsState.pendingRecordingCount,
+                        onSyncAll = { settingsViewModel.syncCallManually() },
+                        onDismiss = { settingsViewModel.toggleSyncQueue(false) },
+                        onRecordingClick = {
+                            settingsViewModel.toggleSyncQueue(false)
+                            settingsViewModel.toggleRecordingQueue(true)
+                        }
+                    )
+                }
+
+                if (showRecordingQueue) {
+                    RecordingQueueModal(
+                        activeRecordings = settingsState.activeRecordings,
+                        onDismiss = { settingsViewModel.toggleRecordingQueue(false) },
+                        onRetry = { settingsViewModel.retryRecordingUpload(it) }
+                    )
                 }
             }
         }

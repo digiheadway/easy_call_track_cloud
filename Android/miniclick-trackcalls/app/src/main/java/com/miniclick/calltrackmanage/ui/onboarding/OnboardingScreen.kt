@@ -18,10 +18,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import com.miniclick.calltrackmanage.ui.settings.CloudSyncModal
+import com.miniclick.calltrackmanage.ui.settings.CreateOrgModal
+import com.miniclick.calltrackmanage.ui.settings.JoinOrgModal
+import com.miniclick.calltrackmanage.ui.settings.AccountInfoModal
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,6 +63,13 @@ fun OnboardingScreen(onComplete: () -> Unit) {
         androidx.lifecycle.viewmodel.compose.viewModel()
     val uiState by settingsViewModel.uiState.collectAsState()
     
+    // Modals State
+    var showCloudSyncModal by remember { mutableStateOf(false) }
+    var showCreateOrgModal by remember { mutableStateOf(false) }
+    var showJoinOrgModal by remember { mutableStateOf(false) }
+    var showAccountInfoModal by remember { mutableStateOf(false) }
+    var accountEditField by remember { mutableStateOf<String?>(null) }
+
     // Fetch SIM info on start
     LaunchedEffect(Unit) {
         settingsViewModel.fetchSimInfo()
@@ -198,9 +209,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                 }
                             },
                             onJoinAsEmployee = {
-                                // For now, we'll mark onboarding as done and show the Join Org banner
-                                // which is first in the new OnboardingGuide strips
-                                onComplete()
+                                showCloudSyncModal = true
                             }
                         )
                     }
@@ -252,6 +261,59 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     )
                 }
             }
+        }
+
+        // --- Modals ---
+        if (showCloudSyncModal) {
+            CloudSyncModal(
+                uiState = uiState,
+                viewModel = settingsViewModel,
+                onDismiss = { 
+                    showCloudSyncModal = false
+                    if (settingsViewModel.uiState.value.pairingCode.isNotBlank()) {
+                        onComplete()
+                    }
+                },
+                onOpenAccountInfo = { field -> 
+                    accountEditField = field
+                    showAccountInfoModal = true 
+                },
+                onCreateOrg = {
+                    showCreateOrgModal = true
+                },
+                onJoinOrg = {
+                    showJoinOrgModal = true
+                },
+                onKeepOffline = { 
+                    // Just close and let them continue with normal onboarding
+                    showCloudSyncModal = false
+                }
+            )
+        }
+
+        if (showCreateOrgModal) {
+            CreateOrgModal(
+                onDismiss = { showCreateOrgModal = false }
+            )
+        }
+
+        if (showJoinOrgModal) {
+            JoinOrgModal(
+                viewModel = settingsViewModel,
+                onDismiss = { showJoinOrgModal = false }
+            )
+        }
+
+        if (showAccountInfoModal) {
+            AccountInfoModal(
+                uiState = uiState,
+                viewModel = settingsViewModel,
+                editField = accountEditField,
+                onDismiss = { 
+                    showAccountInfoModal = false
+                    accountEditField = null
+                }
+            )
         }
     }
 }
@@ -342,7 +404,7 @@ fun WelcomeStepContent(
             shape = RoundedCornerShape(16.dp),
             border = androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
         ) {
-            Text("Join as Employee", style = MaterialTheme.typography.titleMedium)
+            Text("Login", style = MaterialTheme.typography.titleMedium)
         }
     }
 }
@@ -466,7 +528,8 @@ fun PermissionDisclosureStepContent(
             "Privacy & Permissions",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onBackground
         )
         
         Spacer(Modifier.height(16.dp))
@@ -494,8 +557,8 @@ fun PermissionDisclosureStepContent(
         
         PermissionDisclosureItem(
             icon = Icons.Default.Phone,
-            title = "Phone State",
-            description = "Required to detect active calls for real-time notes and call management features."
+            title = "Phone State & Numbers",
+            description = "Required to detect active calls and identify which SIM card is being used for tracking."
         )
         
         PermissionDisclosureItem(
@@ -539,7 +602,22 @@ fun PermissionDisclosureStepContent(
             Text("I Understand & Agree")
         }
         
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(16.dp))
+        
+        Text(
+            text = "Privacy Policy",
+            modifier = Modifier
+                .clickable {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://miniclickcrm.com/privacy"))
+                    context.startActivity(intent)
+                }
+                .padding(8.dp),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+            textAlign = TextAlign.Center
+        )
+        
+        Spacer(Modifier.height(24.dp))
     }
 }
 
@@ -576,7 +654,8 @@ fun PermissionDisclosureItem(
             Text(
                 title,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
             )
             Text(
                 description,

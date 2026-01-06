@@ -6,11 +6,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.miniclick.calltrackmanage.data.CallDataRepository
 import com.miniclick.calltrackmanage.data.SettingsRepository
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 import android.widget.Toast
 import android.util.Log
@@ -88,7 +86,13 @@ data class SettingsUiState(
     val allowedStorageGb: Float = 0f,
     val storageUsedBytes: Long = 0L,
     val userDeclinedRecording: Boolean = false,
-    val isDialerEnabled: Boolean = true
+    val isDialerEnabled: Boolean = true,
+    val showRecordingEnablementDialog: Boolean = false,
+    val showRecordingDisablementDialog: Boolean = false,
+    val isNetworkAvailable: Boolean = true,
+    val isSyncSetup: Boolean = false,
+    val showSyncQueue: Boolean = false,
+    val showRecordingQueue: Boolean = false
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -96,6 +100,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val settingsRepository = SettingsRepository.getInstance(application)
     private val callDataRepository = CallDataRepository.getInstance(application)
     private val recordingRepository = com.miniclick.calltrackmanage.data.RecordingRepository.getInstance(application)
+    private val networkObserver = com.miniclick.calltrackmanage.util.NetworkConnectivityObserver(application)
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -104,6 +109,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch(Dispatchers.IO) {
             loadSettings()
             checkPermissions()
+        }
+
+        // Observe Network Status
+        viewModelScope.launch {
+            networkObserver.observe().collect { isAvailable ->
+                _uiState.update { it.copy(isNetworkAvailable = isAvailable) }
+            }
         }
         // NOTE: fetchSimInfo() and fetchWhatsappApps() are NOT called here
         // They are loaded lazily when user accesses those specific features
@@ -115,29 +127,44 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private fun observeSyncCounts() {
         viewModelScope.launch {
-            callDataRepository.getPendingNewCallsCountFlow().collect { count ->
-                _uiState.update { it.copy(pendingNewCallsCount = count) }
-            }
+            callDataRepository.getPendingNewCallsCountFlow()
+                .distinctUntilChanged()
+                .conflate()
+                .collect { count ->
+                    _uiState.update { it.copy(pendingNewCallsCount = count) }
+                }
         }
         viewModelScope.launch {
-            callDataRepository.getPendingMetadataUpdatesCountFlow().collect { count ->
-                _uiState.update { it.copy(pendingMetadataUpdatesCount = count) }
-            }
+            callDataRepository.getPendingMetadataUpdatesCountFlow()
+                .distinctUntilChanged()
+                .conflate()
+                .collect { count ->
+                    _uiState.update { it.copy(pendingMetadataUpdatesCount = count) }
+                }
         }
         viewModelScope.launch {
-            callDataRepository.getPendingPersonUpdatesCountFlow().collect { count ->
-                _uiState.update { it.copy(pendingPersonUpdatesCount = count) }
-            }
+            callDataRepository.getPendingPersonUpdatesCountFlow()
+                .distinctUntilChanged()
+                .conflate()
+                .collect { count ->
+                    _uiState.update { it.copy(pendingPersonUpdatesCount = count) }
+                }
         }
         viewModelScope.launch {
-            callDataRepository.getPendingRecordingSyncCountFlow().collect { count ->
-                _uiState.update { it.copy(pendingRecordingCount = count) }
-            }
+            callDataRepository.getPendingRecordingSyncCountFlow()
+                .distinctUntilChanged()
+                .conflate()
+                .collect { count ->
+                    _uiState.update { it.copy(pendingRecordingCount = count) }
+                }
         }
         viewModelScope.launch {
-            callDataRepository.getActiveRecordingSyncsFlow().collect { recordings ->
-                _uiState.update { it.copy(activeRecordings = recordings) }
-            }
+            callDataRepository.getActiveRecordingSyncsFlow()
+                .distinctUntilChanged()
+                .conflate()
+                .collect { recordings ->
+                    _uiState.update { it.copy(activeRecordings = recordings) }
+                }
         }
     }
 
@@ -197,7 +224,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 allowedStorageGb = settingsRepository.getAllowedStorageGb(),
                 storageUsedBytes = settingsRepository.getStorageUsedBytes(),
                 userDeclinedRecording = settingsRepository.isUserDeclinedRecording(),
-                isDialerEnabled = settingsRepository.isDialerEnabled()
+                isDialerEnabled = settingsRepository.isDialerEnabled(),
+                isSyncSetup = orgId.isNotEmpty()
             )
         }
         refreshRecordingPathInfo()
@@ -558,14 +586,52 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun isTrackStartDateSet(): Boolean = settingsRepository.isTrackStartDateSet()
 
-    fun updateCallRecordEnabled(enabled: Boolean) {
+    fun toggleRecordingDialog(show: Boolean) {
+        _uiState.update { it.copy(showRecordingEnablementDialog = show) }
+    }
+
+    fun toggleRecordingDisableDialog(show: Boolean) {
+        _uiState.update { it.copy(showRecordingDisablementDialog = show) }
+    }
+
+    fun updateCallRecordEnabled(enabled: Boolean, scanOld: Boolean = false) {
         viewModelScope.launch {
             settingsRepository.setCallRecordEnabled(enabled)
             if (enabled) {
-                settingsRepository.setRecordingLastEnabledTimestamp(System.currentTimeMillis())
+                if (scanOld) {
+                    // Start from beginning/track start date
+                    settingsRepository.setRecordingLastEnabledTimestamp(0L)
+                    // Reset statuses in DB so they are picked up again
+                    callDataRepository.resetSkippedRecordings()
+                    
+                    // Trigger a system log sync to find any missing recording paths for these reset items
+                    withContext(Dispatchers.IO) {
+                        callDataRepository.syncFromSystemCallLog()
+                    }
+                    
+                    android.widget.Toast.makeText(getApplication(), "Scanning all past calls for recordings...", android.widget.Toast.LENGTH_SHORT).show()
+                } else {
+                    settingsRepository.setRecordingLastEnabledTimestamp(System.currentTimeMillis())
+                }
             }
-            _uiState.update { it.copy(callRecordEnabled = enabled) }
+            _uiState.update { it.copy(
+                callRecordEnabled = enabled,
+                showRecordingEnablementDialog = false,
+                showRecordingDisablementDialog = false
+            ) }
+            
+            if (enabled) {
+                RecordingUploadWorker.runNow(getApplication())
+            }
         }
+    }
+
+    fun toggleSyncQueue(show: Boolean) {
+        _uiState.update { it.copy(showSyncQueue = show) }
+    }
+    
+    fun toggleRecordingQueue(show: Boolean) {
+        _uiState.update { it.copy(showRecordingQueue = show) }
     }
 
     fun updatePlanExpiryDate(date: String?) {

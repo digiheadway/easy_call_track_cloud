@@ -42,7 +42,8 @@ import androidx.compose.ui.graphics.Color
 fun SettingsScreen(
     onBack: (() -> Unit)? = null,
     viewModel: SettingsViewModel = viewModel(),
-    mainViewModel: MainViewModel = viewModel()
+    mainViewModel: MainViewModel = viewModel(),
+    syncStatusBar: @Composable () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -60,8 +61,6 @@ fun SettingsScreen(
     var showResetConfirmDialog by remember { mutableStateOf(false) }
     var contactSubject by remember { mutableStateOf("") }
     var accountEditField by remember { mutableStateOf<String?>(null) } // "pairing", "phone1", "phone2", null for all
-    var showSyncQueue by remember { mutableStateOf(false) }
-    var showRecordingQueue by remember { mutableStateOf(false) }
     var showCustomLookupModal by remember { mutableStateOf(false) }
 
     val folderLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -196,19 +195,7 @@ fun SettingsScreen(
         )
     }
 
-    if (showSyncQueue) {
-        SyncQueueModal(
-            pendingNewCalls = uiState.pendingNewCallsCount,
-            pendingRelatedData = uiState.pendingMetadataUpdatesCount + uiState.pendingPersonUpdatesCount,
-            pendingRecordings = uiState.pendingRecordingCount,
-            onSyncAll = viewModel::syncCallManually,
-            onDismiss = { showSyncQueue = false },
-            onRecordingClick = {
-                showSyncQueue = false
-                showRecordingQueue = true
-            }
-        )
-    }
+    // Using centralized modals in MainActivity
 
     // Clear Data Dialog
     if (showClearDataDialog) {
@@ -244,11 +231,40 @@ fun SettingsScreen(
         )
     }
 
-    if (showRecordingQueue) {
-        RecordingQueueModal(
-            activeRecordings = uiState.activeRecordings,
-            onDismiss = { showRecordingQueue = false },
-            onRetry = viewModel::retryRecordingUpload
+    // Recording Enablement Dialog
+    if (uiState.showRecordingEnablementDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.toggleRecordingDialog(false) },
+            title = { Text("Enable Recording Sync") },
+            text = { Text("Would you like to scan and sync recordings for previous calls as well, or only for new calls starting now?") },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.updateCallRecordEnabled(enabled = true, scanOld = true) }
+                ) { Text("Scan All") }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { viewModel.updateCallRecordEnabled(enabled = true, scanOld = false) }
+                ) { Text("New Only") }
+            }
+        )
+    }
+
+    // Recording Disablement Dialog
+    if (uiState.showRecordingDisablementDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.toggleRecordingDisableDialog(false) },
+            title = { Text("Disable Recording Sync?") },
+            text = { Text("Recording sync will be stopped. Any currently pending uploads will be cancelled. New calls will not be checked for recordings.") },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.updateCallRecordEnabled(enabled = false) },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Disable") }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.toggleRecordingDisableDialog(false) }) { Text("Cancel") }
+            }
         )
     }
 
@@ -267,7 +283,7 @@ fun SettingsScreen(
                 },
                 actions = {
                     if (uiState.pairingCode.isNotEmpty()) {
-                        IconButton(onClick = { showRecordingQueue = true }) {
+                        IconButton(onClick = { viewModel.toggleRecordingQueue(true) }) {
                             Icon(
                                 imageVector = Icons.Default.CloudUpload,
                                 contentDescription = "Recording Queue",
@@ -283,14 +299,20 @@ fun SettingsScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
         ) {
+            syncStatusBar()
+            
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+            ) {
             // ===============================================
             // 1. CLOUD & ACCOUNT
             // ===============================================
             SettingsSection(title = "Cloud & Account") {
                 // The Sync Card is technically part of this section but we keep its distinctive Card look
-                SyncCloudCard(uiState, viewModel, { showSyncQueue = true }, { showCloudSyncModal = true }, { showResetConfirmDialog = true })
+                SyncCloudCard(uiState, viewModel, { viewModel.toggleSyncQueue(true) }, { showCloudSyncModal = true }, { showResetConfirmDialog = true })
             }
 
             if (uiState.pairingCode.isNotEmpty()) {
@@ -438,7 +460,13 @@ fun SettingsScreen(
                     trailingContent = {
                         Switch(
                             checked = uiState.callRecordEnabled,
-                            onCheckedChange = { viewModel.updateCallRecordEnabled(it) }
+                            onCheckedChange = { enabled ->
+                                if (enabled) {
+                                    viewModel.toggleRecordingDialog(true)
+                                } else {
+                                    viewModel.toggleRecordingDisableDialog(true)
+                                }
+                            }
                         )
                     }
                 )
@@ -814,11 +842,39 @@ fun SettingsScreen(
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
                 ListItem(
+                    headlineContent = { Text("Privacy Policy") },
+                    supportingContent = { Text("Review how we handle your data") },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.Security, MaterialTheme.colorScheme.primary) 
+                    },
+                    modifier = Modifier.clickable { 
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://miniclickcrm.com/privacy"))
+                        context.startActivity(intent)
+                    }
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                ListItem(
+                    headlineContent = { Text("Delete Account") },
+                    supportingContent = { Text("Request permanent deletion of your account and data") },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.NoAccounts, MaterialTheme.colorScheme.error) 
+                    },
+                    modifier = Modifier.clickable { 
+                        contactSubject = "Account Deletion Request"
+                        showContactModal = true 
+                    }
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                ListItem(
                     headlineContent = { 
                         Text("Clear All App Data", color = MaterialTheme.colorScheme.error) 
                     },
                     supportingContent = { 
-                        Text("Delete all call logs, notes, and settings")
+                        Text("Delete all call logs, notes, and settings locally")
                     },
                     leadingContent = { 
                         SettingsIcon(Icons.Default.DeleteForever, MaterialTheme.colorScheme.error) 
@@ -833,6 +889,7 @@ fun SettingsScreen(
             Spacer(Modifier.height(32.dp))
         }
     }
+    }
 }
 
 // ===============================================
@@ -846,7 +903,8 @@ fun CloudSyncModal(
     onDismiss: () -> Unit,
     onOpenAccountInfo: (String?) -> Unit,
     onCreateOrg: () -> Unit,
-    onJoinOrg: () -> Unit
+    onJoinOrg: () -> Unit,
+    onKeepOffline: (() -> Unit)? = null
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val context = LocalContext.current
@@ -923,9 +981,9 @@ fun CloudSyncModal(
                     contentPadding = PaddingValues(16.dp)
                 ) {
                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                       Text("Create Organisation", style = MaterialTheme.typography.titleMedium)
+                       Text("Get 7 Days Free Trial Now", style = MaterialTheme.typography.titleMedium)
                        Text(
-                           "Starting at 149/per month only", 
+                           "Create account to start tracking", 
                            style = MaterialTheme.typography.labelSmall, 
                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
                         )
@@ -944,7 +1002,20 @@ fun CloudSyncModal(
                     shape = RoundedCornerShape(12.dp),
                     contentPadding = PaddingValues(16.dp)
                 ) {
-                    Text("Join Organisation", style = MaterialTheme.typography.titleMedium)
+                    Text("Login", style = MaterialTheme.typography.titleMedium)
+                }
+
+                if (onKeepOffline != null) {
+                    Spacer(Modifier.height(12.dp))
+                    TextButton(
+                        onClick = { 
+                            onDismiss()
+                            onKeepOffline() 
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Keep Everything Offline", color = MaterialTheme.colorScheme.primary)
+                    }
                 }
 
             }
@@ -1469,7 +1540,10 @@ fun ContactModal(
             Spacer(Modifier.height(16.dp))
             
             Text(
-                "How would you like to contact us?",
+                if (subject == "Account Deletion Request") 
+                    "You can delete your account directly through the web panel or request it here via support."
+                else 
+                    "How would you like to contact us?",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -1562,7 +1636,7 @@ fun CreateOrgModal(
                 .verticalScroll(rememberScrollState())
         ) {
               Text(
-                text = "To Create Organisation",
+                text = "Start 7 Day Free Trial",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
@@ -1587,9 +1661,9 @@ fun CreateOrgModal(
             Spacer(Modifier.height(24.dp))
             
             val steps = listOf(
-                "Step 1 - Signup on our Website",
-                "Step 2 - Add yourself as employee",
-                "Step 3 - Enter Pairing Code"
+                "Step 1 - Create account on Website",
+                "Step 2 - Start your 7-day free trial",
+                "Step 3 - Enter Pairing Code here"
             )
             
             steps.forEach { step -> 
@@ -1611,7 +1685,7 @@ fun CreateOrgModal(
                 shape = RoundedCornerShape(12.dp),
                 contentPadding = PaddingValues(16.dp)
             ) {
-                Text("Go to Website Now")
+                Text("Create Account & Start Trial")
             }
              Spacer(Modifier.height(48.dp))
         }

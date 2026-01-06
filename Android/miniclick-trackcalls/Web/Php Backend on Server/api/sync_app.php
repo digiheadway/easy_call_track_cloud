@@ -289,8 +289,8 @@ if ($action === "start_call") {
     $updSync->execute();
 
     // Upload status logic
-    $upload_status = 'pending';
-    // If duration 0 or missed, no recording expected usually
+    $upload_status = $_POST['upload_status'] ?? 'pending';
+    // If duration 0 or missed, no recording expected usually, force completed in those cases
     if ($duration <= 0 || strtolower($type) === 'missed') {
         $upload_status = 'completed';
     }
@@ -417,7 +417,7 @@ if ($action === "batch_sync_calls") {
             }
 
             // Determine upload status
-            $upload_status = 'pending';
+            $upload_status = $call['upload_status'] ?? 'pending';
             if ($duration <= 0 || strtolower($type) === 'missed') {
                 $upload_status = 'completed';
             }
@@ -796,6 +796,7 @@ if ($action === "update_call") {
     $reviewed = isset($_POST['reviewed']) ? ($_POST['reviewed'] === 'true' || $_POST['reviewed'] === '1' ? 1 : 0) : null;
     $note = $_POST['note'] ?? null;
     $caller_name = $_POST['caller_name'] ?? null;
+    $upload_status = $_POST['upload_status'] ?? null;
     $updated_at = intval($_POST['updated_at'] ?? 0); // Client's update timestamp in millis
     
     if ($unique_id === '') errorOut("unique_id required");
@@ -820,6 +821,12 @@ if ($action === "update_call") {
     if ($caller_name !== null) {
         $updates[] = "caller_name = ?";
         $params[] = $caller_name;
+        $types .= "s";
+    }
+    
+    if ($upload_status !== null) {
+        $updates[] = "upload_status = ?";
+        $params[] = $upload_status;
         $types .= "s";
     }
     

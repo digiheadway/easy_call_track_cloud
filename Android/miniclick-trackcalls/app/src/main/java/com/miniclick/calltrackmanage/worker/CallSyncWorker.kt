@@ -11,6 +11,8 @@ import com.miniclick.calltrackmanage.network.NetworkClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
+import com.miniclick.calltrackmanage.data.CallRemoteUpdate
+import com.miniclick.calltrackmanage.data.PersonRemoteUpdate
 
 /**
  * CallSyncWorker - Fast metadata sync worker
@@ -184,34 +186,38 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body?.get("success") == true) {
-                    // Process call updates
+                    // Process call updates in batch
                     @Suppress("UNCHECKED_CAST")
-                    val callUpdates = body["call_updates"] as? List<Map<String, Any>> ?: emptyList()
-                    Log.d(TAG, "Received ${callUpdates.size} call updates from server")
-                    
-                    for (update in callUpdates) {
-                        val uniqueId = update["unique_id"] as? String ?: continue
-                        val reviewed = (update["reviewed"] as? Number)?.toInt() == 1
-                        val note = update["note"] as? String
-                        val callerName = update["caller_name"] as? String
-                        val serverUpdatedAt = (update["updated_at"] as? Number)?.toLong() ?: System.currentTimeMillis()
-                        
-                        callDataRepository.updateCallFromServer(uniqueId, reviewed, note, callerName, serverUpdatedAt)
+                    val callUpdatesJson = body["call_updates"] as? List<Map<String, Any>> ?: emptyList()
+                    if (callUpdatesJson.isNotEmpty()) {
+                        Log.d(TAG, "Received ${callUpdatesJson.size} call updates from server. Batching...")
+                        val callUpdates = callUpdatesJson.mapNotNull { update ->
+                            val uniqueId = update["unique_id"] as? String ?: return@mapNotNull null
+                            val reviewed = (update["reviewed"] as? Number)?.toInt() == 1
+                            val note = update["note"] as? String
+                            val callerName = update["caller_name"] as? String
+                            val serverUpdatedAt = (update["updated_at"] as? Number)?.toLong() ?: System.currentTimeMillis()
+                            
+                            CallRemoteUpdate(uniqueId, reviewed, note, callerName, serverUpdatedAt)
+                        }
+                        callDataRepository.updateCallsFromServerBatch(callUpdates)
                     }
                     
-                    // Process person updates
+                    // Process person updates in batch
                     @Suppress("UNCHECKED_CAST")
-                    val personUpdates = body["person_updates"] as? List<Map<String, Any>> ?: emptyList()
-                    Log.d(TAG, "Received ${personUpdates.size} person updates from server")
-                    
-                    for (update in personUpdates) {
-                        val phone = update["phone"] as? String ?: continue
-                        val personNote = update["person_note"] as? String
-                        val label = update["label"] as? String
-                        val name = update["name"] as? String
-                        val serverUpdatedAt = (update["updated_at"] as? Number)?.toLong() ?: System.currentTimeMillis()
-                        
-                        callDataRepository.updatePersonFromServer(phone, personNote, label, name, serverUpdatedAt)
+                    val personUpdatesJson = body["person_updates"] as? List<Map<String, Any>> ?: emptyList()
+                    if (personUpdatesJson.isNotEmpty()) {
+                        Log.d(TAG, "Received ${personUpdatesJson.size} person updates from server. Batching...")
+                        val personUpdates = personUpdatesJson.mapNotNull { update ->
+                            val phone = update["phone"] as? String ?: return@mapNotNull null
+                            val personNote = update["person_note"] as? String
+                            val label = update["label"] as? String
+                            val name = update["name"] as? String
+                            val serverUpdatedAt = (update["updated_at"] as? Number)?.toLong() ?: System.currentTimeMillis()
+                            
+                            PersonRemoteUpdate(phone, personNote, label, name, serverUpdatedAt)
+                        }
+                        callDataRepository.updatePersonsFromServerBatch(personUpdates)
                     }
                 }
             }
@@ -250,7 +256,8 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 "type" to typeStr,
                 "duration" to call.duration,
                 "call_time" to callTime,
-                "device_phone" to activePhone
+                "device_phone" to activePhone,
+                "upload_status" to mapRecordingStatusToServer(call.recordingSyncStatus)
             )
         }
         
@@ -332,7 +339,8 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             duration = call.duration.toInt(),
             callTime = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).apply {
                 timeZone = java.util.TimeZone.getTimeZone("UTC")
-            }.format(java.util.Date(call.callDate))
+            }.format(java.util.Date(call.callDate)),
+            uploadStatus = mapRecordingStatusToServer(call.recordingSyncStatus)
         )
         
         if (response.isSuccessful && response.body()?.get("success") == true) {
@@ -362,10 +370,11 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
         
         val response = NetworkClient.api.updateCall(
             action = "update_call",
-            uniqueId = call.compositeId,
+            unique_id = call.compositeId,
             reviewed = call.reviewed,
             note = call.callNote,
             callerName = call.contactName,
+            uploadStatus = mapRecordingStatusToServer(call.recordingSyncStatus),
             updatedAt = call.updatedAt
         )
         
@@ -604,6 +613,16 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to fetch config from server", e)
+        }
+    }
+
+    private fun mapRecordingStatusToServer(status: com.miniclick.calltrackmanage.data.db.RecordingSyncStatus): String? {
+        return when (status) {
+            com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.COMPLETED -> "completed"
+            com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.NOT_FOUND -> "not_found"
+            com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.FAILED -> "failed"
+            com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.NOT_APPLICABLE -> "completed"
+            else -> null
         }
     }
 }

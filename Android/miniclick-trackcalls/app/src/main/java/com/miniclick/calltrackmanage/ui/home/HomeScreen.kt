@@ -76,7 +76,8 @@ fun CallsScreen(
     audioPlayer: AudioPlayer,
     viewModel: HomeViewModel = viewModel(),
     settingsViewModel: SettingsViewModel = viewModel(),
-    onOpenDialer: () -> Unit = {}
+    onOpenDialer: () -> Unit = {},
+    syncStatusBar: @Composable () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val settingsState by settingsViewModel.uiState.collectAsState()
@@ -213,39 +214,15 @@ fun CallsScreen(
             CallsHeader(
                 onSearchClick = viewModel::toggleSearchVisibility,
                 onFilterClick = viewModel::toggleFiltersVisibility,
-                onSimClick = { showTrackSimModal = true },
                 isSearchActive = uiState.isSearchVisible,
                 isFilterActive = uiState.isFiltersVisible
             )
+            
+            syncStatusBar()
             // ... rest of content logic preserved via existing logic flow?
             // Wait, I can't just replace the start and expect the rest to work if I'm wrapping in Scaffold.
             // I need to offset the entire block.
             // Or I can just wrap the Column in Scaffold and keep the rest as is.
-            
-            // Re-using existing state variables
-            var showSyncQueue by remember { mutableStateOf(false) }
-            
-            if (showSyncQueue) {
-                SyncQueueModal(
-                    pendingNewCalls = uiState.pendingNewCallsCount,
-                    pendingRelatedData = uiState.pendingMetadataUpdatesCount + uiState.pendingPersonUpdatesCount,
-                    pendingRecordings = uiState.pendingRecordingCount,
-                    onSyncAll = viewModel::fullSync,
-                    onDismiss = { showSyncQueue = false }
-                )
-            }
-    
-            // Sync Status Strip - only show when sync is configured
-            if (uiState.isSyncSetup) {
-                SyncStatusStrip(
-                    pendingCount = uiState.pendingSyncCount,
-                    pendingMetadata = uiState.pendingMetadataCount,
-                    pendingRecordings = uiState.pendingRecordingCount,
-                    isNetworkAvailable = uiState.isNetworkAvailable,
-                    onSyncNow = viewModel::syncNow,
-                    onShowQueue = { showSyncQueue = true }
-                )
-            }
             
             // Expandable Search Row
             AnimatedVisibility(
@@ -380,7 +357,6 @@ fun CallsScreen(
 fun CallsHeader(
     onSearchClick: () -> Unit,
     onFilterClick: () -> Unit,
-    onSimClick: () -> Unit,
     isSearchActive: Boolean,
     isFilterActive: Boolean
 ) {
@@ -406,15 +382,6 @@ fun CallsHeader(
             
             // Action Icons
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Sim Icon
-                IconButton(onClick = onSimClick) {
-                    Icon(
-                        imageVector = Icons.Default.SimCard,
-                        contentDescription = "Sim Selection",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
                 // Search Icon
                 IconButton(onClick = onSearchClick) {
                     Icon(
@@ -459,7 +426,8 @@ data class PersonGroup(
 fun PersonsScreen(
     audioPlayer: AudioPlayer,
     viewModel: HomeViewModel = viewModel(),
-    settingsViewModel: SettingsViewModel = viewModel()
+    settingsViewModel: SettingsViewModel = viewModel(),
+    syncStatusBar: @Composable () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val settingsState by settingsViewModel.uiState.collectAsState()
@@ -570,34 +538,11 @@ fun PersonsScreen(
         PersonsHeader(
             onSearchClick = viewModel::toggleSearchVisibility,
             onFilterClick = viewModel::toggleFiltersVisibility,
-            onSimClick = { showTrackSimModal = true },
             isSearchActive = uiState.isSearchVisible,
             isFilterActive = uiState.isFiltersVisible
         )
         
-        var showSyncQueue by remember { mutableStateOf(false) }
-        
-        if (showSyncQueue) {
-            SyncQueueModal(
-                pendingNewCalls = uiState.pendingNewCallsCount,
-                pendingRelatedData = uiState.pendingMetadataUpdatesCount + uiState.pendingPersonUpdatesCount,
-                pendingRecordings = uiState.pendingRecordingCount,
-                onSyncAll = viewModel::fullSync,
-                onDismiss = { showSyncQueue = false }
-            )
-        }
-
-        // Sync Status Strip - only show when sync is configured
-        if (uiState.isSyncSetup) {
-            SyncStatusStrip(
-                pendingCount = uiState.pendingSyncCount,
-                pendingMetadata = uiState.pendingMetadataCount,
-                pendingRecordings = uiState.pendingRecordingCount,
-                isNetworkAvailable = uiState.isNetworkAvailable,
-                onSyncNow = viewModel::syncNow,
-                onShowQueue = { showSyncQueue = true }
-            )
-        }
+        syncStatusBar()
         
         // Expandable Search Row
         AnimatedVisibility(
@@ -728,7 +673,6 @@ fun PersonsScreen(
 fun PersonsHeader(
     onSearchClick: () -> Unit,
     onFilterClick: () -> Unit,
-    onSimClick: () -> Unit,
     isSearchActive: Boolean,
     isFilterActive: Boolean
 ) {
@@ -754,15 +698,6 @@ fun PersonsHeader(
             
             // Action Icons
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Sim Icon
-                IconButton(onClick = onSimClick) {
-                    Icon(
-                        imageVector = Icons.Default.SimCard,
-                        contentDescription = "Sim Selection",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
                 IconButton(onClick = onSearchClick) {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -1399,7 +1334,8 @@ fun getRelativeTime(timestamp: Long): String {
 
 @Composable
 fun ReportsScreen(
-    viewModel: HomeViewModel = viewModel()
+    viewModel: HomeViewModel = viewModel(),
+    syncStatusBar: @Composable () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     
@@ -1452,6 +1388,8 @@ fun ReportsScreen(
                 }
             }
         }
+        
+        syncStatusBar()
         
         // Expandable Filters Row
         AnimatedVisibility(

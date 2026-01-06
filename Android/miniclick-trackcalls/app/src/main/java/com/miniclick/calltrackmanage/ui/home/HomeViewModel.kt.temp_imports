@@ -1,0 +1,32 @@
+package com.miniclick.calltrackmanage.ui.home
+
+import android.app.Application
+import android.provider.CallLog
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.miniclick.calltrackmanage.data.CallDataRepository
+import com.miniclick.calltrackmanage.data.RecordingRepository
+import com.miniclick.calltrackmanage.data.db.CallDataEntity
+import com.miniclick.calltrackmanage.data.db.CallLogStatus
+import com.miniclick.calltrackmanage.data.db.PersonDataEntity
+import com.miniclick.calltrackmanage.data.SettingsRepository
+import android.telephony.SubscriptionManager
+import android.content.Context
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import android.annotation.SuppressLint
+import java.util.Calendar
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+
+// Filter enums for chip dropdowns
+enum class CallTypeFilter { ALL, INCOMING, OUTGOING, MISSED, REJECTED }
+enum class ConnectedFilter { ALL, CONNECTED, NOT_CONNECTED }
+enum class NotesFilter { ALL, WITH_NOTE, WITHOUT_NOTE }
+enum class ContactsFilter { ALL, IN_CONTACTS, NOT_IN_CONTACTS }
+enum class AttendedFilter { ALL, ATTENDED, NEVER_ATTENDED }
+enum class ViewMode { CALLS, PERSONS }
+enum class DateRange { TODAY, LAST_3_DAYS, LAST_7_DAYS, LAST_14_DAYS, LAST_30_DAYS, THIS_MONTH, PREVIOUS_MONTH, CUSTOM, ALL }
+enum class PersonSortBy { LAST_CALL, MOST_CALLS }
+enum class SortDirection { ASCENDING, DESCENDING }

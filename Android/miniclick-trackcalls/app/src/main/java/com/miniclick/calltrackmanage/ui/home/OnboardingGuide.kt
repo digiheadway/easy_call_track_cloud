@@ -135,6 +135,14 @@ fun OnboardingGuide(
         checkPermissions()
         settingsViewModel.fetchSimInfo()
     }
+
+    // Auto-show cloud sync modal if not connected and not dismissed
+    LaunchedEffect(isDismissed, uiState.pairingCode) {
+        if (uiState.pairingCode.isEmpty() && !isDismissed && !showCloudSyncModal && !mainViewModel.hasShownCloudSyncPrompt) {
+            mainViewModel.markCloudSyncPromptShown()
+            showCloudSyncModal = true
+        }
+    }
     
     // Refresh SIM info when permissions change
     LaunchedEffect(hasPhoneState, hasSimInfo) {
@@ -233,18 +241,7 @@ fun OnboardingGuide(
                 }))
             }
             
-            if (uiState.pairingCode.isBlank()) {
-                add(GuideStep(
-                    type = "JOIN_ORG",
-                    title = "Connect to Cloud",
-                    description = "Sync your calls to the organisation dashboard.",
-                    icon = Icons.Default.CloudUpload,
-                    actionLabel = "Setup Cloud Syncing",
-                    secondaryActionLabel = "Keep Everything Offline",
-                    onAction = { showCloudSyncModal = true },
-                    onSecondaryAction = { mainViewModel.dismissOnboardingSession() }
-                ))
-            }
+            // JOIN_ORG step removed to be shown as instant modal instead
         }
     }
     // --- UI Render ---
@@ -304,7 +301,8 @@ fun OnboardingGuide(
             },
             onJoinOrg = {
                 showJoinOrgModal = true
-            }
+            },
+            onKeepOffline = { mainViewModel.dismissOnboardingSession() }
         )
     }
 

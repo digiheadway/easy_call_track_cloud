@@ -43,6 +43,17 @@ class SettingsRepository private constructor(private val context: Context) {
     private val KEY_RECORDING_LAST_ENABLED_TIMESTAMP = "recording_last_enabled_timestamp"
     private val KEY_DIALER_ENABLED = "dialer_enabled"
 
+    // Persistence for Home Screen State
+    private val KEY_SEARCH_VISIBLE = "search_visible"
+    private val KEY_FILTERS_VISIBLE = "filters_visible"
+    private val KEY_SEARCH_QUERY = "search_query"
+    private val KEY_FILTER_CALL_TYPE = "filter_call_type"
+    private val KEY_FILTER_CONNECTED = "filter_connected"
+    private val KEY_FILTER_NOTES = "filter_notes"
+    private val KEY_FILTER_CONTACTS = "filter_contacts"
+    private val KEY_FILTER_ATTENDED = "filter_attended"
+    private val KEY_FILTER_LABEL = "filter_label"
+
     private val prefs by lazy {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
@@ -282,4 +293,32 @@ class SettingsRepository private constructor(private val context: Context) {
 
     fun isDialerEnabled(): Boolean = prefs.getBoolean(KEY_DIALER_ENABLED, true)
     fun setDialerEnabled(enabled: Boolean) = prefs.edit().putBoolean(KEY_DIALER_ENABLED, enabled).apply()
+
+    // Home Screen State Persistence
+    fun isSearchVisible(): Boolean = prefs.getBoolean(KEY_SEARCH_VISIBLE, false)
+    fun setSearchVisible(visible: Boolean) = prefs.edit().putBoolean(KEY_SEARCH_VISIBLE, visible).apply()
+
+    fun isFiltersVisible(): Boolean = prefs.getBoolean(KEY_FILTERS_VISIBLE, false)
+    fun setFiltersVisible(visible: Boolean) = prefs.edit().putBoolean(KEY_FILTERS_VISIBLE, visible).apply()
+
+    fun getSearchQuery(): String = prefs.getString(KEY_SEARCH_QUERY, "") ?: ""
+    fun setSearchQuery(query: String) = prefs.edit().putString(KEY_SEARCH_QUERY, query).apply()
+
+    fun getCallTypeFilter(): String = prefs.getString(KEY_FILTER_CALL_TYPE, "ALL") ?: "ALL"
+    fun setCallTypeFilter(filter: String) = prefs.edit().putString(KEY_FILTER_CALL_TYPE, filter).apply()
+
+    fun getConnectedFilter(): String = prefs.getString(KEY_FILTER_CONNECTED, "ALL") ?: "ALL"
+    fun setConnectedFilter(filter: String) = prefs.edit().putString(KEY_FILTER_CONNECTED, filter).apply()
+
+    fun getNotesFilter(): String = prefs.getString(KEY_FILTER_NOTES, "ALL") ?: "ALL"
+    fun setNotesFilter(filter: String) = prefs.edit().putString(KEY_FILTER_NOTES, filter).apply()
+
+    fun getContactsFilter(): String = prefs.getString(KEY_FILTER_CONTACTS, "ALL") ?: "ALL"
+    fun setContactsFilter(filter: String) = prefs.edit().putString(KEY_FILTER_CONTACTS, filter).apply()
+
+    fun getAttendedFilter(): String = prefs.getString(KEY_FILTER_ATTENDED, "ALL") ?: "ALL"
+    fun setAttendedFilter(filter: String) = prefs.edit().putString(KEY_FILTER_ATTENDED, filter).apply()
+
+    fun getLabelFilter(): String = prefs.getString(KEY_FILTER_LABEL, "") ?: ""
+    fun setLabelFilter(label: String) = prefs.edit().putString(KEY_FILTER_LABEL, label).apply()
 }

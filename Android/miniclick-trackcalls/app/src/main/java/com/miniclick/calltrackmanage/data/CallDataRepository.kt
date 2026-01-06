@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.withContext
 import com.miniclick.calltrackmanage.network.PersonUpdateDto
 import com.miniclick.calltrackmanage.network.CallUpdateDto
+import androidx.room.withTransaction
 
 /**
  * Unified repository for all call and person data.
@@ -20,6 +21,22 @@ import com.miniclick.calltrackmanage.network.CallUpdateDto
  * 
  * Uses singleton pattern to prevent multiple instances and ensure consistent state.
  */
+data class CallRemoteUpdate(
+    val compositeId: String,
+    val reviewed: Boolean,
+    val note: String?,
+    val callerName: String?,
+    val serverUpdatedAt: Long
+)
+
+data class PersonRemoteUpdate(
+    val phone: String,
+    val personNote: String?,
+    val label: String?,
+    val name: String?,
+    val serverUpdatedAt: Long
+)
+
 class CallDataRepository private constructor(private val context: Context) {
     
     private val database = AppDatabase.getInstance(context)
@@ -162,6 +179,19 @@ class CallDataRepository private constructor(private val context: Context) {
      */
     suspend fun updateRecordingSyncStatus(compositeId: String, status: RecordingSyncStatus) = withContext(Dispatchers.IO) {
         callDataDao.updateRecordingSyncStatus(compositeId, status)
+        
+        // If recording is NOT_FOUND, we want to push this status update to the server metadata
+        if (status == RecordingSyncStatus.NOT_FOUND) {
+            callDataDao.updateMetadataSyncStatus(compositeId, MetadataSyncStatus.UPDATE_PENDING)
+        }
+    }
+
+    /**
+     * Rescan skipped recordings (mark NOT_APPLICABLE as PENDING)
+     */
+    suspend fun resetSkippedRecordings() = withContext(Dispatchers.IO) {
+        callDataDao.resetSkippedRecordings()
+        Log.d(TAG, "Reset all skipped recordings to PENDING")
     }
     
     /**
@@ -191,6 +221,25 @@ class CallDataRepository private constructor(private val context: Context) {
     suspend fun updateSyncError(compositeId: String, error: String?) = withContext(Dispatchers.IO) {
         callDataDao.updateSyncError(compositeId, error)
     }
+
+    /**
+     * Update multiple calls from server in batch
+     */
+    suspend fun updateCallsFromServerBatch(updates: List<CallRemoteUpdate>) = withContext(Dispatchers.IO) {
+        if (updates.isEmpty()) return@withContext
+        database.withTransaction {
+            updates.forEach { update ->
+                callDataDao.updateFromServer(
+                    update.compositeId, 
+                    update.reviewed, 
+                    update.note, 
+                    update.callerName, 
+                    update.serverUpdatedAt
+                )
+            }
+        }
+        Log.d(TAG, "Batch updated ${updates.size} calls from server")
+    }
     
     /**
      * Update person from server (bidirectional sync - pull changes)
@@ -219,6 +268,32 @@ class CallDataRepository private constructor(private val context: Context) {
             ))
         }
         Log.d(TAG, "Updated person from server: $normalized")
+    }
+
+    /**
+     * Update multiple persons from server in batch
+     */
+    suspend fun updatePersonsFromServerBatch(updates: List<PersonRemoteUpdate>) = withContext(Dispatchers.IO) {
+        if (updates.isEmpty()) return@withContext
+        database.withTransaction {
+            updates.forEach { update ->
+                val normalized = normalizePhoneNumber(update.phone)
+                // Check if person exists (sync call inside transaction)
+                val existing = personDataDao.getByPhoneNumber(normalized)
+                if (existing != null) {
+                    personDataDao.updateFromServer(normalized, update.personNote, update.label, update.name, update.serverUpdatedAt)
+                } else {
+                    personDataDao.insert(PersonDataEntity(
+                        phoneNumber = normalized,
+                        contactName = update.name,
+                        personNote = update.personNote,
+                        label = update.label,
+                        serverUpdatedAt = update.serverUpdatedAt
+                    ))
+                }
+            }
+        }
+        Log.d(TAG, "Batch updated ${updates.size} persons from server")
     }
     
     /**
@@ -522,88 +597,113 @@ class CallDataRepository private constructor(private val context: Context) {
      * Also finds and updates recording paths.
      */
     suspend fun syncFromSystemCallLog() = withContext(Dispatchers.IO) {
-        Log.d(TAG, "Starting sync from system call log...")
-        
-        val filterDate = settingsRepository.getTrackStartDate()
-        val deviceId = android.provider.Settings.Secure.getString(context.contentResolver, android.provider.Settings.Secure.ANDROID_ID)
-        val simSelection = settingsRepository.getSimSelection()
-        
-        // Skip if tracking is Off
-        if (simSelection == "Off") {
-            Log.d(TAG, "Call tracking is OFF, skipping sync")
-            return@withContext
-        }
-
-        // Optimize: Only fetch calls since the latest call in our DB (with a 2-day safety buffer)
-        // or the tracking start date, whichever is more recent.
-        val latestCallDate = callDataDao.getMaxCallDate() ?: 0L
-        val fetchStartDate = maxOf(filterDate, latestCallDate - (2 * 24 * 60 * 60 * 1000L))
-        
-        // Get existing IDs once (only need those since fetchStartDate)
-        val existingIds = callDataDao.getCompositeIdsSince(fetchStartDate).toSet()
-        Log.d(TAG, "Existing calls since ${java.util.Date(fetchStartDate)}: ${existingIds.size}")
-        
-        // Fetch from system call log with SIM filter  
-        val systemCalls = fetchSystemCallLog(fetchStartDate, deviceId, simSelection)
-        Log.d(TAG, "System call log returned: ${systemCalls.size} calls (SIM: $simSelection)")
-        
-        val newCalls = mutableListOf<CallDataEntity>()
-        val callsToUpdateRecording = mutableListOf<Pair<String, String>>()
-        
-        // Track persons to update
-        val personCallsMap = mutableMapOf<String, MutableList<CallDataEntity>>()
-        
-        for (call in systemCalls) {
-            val normalized = normalizePhoneNumber(call.phoneNumber)
+        try {
+            ProcessMonitor.startProcess("Importing Data from System...", isIndeterminate = true)
+            Log.d(TAG, "Starting sync from system call log...")
             
-            // Collect new calls for batch insert
-            if (!existingIds.contains(call.compositeId)) {
-                newCalls.add(call)
+            val filterDate = settingsRepository.getTrackStartDate()
+            val deviceId = android.provider.Settings.Secure.getString(context.contentResolver, android.provider.Settings.Secure.ANDROID_ID)
+            val simSelection = settingsRepository.getSimSelection()
+            
+            // Skip if tracking is Off
+            if (simSelection == "Off") {
+                Log.d(TAG, "Call tracking is OFF, skipping sync")
+                return@withContext
+            }
+
+            // Optimize: Only fetch calls since the latest call in our DB (with a 2-day safety buffer)
+            // or the tracking start date, whichever is more recent.
+            val latestCallDate = callDataDao.getMaxCallDate() ?: 0L
+            val fetchStartDate = maxOf(filterDate, latestCallDate - (2 * 24 * 60 * 60 * 1000L))
+            
+            // Get existing IDs once (only need those since fetchStartDate)
+            val existingIds = callDataDao.getCompositeIdsSince(fetchStartDate).toSet()
+            Log.d(TAG, "Existing calls since ${java.util.Date(fetchStartDate)}: ${existingIds.size}")
+            
+            // Fetch from system call log with SIM filter  
+            val systemCalls = fetchSystemCallLog(fetchStartDate, deviceId, simSelection)
+            Log.d(TAG, "System call log returned: ${systemCalls.size} calls (SIM: $simSelection)")
+            
+            ProcessMonitor.updateProgress(0.6f, "Processing ${systemCalls.size} calls")
+
+            val newCalls = mutableListOf<CallDataEntity>()
+            
+            // Track persons to update
+            val personCallsMap = mutableMapOf<String, MutableList<CallDataEntity>>()
+            
+            for (call in systemCalls) {
+                val normalized = normalizePhoneNumber(call.phoneNumber)
+                
+                // Collect new calls for batch insert
+                if (!existingIds.contains(call.compositeId)) {
+                    newCalls.add(call)
+                }
+                
+                // Track for person update (all calls from system log should be considered)
+                personCallsMap.getOrPut(normalized) { mutableListOf() }.add(call)
             }
             
-            // Track for person update (all calls from system log should be considered)
-            personCallsMap.getOrPut(normalized) { mutableListOf() }.add(call)
-        }
-        
-        // Batch insert new calls
-        if (newCalls.isNotEmpty()) {
-            callDataDao.insertAll(newCalls)
-            Log.d(TAG, "Inserted ${newCalls.size} new calls")
-        }
-        
-        // Update recordings for calls that don't have them yet (including existing ones)
-        // We do this after insertion to simplify
-        val unsyncedWithNoPath = callDataDao.getCallsMissingRecordings().filter { it.localRecordingPath == null }
-        if (unsyncedWithNoPath.isNotEmpty()) {
-            val recordingFiles = recordingRepository.getRecordingFiles()
-            for (call in unsyncedWithNoPath) {
-                if (call.duration > 0) {
-                    val recordingPath = recordingRepository.findRecordingInList(
-                        recordingFiles,
-                        call.callDate,
-                        call.duration,
-                        call.phoneNumber,
-                        call.contactName
-                    )
-                    if (recordingPath != null) {
-                        callDataDao.updateRecordingPath(call.compositeId, recordingPath)
-                        Log.d(TAG, "Found recording for ${call.compositeId}: $recordingPath")
+            // Batch insert new calls
+            if (newCalls.isNotEmpty()) {
+                callDataDao.insertAll(newCalls)
+                Log.d(TAG, "Inserted ${newCalls.size} new calls")
+            }
+            
+            // Update recordings for calls that don't have them yet (including existing ones)
+            // We do this after insertion to simplify
+            val unsyncedWithNoPath = callDataDao.getCallsMissingRecordings().filter { it.localRecordingPath == null }
+            if (unsyncedWithNoPath.isNotEmpty()) {
+                ProcessMonitor.startProcess("Finding Recordings of Calls")
+                val recordingFiles = recordingRepository.getRecordingFiles()
+                val total = unsyncedWithNoPath.size
+                
+                val updates = mutableMapOf<String, String>()
+                
+                unsyncedWithNoPath.forEachIndexed { index, call ->
+                    // Update progress every 10 items to reduce overhead
+                    if (index % 10 == 0) {
+                        val progress = index.toFloat() / total
+                        ProcessMonitor.updateProgress(progress, "${(progress * 100).toInt()}% Done")
+                    }
+
+                    if (call.duration > 0) {
+                        val recordingPath = recordingRepository.findRecordingInList(
+                            recordingFiles,
+                            call.callDate,
+                            call.duration,
+                            call.phoneNumber,
+                            call.contactName
+                        )
+                        if (recordingPath != null) {
+                            updates[call.compositeId] = recordingPath
+                        }
                     }
                 }
+
+                // Batch update in DB
+                if (updates.isNotEmpty()) {
+                    Log.d(TAG, "Found ${updates.size} recordings to link. applying batch updates...")
+                    callDataDao.updateRecordingPaths(updates)
+                }
             }
+            
+            // Update person data in batch
+            updatePersonsData(personCallsMap)
+            
+            // CRITICAL: Delete any calls from Room that are now before the filter date
+            // This handles cases where user changed the start date to a later date
+            Log.d(TAG, "Cleaning up calls before $filterDate...")
+            callDataDao.deleteBefore(filterDate)
+            
+            val finalCount = callDataDao.getAllCompositeIds().size
+            Log.d(TAG, "Sync complete. New calls: ${newCalls.size}. Remaining in Room: $finalCount")
+        } catch (e: Exception) {
+            Log.e(TAG, "Sync failed", e)
+        } finally {
+            ProcessMonitor.endProcess()
         }
-        
-        // Update person data in batch
-        updatePersonsData(personCallsMap)
-        
-        // CRITICAL: Delete any calls from Room that are now before the filter date
-        // This handles cases where user changed the start date to a later date
-        Log.d(TAG, "Cleaning up calls before $filterDate...")
-        callDataDao.deleteBefore(filterDate)
-        
-        val finalCount = callDataDao.getAllCompositeIds().size
-        Log.d(TAG, "Sync complete. New calls: ${newCalls.size}. Remaining in Room: $finalCount")
     }
+        
     
     /**
      * Update person data based on their calls

@@ -32,7 +32,8 @@ interface CallCloudApi {
         @Field("caller") caller: String,
         @Field("type") type: String,
         @Field("duration") duration: Int,
-        @Field("call_time") callTime: String
+        @Field("call_time") callTime: String,
+        @Field("upload_status") uploadStatus: String? = null
     ): Response<Map<String, Any>>
 
     // NEW: Batch Sync Calls
@@ -94,15 +95,16 @@ interface CallCloudApi {
         @Field("last_sync_time") lastSyncTime: Long
     ): Response<Map<String, Any>>
     
-    // NEW: Update call metadata (reviewed, note, caller_name)
+    // NEW: Update call metadata (reviewed, note, caller_name, upload_status)
     @FormUrlEncoded
     @POST("sync_app.php")
     suspend fun updateCall(
         @Field("action") action: String,
-        @Field("unique_id") uniqueId: String,
+        @Field("unique_id") unique_id: String,
         @Field("reviewed") reviewed: Boolean?,
         @Field("note") note: String?,
         @Field("caller_name") callerName: String?,
+        @Field("upload_status") uploadStatus: String? = null,
         @Field("updated_at") updatedAt: Long
     ): Response<Map<String, Any>>
     

@@ -20,7 +20,8 @@ enum class MetadataSyncStatus {
  * Status for recording sync (slow sync: compression + upload)
  */
 enum class RecordingSyncStatus {
-    NOT_APPLICABLE,  // No recording for this call (missed, 0 duration)
+    NOT_APPLICABLE,  // No recording for this call (missed, 0 duration, or excluded)
+    NOT_FOUND,       // Recording was expected but could not be found after timeout/grace period
     PENDING,         // Recording exists, not yet uploaded
     COMPRESSING,     // Currently compressing
     UPLOADING,       // Currently uploading
