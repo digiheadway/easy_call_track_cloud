@@ -1,0 +1,1 @@
+<?php echo filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/style.css'); ?>

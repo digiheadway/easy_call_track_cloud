@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Password - MiniClick Calls</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../assets/favicon.png">
+    <link rel="apple-touch-icon" href="../assets/favicon.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    colors: {
+                        brand: { 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7', 900: '#0c4a6e' },
+                        dark: { bg: '#0B0F19', card: '#111827', border: '#1F2937' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0B0F19;
+            color: white;
+        }
+
+        .glass-card {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .input-field {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #0ea5e9;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+        }
+    </style>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0ea5e9">
+</head>
+
+<body class="antialiased min-h-screen flex flex-col relative overflow-hidden">
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-brand-500/20 rounded-full blur-[128px] pointer-events-none">
+        </div>
+        <div
+            class="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-[128px] pointer-events-none">
+        </div>
+    </div>
+
+    <main class="flex-grow flex items-center justify-center px-4 py-20">
+        <div class="glass-card w-full max-w-md p-8 sm:p-10 rounded-3xl shadow-2xl relative">
+            <div
+                class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-dark-bg p-2 rounded-2xl border border-white/10 shadow-xl">
+                <div
+                    class="w-16 h-16 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center">
+                    <i data-feather="lock" class="text-white w-8 h-8"></i>
+                </div>
+            </div>
+
+            <div class="text-center mt-8 mb-8">
+                <h1 class="text-3xl font-bold mb-2">Reset Password</h1>
+                <p class="text-gray-400">Enter your code and new password</p>
+            </div>
+
+            <form id="resetForm" class="space-y-4">
+                <div>
+                    <label for="otp" class="block text-sm font-medium text-gray-300 mb-2">Reset Code</label>
+                    <input type="text" id="otp" name="otp" required maxlength="6" pattern="[0-9]*" inputmode="numeric"
+                        class="input-field w-full rounded-xl py-3 px-4 placeholder-gray-500 text-center tracking-widest text-lg"
+                        placeholder="000000">
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-300 mb-2">New Password</label>
+                    <input type="password" id="password" name="password" required
+                        class="input-field w-full rounded-xl py-3 px-4 placeholder-gray-500" placeholder="New Password">
+                </div>
+
+                <div>
+                    <label for="confirm_password" class="block text-sm font-medium text-gray-300 mb-2">Confirm
+                        Password</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required
+                        class="input-field w-full rounded-xl py-3 px-4 placeholder-gray-500"
+                        placeholder="Confirm Password">
+                </div>
+
+                <div id="errorMessage"
+                    class="hidden text-red-500 text-sm p-3 bg-red-500/10 border border-red-500/20 rounded-lg"></div>
+                <div id="successMessage"
+                    class="hidden text-green-500 text-sm p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                </div>
+
+                <button type="submit" id="submitBtn"
+                    class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-brand-500/25 mt-4 flex items-center justify-center gap-2">
+                    Reset Password <i data-feather="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </form>
+
+            <div class="mt-6 text-center">
+                <a href="../login/" class="text-gray-500 hover:text-white text-sm transition-colors">Back to Login</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        feather.replace();
+        const resetForm = document.getElementById('resetForm');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const submitBtn = document.getElementById('submitBtn');
+        const BASE_URL = 'https://api.miniclickcrm.com/api';
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const email = urlParams.get('email');
+
+        resetForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const otp = document.getElementById('otp').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+
+            errorMessage.classList.add('hidden');
+            successMessage.classList.add('hidden');
+
+            if (password !== confirmPassword) {
+                errorMessage.textContent = 'Passwords do not match';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            if (!email) {
+                errorMessage.textContent = 'Invalid session. Please try "Forgot Password" again.';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'Resetting... <i data-feather="loader" class="animate-spin w-4 h-4 ml-2"></i>';
+            feather.replace();
+
+            try {
+                const response = await fetch(`${BASE_URL}/auth.php?action=reset_password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, otp, new_password: password })
+                });
+                const data = await response.json();
+
+                if (data.status === false) throw new Error(data.message || 'Reset failed');
+
+                successMessage.textContent = 'Password reset successfully! Redirecting to login...';
+                successMessage.classList.remove('hidden');
+
+                setTimeout(() => {
+                    window.location.href = '../login/';
+                }, 2000);
+
+            } catch (err) {
+                errorMessage.textContent = err.message || 'Something went wrong.';
+                errorMessage.classList.remove('hidden');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Reset Password <i data-feather="arrow-right" class="w-4 h-4"></i>';
+                feather.replace();
+            }
+        });
+    </script>
+</body>
+
+</html>

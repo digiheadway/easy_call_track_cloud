@@ -1,0 +1,397 @@
+{
+  "parameterGroups": {
+    "Ads_Toggles": {
+      "description": "Global and granular ad visibility toggles",
+      "parameters": {
+        "show_app_open": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Enable/disable App Open ads",
+          "valueType": "BOOLEAN"
+        },
+        "app_wide_ad_app_open_ad": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Global toggle for App Open ads across the entire application",
+          "valueType": "BOOLEAN"
+        },
+        "show_interstitial": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Enable/disable Interstitial ads globally",
+          "valueType": "BOOLEAN"
+        },
+        "show_banner": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Enable/disable Banner ads globally",
+          "valueType": "BOOLEAN"
+        },
+        "show_adaptive_banner": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Enable/disable Adaptive Banner ads",
+          "valueType": "BOOLEAN"
+        },
+        "show_rewarded": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Enable/disable Rewarded ads globally",
+          "valueType": "BOOLEAN"
+        },
+        "show_rewarded_interstitial": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Enable/disable Rewarded Interstitial ads",
+          "valueType": "BOOLEAN"
+        },
+        "show_native": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Enable/disable Native ads globally",
+          "valueType": "BOOLEAN"
+        },
+        "show_native_video": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Enable/disable Native Video ads",
+          "valueType": "BOOLEAN"
+        }
+      }
+    },
+    "Ads_Deeplink_Screen": {
+      "description": "Ad placements for shared content/deeplink screens",
+      "parameters": {
+        "shared_content_native_above_info": {
+          "defaultValue": {
+            "value": "false"
+          },
+          "description": "Show high-CTR Native ad above asset info for better integration",
+          "valueType": "BOOLEAN"
+        },
+        "shared_content_banner_above_open_btn": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Show Adaptive Banner ad above open button",
+          "valueType": "BOOLEAN"
+        },
+        "shared_content_native_below_open_btn": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Show Native ad below open button",
+          "valueType": "BOOLEAN"
+        },
+        "shared_content_use_rewarded_interstitial": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Use high-earning Rewarded Interstitial instead of standard interstitial when opening asset",
+          "valueType": "BOOLEAN"
+        },
+        "shared_content_ad_asset_open": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Show ad when opening an asset",
+          "valueType": "BOOLEAN"
+        },
+        "shared_content_ad_link_open_rewarded": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Use Rewarded Interstitial for opening a link asset",
+          "valueType": "BOOLEAN"
+        },
+        "shared_content_ad_open_every_time": {
+          "defaultValue": {
+            "value": "1"
+          },
+          "description": "Frequency for showing open ad: 0=Never, 1=Every time, N=Every 1st and (N+1)th time",
+          "valueType": "NUMBER"
+        },
+        "shared_content_ad_sub_asset_open": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Show ad when opening sub-elements of an asset",
+          "valueType": "BOOLEAN"
+        },
+        "shared_content_ad_open_asset_open_again_time": {
+          "defaultValue": {
+            "value": "60"
+          },
+          "description": "Cooldown time in seconds before showing ad again for the same asset",
+          "valueType": "NUMBER"
+        }
+      }
+    },
+    "Ads_Shared_Folder": {
+      "description": "Ad placements for shared folder list screens",
+      "parameters": {
+        "shared_folder_native_top": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Show Native ad at the top of shared folder list",
+          "valueType": "BOOLEAN"
+        },
+        "shared_folder_banner_bottom": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Show Adaptive Banner ad at the bottom of shared folder list",
+          "valueType": "BOOLEAN"
+        },
+        "shared_folder_ad_sub_asset_open": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Show ad when opening sub-elements (files/folders) within a shared folder",
+          "valueType": "BOOLEAN"
+        },
+        "shared_folder_ad_link_open_rewarded": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Use Rewarded Interstitial for opening a link within a shared folder",
+          "valueType": "BOOLEAN"
+        },
+        "shared_folder_ad_open_again_time": {
+          "defaultValue": {
+            "value": "60"
+          },
+          "description": "Cooldown time in seconds before showing ad again for the same sub-asset",
+          "valueType": "NUMBER"
+        }
+      }
+    },
+    "Ads_History_Screen": {
+      "description": "Ad placements for the History screen",
+      "parameters": {
+        "history_banner_top": {
+          "defaultValue": {
+            "value": "false"
+          },
+          "description": "Show Adaptive Banner at the top of history list",
+          "valueType": "BOOLEAN"
+        },
+        "history_native_bottom": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Show premium Native ad at the bottom of history list",
+          "valueType": "BOOLEAN"
+        },
+        "history_ad_open_assets": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Show ad when opening an asset from history",
+          "valueType": "BOOLEAN"
+        },
+        "history_ad_link_open_rewarded": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Use Rewarded Interstitial for opening a link from history",
+          "valueType": "BOOLEAN"
+        },
+        "history_ad_open_every_time": {
+          "defaultValue": {
+            "value": "1"
+          },
+          "description": "Frequency for showing history open ad: 0=Never, 1=Every time, N=Every 1st and (N+1)th time",
+          "valueType": "NUMBER"
+        },
+        "history_ad_open_again_time": {
+          "defaultValue": {
+            "value": "60"
+          },
+          "description": "Cooldown time in seconds before showing ad again for the same history asset",
+          "valueType": "NUMBER"
+        },
+        "history_ad_open_sub_elements": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Show ad when opening sub-elements from history items",
+          "valueType": "BOOLEAN"
+        }
+      }
+    },
+    "Ads_Exit_Modal": {
+      "description": "Ad placements for exit confirmation modal",
+      "parameters": {
+        "show_exit_interstitial": {
+          "defaultValue": {
+            "value": "false"
+          },
+          "description": "Show Interstitial ad when user presses back/exit button",
+          "valueType": "BOOLEAN"
+        },
+        "show_exit_native": {
+          "defaultValue": {
+            "value": "false"
+          },
+          "description": "Show Native ad in exit confirmation dialog",
+          "valueType": "BOOLEAN"
+        }
+      }
+    },
+    "Ads_Assets_Screen": {
+      "description": "Ad placements for My Assets screen",
+      "parameters": {
+        "assets_banner_top": {
+          "defaultValue": {
+            "value": "false"
+          },
+          "description": "Show Adaptive Banner at top of My Assets screen",
+          "valueType": "BOOLEAN"
+        },
+        "assets_native_bottom": {
+          "defaultValue": {
+            "value": "true"
+          },
+          "description": "Show high-CTR Adaptive Banner ad at bottom of My Assets screen",
+          "valueType": "BOOLEAN"
+        }
+      }
+    },
+    "Ads_WebView": {
+      "description": "Ad placements for the internal Web Browser",
+      "parameters": {
+        "webview_ad_intervals": {
+          "defaultValue": {
+            "value": "60,180,600,900,1200"
+          },
+          "description": "Comma-separated list of seconds to show interstitial ads (e.g. 1st at 60s, 2nd at 180s...)",
+          "valueType": "STRING"
+        },
+        "webview_ad_repeat_interval": {
+          "defaultValue": {
+            "value": "600"
+          },
+          "description": "Repeat interval in seconds after the last defined interval in webview_ad_intervals",
+          "valueType": "NUMBER"
+        }
+      }
+    },
+    "Ads_Unit_IDs": {
+      "description": "AdMob Ad Unit IDs (can be swapped via Remote Config)",
+      "parameters": {
+        "id_app_open": {
+          "defaultValue": {
+            "value": "ca-app-pub-2002073902256509/6094052821"
+          },
+          "description": "AdMob App Open Ad Unit ID",
+          "valueType": "STRING"
+        },
+        "id_interstitial": {
+          "defaultValue": {
+            "value": "ca-app-pub-2002073902256509/8720216169"
+          },
+          "description": "AdMob Interstitial Ad Unit ID",
+          "valueType": "STRING"
+        },
+        "id_banner": {
+          "defaultValue": {
+            "value": "ca-app-pub-2002073902256509/7885646646"
+          },
+          "description": "AdMob Banner Ad Unit ID",
+          "valueType": "STRING"
+        },
+        "id_adaptive_banner": {
+          "defaultValue": {
+            "value": "ca-app-pub-2002073902256509/7885646646"
+          },
+          "description": "AdMob Adaptive Banner Ad Unit ID",
+          "valueType": "STRING"
+        },
+        "id_rewarded": {
+          "defaultValue": {
+            "value": "ca-app-pub-2002073902256509/7803893775"
+          },
+          "description": "AdMob Rewarded Ad Unit ID",
+          "valueType": "STRING"
+        },
+        "id_rewarded_interstitial": {
+          "defaultValue": {
+            "value": "ca-app-pub-2002073902256509/7407134493"
+          },
+          "description": "AdMob Rewarded Interstitial Ad Unit ID",
+          "valueType": "STRING"
+        },
+        "id_native": {
+          "defaultValue": {
+            "value": "ca-app-pub-2002073902256509/5259483304"
+          },
+          "description": "AdMob Native Ad Unit ID",
+          "valueType": "STRING"
+        },
+        "id_native_video": {
+          "defaultValue": {
+            "value": "ca-app-pub-2002073902256509/5259483304"
+          },
+          "description": "AdMob Native Video Ad Unit ID",
+          "valueType": "STRING"
+        }
+      }
+    },
+    "Ads_Frequency_Limits": {
+      "description": "Time-based limits for ad frequency",
+      "parameters": {
+        "rewarded_limit_1min": {
+          "defaultValue": {
+            "value": "2"
+          },
+          "description": "Maximum rewarded ads allowed per 1 minute (0 for unlimited)",
+          "valueType": "NUMBER"
+        },
+        "rewarded_limit_5min": {
+          "defaultValue": {
+            "value": "5"
+          },
+          "description": "Maximum rewarded ads allowed per 5 minutes (0 for unlimited)",
+          "valueType": "NUMBER"
+        },
+        "interstitial_limit_1min": {
+          "defaultValue": {
+            "value": "2"
+          },
+          "description": "Maximum interstitial ads allowed per 1 minute (0 for unlimited)",
+          "valueType": "NUMBER"
+        },
+        "interstitial_limit_5min": {
+          "defaultValue": {
+            "value": "5"
+          },
+          "description": "Maximum interstitial ads allowed per 5 minutes (0 for unlimited)",
+          "valueType": "NUMBER"
+        }
+      }
+    },
+    "UI_Layout": {
+      "description": "Dynamic UI layout configurations",
+      "parameters": {
+        "home_layout_config": {
+          "defaultValue": {
+            "value": "[\n  {\"type\": \"ad_native_video\", \"id\": \"hero_video\", \"visible\": true},\n  {\"type\": \"section\", \"id\": \"supers\", \"visible\": true},\n  {\"type\": \"ad_native\", \"id\": \"mid_native\", \"visible\": true},\n  {\"type\": \"section\", \"id\": \"apps\", \"visible\": true},\n  {\"type\": \"section\", \"id\": \"games\", \"visible\": true},\n  {\"type\": \"ad_banner\", \"id\": \"bottom_banner\", \"visible\": true},\n  {\"type\": \"section\", \"id\": \"content\", \"visible\": true}\n]"
+          },
+          "description": "JSON configuration for Home Screen layout (sections order and ads)",
+          "valueType": "STRING"
+        }
+      }
+    }
+  }
+}

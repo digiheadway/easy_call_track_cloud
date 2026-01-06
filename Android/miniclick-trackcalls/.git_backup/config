@@ -1,0 +1,13 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	ignorecase = true
+	precomposeunicode = true
+[remote "cloud"]
+	url = https://github.com/digiheadway/easy_call_track_cloud.git
+	fetch = +refs/heads/*:refs/remotes/cloud/*
+[branch "main"]
+	remote = cloud
+	merge = refs/heads/main

@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 6aad6c9e23d59c1afd089ec3a309decc687adb86 digiheadway <digiheadway@gmail.com> 1766341865 +0530	clone: from https://github.com/digiheadway/call_history_pro.git
+6aad6c9e23d59c1afd089ec3a309decc687adb86 9e470bce1b40609886e6d657158b903fb47692e7 digiheadway <digiheadway@gmail.com> 1766403869 +0530	commit: feat: Add Serwist-based service worker for PWA support and upgrade project dependencies.

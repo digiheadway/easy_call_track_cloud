@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Products | MiniClick Suite</title>
+    <meta name="description"
+        content="Explore the complete MiniClick suite: Call Tracking, Sales CRM, and Auto Dialer. Integrated tools for modern business.">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../assets/favicon.png">
+    <link rel="apple-touch-icon" href="../assets/favicon.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: { 500: '#0ea5e9' },
+                        crm: { 500: '#8b5cf6' },
+                        dialer: { 500: '#f97316' },
+                        dark: {
+                            bg: '#0B0F19',
+                            card: '#111827',
+                            border: '#1F2937'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        .glass {
+            background-color: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-card {
+            background-color: rgba(17, 24, 39, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(31, 41, 55, 0.5);
+            transition: all 0.3s;
+        }
+        .glass-card:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-4px);
+        }
+        body {
+            background-color: #0B0F19; /* dark-bg */
+            color: #ffffff;
+        }
+    </style>
+</head>
+
+<body class="antialiased overflow-x-hidden">
+
+    <!-- Navbar -->
+    <nav class="fixed w-full z-50 transition-all duration-300 top-0 glass border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <a href="../" class="flex items-center gap-2">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center">
+                        <i data-feather="layers" class="text-white w-4 h-4"></i>
+                    </div>
+                    <span class="font-bold text-xl tracking-tight">MiniClick <span
+                            class="text-brand-500">Suite</span></span>
+                </a>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="../" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">Home</a>
+                    <a href="../login/"
+                        class="bg-white/10 hover:bg-white/20 text-white px-5 py-2 rounded-full text-sm font-medium transition-all">
+                        Log In
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <div class="pt-32 pb-12 text-center px-4">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4">Our Products</h1>
+        <p class="text-xl text-gray-400 max-w-2xl mx-auto">Tools designed to work together to help your business grow.
+        </p>
+    </div>
+
+    <!-- Product List -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 space-y-8">
+
+        <!-- Call Tracking -->
+        <a href="../call-track/index.html"
+            class="block glass-card p-8 rounded-3xl group hover:border-brand-500/50 transition-all">
+            <div class="flex flex-col md:flex-row items-center gap-8">
+                <div class="w-16 h-16 bg-brand-500/20 rounded-2xl flex items-center justify-center shrink-0">
+                    <i data-feather="phone-call" class="text-brand-500 w-8 h-8"></i>
+                </div>
+                <div class="flex-1 text-center md:text-left">
+                    <h2 class="text-2xl font-bold mb-2 group-hover:text-brand-500 transition-colors">Call Tracking</h2>
+                    <p class="text-gray-400 mb-4">The core of the MiniClick suite. Mobile app that automatically syncs
+                        call logs and recordings to the cloud.</p>
+                    <ul class="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
+                        <li class="px-3 py-1 rounded-full bg-white/5 text-xs text-gray-300">Android App</li>
+                        <li class="px-3 py-1 rounded-full bg-white/5 text-xs text-gray-300">Cloud Sync</li>
+                        <li class="px-3 py-1 rounded-full bg-white/5 text-xs text-gray-300">Team Management</li>
+                    </ul>
+                </div>
+                <div class="hidden md:block">
+                    <i data-feather="arrow-right"
+                        class="text-gray-600 group-hover:text-brand-500 w-6 h-6 transition-colors"></i>
+                </div>
+            </div>
+        </a>
+
+        <!-- Sales CRM -->
+        <a href="../sales-crm/index.html"
+            class="block glass-card p-8 rounded-3xl group hover:border-crm-500/50 transition-all">
+            <div class="flex flex-col md:flex-row items-center gap-8">
+                <div class="w-16 h-16 bg-crm-500/20 rounded-2xl flex items-center justify-center shrink-0">
+                    <i data-feather="grid" class="text-crm-500 w-8 h-8"></i>
+                </div>
+                <div class="flex-1 text-center md:text-left">
+                    <h2 class="text-2xl font-bold mb-2 group-hover:text-crm-500 transition-colors">Sales CRM</h2>
+                    <p class="text-gray-400 mb-4">Pipeline management made simple. Visualize deals, track leads, and
+                        attach call recordings directly to contacts.</p>
+                    <ul class="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
+                        <li class="px-3 py-1 rounded-full bg-white/5 text-xs text-gray-300">Pipeline Board</li>
+                        <li class="px-3 py-1 rounded-full bg-white/5 text-xs text-gray-300">Deal Stages</li>
+                        <li class="px-3 py-1 rounded-full bg-white/5 text-xs text-gray-300">Follow-up Tasks</li>
+                    </ul>
+                </div>
+                <div class="hidden md:block">
+                    <i data-feather="arrow-right"
+                        class="text-gray-600 group-hover:text-crm-500 w-6 h-6 transition-colors"></i>
+                </div>
+            </div>
+        </a>
+
+        <!-- Auto Dialer -->
+        <a href="../auto-dialer/index.html"
+            class="block glass-card p-8 rounded-3xl group hover:border-dialer-500/50 transition-all">
+            <div class="flex flex-col md:flex-row items-center gap-8">
+                <div class="w-16 h-16 bg-dialer-500/20 rounded-2xl flex items-center justify-center shrink-0">
+                    <i data-feather="zap" class="text-dialer-500 w-8 h-8"></i>
+                </div>
+                <div class="flex-1 text-center md:text-left">
+                    <h2 class="text-2xl font-bold mb-2 group-hover:text-dialer-500 transition-colors">Auto Dialer</h2>
+                    <p class="text-gray-400 mb-4">High-velocity calling for inside sales teams. Import lists and power
+                        dial through leads with zero downtime.</p>
+                    <ul class="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
+                        <li class="px-3 py-1 rounded-full bg-white/5 text-xs text-gray-300">Predictive Dialing</li>
+                        <li class="px-3 py-1 rounded-full bg-white/5 text-xs text-gray-300">Campaign Manager</li>
+                        <li class="px-3 py-1 rounded-full bg-white/5 text-xs text-gray-300">Instant Connect</li>
+                    </ul>
+                </div>
+                <div class="hidden md:block">
+                    <i data-feather="arrow-right"
+                        class="text-gray-600 group-hover:text-dialer-500 w-6 h-6 transition-colors"></i>
+                </div>
+            </div>
+        </a>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/10 bg-[#0B0F19] py-8 text-center">
+        <p class="text-gray-600 text-sm">© 2026 MiniClick. All rights reserved.</p>
+    </footer>
+
+    <script>
+        feather.replace();
+    </script>
+</body>
+
+</html>

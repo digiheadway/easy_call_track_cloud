@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Result - Call Track</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+    <div class="max-w-md w-full">
+        <!-- Loading State -->
+        <div id="loading-state" class="bg-white rounded-3xl shadow-2xl p-8 text-center">
+            <div class="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">Verifying Payment...</h1>
+            <p class="text-gray-500">Please wait while we confirm your payment.</p>
+        </div>
+
+        <!-- Success State -->
+        <div id="success-state" class="hidden bg-white rounded-3xl shadow-2xl p-8 text-center">
+            <div class="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg class="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Payment Successful!</h1>
+            <p class="text-gray-500 mb-6">Your subscription has been updated successfully.</p>
+            
+            <div id="order-details" class="bg-gray-50 rounded-2xl p-6 mb-6 text-left space-y-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-500 text-sm">Amount Paid</span>
+                    <span id="amount-paid" class="font-bold text-gray-900">Rs 0</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-500 text-sm">Employee Slots</span>
+                    <span id="user-count" class="font-bold text-gray-900">0</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-500 text-sm">Storage</span>
+                    <span id="storage-gb" class="font-bold text-gray-900">0 GB</span>
+                </div>
+            </div>
+
+            <a href="/dashboard/plans" class="block w-full py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-colors">
+                Go to Dashboard
+            </a>
+        </div>
+
+        <!-- Failed State -->
+        <div id="failed-state" class="hidden bg-white rounded-3xl shadow-2xl p-8 text-center">
+            <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Payment Failed</h1>
+            <p id="error-message" class="text-gray-500 mb-6">Something went wrong with your payment.</p>
+            
+            <div class="space-y-3">
+                <a href="/dashboard/plans" class="block w-full py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-colors">
+                    Try Again
+                </a>
+                <a href="mailto:support@calltrack.in" class="block w-full py-4 bg-gray-100 text-gray-700 rounded-2xl font-bold hover:bg-gray-200 transition-colors">
+                    Contact Support
+                </a>
+            </div>
+        </div>
+
+        <!-- Pending State -->
+        <div id="pending-state" class="hidden bg-white rounded-3xl shadow-2xl p-8 text-center">
+            <div class="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg class="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Payment Pending</h1>
+            <p class="text-gray-500 mb-6">Your payment is being processed. This may take a few minutes.</p>
+            
+            <div class="bg-amber-50 rounded-2xl p-4 mb-6 text-left">
+                <p class="text-amber-800 text-sm">
+                    <strong>Note:</strong> If your subscription is not updated within 10 minutes, please contact our support team with your order ID.
+                </p>
+            </div>
+            
+            <p id="pending-order-id" class="text-gray-400 text-sm mb-6">Order ID: --</p>
+
+            <a href="/dashboard/plans" class="block w-full py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-colors">
+                Go to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://api.miniclickcrm.com/api';
+        
+        async function verifyPayment() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('order_id');
+            
+            if (!orderId) {
+                showFailed('No order ID found. Please try your purchase again.');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('cc_token');
+                const response = await fetch(`${API_BASE}/cashfree.php?action=verify_payment&order_id=${orderId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.status && result.data) {
+                    const data = result.data;
+                    
+                    if (data.is_paid) {
+                        showSuccess(data);
+                    } else if (data.order_status === 'ACTIVE' || data.order_status === 'PENDING') {
+                        showPending(orderId);
+                    } else {
+                        showFailed('Payment was not completed. Please try again.');
+                    }
+                } else {
+                    showFailed(result.message || 'Unable to verify payment status.');
+                }
+            } catch (error) {
+                console.error('Verification error:', error);
+                showFailed('Unable to verify payment. Please check your dashboard or contact support.');
+            }
+        }
+
+        function showSuccess(data) {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('success-state').classList.remove('hidden');
+            
+            document.getElementById('amount-paid').textContent = 'Rs ' + (data.order_amount || 0).toLocaleString();
+            document.getElementById('user-count').textContent = data.user_count || 0;
+            document.getElementById('storage-gb').textContent = (data.storage_gb || 0) + ' GB';
+            
+            // Clear local cart
+            localStorage.removeItem('cc_cart_users');
+            localStorage.removeItem('cc_cart_storage');
+            localStorage.removeItem('cc_cart_renewing');
+        }
+
+        function showFailed(message) {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('failed-state').classList.remove('hidden');
+            document.getElementById('error-message').textContent = message;
+        }
+
+        function showPending(orderId) {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('pending-state').classList.remove('hidden');
+            document.getElementById('pending-order-id').textContent = 'Order ID: ' + orderId;
+        }
+
+        // Start verification on page load
+        verifyPayment();
+    </script>
+</body>
+</html>

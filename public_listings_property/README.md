@@ -1,0 +1,1 @@
+public_listings_property

@@ -1,0 +1,71 @@
+
+<header class="iamontop">
+        <div class="container">
+            <nav class="navbar r-flex ali-c jut-sb iamontop">
+                <a href="/" class="header_logo r-flex ali-c">
+                    <div class="logo_text r-flex ali-c ">
+                        <!-- <img src="/assets/img/logo.svg" alt="logo"> -->
+                        <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M27.9489 31.0526H31.0526V34.1579H18.6315C10.0564 34.1579 3.10522 27.2067 3.10522 18.6315C3.10522 10.0564 10.0564 3.10522 18.6315 3.10522C27.2067 3.10522 34.1579 10.0564 34.1579 18.6315C34.1598 21.0421 33.5997 23.4199 32.5219 25.5761C31.444 27.7323 29.8782 29.6075 27.9489 31.0526ZM18.6315 15.5263C19.4551 15.5263 20.2449 15.1991 20.8273 14.6168C21.4096 14.0344 21.7368 13.2446 21.7368 12.421C21.7368 11.5974 21.4096 10.8076 20.8273 10.2253C20.2449 9.64291 19.4551 9.31575 18.6315 9.31575C17.808 9.31575 17.0181 9.64291 16.4358 10.2253C15.8534 10.8076 15.5263 11.5974 15.5263 12.421C15.5263 13.2446 15.8534 14.0344 16.4358 14.6168C17.0181 15.1991 17.808 15.5263 18.6315 15.5263ZM12.421 21.7368C13.2446 21.7368 14.0344 21.4096 14.6168 20.8273C15.1991 20.2449 15.5263 19.4551 15.5263 18.6315C15.5263 17.808 15.1991 17.0181 14.6168 16.4358C14.0344 15.8534 13.2446 15.5263 12.421 15.5263C11.5974 15.5263 10.8076 15.8534 10.2253 16.4358C9.64291 17.0181 9.31575 17.808 9.31575 18.6315C9.31575 19.4551 9.64291 20.2449 10.2253 20.8273C10.8076 21.4096 11.5974 21.7368 12.421 21.7368ZM24.8421 21.7368C25.6656 21.7368 26.4555 21.4096 27.0378 20.8273C27.6202 20.2449 27.9473 19.4551 27.9473 18.6315C27.9473 17.808 27.6202 17.0181 27.0378 16.4358C26.4555 15.8534 25.6656 15.5263 24.8421 15.5263C24.0185 15.5263 23.2287 15.8534 22.6463 16.4358C22.064 17.0181 21.7368 17.808 21.7368 18.6315C21.7368 19.4551 22.064 20.2449 22.6463 20.8273C23.2287 21.4096 24.0185 21.7368 24.8421 21.7368ZM18.6315 27.9473C19.4551 27.9473 20.2449 27.6202 20.8273 27.0378C21.4096 26.4555 21.7368 25.6656 21.7368 24.8421C21.7368 24.0185 21.4096 23.2287 20.8273 22.6463C20.2449 22.064 19.4551 21.7368 18.6315 21.7368C17.808 21.7368 17.0181 22.064 16.4358 22.6463C15.8534 23.2287 15.5263 24.0185 15.5263 24.8421C15.5263 25.6656 15.8534 26.4555 16.4358 27.0378C17.0181 27.6202 17.808 27.9473 18.6315 27.9473Z" fill="#3A6B5E"/>
+</svg>
+
+                        <span class="logo_name"><?php echo $subdomaintitle; ?></span>
+                    </div>        
+                     <span class="logo_help_text">New Look</span>
+
+                </a>
+                <input type="checkbox" name="hambergar" id="hambergar" class="hambergar">
+                <label for="hambergar" class="hambergar_label">
+                    <svg width="28" height="28" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4.5 6.5H16.5M4.498 10.5H16.495M4.5 14.5H16.495" stroke="#000000" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>                        
+                </label>
+                <ul class="header_menu_bar r-flex ali-c jut-sb iamontop">
+                    <li class="nav_menu_list"><a href="/">Home</a></li>
+                    <li class="nav_menu_list"><a href="/pages/contact-us.php" target="_blank">Remove Your Content</a></li>
+                    <li class="nav_menu_list"><a href="https://t.me/pokipros" target="_blank">Join Telegram</a></li>
+                </ul>
+                <form action="<?php echo $func_search_url; ?>" class="header_search iamontop">
+                    <label for="header_search_box">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M15.5 14H14.71L14.43 13.73C15.4439 12.554 16.0011 11.0527 16 9.5C16 8.21442 15.6188 6.95772 14.9046 5.8888C14.1903 4.81988 13.1752 3.98676 11.9874 3.49479C10.7997 3.00282 9.49279 2.87409 8.23192 3.1249C6.97104 3.3757 5.81285 3.99477 4.90381 4.90381C3.99477 5.81285 3.3757 6.97104 3.1249 8.23192C2.87409 9.49279 3.00282 10.7997 3.49479 11.9874C3.98676 13.1752 4.81988 14.1903 5.8888 14.9046C6.95772 15.6188 8.21442 16 9.5 16C11.11 16 12.59 15.41 13.73 14.43L14 14.71V15.5L19 20.49L20.49 19L15.5 14ZM9.5 14C7.01 14 5 11.99 5 9.5C5 7.01 7.01 5 9.5 5C11.99 5 14 7.01 14 9.5C14 11.99 11.99 14 9.5 14Z" fill="#5E5E5E"/>
+                        </svg>                            
+                    </label>
+                    <input type="search" id="header_search_box" placeholder="Search here" name="q" class="i_am_search_btn">
+                    <button type="submit" class="header_search_btn">Search Now</button>
+                </form>
+            
+            </nav>
+        </div>
+    </header>
+      <div id="dark_search_modal">
+        <div class="dark_search_modal_header">
+
+            <input type="text" id="dark_search_input" placeholder="Type to search..." autocomplete="off">
+            <svg id="dark_modal_close_btn" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100" height="100"
+                viewBox="0 0 30 30">
+                <path
+                    d="M 7 4 C 6.744125 4 6.4879687 4.0974687 6.2929688 4.2929688 L 4.2929688 6.2929688 C 3.9019687 6.6839688 3.9019687 7.3170313 4.2929688 7.7070312 L 11.585938 15 L 4.2929688 22.292969 C 3.9019687 22.683969 3.9019687 23.317031 4.2929688 23.707031 L 6.2929688 25.707031 C 6.6839688 26.098031 7.3170313 26.098031 7.7070312 25.707031 L 15 18.414062 L 22.292969 25.707031 C 22.682969 26.098031 23.317031 26.098031 23.707031 25.707031 L 25.707031 23.707031 C 26.098031 23.316031 26.098031 22.682969 25.707031 22.292969 L 18.414062 15 L 25.707031 7.7070312 C 26.098031 7.3170312 26.098031 6.6829688 25.707031 6.2929688 L 23.707031 4.2929688 C 23.316031 3.9019687 22.682969 3.9019687 22.292969 4.2929688 L 15 11.585938 L 7.7070312 4.2929688 C 7.5115312 4.0974687 7.255875 4 7 4 z">
+                </path>
+            </svg>
+        </div>
+        <div id="dark_search_modal_status">Search Anything</div>
+        <div id="dark_search_results"></div>
+    </div>
+    
+    <?php if ($fulldomain === 'harleywives.com'): ?>
+                                   <br><br><br>
+                                   <center> <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3167708670200886"
+                                 crossorigin="anonymous"></script>
+                            <!-- Rectanglr -->
+                            <ins class="adsbygoogle"
+                                 style="display:block"
+                                 data-ad-client="ca-pub-3167708670200886"
+                                 data-ad-slot="7390242806"
+                                 data-ad-format="auto"
+                                 data-full-width-responsive="true"></ins>
+                            <script>
+                                 (adsbygoogle = window.adsbygoogle || []).push({});
+                            </script>
+                                </center>
+<?php endif; ?>

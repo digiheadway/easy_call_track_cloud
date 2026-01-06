@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Submitter</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+  <div class="container">
+    <h2 class="title">Auto Submitter</h2>
+
+    <div class="control-group">
+      <label for="profile-select">Profile:</label>
+      <select id="profile-select">
+        <option value="0">Profile 0 (All)</option>
+        <option value="1">Profile 1</option>
+        <option value="2">Profile 2</option>
+        <option value="3">Profile 3</option>
+        <option value="4">Profile 4</option>
+        <option value="5">Profile 5</option>
+        <option value="6">Profile 6</option>
+        <option value="7">Profile 7</option>
+        <option value="8">Profile 8</option>
+        <option value="9">Profile 9</option>
+        <option value="10">Profile 10</option>
+      </select>
+    </div>
+
+    <div class="checkbox-group">
+      <label><input type="checkbox" id="chk-auto-fill" checked> Auto Fill</label>
+      <label><input type="checkbox" id="chk-auto-next"> Auto Next</label>
+      <label><input type="checkbox" id="chk-auto-submit"> Auto Submit</label>
+    </div>
+
+    <div class="button-group">
+      <button id="btn-toggle-automation" class="toggle-btn">STOPPED</button>
+    </div>
+
+    <div class="button-group">
+      <button id="btn-get-ready" class="primary-btn">Get Ready</button>
+      <button id="btn-direct-form" class="secondary-btn">Direct Form</button>
+    </div>
+
+    <div id="status" class="status-message">Ready</div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.facebook.ads.NativeAdLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/native_ad_container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/ad_background">
+
+    <RelativeLayout
+        android:id="@+id/ad_unit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="8dp">
+
+        <!-- Ad Attribution Label -->
+        <TextView
+            android:id="@+id/native_ad_sponsored_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="#FFCC00"
+            android:paddingHorizontal="6dp"
+            android:paddingVertical="2dp"
+            android:text="Sponsored"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <!-- Advertiser Name -->
+        <TextView
+            android:id="@+id/native_ad_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/native_ad_sponsored_label"
+            android:layout_alignTop="@id/native_ad_sponsored_label"
+            android:layout_alignBottom="@id/native_ad_sponsored_label"
+            android:layout_marginStart="8dp"
+            android:gravity="center_vertical"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+        
+        <!-- Ad Options View Container (Required for FB) -->
+        <LinearLayout
+            android:id="@+id/ad_choices_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_alignParentEnd="true"
+            android:layout_alignTop="@id/native_ad_sponsored_label" />
+
+        <!-- Media View (Video/Image) -->
+        <com.facebook.ads.MediaView
+            android:id="@+id/native_ad_media"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:layout_below="@id/native_ad_sponsored_label"
+            android:layout_marginTop="8dp" />
+
+        <!-- Icon -->
+        <com.facebook.ads.MediaView
+            android:id="@+id/native_ad_icon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_below="@id/native_ad_media"
+            android:layout_marginTop="8dp" />
+
+        <!-- Body / Description -->
+        <TextView
+            android:id="@+id/native_ad_body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/native_ad_icon"
+            android:layout_alignTop="@id/native_ad_icon"
+            android:layout_marginStart="8dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="@android:color/black"
+            android:textSize="14sp" />
+
+        <!-- Social Context -->
+        <TextView
+            android:id="@+id/native_ad_social_context"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/native_ad_body"
+            android:layout_toEndOf="@id/native_ad_icon"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@android:color/darker_gray"
+            android:textSize="12sp" />
+
+        <!-- Call to Action Button -->
+        <Button
+            android:id="@+id/native_ad_call_to_action"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:layout_below="@id/native_ad_social_context"
+            android:layout_marginTop="12dp"
+            android:text="Install" />
+
+    </RelativeLayout>
+</com.facebook.ads.NativeAdLayout>

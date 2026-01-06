@@ -1,0 +1,32 @@
+{
+    "parameters": {
+        "rewarded_limit_1min": {
+            "defaultValue": {
+                "value": "2"
+            },
+            "description": "Maximum rewarded ads allowed per 1 minute (0 for unlimited)",
+            "valueType": "NUMBER"
+        },
+        "rewarded_limit_5min": {
+            "defaultValue": {
+                "value": "5"
+            },
+            "description": "Maximum rewarded ads allowed per 5 minutes (0 for unlimited)",
+            "valueType": "NUMBER"
+        },
+        "interstitial_limit_1min": {
+            "defaultValue": {
+                "value": "2"
+            },
+            "description": "Maximum interstitial ads allowed per 1 minute (0 for unlimited)",
+            "valueType": "NUMBER"
+        },
+        "interstitial_limit_5min": {
+            "defaultValue": {
+                "value": "5"
+            },
+            "description": "Maximum interstitial ads allowed per 5 minutes (0 for unlimited)",
+            "valueType": "NUMBER"
+        }
+    }
+}

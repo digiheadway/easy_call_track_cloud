@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Private Files Access &amp; Share</string>
+    <string name="app_launcher_name">Private Files</string>
+    <!-- Replace with your actual AdMob App ID from console -->
+    <string name="admob_app_id">ca-app-pub-2002073902256509~3347511713</string>
+    <string name="facebook_app_id">1344035434163741</string>
+</resources>

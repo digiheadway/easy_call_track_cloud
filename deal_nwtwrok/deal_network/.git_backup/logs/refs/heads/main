@@ -1,0 +1,9 @@
+0000000000000000000000000000000000000000 4a3e701fce853b4151bbbd80790a436fd39ff59c digiheadway <digiheadway@gmail.com> 1762714295 +0530	clone: from https://github.com/uptwnp/deal_network.git
+4a3e701fce853b4151bbbd80790a436fd39ff59c f553392e87c217549b5696d8bfe82fada5e33220 digiheadway <digiheadway@gmail.com> 1763841061 +0530	pull --tags origin main: Fast-forward
+f553392e87c217549b5696d8bfe82fada5e33220 212fd71bd0684d324a3a259cd3b0bfdd48c9c4af digiheadway <digiheadway@gmail.com> 1764339790 +0530	commit: feat: implement new property type icons and map marker clustering for improved map display.
+212fd71bd0684d324a3a259cd3b0bfdd48c9c4af 6281b8a968af770c107663ac1aa029d027a98fdf digiheadway <digiheadway@gmail.com> 1764424019 +0530	pull --tags origin main: Fast-forward
+6281b8a968af770c107663ac1aa029d027a98fdf a8b81cee6873f4cf3d39ed45d7c5ef5409cf5578 digiheadway <digiheadway@gmail.com> 1764424111 +0530	commit: i
+a8b81cee6873f4cf3d39ed45d7c5ef5409cf5578 e6fdedd3e4b3b67b5c1a26371774fc66840cc3de digiheadway <digiheadway@gmail.com> 1764426023 +0530	commit: i
+e6fdedd3e4b3b67b5c1a26371774fc66840cc3de 36aec65bbb137f1d7664e3560c3d2a775ac0e198 digiheadway <digiheadway@gmail.com> 1764426158 +0530	commit: i
+36aec65bbb137f1d7664e3560c3d2a775ac0e198 8b9df574871cdde976fed1d3d251e682e5c9e3ac digiheadway <digiheadway@gmail.com> 1764428125 +0530	commit: fix: Correctly handle zero and invalid `location_accuracy` values for map circle radius.
+8b9df574871cdde976fed1d3d251e682e5c9e3ac de935b1594b22b02e14f52cd89347eebcdb666a6 digiheadway <digiheadway@gmail.com> 1764437815 +0530	commit: feat: Redesign property popup UI on map markers for improved clarity and aesthetics.

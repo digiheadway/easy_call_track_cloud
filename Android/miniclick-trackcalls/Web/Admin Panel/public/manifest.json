@@ -1,0 +1,17 @@
+{
+    "name": "MiniClick Calls",
+    "short_name": "MiniClick",
+    "description": "Professional call tracking and CRM for small businesses.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0B0F19",
+    "theme_color": "#0ea5e9",
+    "icons": [
+        {
+            "src": "/assets/favicon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

@@ -1,0 +1,1 @@
+<?php  $sname=$name ?>

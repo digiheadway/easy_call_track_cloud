@@ -1,0 +1,29 @@
+{
+    "project_info": {
+        "project_number": "334982016440",
+        "project_id": "salescrm-dc0ce",
+        "storage_bucket": "salescrm-dc0ce.firebasestorage.app"
+    },
+    "client": [
+        {
+            "client_info": {
+                "mobilesdk_app_id": "1:334982016440:android:24f28b4ce5d4c642e8734d",
+                "android_client_info": {
+                    "package_name": "com.example.salescrm"
+                }
+            },
+            "oauth_client": [],
+            "api_key": [
+                {
+                    "current_key": "AIzaSyCLvEBz5UXPBK0vYlitExE0xTT8p-VJ8DE"
+                }
+            ],
+            "services": {
+                "appinvite_service": {
+                    "other_platform_oauth_client": []
+                }
+            }
+        }
+    ],
+    "configuration_version": "1"
+}

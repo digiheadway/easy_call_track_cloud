@@ -1,0 +1,111 @@
+.top_navigation_call_btn:hover .nav_call_btn_blinker{
+    /* right: 100px; */
+    left: 150%;
+    
+}
+.top_navigation_call_btn:hover svg  {
+    animation: navCallTran 0.9s ease-in-out;
+}
+.nav_call_btn_blinker{
+    width: 0px;
+    height: 100%;
+    background-color: #fffffff5;
+    position: absolute;
+    top: 0px;
+    left: -100px;
+    transform: rotate(30deg);
+    box-shadow: 1px 1px 15px 40px #ffffff;
+    filter: blur(1.5rem);
+    /* animation: navCallBtnBlink .3s linear; */
+    transition: all 0.7s ease-in-out;
+}
+.nav-menu-item-link{
+    padding: 4px 10px;
+}
+.nav-menu-item-link:active{
+    color: blue;
+}
+.nav-menu-item-link:hover{
+    color: green;
+    font-weight: 600;
+}
+@keyframes navCallTran {
+
+    from {
+        transform:rotate3d(0, 0, 1, 0deg);
+    }
+    20%, 32%, 44%, 56%, 68% {
+        transform: rotate3d(0, 0, 1, 0deg);
+    }
+    23%, 35%, 47%, 59%, 71% {
+        transform: rotate3d(0,0,1,15deg);
+    }
+    26%, 38%, 50%, 62%, 74% {
+        transform: rotate3d(0,0,1,0deg);
+    }
+    29%, 41%, 53%, 65%, 77% {
+        transform: rotate3d(0,0,1,-15deg);
+    }
+    80% {
+        transform:rotate3d(0, 0, 1, 0deg);
+    }
+
+}
+
+@media (max-width:1024px) { 
+    .hamburgger-penal{
+        top: -100%;
+    }
+    .hamburgger-penal.navMenuBarner{
+        display: flex;
+        top: 63px;
+        transition: all 0.8s ease-in-out;
+        border-top: 1px solid #e5e7eb;
+        box-shadow: 0px 2px 4px #d7d7d763;
+    }
+    .heam-burgger-btn{
+        position: relative;
+
+    }
+    .nav-right-side-box .heam-burgger-btn span{
+        height: 2px;
+    }
+    .navMenuBarner ~ .nav-right-side-box .heam-burgger-btn span:nth-child(2) {
+        display: none;
+    }
+    .navMenuBarner ~ .nav-right-side-box .heam-burgger-btn span:nth-child(1) {
+        transform: rotate(45deg);
+        right: 0;
+        top: 5px;
+        max-width: 25px;
+    }
+    .navMenuBarner ~ .nav-right-side-box .heam-burgger-btn span:nth-child(3) {
+        transform: rotate(-45deg);
+        left: 0;
+        max-width: 25px;
+        right: 0;
+        top: -8.9px;
+        margin: 0px 0px 1px 0px;
+    }
+    .nav-menu-item-link:hover{
+        background-color: rgb(249 250 251);
+        /* background: #e5e7eb; */
+    }
+   
+
+}
+
+@media (max-width:624px){
+    .top_navigation_call_btn div svg {
+        padding: 2px;
+    }
+    .top_navigation_call_btn{
+        padding: 4px 6px;
+    }
+}
+
+
+/* @keyframes navCallBtnBlink {
+    from {left: 0%;}
+    to {left: 100%;}
+  } */

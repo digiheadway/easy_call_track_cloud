@@ -1,0 +1,31 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    RewriteRule ^get-free-home-loan-quotation\.php$ /msearch.php [L,QSA]
+
+    # Redirect all non-existent files & folder to 404 page
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule . /404.php [R=404,L]
+
+    # Custom 404 Error Page
+    ErrorDocument 404 /404.php
+
+    # 301 Redirection for specific URL
+    RewriteCond %{QUERY_STRING} ^q=Dunki [NC]
+    RewriteRule ^search\.php$ /pages/taken-down.php?utm_source=blocked_resource_dunki [R=301,L]
+
+    RewriteCond %{QUERY_STRING} ^q=UT69 [NC]
+    RewriteRule ^search\.php$ /pages/taken-down.php?utm_source=blocked_resource_dunki [R=301,L]
+
+    RewriteCond %{QUERY_STRING} ^q=ut\+69 [NC]
+    RewriteRule ^search\.php$ /pages/taken-down.php?utm_source=blocked_resource_dunki [R=301,L]
+
+    RewriteCond %{QUERY_STRING} ^q=UT69 [NC]
+    RewriteRule ^msearch\.php$ /pages/taken-down.php?utm_source=blocked_resource_dunki [R=301,L]
+
+    RewriteCond %{QUERY_STRING} ^q=ut\+69 [NC]
+    RewriteRule ^msearch\.php$ /pages/taken-down.php?utm_source=blocked_resource_dunki [R=301,L]
+
+
+</IfModule>

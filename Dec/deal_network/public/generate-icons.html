@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Icon Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            margin: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>PWA Icon Generator</h1>
+    <p>This tool helps generate the required PNG icons for your PWA. Right-click each canvas and "Save image as..." to save the icons.</p>
+    
+    <h2>192x192 Icon</h2>
+    <canvas id="icon192" width="192" height="192"></canvas>
+    <button onclick="downloadIcon('icon192', 'pwa-192x192.png')">Download 192x192</button>
+    
+    <h2>512x512 Icon</h2>
+    <canvas id="icon512" width="512" height="512"></canvas>
+    <button onclick="downloadIcon('icon512', 'pwa-512x512.png')">Download 512x512</button>
+    
+    <h2>Apple Touch Icon (180x180)</h2>
+    <canvas id="appleIcon" width="180" height="180"></canvas>
+    <button onclick="downloadIcon('appleIcon', 'apple-touch-icon.png')">Download Apple Icon</button>
+
+    <script>
+        const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background with rounded corners -->
+  <rect width="512" height="512" fill="#3b82f6" rx="64"/>
+  
+  <!-- Network nodes (circles) -->
+  <circle cx="128" cy="128" r="20" fill="white" opacity="0.9"/>
+  <circle cx="384" cy="128" r="20" fill="white" opacity="0.9"/>
+  <circle cx="128" cy="384" r="20" fill="white" opacity="0.9"/>
+  <circle cx="384" cy="384" r="20" fill="white" opacity="0.9"/>
+  <circle cx="256" cy="96" r="20" fill="white" opacity="0.9"/>
+  <circle cx="256" cy="416" r="20" fill="white" opacity="0.9"/>
+  
+  <!-- Network connection lines -->
+  <line x1="256" y1="256" x2="128" y2="128" stroke="white" stroke-width="8" opacity="0.6" stroke-linecap="round"/>
+  <line x1="256" y1="256" x2="384" y2="128" stroke="white" stroke-width="8" opacity="0.6" stroke-linecap="round"/>
+  <line x1="256" y1="256" x2="128" y2="384" stroke="white" stroke-width="8" opacity="0.6" stroke-linecap="round"/>
+  <line x1="256" y1="256" x2="384" y2="384" stroke="white" stroke-width="8" opacity="0.6" stroke-linecap="round"/>
+  <line x1="256" y1="256" x2="256" y2="96" stroke="white" stroke-width="8" opacity="0.6" stroke-linecap="round"/>
+  <line x1="256" y1="256" x2="256" y2="416" stroke="white" stroke-width="8" opacity="0.6" stroke-linecap="round"/>
+  
+  <!-- Central property/house icon -->
+  <g transform="translate(256, 256)">
+    <!-- House base -->
+    <path d="M-60 20 L-60 -40 L0 -80 L60 -40 L60 20 Z" fill="white" stroke="none"/>
+    <!-- House roof -->
+    <path d="M-60 -40 L0 -80 L60 -40" fill="#fbbf24" stroke="none"/>
+    <!-- Door -->
+    <rect x="-20" y="20" width="40" height="40" fill="#3b82f6" rx="4"/>
+    <!-- Door handle -->
+    <circle cx="10" cy="40" r="4" fill="white"/>
+    <!-- Windows -->
+    <rect x="-50" y="-20" width="20" height="20" fill="#3b82f6" rx="2"/>
+    <rect x="30" y="-20" width="20" height="20" fill="#3b82f6" rx="2"/>
+  </g>
+</svg>`;
+
+        function drawIcon(canvasId, size) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            const svgBlob = new Blob([iconSvg], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(svgBlob);
+            
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0, size, size);
+                URL.revokeObjectURL(url);
+            };
+            img.src = url;
+        }
+
+        function downloadIcon(canvasId, filename) {
+            const canvas = document.getElementById(canvasId);
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Draw icons on load
+        window.onload = function() {
+            drawIcon('icon192', 192);
+            drawIcon('icon512', 512);
+            drawIcon('appleIcon', 180);
+        };
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,9 @@
+Fix ad behavior: strict mode off, native ad improvements, branding updates
+
+- Fixed rewarded interstitial: strict=false (fail-soft when ads unavailable)
+- Fixed ad cooldown: only record when ad properly shown/completed
+- Improved native ad layout with Material 3 design and dark mode support
+- Updated branding: LinkBox → Private Files in user-visible strings
+- Fixed InsufficientPointsSheet bug: buyPoints instead of earnPoints
+- Synced Remote Config defaults with in-app defaults
+- Disabled by default: assets_banner_top, history_banner_top, exit ads

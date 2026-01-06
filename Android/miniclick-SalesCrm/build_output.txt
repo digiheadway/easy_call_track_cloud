@@ -1,0 +1,105 @@
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeDebugNativeLibs NO-SOURCE
+> Task :app:stripDebugDebugSymbols NO-SOURCE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+
+> Task :app:compileDebugKotlin FAILED
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/components/Components.kt:1226:2 Syntax error: Expecting '}'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/AddEditPersonScreen.kt:219:13 Unresolved reference 'PhoneFormField'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/AddEditPersonScreen.kt:222:55 Unresolved reference 'it'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/AddEditPersonScreen.kt:224:55 Unresolved reference 'it'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/AddEditPersonScreen.kt:235:13 Unresolved reference 'DarkFormField'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/AddEditPersonScreen.kt:238:42 Unresolved reference 'it'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/AddEditPersonScreen.kt:248:13 Unresolved reference 'DarkFormField'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/AddEditPersonScreen.kt:251:35 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/AddEditPersonScreen.kt:253:39 Overload resolution ambiguity between candidates:
+fun <T> Array<out T>.filter(predicate: (T) -> Boolean): List<T>
+fun BooleanArray.filter(predicate: (Boolean) -> Boolean): List<Boolean>
+fun ByteArray.filter(predicate: (Byte) -> Boolean): List<Byte>
+fun CharArray.filter(predicate: (Char) -> Boolean): List<Char>
+fun DoubleArray.filter(predicate: (Double) -> Boolean): List<Double>
+fun FloatArray.filter(predicate: (Float) -> Boolean): List<Float>
+fun IntArray.filter(predicate: (Int) -> Boolean): List<Int>
+fun LongArray.filter(predicate: (Long) -> Boolean): List<Long>
+fun ShortArray.filter(predicate: (Short) -> Boolean): List<Short>
+fun <T> Iterable<T>.filter(predicate: (T) -> Boolean): List<T>
+fun <K, V> Map<out K, V>.filter(predicate: (Map.Entry<K, V>) -> Boolean): Map<K, V>
+@SinceKotlin(...) @ExperimentalUnsignedTypes() @InlineOnly() fun UByteArray.filter(predicate: (UByte) -> Boolean): List<UByte>
+@SinceKotlin(...) @ExperimentalUnsignedTypes() @InlineOnly() fun UIntArray.filter(predicate: (UInt) -> Boolean): List<UInt>
+@SinceKotlin(...) @ExperimentalUnsignedTypes() @InlineOnly() fun ULongArray.filter(predicate: (ULong) -> Boolean): List<ULong>
+@SinceKotlin(...) @ExperimentalUnsignedTypes() @InlineOnly() fun UShortArray.filter(predicate: (UShort) -> Boolean): List<UShort>
+fun <T> Sequence<T>.filter(predicate: (T) -> Boolean): Sequence<T>
+fun CharSequence.filter(predicate: (Char) -> Boolean): CharSequence
+fun String.filter(predicate: (Char) -> Boolean): String
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/AddEditPersonScreen.kt:253:48 Unresolved reference 'it'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/AddEditPersonScreen.kt:272:13 Unresolved reference 'DarkFormField'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/AddEditPersonScreen.kt:275:45 Unresolved reference 'it'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/AddEditPersonScreen.kt:285:13 Unresolved reference 'DarkFormField'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/AddEditPersonScreen.kt:288:46 Unresolved reference 'it'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/Dialogs.kt:190:13 Unresolved reference 'DarkFormField'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/Dialogs.kt:193:49 Unresolved reference 'it'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/ListScreens.kt:224:13 Unresolved reference 'CompactSearchField'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/ListScreens.kt:226:49 Unresolved reference 'it'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/ListScreens.kt:543:13 Unresolved reference 'EmptyState'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/ListScreens.kt:839:13 Unresolved reference 'CompactSearchField'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/ListScreens.kt:841:49 Unresolved reference 'it'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/ListScreens.kt:983:13 Unresolved reference 'EmptyState'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/ListScreens.kt:995:21 Unresolved reference 'ContactPersonCard'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/ListScreens.kt:1117:13 Unresolved reference 'DateHorizontalScroller'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/ListScreens.kt:1117:99 Unresolved reference 'it'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/ListScreens.kt:1157:13 Unresolved reference 'EmptyState'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/ListScreens.kt:1183:29 Unresolved reference 'TaskCard'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/ListScreens.kt:1197:29 Unresolved reference 'TaskCard'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/ListScreens.kt:1212:29 Unresolved reference 'TaskCard'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/ListScreens.kt:1225:29 Unresolved reference 'TaskCard'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/PersonDetailScreen.kt:481:21 Unresolved reference 'TaskCard'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/PersonDetailScreen.kt:495:21 Unresolved reference 'SectionHeader'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/PersonDetailScreen.kt:498:21 Unresolved reference 'TaskCard'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/PersonDetailScreen.kt:517:25 Unresolved reference 'SectionHeader'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/PersonDetailScreen.kt:546:21 Unresolved reference 'SectionHeader'.
+e: file:///Users/ygs/Documents/Code/Android/SalesCrm/app/src/main/java/com/example/salescrm/ui/screens/PersonDetailScreen.kt:630:17 Unresolved reference 'SectionHeader'.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 2s
+26 actionable tasks: 1 executed, 25 up-to-date
