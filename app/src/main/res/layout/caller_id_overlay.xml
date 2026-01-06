@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingHorizontal="12dp"
+    android:paddingTop="8dp">
+
+    <LinearLayout
+        android:id="@+id/cardContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/caller_id_card_bg"
+        android:elevation="8dp">
+
+        <!-- Single State Card: Simple and Informative -->
+        <LinearLayout
+            android:id="@+id/mainCardContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <!-- Top Row: Name, Label, and Dismiss Button -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/nameText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="#F0F6FC"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-medium"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:text="Contact Name" />
+
+                <TextView
+                    android:id="@+id/labelText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/tag_badge_bg"
+                    android:textColor="#58A6FF"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    android:text="Label" />
+
+                <ImageButton
+                    android:id="@+id/closeButton"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_marginStart="12dp"
+                    android:background="@android:color/transparent"
+                    android:src="@android:drawable/ic_menu_close_clear_cancel"
+                    android:alpha="0.8"
+                    android:padding="4dp"
+                    android:contentDescription="Close"
+                    android:scaleType="centerInside" />
+
+            </LinearLayout>
+
+            <!-- Row 2: Phone Number -->
+            <TextView
+                android:id="@+id/phoneText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="#8B949E"
+                android:textSize="13sp"
+                android:text="+91 98765 43210" />
+
+            <!-- Row 3: Call Stats -->
+            <LinearLayout
+                android:id="@+id/statsRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+
+                <!-- Total Calls -->
+                <LinearLayout
+                    android:id="@+id/callsContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_pie_chart"
+                        android:contentDescription="Calls" />
+
+                    <TextView
+                        android:id="@+id/callsText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:textColor="#F59E0B"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:text="0 calls" />
+
+                </LinearLayout>
+
+                <!-- Total Duration -->
+                <LinearLayout
+                    android:id="@+id/durationContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:src="@drawable/ic_flag"
+                        android:contentDescription="Duration" />
+
+                    <TextView
+                        android:id="@+id/durationText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:textColor="#F59E0B"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:text="0m" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- Row 4: Note -->
+            <LinearLayout
+                android:id="@+id/noteContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal"
+                android:gravity="top"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_marginTop="2dp"
+                    android:src="@drawable/ic_note"
+                    android:contentDescription="Note" />
+
+                <TextView
+                    android:id="@+id/noteText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:textColor="#8B949E"
+                    android:textSize="13sp"
+                    android:text="Note content..."
+                    android:maxLines="2"
+                    android:ellipsize="end" />
+
+            </LinearLayout>
+            
+            <!-- Row 5: Custom Lookup -->
+            <LinearLayout
+                android:id="@+id/lookupContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal"
+                android:gravity="top"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/lookupIcon"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_marginTop="2dp"
+                    android:src="@android:drawable/ic_menu_search"
+                    android:tint="#AEB7C0"
+                    android:contentDescription="Lookup" />
+
+                <TextView
+                    android:id="@+id/lookupText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:textColor="#C9D1D9"
+                    android:textSize="12sp"
+                    android:textStyle="italic"
+                    android:text="Lookup data..."
+                    android:maxLines="2"
+                    android:ellipsize="end" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</FrameLayout>

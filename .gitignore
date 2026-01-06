@@ -3,3 +3,11 @@ node_modules/
 .idea/
 .vscode/
 *.log
+*.iml
+.gradle
+/local.properties
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties

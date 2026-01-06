@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support & Help Center | MiniClick Suite</title>
+    <meta name="description"
+        content="Get help with MiniClick Call Track, Sales CRM, and Auto Dialer. View guides, troubleshooting, and contact our support team.">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://miniclickcrm.com/support/">
+    <meta property="og:title" content="MiniClick Support Center">
+    <meta property="og:description"
+        content="Get help with MiniClick Call Track, Sales CRM, and Auto Dialer. View guides, troubleshooting, and contact our support team.">
+    <meta property="og:image" content="https://miniclickcrm.com/assets/favicon.png">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../assets/favicon.png">
+    <link rel="apple-touch-icon" href="../assets/favicon.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        crm: { 500: '#8b5cf6' },
+                        dialer: { 500: '#f97316' },
+                        dark: {
+                            bg: '#0B0F19',
+                            card: '#111827',
+                            border: '#1F2937'
+                        }
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        .glass {
+            background-color: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-card {
+            background-color: rgba(17, 24, 39, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(31, 41, 55, 0.5);
+            transition: all 0.3s;
+        }
+        .glass-card:hover {
+            border-color: rgba(14, 165, 233, 0.3);
+            transform: translateY(-4px);
+        }
+        .text-gradient {
+            background: linear-gradient(to right, #38bdf8, #c084fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        body {
+            background-color: #0B0F19; /* dark-bg */
+            color: #ffffff;
+        }
+    </style>
+</head>
+
+<body class="antialiased overflow-x-hidden">
+
+    <!-- Navbar -->
+    <nav class="fixed w-full z-50 transition-all duration-300 top-0 glass border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <a href="../" class="flex items-center gap-2">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center">
+                        <i data-feather="layers" class="text-white w-4 h-4"></i>
+                    </div>
+                    <span class="font-bold text-xl tracking-tight">MiniClick <span
+                            class="text-brand-400">Suite</span></span>
+                </a>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-8">
+                        <a href="../products/"
+                            class="hover:text-brand-400 transition-colors px-3 py-2 text-sm font-medium">Products</a>
+                        <a href="../index.html#solutions"
+                            class="hover:text-brand-400 transition-colors px-3 py-2 text-sm font-medium">Solutions</a>
+                        <a href="../index.html#integration"
+                            class="hover:text-brand-400 transition-colors px-3 py-2 text-sm font-medium">Integration</a>
+                        <a href="../index.html#pricing"
+                            class="hover:text-brand-400 transition-colors px-3 py-2 text-sm font-medium">Pricing</a>
+                    </div>
+                </div>
+                <!-- Auth Buttons -->
+                <div id="auth-desktop" class="hidden md:flex items-center gap-4">
+                    <a href="../login/" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">Log
+                        In</a>
+                    <a href="../signup/"
+                        class="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-all shadow-lg shadow-brand-500/20 hover:shadow-brand-500/40">
+                        Get Started
+                    </a>
+                </div>
+                <!-- Mobile Menu Button -->
+                <div class="-mr-2 flex md:hidden">
+                    <button type="button"
+                        class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-white/10 focus:outline-none"
+                        aria-controls="mobile-menu" aria-expanded="false">
+                        <i data-feather="menu"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile Menu -->
+        <div class="md:hidden hidden bg-dark-bg/95 backdrop-blur-xl border-b border-white/10" id="mobile-menu">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="../products/"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">Products</a>
+                <a href="../index.html#solutions"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">Solutions</a>
+                <a href="../index.html#integration"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">Integration</a>
+                <a href="../index.html#pricing"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">Pricing</a>
+                <a id="auth-mobile-login" href="../login/"
+                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">Log In</a>
+                <a id="auth-mobile-signup" href="../signup/"
+                    class="block w-full text-center mt-4 bg-brand-600 hover:bg-brand-500 text-white px-5 py-3 rounded-lg text-base font-medium">Get
+                    Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Support Hero -->
+    <div class="relative pt-32 pb-20 sm:pt-40 sm:pb-24 overflow-hidden">
+        <div
+            class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-gradient-to-b from-brand-900/20 to-transparent pointer-events-none">
+        </div>
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+            <h1 class="text-4xl sm:text-6xl font-bold tracking-tight mb-6 leading-tight">
+                How can we <span class="text-gradient">help you?</span>
+            </h1>
+            <p class="text-xl text-gray-400 mb-10">
+                Search our knowledge base or get in touch with our team.
+            </p>
+
+            <!-- Search Bar -->
+            <div class="relative max-w-2xl mx-auto mb-16 group">
+                <div
+                    class="absolute inset-0 bg-brand-500/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                </div>
+                <div
+                    class="relative flex items-center bg-white/5 border border-white/10 rounded-full px-6 py-4 backdrop-blur-md focus-within:border-brand-500/50 focus-within:bg-white/10 transition-all">
+                    <i data-feather="search" class="w-5 h-5 text-gray-400 mr-4"></i>
+                    <input type="text" placeholder="Search for articles, guides, or troubleshooting..."
+                        class="bg-transparent border-none outline-none text-white w-full placeholder-gray-500">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Categories -->
+    <section class="pb-24 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Category 1 -->
+                <a href="#" class="glass-card p-8 rounded-2xl group text-center hover:bg-white/5 transition-all">
+                    <div
+                        class="w-16 h-16 mx-auto bg-brand-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-feather="book-open" class="text-brand-400 w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Getting Started</h3>
+                    <p class="text-gray-400">Installation guides, account setup, and quick start tutorials.</p>
+                </a>
+
+                <!-- Category 2 -->
+                <a href="#" class="glass-card p-8 rounded-2xl group text-center hover:bg-white/5 transition-all">
+                    <div
+                        class="w-16 h-16 mx-auto bg-crm-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-feather="settings" class="text-crm-500 w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Account & Billing</h3>
+                    <p class="text-gray-400">Manage your subscription, team members, and payment methods.</p>
+                </a>
+
+                <!-- Category 3 -->
+                <a href="#" class="glass-card p-8 rounded-2xl group text-center hover:bg-white/5 transition-all">
+                    <div
+                        class="w-16 h-16 mx-auto bg-dialer-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-feather="tool" class="text-dialer-500 w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Troubleshooting</h3>
+                    <p class="text-gray-400">Solutions to common issues with syncing, recording, or dialing.</p>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Support Options -->
+    <section class="py-24 bg-white/5 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold mb-4">Still need help?</h2>
+                <p class="text-gray-400">Our team is ready to assist you.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <div class="glass-card p-8 rounded-2xl flex items-center gap-6">
+                    <div class="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center shrink-0">
+                        <i data-feather="mail" class="text-blue-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg mb-1">Email Support</h3>
+                        <p class="text-gray-400 text-sm mb-3">Get a response within 24 hours.</p>
+                        <a href="mailto:support@miniclick.com"
+                            class="text-brand-400 font-medium hover:underline">support@miniclick.com</a>
+                    </div>
+                </div>
+
+                <div class="glass-card p-8 rounded-2xl flex items-center gap-6">
+                    <div class="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center shrink-0">
+                        <i data-feather="message-circle" class="text-green-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg mb-1">Live Chat</h3>
+                        <p class="text-gray-400 text-sm mb-3">Available Mon-Fri, 9am - 6pm EST.</p>
+                        <button class="text-brand-400 font-medium hover:underline">Start Chat</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/10 bg-[#0B0F19] pt-16 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+                <div class="col-span-2 md:col-span-1">
+                    <span class="font-bold text-xl tracking-tight mb-4 block">MiniClick Suite<span
+                            class="text-brand-400">.</span></span>
+                    <p class="text-gray-500 text-sm">Empowering business communication for the modern world.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Products</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="../call-track/" class="hover:text-white transition-colors">Call Track</a></li>
+                        <li><a href="../sales-crm/" class="hover:text-white transition-colors">Sales CRM</a></li>
+                        <li><a href="../auto-dialer/" class="hover:text-white transition-colors">Auto Dialer</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Resources</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="../setup/" class="hover:text-white transition-colors">Setup Guide</a></li>
+                        <li><a href="../privacy/" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Contact</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="../support/" class="hover:text-white transition-colors">Support</a></li>
+                        <li><a href="../login/" class="hover:text-white transition-colors">Login</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-white/5 pt-8 text-center">
+                <p class="text-gray-600 text-sm">© 2026 MiniClick. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        feather.replace();
+
+        // Check for login (Basic Check)
+        const token = localStorage.getItem('cc_token');
+        if (token) {
+            const desktopContainer = document.getElementById('auth-desktop');
+            if (desktopContainer) {
+                desktopContainer.innerHTML = `
+                     <a href="/dashboard/"
+                         class="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-all shadow-lg shadow-brand-500/20 hover:shadow-brand-500/40 flex items-center gap-2">
+                         Dashboard <i data-feather="layout" class="w-4 h-4"></i>
+                     </a>
+                 `;
+            }
+        }
+
+        // Mobile Menu Toggle
+        const btn = document.querySelector("button[aria-controls='mobile-menu']");
+        const menu = document.getElementById("mobile-menu");
+        if (btn && menu) {
+            btn.addEventListener("click", () => {
+                menu.classList.toggle("hidden");
+            });
+        }
+    </script>
+</body>
+
+</html>
