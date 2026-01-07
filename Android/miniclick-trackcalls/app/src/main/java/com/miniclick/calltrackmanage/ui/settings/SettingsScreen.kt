@@ -63,6 +63,12 @@ fun SettingsScreen(
     var accountEditField by remember { mutableStateOf<String?>(null) } // "pairing", "phone1", "phone2", null for all
     var showCustomLookupModal by remember { mutableStateOf(false) }
 
+    val hasStoragePermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+        androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_MEDIA_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
+    } else {
+        androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_EXTERNAL_STORAGE) == android.content.pm.PackageManager.PERMISSION_GRANTED
+    }
+
     val folderLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
@@ -481,13 +487,22 @@ fun SettingsScreen(
                 // Attach Recordings Toggle
                 ListItem(
                     headlineContent = { Text("Attach Recordings") },
-                    supportingContent = { Text("Upload recordings to the cloud") },
+                    supportingContent = { 
+                        if (uiState.callRecordEnabled && !hasStoragePermission) {
+                            Text("Permission Required to attach recordings", color = MaterialTheme.colorScheme.error)
+                        } else {
+                            Text("Upload recordings to the cloud")
+                        }
+                    },
                     leadingContent = { 
-                        SettingsIcon(Icons.Default.Mic, MaterialTheme.colorScheme.tertiary) 
+                        SettingsIcon(
+                            Icons.Default.Mic, 
+                            if (uiState.callRecordEnabled && !hasStoragePermission) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+                        ) 
                     },
                     trailingContent = {
                         Switch(
-                            checked = uiState.callRecordEnabled,
+                            checked = uiState.callRecordEnabled && hasStoragePermission,
                             onCheckedChange = { enabled ->
                                 if (enabled) {
                                     val hasStorage = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {

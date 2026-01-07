@@ -67,6 +67,7 @@ import com.miniclick.calltrackmanage.worker.RecordingUploadWorker
 import android.provider.OpenableColumns
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.ripple
+import androidx.lifecycle.compose.LifecycleEventEffect
 
 // ============================================
 // CALLS SCREEN (Individual call logs)
@@ -99,7 +100,10 @@ fun CallsScreen(
         TrackSimModal(
             uiState = settingsState,
             viewModel = settingsViewModel,
-            onDismiss = { showTrackSimModal = false }
+            onDismiss = { 
+                showTrackSimModal = false
+                viewModel.refreshSettings()
+            }
         )
     }
 
@@ -136,6 +140,10 @@ fun CallsScreen(
         // Sync is handled by workers triggered by call events or manual pull-to-refresh.
     }
 
+
+    LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+        viewModel.refreshSettings()
+    }
 
     // Call End Detection
     DisposableEffect(Unit) {
@@ -293,6 +301,9 @@ fun CallsScreen(
                 asEmptyState = true,
                 modifier = Modifier.weight(1f)
             ) {
+                LaunchedEffect(Unit) {
+                    viewModel.refreshSettings()
+                }
                 Box(Modifier.fillMaxSize()) {
                     if (uiState.isLoading) {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -663,6 +674,9 @@ fun PersonsScreen(
             asEmptyState = true,
             modifier = Modifier.weight(1f)
         ) {
+            LaunchedEffect(Unit) {
+                viewModel.refreshSettings()
+            }
             Box(Modifier.fillMaxSize()) {
                 if (uiState.isLoading) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -1492,18 +1506,20 @@ fun ReportsScreen(
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                // Date Range Icon
-                DateRangeHeaderAction(
-                    dateRange = uiState.dateRange,
-                    onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) }
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Filter Icon
+                    IconButton(onClick = viewModel::toggleFiltersVisibility) {
+                        Icon(
+                            imageVector = Icons.Default.FilterList,
+                            contentDescription = "Filter",
+                            tint = if (uiState.isFiltersVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
 
-                // Filter Icon
-                IconButton(onClick = viewModel::toggleFiltersVisibility) {
-                    Icon(
-                        imageVector = Icons.Default.FilterList,
-                        contentDescription = "Filter",
-                        tint = if (uiState.isFiltersVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    // Date Range Icon (Last)
+                    DateRangeHeaderAction(
+                        dateRange = uiState.dateRange,
+                        onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) }
                     )
                 }
             }

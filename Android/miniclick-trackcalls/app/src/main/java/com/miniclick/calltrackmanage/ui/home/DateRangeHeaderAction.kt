@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 @Composable
 fun DateRangeHeaderAction(
@@ -40,13 +41,48 @@ fun DateRangeHeaderAction(
         DateRange.ALL -> Icons.Default.AllInclusive
     }
 
+    val headerLabel = when (dateRange) {
+        DateRange.TODAY -> "Today"
+        DateRange.LAST_3_DAYS -> "Last 3 Days"
+        DateRange.LAST_7_DAYS -> "Last 7 Days"
+        DateRange.LAST_14_DAYS -> "Last 14 Days"
+        DateRange.LAST_30_DAYS -> "Last 30 Days"
+        DateRange.THIS_MONTH -> "This Month"
+        DateRange.PREVIOUS_MONTH -> "Prev Month"
+        DateRange.CUSTOM -> "Custom"
+        DateRange.ALL -> "All Time"
+    }
+
     Box {
-        IconButton(onClick = { showMenu = true }) {
-            Icon(
-                imageVector = headerIcon,
-                contentDescription = "Date Range",
-                tint = if (dateRange != DateRange.ALL) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        Surface(
+            onClick = { showMenu = true },
+            shape = RoundedCornerShape(12.dp),
+            color = if (dateRange != DateRange.ALL) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            modifier = Modifier.padding(horizontal = 4.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = headerIcon,
+                    contentDescription = "Date Range",
+                    modifier = Modifier.size(18.dp),
+                    tint = if (dateRange != DateRange.ALL) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = headerLabel,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (dateRange != DateRange.ALL) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Icon(
+                    Icons.Default.ArrowDropDown,
+                    null,
+                    modifier = Modifier.size(20.dp),
+                    tint = if (dateRange != DateRange.ALL) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
         
         DropdownMenu(

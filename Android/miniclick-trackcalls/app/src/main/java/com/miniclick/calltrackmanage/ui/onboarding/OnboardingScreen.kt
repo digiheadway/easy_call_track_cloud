@@ -584,22 +584,7 @@ fun PermissionDisclosureStepContent(
         
         Spacer(Modifier.height(32.dp))
         
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            ),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Text(
-                "By continuing, you agree that this data will be processed locally on your device or uploaded to your private dashboard if you enable cloud sync.",
-                modifier = Modifier.padding(16.dp),
-                style = MaterialTheme.typography.labelSmall,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(16.dp))
         
         Button(
             onClick = onContinue,
@@ -608,23 +593,12 @@ fun PermissionDisclosureStepContent(
                 .height(56.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Text("I Understand & Agree")
+            Text("Finish Setup")
         }
         
         Spacer(Modifier.height(16.dp))
         
-        Text(
-            text = "Privacy Policy",
-            modifier = Modifier
-                .clickable {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://miniclickcrm.com/privacy"))
-                    context.startActivity(intent)
-                }
-                .padding(8.dp),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary,
-            textAlign = TextAlign.Center
-        )
+        Spacer(Modifier.height(32.dp))
         
         Spacer(Modifier.height(24.dp))
     }

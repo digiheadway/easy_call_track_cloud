@@ -166,27 +166,28 @@ fun SetupGuide(
         hasCallLog, hasContacts, hasPhoneState, hasSimInfo, hasNotifications, hasStorage,
         uiState.simSelection, uiState.callerPhoneSim1, uiState.callerPhoneSim2,
         uiState.sim1SubId, uiState.sim2SubId, uiState.availableSims,
-        uiState.callRecordEnabled, uiState.userDeclinedRecording
+        uiState.callRecordEnabled, uiState.userDeclinedRecording,
+        skippedSteps.size
     ) {
         mutableListOf<GuideStep>().apply {
-            if (!hasCallLog) {
+            if (!hasCallLog && !skippedSteps.contains("CALL_LOG")) {
                 add(GuideStep("CALL_LOG", "Allow Call Log", "Required to track and organize your calls automatically.", Icons.Default.Call, "Allow Access", onAction = { 
                     singlePermissionLauncher.launch(Manifest.permission.READ_CALL_LOG) 
-                }))
+                }, secondaryActionLabel = "Next", onSecondaryAction = { skippedSteps.add("CALL_LOG") }))
             }
-            if (!hasContacts) {
+            if (!hasContacts && !skippedSteps.contains("CONTACTS")) {
                 add(GuideStep("CONTACTS", "All Access Contacts", "Identify callers by name from your contact list.", Icons.Default.People, "Allow Access", onAction = {
                     singlePermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
-                }))
+                }, secondaryActionLabel = "Next", onSecondaryAction = { skippedSteps.add("CONTACTS") }))
             }
-            if (!hasPhoneState) {
+            if (!hasPhoneState && !skippedSteps.contains("PHONE_STATE")) {
                 add(GuideStep("PHONE_STATE", "MiniClick Calls", "Detect active calls to show caller information in real-time.", Icons.Default.Phone, "Allow Access", onAction = {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         multiPermissionLauncher.launch(arrayOf(Manifest.permission.READ_PHONE_STATE, Manifest.permission.READ_PHONE_NUMBERS))
                     } else {
                         singlePermissionLauncher.launch(Manifest.permission.READ_PHONE_STATE)
                     }
-                }))
+                }, secondaryActionLabel = "Next", onSecondaryAction = { skippedSteps.add("PHONE_STATE") }))
             }
             if (!settingsViewModel.isTrackStartDateSet() && !skippedSteps.contains("START_DATE")) {
                 val isSet = uiState.trackStartDate != 0L
