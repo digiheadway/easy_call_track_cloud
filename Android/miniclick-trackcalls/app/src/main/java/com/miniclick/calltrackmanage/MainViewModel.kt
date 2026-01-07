@@ -34,6 +34,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             initialValue = settingsRepository.isOnboardingCompleted()
         )
 
+    val agreementAccepted: StateFlow<Boolean> = settingsRepository.getAgreementAcceptedFlow()
+        .stateIn(
+            scope = viewModelScope,
+            started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
+            initialValue = settingsRepository.isAgreementAccepted()
+        )
+
+    fun setAgreementAccepted(accepted: Boolean) {
+        settingsRepository.setAgreementAccepted(accepted)
+    }
+
     // Flag to track if we've auto-shown the cloud sync modal this session
     var hasShownCloudSyncPrompt = false
         private set

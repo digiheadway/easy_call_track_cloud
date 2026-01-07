@@ -28,10 +28,22 @@ fun DateRangeHeaderAction(
         )
     }
 
+    val headerIcon = when (dateRange) {
+        DateRange.TODAY -> Icons.Default.Today
+        DateRange.LAST_3_DAYS -> Icons.Default.Event
+        DateRange.LAST_7_DAYS -> Icons.Default.Event
+        DateRange.LAST_14_DAYS -> Icons.Default.Event
+        DateRange.LAST_30_DAYS -> Icons.Default.Event
+        DateRange.THIS_MONTH -> Icons.Default.CalendarMonth
+        DateRange.PREVIOUS_MONTH -> Icons.Default.CalendarMonth
+        DateRange.CUSTOM -> Icons.Default.DateRange
+        DateRange.ALL -> Icons.Default.AllInclusive
+    }
+
     Box {
         IconButton(onClick = { showMenu = true }) {
             Icon(
-                imageVector = Icons.Default.CalendarToday,
+                imageVector = headerIcon,
                 contentDescription = "Date Range",
                 tint = if (dateRange != DateRange.ALL) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             )

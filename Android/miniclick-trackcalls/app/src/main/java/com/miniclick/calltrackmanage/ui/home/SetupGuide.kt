@@ -102,6 +102,9 @@ fun SetupGuide(
     var showCreateOrgModal by remember { mutableStateOf(false) }
     var showAccountInfoModal by remember { mutableStateOf(false) }
     var accountEditField by remember { mutableStateOf<String?>(null) }
+    
+    // Track steps skipped in this session
+    val skippedSteps = remember { mutableStateListOf<String>() }
 
     // --- Helpers / Launchers ---
     fun checkPermissions() {
@@ -185,15 +188,30 @@ fun SetupGuide(
                     }
                 }))
             }
-            if (!settingsViewModel.isTrackStartDateSet()) {
-                add(GuideStep("START_DATE", "Track Start Date", "Choose when you want to start tracking calls from. Recommended: 3-7 days ago.", Icons.Default.CalendarToday, "Set Date", onAction = {
-                    showDatePicker = true
-                }))
+            if (!settingsViewModel.isTrackStartDateSet() && !skippedSteps.contains("START_DATE")) {
+                val isSet = uiState.trackStartDate != 0L
+                add(GuideStep(
+                    type = "START_DATE", 
+                    title = "Track Start Date", 
+                    description = if (isSet) "Start date is set. You can change it or continue." else "Choose when you want to start tracking calls from. Recommended: 3-7 days ago.", 
+                    icon = if (isSet) Icons.Default.CheckCircle else Icons.Default.CalendarToday, 
+                    actionLabel = if (isSet) "Next" else "Set Date", 
+                    onAction = { if (isSet) skippedSteps.add("START_DATE") else showDatePicker = true },
+                    secondaryActionLabel = if (isSet) "Change Date" else "Next",
+                    onSecondaryAction = { if (isSet) showDatePicker = true else skippedSteps.add("START_DATE") }
+                ))
             }
-            if (uiState.simSelection == "Off") {
-                add(GuideStep("SIM_SELECTION", "Select Sim Card to Track", "Choose which SIM cards you want to monitor calls for.", Icons.Default.SimCard, "Select SIM", onAction = {
-                    showSimModal = true
-                }))
+            if (uiState.simSelection == "Off" && !skippedSteps.contains("SIM_SELECTION")) {
+                add(GuideStep(
+                    type = "SIM_SELECTION", 
+                    title = "Select Sim Card to Track", 
+                    description = "Choose which SIM cards you want to monitor calls for.", 
+                    icon = Icons.Default.SimCard, 
+                    actionLabel = "Select SIM", 
+                    onAction = { showSimModal = true },
+                    secondaryActionLabel = "Next",
+                    onSecondaryAction = { skippedSteps.add("SIM_SELECTION") }
+                ))
             }
             
             val hasPhysicalSim1 = uiState.availableSims.any { it.slotIndex == 0 }
@@ -201,32 +219,38 @@ fun SetupGuide(
             val sim1Needs = hasPhysicalSim1 && (uiState.simSelection == "Sim1" || uiState.simSelection == "Both") && (uiState.callerPhoneSim1.isBlank() || uiState.sim1SubId == null)
             val sim2Needs = hasPhysicalSim2 && (uiState.simSelection == "Sim2" || uiState.simSelection == "Both") && (uiState.callerPhoneSim2.isBlank() || uiState.sim2SubId == null)
             
-            if (sim1Needs || sim2Needs) {
-                add(GuideStep("SIM_SETUP", "Setup Tracked SIMs", "Configure your selected SIM cards for accurate cloud sync.", Icons.Default.Tune, "Setup Now", onAction = {
-                    showSimModal = true
-                }))
+            val isSimSetupDone = uiState.simSelection != "Off" && !sim1Needs && !sim2Needs
+
+            if ((sim1Needs || sim2Needs || (uiState.simSelection != "Off" && !skippedSteps.contains("SIM_SETUP"))) && !skippedSteps.contains("SIM_SETUP")) {
+                add(GuideStep(
+                    type = "SIM_SETUP", 
+                    title = if (isSimSetupDone) "SIM Setup Complete" else "Setup Tracked SIMs", 
+                    description = if (isSimSetupDone) "Your SIM cards are configured. You can re-configure or continue." else "Configure your selected SIM cards for accurate cloud sync.", 
+                    icon = if (isSimSetupDone) Icons.Default.CheckCircle else Icons.Default.Tune, 
+                    actionLabel = if (isSimSetupDone) "Next" else "Setup Now", 
+                    onAction = { if (isSimSetupDone) skippedSteps.add("SIM_SETUP") else showSimModal = true },
+                    secondaryActionLabel = if (isSimSetupDone) "Change Setup" else "Next",
+                    onSecondaryAction = { if (isSimSetupDone) showSimModal = true else skippedSteps.add("SIM_SETUP") }
+                ))
             }
             
-            if ((!uiState.callRecordEnabled && !uiState.userDeclinedRecording) || (!hasStorage && uiState.callRecordEnabled)) {
-                 // Logic: If already enabled but missing storage, show it.
-                 // If disabled AND not declined, show it.
-                 // Wait, simplified: Show if logic requires setup.
-                 // If user declined, we hide it unless enabled manually later?
-                 // But wait, if callRecordEnabled is false and userDeclinedRecording is false, show.
-                 // If callRecordEnabled is true but no storage, show (ignoring decline becuase they turned it on!).
-            }
-            // Let's refine the condition.
-            val showRecordingStep = if (uiState.callRecordEnabled) !hasStorage else !uiState.userDeclinedRecording
+            // Refined Recording Step Condition
+            val isRecordingDone = uiState.callRecordEnabled && hasStorage
+            val showRecordingStep = (uiState.callRecordEnabled && !hasStorage) || 
+                                   (!uiState.callRecordEnabled && !uiState.userDeclinedRecording) ||
+                                   (isRecordingDone && !skippedSteps.contains("RECORDING"))
             
-            if (showRecordingStep) {
+            if (showRecordingStep && !skippedSteps.contains("RECORDING")) {
                 add(GuideStep(
                     type = "RECORDING",
-                    title = "Attach Call Recording?",
-                    description = "Auto-attach recordings to call logs for easy playback.",
-                    icon = Icons.Default.Mic,
-                    actionLabel = "Enable Now",
+                    title = if (isRecordingDone) "Recording Attached" else "Attach Call Recording?",
+                    description = if (isRecordingDone) "Call recordings will be automatically attached to your logs." else "Auto-attach recordings to call logs for easy playback.",
+                    icon = if (isRecordingDone) Icons.Default.CheckCircle else Icons.Default.Mic,
+                    actionLabel = if (isRecordingDone) "Next" else if (uiState.callRecordEnabled && !hasStorage) "Allow Permission" else "Enable Now",
                     onAction = {
-                        if (!hasStorage) {
+                        if (isRecordingDone) {
+                            skippedSteps.add("RECORDING")
+                        } else if (!hasStorage) {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                 singlePermissionLauncher.launch(Manifest.permission.READ_MEDIA_AUDIO)
                             } else {
@@ -236,10 +260,15 @@ fun SetupGuide(
                             settingsViewModel.updateCallRecordEnabled(true)
                         }
                     },
-                    secondaryActionLabel = "Skip / Don't Attach",
+                    secondaryActionLabel = if (isRecordingDone) "Disable" else "Skip / Don't Attach",
                     onSecondaryAction = {
-                        settingsViewModel.updateUserDeclinedRecording(true)
-                        settingsViewModel.updateCallRecordEnabled(false)
+                        if (isRecordingDone) {
+                            settingsViewModel.updateCallRecordEnabled(false)
+                        } else {
+                            settingsViewModel.updateUserDeclinedRecording(true)
+                            settingsViewModel.updateCallRecordEnabled(false)
+                            skippedSteps.add("RECORDING")
+                        }
                     }
                 ))
             }
@@ -255,13 +284,13 @@ fun SetupGuide(
             // JOIN_ORG step removed to be shown as instant modal instead
         }
     }
-    val hasCorePermissionSteps = steps.any { it.type in listOf("CALL_LOG", "CONTACTS", "PHONE_STATE") }
-    val shouldShowOnboarding = steps.isNotEmpty() && (!isDismissed || hasCorePermissionSteps)
+    val hasCoreSetupSteps = steps.any { it.type in listOf("CALL_LOG", "CONTACTS", "PHONE_STATE", "SIM_SELECTION") }
+    val shouldShowOnboarding = steps.isNotEmpty() && (!isDismissed || hasCoreSetupSteps)
     
     Box(modifier = modifier) {
         if (shouldShowOnboarding) {
             val currentStep = steps.firstOrNull()
-            val isCorePermission = currentStep?.type in listOf("CALL_LOG", "CONTACTS", "PHONE_STATE")
+            val isCoreSetup = currentStep?.type in listOf("CALL_LOG", "CONTACTS", "PHONE_STATE", "SIM_SELECTION")
             
             AnimatedContent(
                 targetState = currentStep,
@@ -284,7 +313,7 @@ fun SetupGuide(
                         asEmptyState = asEmptyState,
                         secondaryActionLabel = step.secondaryActionLabel,
                         onSecondaryAction = step.onSecondaryAction,
-                        canDismiss = !isCorePermission
+                        canDismiss = !isCoreSetup
                     )
                 }
             }

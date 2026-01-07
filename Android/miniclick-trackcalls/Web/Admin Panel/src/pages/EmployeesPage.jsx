@@ -208,7 +208,12 @@ export default function EmployeesPage() {
         setLoadingStats(true);
         try {
             const res = await api.get(`/employees.php?action=data_stats&id=${employee.id}`);
-            setDeletionStats(res.data);
+            console.log('Stats Response:', res);
+            if (res.data) {
+                setDeletionStats(res.data);
+            } else {
+                console.error('No data in stats response');
+            }
         } catch (err) {
             console.error('Failed to fetch deletion stats', err);
             toast.error('Failed to fetch employee data stats');

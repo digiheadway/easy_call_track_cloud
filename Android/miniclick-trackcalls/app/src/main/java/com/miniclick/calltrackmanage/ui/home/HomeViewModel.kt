@@ -77,7 +77,11 @@ data class HomeUiState(
     val personSortDirection: SortDirection = SortDirection.DESCENDING,
     val allowPersonalExclusion: Boolean = false,
     val callRecordEnabled: Boolean = true,
-    val activeRecordings: List<CallDataEntity> = emptyList()
+    val activeRecordings: List<CallDataEntity> = emptyList(),
+    val sim1SubId: Int? = null,
+    val sim2SubId: Int? = null,
+    val callerPhoneSim1: String = "",
+    val callerPhoneSim2: String = ""
 )
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
@@ -690,20 +694,32 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val isSyncSetup = orgId.isNotEmpty()
         val allowPersonalExclusion = settingsRepository.isAllowPersonalExclusion()
         val callRecordEnabled = settingsRepository.isCallRecordEnabled()
+        val sim1SubId = settingsRepository.getSim1SubscriptionId().let { if (it == -1) null else it }
+        val sim2SubId = settingsRepository.getSim2SubscriptionId().let { if (it == -1) null else it }
+        val callerPhone1 = settingsRepository.getCallerPhoneSim1()
+        val callerPhone2 = settingsRepository.getCallerPhoneSim2()
         
         if (simSelection != _uiState.value.simSelection || 
             trackStartDate != _uiState.value.trackStartDate ||
             whatsappPreference != _uiState.value.whatsappPreference ||
             isSyncSetup != _uiState.value.isSyncSetup ||
             allowPersonalExclusion != _uiState.value.allowPersonalExclusion ||
-            callRecordEnabled != _uiState.value.callRecordEnabled) {
+            callRecordEnabled != _uiState.value.callRecordEnabled ||
+            sim1SubId != _uiState.value.sim1SubId ||
+            sim2SubId != _uiState.value.sim2SubId ||
+            callerPhone1 != _uiState.value.callerPhoneSim1 ||
+            callerPhone2 != _uiState.value.callerPhoneSim2) {
             _uiState.update { it.copy(
                 simSelection = simSelection, 
                 trackStartDate = trackStartDate,
                 whatsappPreference = whatsappPreference,
                 isSyncSetup = isSyncSetup,
                 allowPersonalExclusion = allowPersonalExclusion,
-                callRecordEnabled = callRecordEnabled
+                callRecordEnabled = callRecordEnabled,
+                sim1SubId = sim1SubId,
+                sim2SubId = sim2SubId,
+                callerPhoneSim1 = callerPhone1,
+                callerPhoneSim2 = callerPhone2
             ) }
             triggerFilter()
         }

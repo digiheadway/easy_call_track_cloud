@@ -602,6 +602,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun updateTrackStartDate(date: Long) {
         settingsRepository.setTrackStartDate(date)
         _uiState.update { it.copy(trackStartDate = date) }
+        
+        // Trigger data refresh to load calls according to new start date
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                callDataRepository.syncFromSystemCallLog()
+            } catch (e: Exception) {
+                android.util.Log.e("SettingsViewModel", "Failed to refresh data after date change", e)
+            }
+        }
     }
 
     fun isTrackStartDateSet(): Boolean = settingsRepository.isTrackStartDateSet()

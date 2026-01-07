@@ -301,16 +301,16 @@ fun CallsScreen(
                     } else if (uiState.simSelection == "Off") {
                         EmptyState(
                             icon = Icons.Default.SimCard,
-                            title = "Select Sim Card to Track",
-                            description = "Capture your call logs by selecting which SIM cards to monitor.",
+                            title = "SIM Tracking is Off",
+                            description = "You must select at least one SIM card to Capture and track calls.",
                             action = {
                                 Button(
                                     onClick = { showTrackSimModal = true },
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Icon(Icons.Default.Done, null)
+                                    Icon(Icons.Default.Settings, null)
                                     Spacer(Modifier.width(8.dp))
-                                    Text("Select SIM Now")
+                                    Text("Turn On Tracking")
                                 }
                             }
                         )
@@ -336,21 +336,56 @@ fun CallsScreen(
                                 description = "We are importing your call history from the device. Please wait a moment."
                             )
                         } else {
-                            EmptyState(
-                                icon = Icons.Default.History,
-                                title = "No calls yet",
-                                description = "Your call history will appear here once you fetch them or tracking starts.",
-                                action = {
-                                    Button(
-                                        onClick = { viewModel.syncFromSystem() },
-                                        shape = RoundedCornerShape(12.dp)
-                                    ) {
-                                        Icon(Icons.Default.CloudDownload, null)
-                                        Spacer(Modifier.width(8.dp))
-                                        Text("Fetch Call Logs")
+                            // Diagnostics for no calls
+                            val hasPhysicalSim1 = uiState.sim1SubId != null
+                            val hasPhysicalSim2 = uiState.sim2SubId != null
+                            val sim1Selected = uiState.simSelection == "Sim1" || uiState.simSelection == "Both"
+                            val sim2Selected = uiState.simSelection == "Sim2" || uiState.simSelection == "Both"
+                            
+                            val sim1NeedsConfig = sim1Selected && (uiState.callerPhoneSim1.isBlank() || uiState.sim1SubId == null)
+                            val sim2NeedsConfig = sim2Selected && (uiState.callerPhoneSim2.isBlank() || uiState.sim2SubId == null)
+                            
+                            if (sim1NeedsConfig || sim2NeedsConfig) {
+                                EmptyState(
+                                    icon = Icons.Default.Tune,
+                                    title = "SIM Setup Required",
+                                    description = "Your selected SIM cards need to be configured with phone numbers for tracking to work properly.",
+                                    action = {
+                                        Button(
+                                            onClick = { showTrackSimModal = true },
+                                            shape = RoundedCornerShape(12.dp)
+                                        ) {
+                                            Icon(Icons.Default.Settings, null)
+                                            Spacer(Modifier.width(8.dp))
+                                            Text("Finish SIM Setup")
+                                        }
                                     }
-                                }
-                            )
+                                )
+                            } else {
+                                EmptyState(
+                                    icon = Icons.Default.History,
+                                    title = "No calls yet",
+                                    description = if (uiState.trackStartDate > System.currentTimeMillis()) 
+                                        "Your tracking start date is in the future. Change it in Settings to see past calls."
+                                    else "No calls found for the selected period. Make sure the correct SIM is being tracked.",
+                                    action = {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Button(
+                                                onClick = { viewModel.syncFromSystem() },
+                                                shape = RoundedCornerShape(12.dp)
+                                            ) {
+                                                Icon(Icons.Default.CloudDownload, null)
+                                                Spacer(Modifier.width(8.dp))
+                                                Text("Fetch Call Logs")
+                                            }
+                                            Spacer(Modifier.height(8.dp))
+                                            TextButton(onClick = { showTrackSimModal = true }) {
+                                                Text("Check SIM Settings")
+                                            }
+                                        }
+                                    }
+                                )
+                            }
                         }
                     } else {
                         CallLogList(
@@ -411,9 +446,6 @@ fun CallsHeader(
             
             // Action Icons
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Date Range Icon
-                DateRangeHeaderAction(dateRange, onDateRangeChange)
-                
                 // Search Icon
                 IconButton(onClick = onSearchClick) {
                     Icon(
@@ -431,6 +463,9 @@ fun CallsHeader(
                         tint = if (isFilterActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+
+                // Date Range Icon (Last)
+                DateRangeHeaderAction(dateRange, onDateRangeChange)
             }
         }
     }
@@ -636,16 +671,16 @@ fun PersonsScreen(
                 } else if (uiState.simSelection == "Off") {
                     EmptyState(
                         icon = Icons.Default.SimCard,
-                        title = "Select Sim Card to Track",
-                        description = "Capture your call logs by selecting which SIM cards to monitor.",
+                        title = "SIM Tracking is Off",
+                        description = "You must select at least one SIM card to Capture and track calls.",
                         action = {
                             Button(
                                 onClick = { showTrackSimModal = true },
                                 shape = RoundedCornerShape(12.dp)
                             ) {
-                                Icon(Icons.Default.Done, null)
+                                Icon(Icons.Default.Settings, null)
                                 Spacer(Modifier.width(8.dp))
-                                Text("Select SIM Now")
+                                Text("Turn On Tracking")
                             }
                         }
                     )
@@ -671,21 +706,52 @@ fun PersonsScreen(
                             description = "We are organizing your contacts based on call history. Please wait."
                         )
                     } else {
-                        EmptyState(
-                            icon = Icons.Default.Group,
-                            title = "No contacts yet",
-                            description = "People you interact with will appear here.",
-                            action = {
-                                Button(
-                                    onClick = { viewModel.syncFromSystem() },
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Icon(Icons.Default.CloudDownload, null)
-                                    Spacer(Modifier.width(8.dp))
-                                    Text("Fetch Contacts")
+                        // Diagnostics for no persons
+                        val sim1Selected = uiState.simSelection == "Sim1" || uiState.simSelection == "Both"
+                        val sim2Selected = uiState.simSelection == "Sim2" || uiState.simSelection == "Both"
+                        
+                        val sim1NeedsConfig = sim1Selected && (uiState.callerPhoneSim1.isBlank() || uiState.sim1SubId == null)
+                        val sim2NeedsConfig = sim2Selected && (uiState.callerPhoneSim2.isBlank() || uiState.sim2SubId == null)
+                        
+                        if (sim1NeedsConfig || sim2NeedsConfig) {
+                            EmptyState(
+                                icon = Icons.Default.Tune,
+                                title = "SIM Setup Required",
+                                description = "Your selected SIM cards need to be configured for contacts to show up correctly.",
+                                action = {
+                                    Button(
+                                        onClick = { showTrackSimModal = true },
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Icon(Icons.Default.Settings, null)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("Finish SIM Setup")
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        } else {
+                            EmptyState(
+                                icon = Icons.Default.Group,
+                                title = "No contacts yet",
+                                description = "People you interact with will appear here after they are identified from your call logs.",
+                                action = {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Button(
+                                            onClick = { viewModel.syncFromSystem() },
+                                            shape = RoundedCornerShape(12.dp)
+                                        ) {
+                                            Icon(Icons.Default.CloudDownload, null)
+                                            Spacer(Modifier.width(8.dp))
+                                            Text("Fetch Contacts")
+                                        }
+                                        Spacer(Modifier.height(8.dp))
+                                        TextButton(onClick = { showTrackSimModal = true }) {
+                                            Text("Check SIM Settings")
+                                        }
+                                    }
+                                }
+                            )
+                        }
                     }
                 } else {
                     PersonsList(
@@ -742,9 +808,6 @@ fun PersonsHeader(
             
             // Action Icons
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Date Range Icon
-                DateRangeHeaderAction(dateRange, onDateRangeChange)
-
                 IconButton(onClick = onSearchClick) {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -760,6 +823,9 @@ fun PersonsHeader(
                         tint = if (isFilterActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+
+                // Date Range Icon (Last)
+                DateRangeHeaderAction(dateRange, onDateRangeChange)
             }
         }
     }

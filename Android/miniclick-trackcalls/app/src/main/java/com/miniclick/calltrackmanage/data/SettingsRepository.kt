@@ -44,6 +44,7 @@ class SettingsRepository private constructor(private val context: Context) {
     private val KEY_DIALER_ENABLED = "dialer_enabled"
     private val KEY_SHOW_RECORDING_REMINDER = "show_recording_reminder"
     private val KEY_SHOW_UNKNOWN_NOTE_REMINDER = "show_unknown_note_reminder"
+    private val KEY_AGREEMENT_ACCEPTED = "agreement_accepted"
 
     // Persistence for Home Screen State
     private val KEY_SEARCH_VISIBLE = "search_visible"
@@ -362,4 +363,18 @@ class SettingsRepository private constructor(private val context: Context) {
 
     fun getCustomEndDate(): Long = prefs.getLong(KEY_CUSTOM_END_DATE, 0L)
     fun setCustomEndDate(date: Long) = prefs.edit().putLong(KEY_CUSTOM_END_DATE, date).apply()
+
+    fun isAgreementAccepted(): Boolean = prefs.getBoolean(KEY_AGREEMENT_ACCEPTED, false)
+    fun setAgreementAccepted(accepted: Boolean) = prefs.edit().putBoolean(KEY_AGREEMENT_ACCEPTED, accepted).apply()
+
+    fun getAgreementAcceptedFlow(): Flow<Boolean> = callbackFlow {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
+            if (key == KEY_AGREEMENT_ACCEPTED) {
+                trySend(isAgreementAccepted())
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(isAgreementAccepted())
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
 }

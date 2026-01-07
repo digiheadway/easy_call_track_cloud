@@ -23,6 +23,7 @@ import com.miniclick.calltrackmanage.ui.settings.SettingsScreen
 import com.miniclick.calltrackmanage.ui.theme.CallCloudTheme
 import com.miniclick.calltrackmanage.ui.utils.AudioPlayer
 import com.miniclick.calltrackmanage.ui.onboarding.OnboardingScreen
+import com.miniclick.calltrackmanage.ui.onboarding.AgreementScreen
 import com.miniclick.calltrackmanage.data.SettingsRepository
 import com.miniclick.calltrackmanage.worker.CallSyncWorker
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -96,8 +97,13 @@ class MainActivity : ComponentActivity() {
             CallCloudTheme(darkTheme = darkTheme) {
                 // val settingsRepository = SettingsRepository.getInstance(getApplicationContext()) // Using viewModel instead
                 val isOnboardingCompleted by viewModel.onboardingCompleted.collectAsState()
+                val isAgreementAccepted by viewModel.agreementAccepted.collectAsState()
                 
-                if (!isOnboardingCompleted) {
+                if (!isAgreementAccepted) {
+                    AgreementScreen(onAccepted = {
+                        viewModel.setAgreementAccepted(true)
+                    })
+                } else if (!isOnboardingCompleted) {
                     OnboardingScreen(onComplete = {
                         val settingsRepository = SettingsRepository.getInstance(getApplicationContext())
                         settingsRepository.setOnboardingCompleted(true)

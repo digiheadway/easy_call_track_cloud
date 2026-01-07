@@ -152,28 +152,7 @@ fun TrackSimModal(
                 )
             }
             
-            // If setup is needed, show secondary setup button
-            if (anySIMNeedsSetup && nextSimToSetup != null && selectedValue != "Off") {
-                Spacer(Modifier.height(8.dp))
-                OutlinedButton(
-                    onClick = { showSetupModal = nextSimToSetup },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Icon(Icons.Default.Settings, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Setup SIM $nextSimToSetup (Optional)")
-                }
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "Setup helps identify which SIM made/received each call. You can do this later.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+            // Note: Setup is available inline on each SIM card, no need for secondary button
             
             Spacer(Modifier.height(32.dp))
         }

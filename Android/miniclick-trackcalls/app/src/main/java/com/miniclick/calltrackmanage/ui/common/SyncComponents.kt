@@ -63,13 +63,13 @@ fun SyncQueueModal(
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(
-                        if (isSyncSetup) "Cloud Backup Status" else "Local Data Status", 
+                        if (isSyncSetup) "Sync & Backup Status" else "Local Data Processing", 
                         style = MaterialTheme.typography.titleLarge, 
                         fontWeight = FontWeight.Bold
                     )
                     if (!isSyncSetup) {
                         Text(
-                            "All data is saved locally on your device",
+                            "Your data is processed and stored on this device",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -607,16 +607,16 @@ fun GlobalSyncStatusBar(
                     // Network issue (only matters if sync is setup)
                     !isNetworkAvailable && isSyncSetup -> {
                         val pendingTotal = totalPending + pendingRecordings
-                        if (pendingTotal > 0) "Offline • $pendingTotal saved locally" else "Offline"
+                        if (pendingTotal > 0) "Offline • Backup Paused ($pendingTotal items)" else "Offline"
                     }
                     // Active uploads
                     activeUploads > 0 -> "Uploading $activeUploads recording${if (activeUploads > 1) "s" else ""}..."
                     // Pending cloud backup
                     totalPending > 0 -> "Backing up $totalPending item${if (totalPending > 1) "s" else ""}..."
                     // Recordings in queue
-                    pendingRecordings > 0 -> "$pendingRecordings recording${if (pendingRecordings > 1) "s" else ""} pending upload"
+                    pendingRecordings > 0 -> "Queue: $pendingRecordings recording${if (pendingRecordings > 1) "s" else ""} waiting"
                     // Fallback (shouldn't happen)
-                    else -> "Processing..."
+                    else -> "All Synced ✓"
                 }
 
                 val icon = when {

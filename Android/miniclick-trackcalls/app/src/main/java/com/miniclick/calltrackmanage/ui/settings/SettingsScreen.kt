@@ -87,6 +87,16 @@ fun SettingsScreen(
         uri?.let { viewModel.importData(it) }
     }
 
+    val storagePermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            viewModel.toggleRecordingDialog(true)
+        } else {
+            android.widget.Toast.makeText(context, "Storage permission required for recordings", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+
     if (onBack != null) {
         androidx.activity.compose.BackHandler {
             onBack()
@@ -480,7 +490,22 @@ fun SettingsScreen(
                             checked = uiState.callRecordEnabled,
                             onCheckedChange = { enabled ->
                                 if (enabled) {
-                                    viewModel.toggleRecordingDialog(true)
+                                    val hasStorage = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                        androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_MEDIA_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                    } else {
+                                        androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_EXTERNAL_STORAGE) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                    }
+                                    
+                                    if (hasStorage) {
+                                        viewModel.toggleRecordingDialog(true)
+                                    } else {
+                                        storagePermissionLauncher.launch(
+                                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) 
+                                                android.Manifest.permission.READ_MEDIA_AUDIO 
+                                            else 
+                                                android.Manifest.permission.READ_EXTERNAL_STORAGE
+                                        )
+                                    }
                                 } else {
                                     viewModel.toggleRecordingDisableDialog(true)
                                 }
