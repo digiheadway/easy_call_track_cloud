@@ -45,6 +45,7 @@ class SettingsRepository private constructor(private val context: Context) {
     private val KEY_SHOW_RECORDING_REMINDER = "show_recording_reminder"
     private val KEY_SHOW_UNKNOWN_NOTE_REMINDER = "show_unknown_note_reminder"
     private val KEY_AGREEMENT_ACCEPTED = "agreement_accepted"
+    private val KEY_SKIPPED_STEPS = "skipped_onboarding_steps"
 
     // Persistence for Home Screen State
     private val KEY_SEARCH_VISIBLE = "search_visible"
@@ -55,6 +56,9 @@ class SettingsRepository private constructor(private val context: Context) {
     private val KEY_FILTER_NOTES = "filter_notes"
     private val KEY_FILTER_CONTACTS = "filter_contacts"
     private val KEY_FILTER_ATTENDED = "filter_attended"
+    private val KEY_FILTER_PERSON_NOTES = "filter_person_notes"
+    private val KEY_FILTER_REVIEWED = "filter_reviewed"
+    private val KEY_FILTER_CUSTOM_NAME = "filter_custom_name"
     private val KEY_FILTER_LABEL = "filter_label"
     private val KEY_FILTER_DATE_RANGE = "filter_date_range"
     private val KEY_CUSTOM_START_DATE = "filter_custom_start_date"
@@ -352,6 +356,15 @@ class SettingsRepository private constructor(private val context: Context) {
     fun getAttendedFilter(): String = prefs.getString(KEY_FILTER_ATTENDED, "ALL") ?: "ALL"
     fun setAttendedFilter(filter: String) = prefs.edit().putString(KEY_FILTER_ATTENDED, filter).apply()
 
+    fun getPersonNotesFilter(): String = prefs.getString(KEY_FILTER_PERSON_NOTES, "ALL") ?: "ALL"
+    fun setPersonNotesFilter(filter: String) = prefs.edit().putString(KEY_FILTER_PERSON_NOTES, filter).apply()
+
+    fun getReviewedFilter(): String = prefs.getString(KEY_FILTER_REVIEWED, "ALL") ?: "ALL"
+    fun setReviewedFilter(filter: String) = prefs.edit().putString(KEY_FILTER_REVIEWED, filter).apply()
+
+    fun getCustomNameFilter(): String = prefs.getString(KEY_FILTER_CUSTOM_NAME, "ALL") ?: "ALL"
+    fun setCustomNameFilter(filter: String) = prefs.edit().putString(KEY_FILTER_CUSTOM_NAME, filter).apply()
+
     fun getLabelFilter(): String = prefs.getString(KEY_FILTER_LABEL, "") ?: ""
     fun setLabelFilter(label: String) = prefs.edit().putString(KEY_FILTER_LABEL, label).apply()
 
@@ -376,5 +389,13 @@ class SettingsRepository private constructor(private val context: Context) {
         prefs.registerOnSharedPreferenceChangeListener(listener)
         trySend(isAgreementAccepted())
         awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    fun getSkippedSteps(): Set<String> = prefs.getStringSet(KEY_SKIPPED_STEPS, emptySet()) ?: emptySet()
+    
+    fun setStepSkipped(step: String, skipped: Boolean) {
+        val current = getSkippedSteps().toMutableSet()
+        if (skipped) current.add(step) else current.remove(step)
+        prefs.edit().putStringSet(KEY_SKIPPED_STEPS, current).apply()
     }
 }

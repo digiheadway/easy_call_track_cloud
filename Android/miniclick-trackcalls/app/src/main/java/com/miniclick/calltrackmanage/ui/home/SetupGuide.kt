@@ -24,10 +24,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.miniclick.calltrackmanage.MainViewModel
 import com.miniclick.calltrackmanage.ui.settings.SettingsViewModel
-import com.miniclick.calltrackmanage.ui.settings.TrackSimModal
-import com.miniclick.calltrackmanage.ui.settings.JoinOrgModal
-import com.miniclick.calltrackmanage.ui.settings.CloudSyncModal
-import com.miniclick.calltrackmanage.ui.settings.CreateOrgModal
 import com.miniclick.calltrackmanage.ui.settings.AccountInfoModal
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -94,19 +90,10 @@ fun SetupGuide(
         ) 
     }
     
-    // --- Modals State ---
-    var showSimModal by remember { mutableStateOf(false) }
+    // Modals State
     var showDatePicker by remember { mutableStateOf(false) }
-    var showCloudSyncModal by remember { mutableStateOf(false) }
-    var showJoinOrgModal by remember { mutableStateOf(false) }
-    var showCreateOrgModal by remember { mutableStateOf(false) }
-    var showAccountInfoModal by remember { mutableStateOf(false) }
-    var accountEditField by remember { mutableStateOf<String?>(null) }
     
-    // Track steps skipped in this session
-    val skippedSteps = remember { mutableStateListOf<String>() }
-
-    // --- Helpers / Launchers ---
+    // Helpers / Launchers
     fun checkPermissions() {
         hasCallLog = checkPermission(Manifest.permission.READ_CALL_LOG)
         hasContacts = checkPermission(Manifest.permission.READ_CONTACTS)
@@ -147,9 +134,9 @@ fun SetupGuide(
 
     // Auto-show cloud sync modal if not connected and not dismissed
     LaunchedEffect(isDismissed, uiState.pairingCode) {
-        if (uiState.pairingCode.isEmpty() && !isDismissed && !showCloudSyncModal && !mainViewModel.hasShownCloudSyncPrompt) {
+        if (uiState.pairingCode.isEmpty() && !isDismissed && !uiState.showCloudSyncModal && !mainViewModel.hasShownCloudSyncPrompt) {
             mainViewModel.markCloudSyncPromptShown()
-            showCloudSyncModal = true
+            settingsViewModel.toggleCloudSyncModal(true)
         }
     }
     
@@ -167,81 +154,89 @@ fun SetupGuide(
         uiState.simSelection, uiState.callerPhoneSim1, uiState.callerPhoneSim2,
         uiState.sim1SubId, uiState.sim2SubId, uiState.availableSims,
         uiState.callRecordEnabled, uiState.userDeclinedRecording,
-        skippedSteps.size
+        uiState.skippedSteps.size
     ) {
         mutableListOf<GuideStep>().apply {
-            if (!hasCallLog && !skippedSteps.contains("CALL_LOG")) {
+            if (!hasCallLog && !uiState.skippedSteps.contains("CALL_LOG")) {
                 add(GuideStep("CALL_LOG", "Allow Call Log", "Required to track and organize your calls automatically.", Icons.Default.Call, "Allow Access", onAction = { 
                     singlePermissionLauncher.launch(Manifest.permission.READ_CALL_LOG) 
-                }, secondaryActionLabel = "Next", onSecondaryAction = { skippedSteps.add("CALL_LOG") }))
+                }))
             }
-            if (!hasContacts && !skippedSteps.contains("CONTACTS")) {
+            if (!hasContacts && !uiState.skippedSteps.contains("CONTACTS")) {
                 add(GuideStep("CONTACTS", "All Access Contacts", "Identify callers by name from your contact list.", Icons.Default.People, "Allow Access", onAction = {
                     singlePermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
-                }, secondaryActionLabel = "Next", onSecondaryAction = { skippedSteps.add("CONTACTS") }))
+                }))
             }
-            if (!hasPhoneState && !skippedSteps.contains("PHONE_STATE")) {
+            if (!hasPhoneState && !uiState.skippedSteps.contains("PHONE_STATE")) {
                 add(GuideStep("PHONE_STATE", "MiniClick Calls", "Detect active calls to show caller information in real-time.", Icons.Default.Phone, "Allow Access", onAction = {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         multiPermissionLauncher.launch(arrayOf(Manifest.permission.READ_PHONE_STATE, Manifest.permission.READ_PHONE_NUMBERS))
                     } else {
                         singlePermissionLauncher.launch(Manifest.permission.READ_PHONE_STATE)
                     }
-                }, secondaryActionLabel = "Next", onSecondaryAction = { skippedSteps.add("PHONE_STATE") }))
+                }))
             }
-            if (!settingsViewModel.isTrackStartDateSet() && !skippedSteps.contains("START_DATE")) {
+            
+            // 4. Notifications
+            if (!hasNotifications && !uiState.skippedSteps.contains("NOTIFICATIONS")) {
+                add(GuideStep(
+                    type = "NOTIFICATIONS", 
+                    title = "Enable Notifications", 
+                    description = "Get updates on sync status and incoming calls.", 
+                    icon = Icons.Default.Notifications, 
+                    actionLabel = "Allow", 
+                    onAction = {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            singlePermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    },
+                    secondaryActionLabel = "Skip",
+                    onSecondaryAction = { settingsViewModel.setStepSkipped("NOTIFICATIONS") }
+                ))
+            }
+
+            // 5. Start Date
+            if (!uiState.skippedSteps.contains("START_DATE")) {
                 val isSet = uiState.trackStartDate != 0L
+                val dateStr = if (isSet) java.text.SimpleDateFormat("MMM dd, yyyy").format(java.util.Date(uiState.trackStartDate)) else ""
+                
                 add(GuideStep(
                     type = "START_DATE", 
-                    title = "Track Start Date", 
-                    description = if (isSet) "Start date is set. You can change it or continue." else "Choose when you want to start tracking calls from. Recommended: 3-7 days ago.", 
+                    title = if (isSet) "Start Date Set" else "Track Start Date", 
+                    description = if (isSet) 
+                        "Data will be imported from: $dateStr" 
+                    else 
+                        "Call Data is imported only from the date you select here. No pre-selected date.", 
                     icon = if (isSet) Icons.Default.CheckCircle else Icons.Default.CalendarToday, 
-                    actionLabel = if (isSet) "Next" else "Set Date", 
-                    onAction = { if (isSet) skippedSteps.add("START_DATE") else showDatePicker = true },
-                    secondaryActionLabel = if (isSet) "Change Date" else "Next",
-                    onSecondaryAction = { if (isSet) showDatePicker = true else skippedSteps.add("START_DATE") }
+                    actionLabel = if (isSet) "Next" else "Set Tracking Start Date", 
+                    onAction = { if (isSet) settingsViewModel.setStepSkipped("START_DATE") else showDatePicker = true },
+                    secondaryActionLabel = if (isSet) "Change Date" else "Skip",
+                    onSecondaryAction = { if (isSet) showDatePicker = true else settingsViewModel.setStepSkipped("START_DATE") }
                 ))
             }
-            if (uiState.simSelection == "Off" && !skippedSteps.contains("SIM_SELECTION")) {
+
+            // 6. SIM Selection
+            if (!uiState.skippedSteps.contains("SIM_SELECTION")) {
+                val isDone = uiState.simSelection != "Off"
                 add(GuideStep(
                     type = "SIM_SELECTION", 
-                    title = "Select Sim Card to Track", 
-                    description = "Choose which SIM cards you want to monitor calls for.", 
-                    icon = Icons.Default.SimCard, 
-                    actionLabel = "Select SIM", 
-                    onAction = { showSimModal = true },
-                    secondaryActionLabel = "Next",
-                    onSecondaryAction = { skippedSteps.add("SIM_SELECTION") }
+                    title = if (isDone) "SIM Selection Done" else "Select Sim Card to Track", 
+                    description = if (isDone) "Your SIM selection is saved." else "Choose which SIM cards you want to monitor calls for.", 
+                    icon = if (isDone) Icons.Default.CheckCircle else Icons.Default.SimCard, 
+                    actionLabel = if (isDone) "Next" else "Select SIM", 
+                    onAction = { if (isDone) settingsViewModel.setStepSkipped("SIM_SELECTION") else settingsViewModel.toggleTrackSimModal(true) },
+                    secondaryActionLabel = if (isDone) "Change Selection" else "Skip",
+                    onSecondaryAction = { if (isDone) settingsViewModel.toggleTrackSimModal(true) else settingsViewModel.setStepSkipped("SIM_SELECTION") }
                 ))
             }
-            
-            val hasPhysicalSim1 = uiState.availableSims.any { it.slotIndex == 0 }
-            val hasPhysicalSim2 = uiState.availableSims.any { it.slotIndex == 1 }
-            val sim1Needs = hasPhysicalSim1 && (uiState.simSelection == "Sim1" || uiState.simSelection == "Both") && (uiState.callerPhoneSim1.isBlank() || uiState.sim1SubId == null)
-            val sim2Needs = hasPhysicalSim2 && (uiState.simSelection == "Sim2" || uiState.simSelection == "Both") && (uiState.callerPhoneSim2.isBlank() || uiState.sim2SubId == null)
-            
-            val isSimSetupDone = uiState.simSelection != "Off" && !sim1Needs && !sim2Needs
 
-            if ((sim1Needs || sim2Needs || (uiState.simSelection != "Off" && !skippedSteps.contains("SIM_SETUP"))) && !skippedSteps.contains("SIM_SETUP")) {
-                add(GuideStep(
-                    type = "SIM_SETUP", 
-                    title = if (isSimSetupDone) "SIM Setup Complete" else "Setup Tracked SIMs", 
-                    description = if (isSimSetupDone) "Your SIM cards are configured. You can re-configure or continue." else "Configure your selected SIM cards for accurate cloud sync.", 
-                    icon = if (isSimSetupDone) Icons.Default.CheckCircle else Icons.Default.Tune, 
-                    actionLabel = if (isSimSetupDone) "Next" else "Setup Now", 
-                    onAction = { if (isSimSetupDone) skippedSteps.add("SIM_SETUP") else showSimModal = true },
-                    secondaryActionLabel = if (isSimSetupDone) "Change Setup" else "Next",
-                    onSecondaryAction = { if (isSimSetupDone) showSimModal = true else skippedSteps.add("SIM_SETUP") }
-                ))
-            }
-            
-            // Refined Recording Step Condition
+            // 7. Recording (Attach Recording)
             val isRecordingDone = uiState.callRecordEnabled && hasStorage
             val showRecordingStep = (uiState.callRecordEnabled && !hasStorage) || 
                                    (!uiState.callRecordEnabled && !uiState.userDeclinedRecording) ||
-                                   (isRecordingDone && !skippedSteps.contains("RECORDING"))
+                                   (isRecordingDone && !uiState.skippedSteps.contains("RECORDING"))
             
-            if (showRecordingStep && !skippedSteps.contains("RECORDING")) {
+            if (showRecordingStep && !uiState.skippedSteps.contains("RECORDING")) {
                 add(GuideStep(
                     type = "RECORDING",
                     title = if (isRecordingDone) "Recording Attached" else "Attach Call Recording?",
@@ -250,7 +245,7 @@ fun SetupGuide(
                     actionLabel = if (isRecordingDone) "Next" else if (uiState.callRecordEnabled && !hasStorage) "Allow Permission" else "Enable Now",
                     onAction = {
                         if (isRecordingDone) {
-                            skippedSteps.add("RECORDING")
+                            settingsViewModel.setStepSkipped("RECORDING")
                         } else if (!hasStorage) {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                 singlePermissionLauncher.launch(Manifest.permission.READ_MEDIA_AUDIO)
@@ -268,30 +263,20 @@ fun SetupGuide(
                         } else {
                             settingsViewModel.updateUserDeclinedRecording(true)
                             settingsViewModel.updateCallRecordEnabled(false)
-                            skippedSteps.add("RECORDING")
+                            settingsViewModel.setStepSkipped("RECORDING")
                         }
                     }
                 ))
             }
             
-            if (!hasNotifications) {
-                add(GuideStep("NOTIFICATIONS", "Enable Notifications", "Get updates on sync status and incoming calls.", Icons.Default.Notifications, "Allow", onAction = {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        singlePermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    }
-                }))
-            }
-            
             // JOIN_ORG step removed to be shown as instant modal instead
         }
     }
-    val hasCoreSetupSteps = steps.any { it.type in listOf("CALL_LOG", "CONTACTS", "PHONE_STATE", "SIM_SELECTION") }
-    val shouldShowOnboarding = steps.isNotEmpty() && (!isDismissed || hasCoreSetupSteps)
+    val shouldShowOnboarding = steps.isNotEmpty()
     
     Box(modifier = modifier) {
         if (shouldShowOnboarding) {
             val currentStep = steps.firstOrNull()
-            val isCoreSetup = currentStep?.type in listOf("CALL_LOG", "CONTACTS", "PHONE_STATE", "SIM_SELECTION")
             
             AnimatedContent(
                 targetState = currentStep,
@@ -314,7 +299,7 @@ fun SetupGuide(
                         asEmptyState = asEmptyState,
                         secondaryActionLabel = step.secondaryActionLabel,
                         onSecondaryAction = step.onSecondaryAction,
-                        canDismiss = !isCoreSetup
+                        canDismiss = false
                     )
                 }
             }
@@ -331,66 +316,10 @@ fun SetupGuide(
         }
     }
 
-    // --- Modals ---
-    if (showCloudSyncModal) {
-        CloudSyncModal(
-            uiState = uiState,
-            viewModel = settingsViewModel,
-            onDismiss = { showCloudSyncModal = false },
-            onOpenAccountInfo = { field -> 
-                accountEditField = field
-                showAccountInfoModal = true 
-            },
-            onCreateOrg = {
-                showCreateOrgModal = true
-            },
-            onJoinOrg = {
-                showJoinOrgModal = true
-            },
-            onKeepOffline = { mainViewModel.dismissOnboardingSession() }
-        )
-    }
-
-    if (showCreateOrgModal) {
-        CreateOrgModal(
-            onDismiss = { showCreateOrgModal = false }
-        )
-    }
-
-    if (showJoinOrgModal) {
-        JoinOrgModal(
-            viewModel = settingsViewModel,
-            onDismiss = { showJoinOrgModal = false }
-        )
-    }
-
-    if (showAccountInfoModal) {
-        AccountInfoModal(
-            uiState = uiState,
-            viewModel = settingsViewModel,
-            editField = accountEditField,
-            onDismiss = { 
-                showAccountInfoModal = false
-                accountEditField = null
-            }
-        )
-    }
-
-    if (showSimModal) {
-        TrackSimModal(
-            uiState = uiState,
-            viewModel = settingsViewModel,
-            onDismiss = { 
-                showSimModal = false
-                settingsViewModel.fetchSimInfo()
-            }
-        )
-    }
+    // Modals are handled centrally in MainActivity
 
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = System.currentTimeMillis() - 86400000 // Yesterday
-        )
+        val datePickerState = rememberDatePickerState()
         
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
@@ -410,7 +339,14 @@ fun SetupGuide(
                 }
             }
         ) {
-            DatePicker(state = datePickerState)
+             Box(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+            ) {
+                DatePicker(state = datePickerState)
+            }
         }
     }
 }

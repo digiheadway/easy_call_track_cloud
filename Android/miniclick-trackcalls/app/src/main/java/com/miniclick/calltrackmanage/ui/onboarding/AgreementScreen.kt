@@ -187,7 +187,8 @@ private fun InfoItem(icon: androidx.compose.ui.graphics.vector.ImageVector, titl
             Text(
                 title,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 description,

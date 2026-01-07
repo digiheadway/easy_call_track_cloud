@@ -38,6 +38,9 @@ fun SyncQueueModal(
     onDismiss: () -> Unit,
     onRecordingClick: (() -> Unit)? = null
 ) {
+    // Collect all running processes
+    val allProcesses by com.miniclick.calltrackmanage.data.ProcessMonitor.allProcesses.collectAsState()
+    
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         dragHandle = { BottomSheetDefaults.DragHandle() },
@@ -47,15 +50,15 @@ fun SyncQueueModal(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 32.dp, start = 20.dp, end = 20.dp, top = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Header - Different based on sync setup
+            // Header
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 4.dp)
             ) {
                 Icon(
-                    if (isSyncSetup) Icons.Default.CloudSync else Icons.Default.PhoneAndroid,
+                    Icons.Default.DynamicFeed,
                     null, 
                     tint = MaterialTheme.colorScheme.primary, 
                     modifier = Modifier.size(24.dp)
@@ -63,17 +66,15 @@ fun SyncQueueModal(
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(
-                        if (isSyncSetup) "Sync & Backup Status" else "Local Data Processing", 
+                        "Process Status", 
                         style = MaterialTheme.typography.titleLarge, 
                         fontWeight = FontWeight.Bold
                     )
-                    if (!isSyncSetup) {
-                        Text(
-                            "Your data is processed and stored on this device",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Text(
+                        "Running processes & sync queue",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
 
@@ -103,7 +104,7 @@ fun SyncQueueModal(
                                 color = MaterialTheme.colorScheme.onErrorContainer
                             )
                             Text(
-                                "Data is saved locally. Will backup when online.",
+                                "Cloud sync paused. Data is saved locally.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
                             )
@@ -112,44 +113,123 @@ fun SyncQueueModal(
                 }
             }
 
-            val totalPending = pendingNewCalls + pendingRelatedData + pendingRecordings
-
-            if (isSyncSetup) {
-                // Cloud sync mode: Show what needs to be backed up
-                SyncQueueItem(
-                    label = "New Calls",
-                    count = pendingNewCalls,
-                    icon = Icons.Default.Phone,
-                    status = if (pendingNewCalls > 0) "Ready for cloud backup" else "All backed up ✓"
+            // Active Processes Section
+            val runningProcesses = allProcesses.values.filter { 
+                it.status == com.miniclick.calltrackmanage.data.ProcessMonitor.ProcessStatus.RUNNING 
+            }
+            
+            if (runningProcesses.isNotEmpty()) {
+                Text(
+                    "ACTIVE PROCESSES",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 8.dp)
                 )
-
-                SyncQueueItem(
-                    label = "Notes & Labels",
-                    count = pendingRelatedData,
-                    icon = Icons.Default.Edit,
-                    status = if (pendingRelatedData > 0) "Changes pending backup" else "All changes backed up ✓"
-                )
-
-                SyncQueueItem(
-                    label = "Call Recordings",
-                    count = pendingRecordings,
-                    icon = Icons.Default.Mic,
-                    status = if (pendingRecordings > 0) "Tap to view upload queue" else "All recordings uploaded ✓",
-                    onClick = if (pendingRecordings > 0) onRecordingClick else null
-                )
-
-                Spacer(Modifier.height(8.dp))
-
-                // Reassuring message
-                if (totalPending > 0) {
-                    Text(
-                        "✓ Your data is saved locally and will backup to cloud automatically.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 4.dp)
+                
+                runningProcesses.forEach { process ->
+                    ProcessStatusRow(
+                        title = process.title,
+                        details = process.details,
+                        progress = process.progress,
+                        isIndeterminate = process.isIndeterminate,
+                        status = process.status,
+                        icon = getProcessIcon(process.id)
                     )
                 }
+            }
 
+            // Pending Queue Section
+            val totalPending = pendingNewCalls + pendingRelatedData + pendingRecordings
+            val hasPendingItems = totalPending > 0 || allProcesses.values.any { 
+                it.status == com.miniclick.calltrackmanage.data.ProcessMonitor.ProcessStatus.PENDING 
+            }
+            
+            if (hasPendingItems || isSyncSetup) {
+                Text(
+                    if (isSyncSetup) "SYNC QUEUE" else "PENDING ITEMS",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.secondary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+
+                // Call Log Sync
+                ProcessQueueItem(
+                    label = "Call Log Sync",
+                    count = pendingNewCalls,
+                    icon = Icons.Default.PhoneCallback,
+                    description = when {
+                        pendingNewCalls > 0 -> "$pendingNewCalls new calls to sync"
+                        else -> "All synced ✓"
+                    },
+                    isComplete = pendingNewCalls == 0
+                )
+
+                // Metadata Sync (Notes, Labels, etc.)
+                ProcessQueueItem(
+                    label = "Metadata & Notes",
+                    count = pendingRelatedData,
+                    icon = Icons.Default.Edit,
+                    description = when {
+                        pendingRelatedData > 0 -> "$pendingRelatedData changes pending"
+                        else -> "All synced ✓"
+                    },
+                    isComplete = pendingRelatedData == 0
+                )
+
+                // Recording Upload
+                ProcessQueueItem(
+                    label = "Recording Uploads",
+                    count = pendingRecordings,
+                    icon = Icons.Default.Mic,
+                    description = when {
+                        pendingRecordings > 0 -> "$pendingRecordings recordings in queue"
+                        else -> "All uploaded ✓"
+                    },
+                    isComplete = pendingRecordings == 0,
+                    onClick = if (pendingRecordings > 0) onRecordingClick else null
+                )
+            }
+
+            // All Clear State
+            if (runningProcesses.isEmpty() && totalPending == 0) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                "All Processes Complete",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                if (isSyncSetup) "All data backed up to cloud" else "All data saved locally",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Sync Now Button (only when sync is setup and items pending)
+            if (isSyncSetup && totalPending > 0) {
+                Spacer(Modifier.height(4.dp))
                 Button(
                     onClick = {
                         onSyncAll()
@@ -157,53 +237,203 @@ fun SyncQueueModal(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    enabled = isNetworkAvailable && totalPending > 0
+                    enabled = isNetworkAvailable
                 ) {
-                    Icon(Icons.Default.CloudUpload, null)
+                    Icon(Icons.Default.CloudSync, null)
                     Spacer(Modifier.width(8.dp))
-                    Text(if (totalPending > 0) "Backup Now" else "All Backed Up")
+                    Text("Sync Now")
                 }
-            } else {
-                // Offline/local mode: Show local data status
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+            }
+            
+            // Setup prompt for non-sync users
+            if (!isSyncSetup) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "💡 Enable cloud backup in Settings → Organisation Setup",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProcessStatusRow(
+    title: String,
+    details: String?,
+    progress: Float,
+    isIndeterminate: Boolean,
+    status: com.miniclick.calltrackmanage.data.ProcessMonitor.ProcessStatus,
+    icon: ImageVector
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            Icons.Default.CheckCircle,
-                            null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Spacer(Modifier.height(12.dp))
+                    Icon(
+                        icon, 
+                        null, 
+                        modifier = Modifier.size(18.dp), 
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
+                Spacer(Modifier.width(12.dp))
+                
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (details != null) {
                         Text(
-                            "All Data Saved Locally",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "Your call logs, notes, and recordings are stored on this device.",
+                            details,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        Text(
-                            "To enable cloud backup, go to Settings → Organisation Setup",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
+                
+                // Status indicator
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            
+            // Progress bar
+            Spacer(Modifier.height(8.dp))
+            if (isIndeterminate) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp)
+                        .clip(CircleShape),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                )
+            } else {
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(4.dp)
+                        .clip(CircleShape),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                )
             }
         }
+    }
+}
+
+@Composable
+private fun ProcessQueueItem(
+    label: String,
+    count: Int,
+    icon: ImageVector,
+    description: String,
+    isComplete: Boolean,
+    onClick: (() -> Unit)? = null
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(
+                    if (isComplete) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                    else MaterialTheme.colorScheme.secondaryContainer
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                if (isComplete) Icons.Default.CheckCircle else icon, 
+                null, 
+                modifier = Modifier.size(18.dp), 
+                tint = if (isComplete) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
+            )
+        }
+        
+        Spacer(Modifier.width(12.dp))
+        
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                label,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                description,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (isComplete) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) 
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        
+        if (onClick != null && count > 0) {
+            Icon(
+                Icons.Default.ChevronRight, 
+                contentDescription = "View details",
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.width(4.dp))
+        }
+        
+        if (count > 0) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.errorContainer
+            ) {
+                Text(
+                    text = count.toString(),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+        }
+    }
+}
+
+private fun getProcessIcon(processId: String): ImageVector {
+    return when (processId) {
+        com.miniclick.calltrackmanage.data.ProcessMonitor.ProcessIds.IMPORT_CALL_LOG -> Icons.Default.PhoneCallback
+        com.miniclick.calltrackmanage.data.ProcessMonitor.ProcessIds.FIND_RECORDINGS -> Icons.Default.Search
+        com.miniclick.calltrackmanage.data.ProcessMonitor.ProcessIds.SYNC_METADATA -> Icons.Default.CloudSync
+        com.miniclick.calltrackmanage.data.ProcessMonitor.ProcessIds.SYNC_PERSONS -> Icons.Default.People
+        com.miniclick.calltrackmanage.data.ProcessMonitor.ProcessIds.UPLOAD_RECORDINGS -> Icons.Default.CloudUpload
+        com.miniclick.calltrackmanage.data.ProcessMonitor.ProcessIds.ATTACH_RECORDING -> Icons.Default.AttachFile
+        com.miniclick.calltrackmanage.data.ProcessMonitor.ProcessIds.PULL_SERVER_UPDATES -> Icons.Default.CloudDownload
+        else -> Icons.Default.Sync
     }
 }
 

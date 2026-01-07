@@ -25,7 +25,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _isSessionOnboardingDismissed = MutableStateFlow(false)
     val isSessionOnboardingDismissed: StateFlow<Boolean> = _isSessionOnboardingDismissed.asStateFlow()
-
     // Observe onboarding completion status
     val onboardingCompleted: StateFlow<Boolean> = settingsRepository.getOnboardingCompletedFlow()
         .stateIn(
@@ -33,6 +32,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
             initialValue = settingsRepository.isOnboardingCompleted()
         )
+
 
     val agreementAccepted: StateFlow<Boolean> = settingsRepository.getAgreementAcceptedFlow()
         .stateIn(
@@ -55,6 +55,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         loadSettings()
+        // Initialize from repo and also observe changes to ensure consistency
+        // across different ViewModel instances (e.g. Activity vs NavGraph scoped)
+        viewModelScope.launch {
+            settingsRepository.getOnboardingCompletedFlow().collect {
+                if (settingsRepository.isOnboardingOffline()) {
+                    _isSessionOnboardingDismissed.value = true
+                }
+            }
+        }
         _isSessionOnboardingDismissed.value = settingsRepository.isOnboardingOffline()
     }
 

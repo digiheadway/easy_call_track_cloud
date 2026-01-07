@@ -133,6 +133,9 @@ interface CallDataDao {
     @Query("SELECT MAX(callDate) FROM call_data")
     suspend fun getMaxCallDate(): Long?
     
+    @Query("SELECT MIN(callDate) FROM call_data")
+    suspend fun getMinCallDate(): Long?
+    
     @Query("SELECT compositeId FROM call_data")
     suspend fun getAllCompositeIds(): List<String>
     

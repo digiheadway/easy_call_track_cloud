@@ -434,6 +434,11 @@ class CallDataRepository private constructor(private val context: Context) {
     fun getAllPersonsFlow(): Flow<List<PersonDataEntity>> = personDataDao.getAllPersonsFlow()
     
     /**
+     * Get ALL persons including excluded (for ViewModel filtering with Ignored tab)
+     */
+    fun getAllPersonsIncludingExcludedFlow(): Flow<List<PersonDataEntity>> = personDataDao.getAllPersonsIncludingExcludedFlow()
+    
+    /**
      * Get excluded persons as Flow
      */
     fun getExcludedPersonsFlow(): Flow<List<PersonDataEntity>> = personDataDao.getExcludedPersonsFlow()
@@ -715,9 +720,17 @@ class CallDataRepository private constructor(private val context: Context) {
             }
 
             // Optimize: Only fetch calls since the latest call in our DB (with a 2-day safety buffer)
-            // or the tracking start date, whichever is more recent.
+            // unless the filter date has been moved earlier than our current data.
             val latestCallDate = callDataDao.getMaxCallDate() ?: 0L
-            val fetchStartDate = maxOf(filterDate, latestCallDate - (2 * 24 * 60 * 60 * 1000L))
+            val minCallDate = callDataDao.getMinCallDate() ?: Long.MAX_VALUE
+            
+            val fetchStartDate = if (filterDate < minCallDate) {
+                // Window expanded backwards - fetch from new start date
+                filterDate
+            } else {
+                // Window is within current data range or shrinking - only fetch new calls
+                maxOf(filterDate, latestCallDate - (2 * 24 * 60 * 60 * 1000L))
+            }
             
             // Get existing IDs once (only need those since fetchStartDate)
             val existingIds = callDataDao.getCompositeIdsSince(fetchStartDate).toSet()

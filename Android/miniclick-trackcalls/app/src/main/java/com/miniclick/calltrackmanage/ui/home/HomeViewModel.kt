@@ -21,11 +21,15 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
 // Filter enums for chip dropdowns
-enum class CallTypeFilter { ALL, INCOMING, OUTGOING, MISSED, REJECTED }
+enum class CallTabFilter { ALL, INCOMING, NOT_ATTENDED, OUTGOING, NOT_RESPONDED, IGNORED }
+enum class PersonTabFilter { ALL, CONNECTED, ATTENDED, RESPONDED, NEVER_CONNECTED, NOT_ATTENDED, NEVER_ATTENDED, NOT_RESPONDED, NEVER_RESPONDED, IGNORED }
 enum class ConnectedFilter { ALL, CONNECTED, NOT_CONNECTED }
 enum class NotesFilter { ALL, WITH_NOTE, WITHOUT_NOTE }
+enum class PersonNotesFilter { ALL, WITH_NOTE, WITHOUT_NOTE }
 enum class ContactsFilter { ALL, IN_CONTACTS, NOT_IN_CONTACTS }
 enum class AttendedFilter { ALL, ATTENDED, NEVER_ATTENDED }
+enum class ReviewedFilter { ALL, REVIEWED, NOT_REVIEWED }
+enum class CustomNameFilter { ALL, WITH_NAME, WITHOUT_NAME }
 enum class ViewMode { CALLS, PERSONS }
 enum class DateRange { TODAY, LAST_3_DAYS, LAST_7_DAYS, LAST_14_DAYS, LAST_30_DAYS, THIS_MONTH, PREVIOUS_MONTH, CUSTOM, ALL }
 enum class PersonSortBy { LAST_CALL, MOST_CALLS }
@@ -49,11 +53,16 @@ data class HomeUiState(
     val isFiltersVisible: Boolean = false,
     
     // Filter states
-    val callTypeFilter: CallTypeFilter = CallTypeFilter.ALL,
+    val callTypeFilter: CallTabFilter = CallTabFilter.ALL,
+    val personTabFilter: PersonTabFilter = PersonTabFilter.ALL,
     val connectedFilter: ConnectedFilter = ConnectedFilter.ALL,
     val notesFilter: NotesFilter = NotesFilter.ALL,
+    val personNotesFilter: PersonNotesFilter = PersonNotesFilter.ALL,
     val contactsFilter: ContactsFilter = ContactsFilter.ALL,
+    val minCallCount: Int = 0,
     val attendedFilter: AttendedFilter = AttendedFilter.ALL,
+    val reviewedFilter: ReviewedFilter = ReviewedFilter.ALL,
+    val customNameFilter: CustomNameFilter = CustomNameFilter.ALL,
     val labelFilter: String = "",
 
     val dateRange: DateRange = DateRange.LAST_7_DAYS,
@@ -81,7 +90,10 @@ data class HomeUiState(
     val sim1SubId: Int? = null,
     val sim2SubId: Int? = null,
     val callerPhoneSim1: String = "",
-    val callerPhoneSim2: String = ""
+    val callerPhoneSim2: String = "",
+    val activeFilterCount: Int = 0,
+    val callTypeCounts: Map<CallTabFilter, Int> = emptyMap(),
+    val personTypeCounts: Map<PersonTabFilter, Int> = emptyMap()
 )
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
@@ -116,7 +128,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
         
         viewModelScope.launch {
-            callDataRepository.getAllPersonsFlow()
+            // Use getAllPersonsIncludingExcludedFlow to include excluded persons for Ignored tab filtering
+            callDataRepository.getAllPersonsIncludingExcludedFlow()
                 .distinctUntilChanged()
                 .conflate()
                 .collect { persons ->
@@ -307,11 +320,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val searchQuery = settingsRepository.getSearchQuery()
         val labelFilter = settingsRepository.getLabelFilter()
         
-        val typeFilter = try { CallTypeFilter.valueOf(settingsRepository.getCallTypeFilter()) } catch(e: Exception) { CallTypeFilter.ALL }
+        val typeFilter = try { CallTabFilter.valueOf(settingsRepository.getCallTypeFilter()) } catch(e: Exception) { CallTabFilter.ALL }
         val connFilter = try { ConnectedFilter.valueOf(settingsRepository.getConnectedFilter()) } catch(e: Exception) { ConnectedFilter.ALL }
         val nFilter = try { NotesFilter.valueOf(settingsRepository.getNotesFilter()) } catch(e: Exception) { NotesFilter.ALL }
+        val pnFilter = try { PersonNotesFilter.valueOf(settingsRepository.getPersonNotesFilter()) } catch(e: Exception) { PersonNotesFilter.ALL }
         val cFilter = try { ContactsFilter.valueOf(settingsRepository.getContactsFilter()) } catch(e: Exception) { ContactsFilter.ALL }
         val aFilter = try { AttendedFilter.valueOf(settingsRepository.getAttendedFilter()) } catch(e: Exception) { AttendedFilter.ALL }
+        val rFilter = try { ReviewedFilter.valueOf(settingsRepository.getReviewedFilter()) } catch(e: Exception) { ReviewedFilter.ALL }
+        val cnFilter = try { CustomNameFilter.valueOf(settingsRepository.getCustomNameFilter()) } catch(e: Exception) { CustomNameFilter.ALL }
 
         _uiState.update { it.copy(
             isSearchVisible = searchVisible,
@@ -321,8 +337,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             callTypeFilter = typeFilter,
             connectedFilter = connFilter,
             notesFilter = nFilter,
+            personNotesFilter = pnFilter,
             contactsFilter = cFilter,
             attendedFilter = aFilter,
+            reviewedFilter = rFilter,
+            customNameFilter = cnFilter,
             dateRange = try { DateRange.valueOf(settingsRepository.getDateRangeFilter()) } catch(e: Exception) { DateRange.LAST_7_DAYS },
             customStartDate = settingsRepository.getCustomStartDate().let { if (it == 0L) null else it },
             customEndDate = settingsRepository.getCustomEndDate().let { if (it == 0L) null else it }
@@ -361,9 +380,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(viewMode = mode) }
     }
     
-    fun setCallTypeFilter(filter: CallTypeFilter) {
+    fun setCallTypeFilter(filter: CallTabFilter) {
         _uiState.update { it.copy(callTypeFilter = filter) }
         settingsRepository.setCallTypeFilter(filter.name)
+        triggerFilter()
+    }
+
+    fun setPersonTabFilter(filter: PersonTabFilter) {
+        _uiState.update { it.copy(personTabFilter = filter) }
         triggerFilter()
     }
     
@@ -378,6 +402,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         settingsRepository.setNotesFilter(filter.name)
         triggerFilter()
     }
+
+    fun setPersonNotesFilter(filter: PersonNotesFilter) {
+        _uiState.update { it.copy(personNotesFilter = filter) }
+        settingsRepository.setPersonNotesFilter(filter.name)
+        triggerFilter()
+    }
     
     fun setContactsFilter(filter: ContactsFilter) {
         _uiState.update { it.copy(contactsFilter = filter) }
@@ -388,6 +418,23 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun setAttendedFilter(filter: AttendedFilter) {
         _uiState.update { it.copy(attendedFilter = filter) }
         settingsRepository.setAttendedFilter(filter.name)
+        triggerFilter()
+    }
+
+    fun setReviewedFilter(filter: ReviewedFilter) {
+        _uiState.update { it.copy(reviewedFilter = filter) }
+        settingsRepository.setReviewedFilter(filter.name)
+        triggerFilter()
+    }
+
+    fun setCustomNameFilter(filter: CustomNameFilter) {
+        _uiState.update { it.copy(customNameFilter = filter) }
+        settingsRepository.setCustomNameFilter(filter.name)
+        triggerFilter()
+    }
+
+    fun setMinCallCount(count: Int) {
+        _uiState.update { it.copy(minCallCount = count) }
         triggerFilter()
     }
 
@@ -428,9 +475,24 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             val filteredLogs = applyFiltersInternal(currentState)
             val filteredPersons = applyPersonFiltersInternal(currentState)
             
+            val activeFilterCount = calculateFilterCount(currentState)
+            
+            // Calculate counts for Call tabs
+            val callCounts = CallTabFilter.entries.associateWith { filter ->
+                applyFiltersInternal(currentState.copy(callTypeFilter = filter)).size
+            }
+
+            // Calculate counts for Person tabs
+            val personCounts = PersonTabFilter.entries.associateWith { filter ->
+                applyPersonFiltersInternal(currentState.copy(personTabFilter = filter)).size
+            }
+            
             _uiState.update { it.copy(
                 filteredLogs = filteredLogs,
-                filteredPersons = filteredPersons
+                filteredPersons = filteredPersons,
+                activeFilterCount = activeFilterCount,
+                callTypeCounts = callCounts,
+                personTypeCounts = personCounts
             ) }
         }
     }
@@ -445,8 +507,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val typeFilter = current.callTypeFilter
         val connFilter = current.connectedFilter
         val nFilter = current.notesFilter
+        val pnFilter = current.personNotesFilter
         val cFilter = current.contactsFilter
         val aFilter = current.attendedFilter
+        val rFilter = current.reviewedFilter
+        val cnFilter = current.customNameFilter
         val dRange = current.dateRange
         val cStart = current.customStartDate ?: 0L
         val cEnd = current.customEndDate ?: Long.MAX_VALUE
@@ -486,22 +551,41 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             // Track date
             if (tStartDate > 0 && call.callDate < tStartDate) return@filter false
 
+            // Person Lookup for more filters
+            val person = personsMap[call.phoneNumber] ?: personsMap[normalizePhoneNumber(call.phoneNumber)]
+
             // Label Filter
             if (labelFilter.isNotEmpty()) {
-                val person = personsMap[call.phoneNumber] ?: personsMap[normalizePhoneNumber(call.phoneNumber)]
                 val personLabels = person?.label?.split(",")?.map { it.trim() } ?: emptyList()
                 if (!personLabels.contains(labelFilter)) return@filter false
             }
 
             // Call Type Filter
-            val typeMatch = when (typeFilter) {
-                CallTypeFilter.ALL -> true
-                CallTypeFilter.INCOMING -> call.callType == CallLog.Calls.INCOMING_TYPE
-                CallTypeFilter.OUTGOING -> call.callType == CallLog.Calls.OUTGOING_TYPE
-                CallTypeFilter.MISSED -> call.callType == CallLog.Calls.MISSED_TYPE
-                CallTypeFilter.REJECTED -> call.callType == CallLog.Calls.REJECTED_TYPE
+            if (person?.isNoTracking == true) return@filter false // Completely hide "No Tracking"
+
+            val isIgnored = person?.hasAnyExclusion == true || call.callType == 6 // excludeFromList, excludeFromSync OR system blocked
+
+            if (typeFilter == CallTabFilter.IGNORED) {
+                if (!isIgnored) return@filter false
+            } else {
+                // For all other tabs (ALL, INCOMING, etc), EXCLUDE ignored numbers
+                if (isIgnored) return@filter false
+                
+                val typeMatch = when (typeFilter) {
+                    CallTabFilter.ALL -> true
+                    CallTabFilter.INCOMING -> call.callType == android.provider.CallLog.Calls.INCOMING_TYPE && call.duration > 0
+                    CallTabFilter.OUTGOING -> call.callType == android.provider.CallLog.Calls.OUTGOING_TYPE && call.duration > 0
+                    CallTabFilter.NOT_ATTENDED -> {
+                        val isMissed = call.callType == android.provider.CallLog.Calls.MISSED_TYPE || 
+                                     call.callType == android.provider.CallLog.Calls.REJECTED_TYPE || 
+                                     call.callType == 5 || call.callType == 6
+                        isMissed || (call.callType == android.provider.CallLog.Calls.INCOMING_TYPE && call.duration <= 0)
+                    }
+                    CallTabFilter.NOT_RESPONDED -> call.callType == android.provider.CallLog.Calls.OUTGOING_TYPE && call.duration <= 0
+                    else -> true
+                }
+                if (!typeMatch) return@filter false
             }
-            if (!typeMatch) return@filter false
             
             // Connected/Attended Filter (duration based)
             val durationMatch = when {
@@ -511,10 +595,24 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
             if (!durationMatch) return@filter false
             
-            // Notes Filter
+            // Notes Filter (Call Note)
             if (nFilter == NotesFilter.WITH_NOTE && call.callNote.isNullOrEmpty()) return@filter false
             if (nFilter == NotesFilter.WITHOUT_NOTE && !call.callNote.isNullOrEmpty()) return@filter false
             
+            // Person Notes Filter
+            if (pnFilter == PersonNotesFilter.WITH_NOTE && person?.personNote.isNullOrEmpty()) return@filter false
+            if (pnFilter == PersonNotesFilter.WITHOUT_NOTE && !person?.personNote.isNullOrEmpty()) return@filter false
+
+            // Reviewed Filter
+            if (rFilter == ReviewedFilter.REVIEWED && !call.reviewed) return@filter false
+            if (rFilter == ReviewedFilter.REVIEWED && !call.reviewed) return@filter false
+            if (rFilter == ReviewedFilter.NOT_REVIEWED && call.reviewed) return@filter false
+
+            // Custom Name Filter
+            // A "Custom Name" is one that is set in our Person table but differs from the original contact name OR just if it exists
+            if (cnFilter == CustomNameFilter.WITH_NAME && person?.contactName.isNullOrEmpty()) return@filter false
+            if (cnFilter == CustomNameFilter.WITHOUT_NAME && !person?.contactName.isNullOrEmpty()) return@filter false
+
             // Contacts Filter
             if (cFilter == ContactsFilter.IN_CONTACTS && call.contactName.isNullOrEmpty()) return@filter false
             if (cFilter == ContactsFilter.NOT_IN_CONTACTS && !call.contactName.isNullOrEmpty()) return@filter false
@@ -537,25 +635,85 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun applyPersonFiltersInternal(current: HomeUiState): List<PersonDataEntity> {
         val query = current.searchQuery.lowercase()
+        val labelFilter = current.labelFilter
+        val tabFilter = current.personTabFilter
         
-        val filtered = if (query.isEmpty()) {
-            if (current.labelFilter.isNotEmpty()) {
-                current.persons.filter { it.label?.split(",")?.map { l -> l.trim() }?.contains(current.labelFilter) == true }
-            } else {
-                current.persons
+        // Secondary Filters
+        val nFilter = current.notesFilter
+        val pnFilter = current.personNotesFilter
+        val cFilter = current.contactsFilter
+        val minCount = current.minCallCount
+        val rFilter = current.reviewedFilter
+        val cnFilter = current.customNameFilter
+
+        // Pre-calculate some maps for efficiency if needed
+        val logsByPhone = current.callLogs.groupBy { it.phoneNumber }
+
+        val filtered = current.persons.filter { person ->
+            val normPhone = person.phoneNumber
+            val pCalls = logsByPhone[normPhone] ?: emptyList()
+            
+            // 1. Basic Identity & Visibility
+            if (person.isNoTracking) return@filter false
+            val isIgnored = person.hasAnyExclusion
+            
+            // 2. Tab Filter
+            val tabMatch = when (tabFilter) {
+                PersonTabFilter.ALL -> !isIgnored
+                PersonTabFilter.CONNECTED -> !isIgnored && person.totalDuration > 0
+                PersonTabFilter.ATTENDED -> !isIgnored && person.totalDuration > 0
+                PersonTabFilter.RESPONDED -> !isIgnored && pCalls.any { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE && it.duration > 0 }
+                PersonTabFilter.NEVER_CONNECTED -> !isIgnored && person.totalDuration == 0L
+                PersonTabFilter.NOT_ATTENDED -> !isIgnored && pCalls.any { 
+                    (it.callType == android.provider.CallLog.Calls.INCOMING_TYPE || it.callType == android.provider.CallLog.Calls.MISSED_TYPE || it.callType == 5) && it.duration <= 0 
+                }
+                PersonTabFilter.NEVER_ATTENDED -> !isIgnored && pCalls.all { 
+                    it.callType != android.provider.CallLog.Calls.INCOMING_TYPE || it.duration <= 0 
+                }
+                PersonTabFilter.NOT_RESPONDED -> !isIgnored && pCalls.any { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE && it.duration <= 0 }
+                PersonTabFilter.NEVER_RESPONDED -> !isIgnored && pCalls.all { 
+                    it.callType != android.provider.CallLog.Calls.OUTGOING_TYPE || it.duration <= 0 
+                }
+                PersonTabFilter.IGNORED -> isIgnored
             }
-        } else {
-            current.persons.filter { person ->
-                val matchesQuery = (person.phoneNumber.contains(query) ||
-                (person.contactName?.lowercase()?.contains(query) == true) ||
-                (person.personNote?.lowercase()?.contains(query) == true))
-                
-                val matchesLabel = if (current.labelFilter.isNotEmpty()) {
-                person.label?.split(",")?.map { l -> l.trim() }?.contains(current.labelFilter) == true
-            } else true
-                
-                matchesQuery && matchesLabel
+            if (!tabMatch) return@filter false
+
+            // 3. Label Filter
+            if (labelFilter.isNotEmpty()) {
+                val personLabels = person.label?.split(",")?.map { it.trim() } ?: emptyList()
+                if (!personLabels.contains(labelFilter)) return@filter false
             }
+
+            // 4. Granular Filters
+            if (minCount > 0 && person.totalCalls < minCount) return@filter false
+            
+            if (pnFilter == PersonNotesFilter.WITH_NOTE && person.personNote.isNullOrEmpty()) return@filter false
+            if (pnFilter == PersonNotesFilter.WITHOUT_NOTE && !person.personNote.isNullOrEmpty()) return@filter false
+
+            if (cnFilter == CustomNameFilter.WITH_NAME && person.contactName.isNullOrEmpty()) return@filter false
+            if (cnFilter == CustomNameFilter.WITHOUT_NAME && !person.contactName.isNullOrEmpty()) return@filter false
+
+            // Notes Filter (Any Call Note)
+            if (nFilter == NotesFilter.WITH_NOTE && pCalls.none { !it.callNote.isNullOrEmpty() }) return@filter false
+            if (nFilter == NotesFilter.WITHOUT_NOTE && pCalls.any { !it.callNote.isNullOrEmpty() }) return@filter false
+
+            // Contacts Filter (Is in system contacts)
+            if (cFilter == ContactsFilter.IN_CONTACTS && person.contactName.isNullOrEmpty()) return@filter false
+            if (cFilter == ContactsFilter.NOT_IN_CONTACTS && !person.contactName.isNullOrEmpty()) return@filter false
+
+            // Reviewed Filter (All calls reviewed)
+            if (rFilter == ReviewedFilter.REVIEWED && pCalls.any { !it.reviewed }) return@filter false
+            if (rFilter == ReviewedFilter.NOT_REVIEWED && pCalls.any { it.reviewed }) return@filter false
+
+            // 5. Search Filter
+            if (query.isNotEmpty()) {
+                val matches = person.phoneNumber.contains(query) || 
+                             (person.contactName?.lowercase()?.contains(query) == true) ||
+                             (person.personNote?.lowercase()?.contains(query) == true)
+                if (!matches) return@filter false
+            }
+
+            true
         }
 
         val sorted = when (current.personSortBy) {
@@ -576,6 +734,19 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
         
         return sorted
+    }
+
+    private fun calculateFilterCount(uiState: HomeUiState): Int {
+        var count = 0
+        if (uiState.connectedFilter != ConnectedFilter.ALL) count++
+        if (uiState.notesFilter != NotesFilter.ALL) count++
+        if (uiState.personNotesFilter != PersonNotesFilter.ALL) count++
+        if (uiState.contactsFilter != ContactsFilter.ALL) count++
+        if (uiState.reviewedFilter != ReviewedFilter.ALL) count++
+        if (uiState.customNameFilter != CustomNameFilter.ALL) count++
+        if (uiState.minCallCount > 0) count++
+        if (uiState.labelFilter.isNotEmpty()) count++
+        return count
     }
 
     // ============================================
@@ -679,9 +850,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     // EXCLUSION
     // ============================================
 
-    fun excludeNumber(phoneNumber: String) {
+    fun ignoreNumber(phoneNumber: String) {
         viewModelScope.launch {
-            callDataRepository.updateExclusion(phoneNumber, true)
+            callDataRepository.updateExclusionType(phoneNumber, excludeFromSync = false, excludeFromList = true)
+            // The flow collectors in init will catch this and trigger re-filter
+        }
+    }
+
+    fun noTrackNumber(phoneNumber: String) {
+        viewModelScope.launch {
+            callDataRepository.updateExclusionType(phoneNumber, excludeFromSync = true, excludeFromList = true)
             // The flow collectors in init will catch this and trigger re-filter
         }
     }
@@ -699,6 +877,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val callerPhone1 = settingsRepository.getCallerPhoneSim1()
         val callerPhone2 = settingsRepository.getCallerPhoneSim2()
         
+        // Check for critical changes that require re-syncing
+        val needsSync = simSelection != _uiState.value.simSelection || 
+                        trackStartDate != _uiState.value.trackStartDate ||
+                        sim1SubId != _uiState.value.sim1SubId ||
+                        sim2SubId != _uiState.value.sim2SubId ||
+                        callRecordEnabled != _uiState.value.callRecordEnabled ||
+                        callerPhone1 != _uiState.value.callerPhoneSim1 ||
+                        callerPhone2 != _uiState.value.callerPhoneSim2
+
         if (simSelection != _uiState.value.simSelection || 
             trackStartDate != _uiState.value.trackStartDate ||
             whatsappPreference != _uiState.value.whatsappPreference ||
@@ -709,6 +896,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             sim2SubId != _uiState.value.sim2SubId ||
             callerPhone1 != _uiState.value.callerPhoneSim1 ||
             callerPhone2 != _uiState.value.callerPhoneSim2) {
+            
             _uiState.update { it.copy(
                 simSelection = simSelection, 
                 trackStartDate = trackStartDate,
@@ -721,7 +909,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 callerPhoneSim1 = callerPhone1,
                 callerPhoneSim2 = callerPhone2
             ) }
-            triggerFilter()
+            
+            if (needsSync) {
+                syncFromSystem()
+            } else {
+                triggerFilter()
+            }
         }
     }
 

@@ -100,7 +100,25 @@ data class SettingsUiState(
     val showRecordingQueue: Boolean = false,
     val showRecordingReminder: Boolean = true,
     val showUnknownNoteReminder: Boolean = true,
-    val isGoogleDialer: Boolean = false
+    val isGoogleDialer: Boolean = false,
+    
+    // Unified Modal States
+    val showPermissionsModal: Boolean = false,
+    val showCloudSyncModal: Boolean = false,
+    val showAccountInfoModal: Boolean = false,
+    val showExcludedModal: Boolean = false,
+    val showClearDataDialog: Boolean = false,
+    val showContactModal: Boolean = false,
+    val showCreateOrgModal: Boolean = false,
+    val showJoinOrgModal: Boolean = false,
+    val showTrackSimModal: Boolean = false,
+    val showResetConfirmDialog: Boolean = false,
+    val showCustomLookupModal: Boolean = false,
+    val showWhatsappModal: Boolean = false,
+    val contactSubject: String = "",
+    val accountEditField: String? = null,
+    val lookupPhoneNumber: String? = null,
+    val skippedSteps: Set<String> = emptySet()
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -240,7 +258,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 showRecordingReminder = settingsRepository.isShowRecordingReminder(),
                 showUnknownNoteReminder = settingsRepository.isShowUnknownNoteReminder(),
                 isGoogleDialer = isGoogleDialer(),
-                isSyncSetup = orgId.isNotEmpty()
+                isSyncSetup = orgId.isNotEmpty(),
+                skippedSteps = settingsRepository.getSkippedSteps()
             )
         }
         refreshRecordingPathInfo()
@@ -667,6 +686,61 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     
     fun toggleRecordingQueue(show: Boolean) {
         _uiState.update { it.copy(showRecordingQueue = show) }
+    }
+
+    // Unified Modal Toggle Functions
+    fun togglePermissionsModal(show: Boolean) {
+        _uiState.update { it.copy(showPermissionsModal = show) }
+    }
+
+    fun toggleCloudSyncModal(show: Boolean) {
+        _uiState.update { it.copy(showCloudSyncModal = show) }
+    }
+
+    fun toggleAccountInfoModal(show: Boolean, editField: String? = null) {
+        _uiState.update { it.copy(showAccountInfoModal = show, accountEditField = editField) }
+    }
+
+    fun toggleExcludedModal(show: Boolean) {
+        _uiState.update { it.copy(showExcludedModal = show) }
+    }
+
+    fun toggleClearDataDialog(show: Boolean) {
+        _uiState.update { it.copy(showClearDataDialog = show) }
+    }
+
+    fun toggleContactModal(show: Boolean, subject: String = "") {
+        _uiState.update { it.copy(showContactModal = show, contactSubject = subject) }
+    }
+
+    fun toggleCreateOrgModal(show: Boolean) {
+        _uiState.update { it.copy(showCreateOrgModal = show) }
+    }
+
+    fun toggleJoinOrgModal(show: Boolean) {
+        _uiState.update { it.copy(showJoinOrgModal = show) }
+    }
+
+    fun toggleTrackSimModal(show: Boolean) {
+        _uiState.update { it.copy(showTrackSimModal = show) }
+        if (!show) fetchSimInfo()
+    }
+
+    fun toggleResetConfirmDialog(show: Boolean) {
+        _uiState.update { it.copy(showResetConfirmDialog = show) }
+    }
+
+    fun toggleCustomLookupModal(show: Boolean) {
+        _uiState.update { it.copy(showCustomLookupModal = show) }
+    }
+
+    fun toggleWhatsappModal(show: Boolean) {
+        if (show) fetchWhatsappApps()
+        _uiState.update { it.copy(showWhatsappModal = show) }
+    }
+
+    fun showPhoneLookup(phone: String?) {
+        _uiState.update { it.copy(lookupPhoneNumber = phone) }
     }
 
     fun updatePlanExpiryDate(date: String?) {
@@ -1561,5 +1635,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 Toast.makeText(getApplication(), "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    fun setStepSkipped(step: String, skipped: Boolean = true) {
+        settingsRepository.setStepSkipped(step, skipped)
+        _uiState.update { it.copy(skippedSteps = settingsRepository.getSkippedSteps()) }
     }
 }

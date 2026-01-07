@@ -14,6 +14,10 @@ interface PersonDataDao {
     @Query("SELECT * FROM person_data WHERE excludeFromList = 0 ORDER BY lastCallDate DESC")
     fun getAllPersonsFlow(): Flow<List<PersonDataEntity>>
     
+    // Get ALL persons including excluded (for ViewModel filtering)
+    @Query("SELECT * FROM person_data ORDER BY lastCallDate DESC")
+    fun getAllPersonsIncludingExcludedFlow(): Flow<List<PersonDataEntity>>
+    
     @Query("SELECT * FROM person_data WHERE excludeFromList = 0 ORDER BY lastCallDate DESC")
     suspend fun getAllPersons(): List<PersonDataEntity>
     

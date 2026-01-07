@@ -48,21 +48,6 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    // Modal states
-    var showPermissionsModal by remember { mutableStateOf(false) }
-    var showCloudSyncModal by remember { mutableStateOf(false) }
-    var showAccountInfoModal by remember { mutableStateOf(false) }
-    var showExcludedModal by remember { mutableStateOf(false) }
-    var showClearDataDialog by remember { mutableStateOf(false) }
-    var showContactModal by remember { mutableStateOf(false) }
-    var showCreateOrgModal by remember { mutableStateOf(false) }
-    var showJoinOrgModal by remember { mutableStateOf(false) }
-    var showTrackSimModal by remember { mutableStateOf(false) }
-    var showResetConfirmDialog by remember { mutableStateOf(false) }
-    var contactSubject by remember { mutableStateOf("") }
-    var accountEditField by remember { mutableStateOf<String?>(null) } // "pairing", "phone1", "phone2", null for all
-    var showCustomLookupModal by remember { mutableStateOf(false) }
-
     val hasStoragePermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
         androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_MEDIA_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
     } else {
@@ -113,194 +98,7 @@ fun SettingsScreen(
         viewModel.onResume()
     }
 
-    // Permissions Modal
-    if (showPermissionsModal) {
-        PermissionsModal(
-            permissions = uiState.permissions,
-            onDismiss = { showPermissionsModal = false }
-        )
-    }
-
-    // Cloud Sync Modal
-    if (showCloudSyncModal) {
-        CloudSyncModal(
-            uiState = uiState,
-            viewModel = viewModel,
-            onDismiss = { showCloudSyncModal = false },
-            onOpenAccountInfo = { field -> 
-                accountEditField = field
-                showAccountInfoModal = true 
-            },
-            onCreateOrg = {
-                showCreateOrgModal = true
-            },
-            onJoinOrg = {
-                showJoinOrgModal = true
-            }
-        )
-    }
-    
-    // Create Org Modal
-    if (showCreateOrgModal) {
-        CreateOrgModal(
-            onDismiss = { showCreateOrgModal = false }
-        )
-    }
-
-    // Track SIM Modal
-    if (showTrackSimModal) {
-        TrackSimModal(
-            uiState = uiState,
-            viewModel = viewModel,
-            onDismiss = { showTrackSimModal = false }
-        )
-    }
-
-    // Join Org Modal
-    if (showJoinOrgModal) {
-        JoinOrgModal(
-            viewModel = viewModel,
-            onDismiss = { showJoinOrgModal = false }
-        )
-    }
-
-    // Account Info Modal
-    if (showAccountInfoModal) {
-        AccountInfoModal(
-            uiState = uiState,
-            viewModel = viewModel,
-            editField = accountEditField,
-            onDismiss = { 
-                showAccountInfoModal = false
-                accountEditField = null
-            }
-        )
-    }
-
-    // Custom Lookup Modal
-    if (showCustomLookupModal) {
-        CustomLookupModal(
-            uiState = uiState,
-            viewModel = viewModel,
-            onDismiss = { showCustomLookupModal = false }
-        )
-    }
-
-    // Contact Modal
-    if (showContactModal) {
-        ContactModal(
-            subject = contactSubject,
-            onDismiss = { showContactModal = false }
-        )
-    }
-
-    // Excluded Contacts Modal
-    if (showExcludedModal) {
-        ExcludedContactsModal(
-            excludedPersons = uiState.excludedPersons,
-            onAddNumbers = { viewModel.addExcludedNumbers(it) },
-            onRemoveNumber = { viewModel.unexcludeNumber(it) },
-            onDismiss = { showExcludedModal = false },
-            canAddNew = uiState.allowPersonalExclusion || uiState.pairingCode.isEmpty(),
-            onAddNumbersWithType = { numbers, isNoTracking -> 
-                viewModel.addExcludedNumbersWithType(numbers, isNoTracking) 
-            },
-            onUpdateExclusionType = { phone, isNoTracking ->
-                viewModel.updateExclusionType(phone, isNoTracking)
-            }
-        )
-    }
-
-    // Reset Sync Data Dialog
-    if (showResetConfirmDialog) {
-        AlertDialog(
-            onDismissRequest = { showResetConfirmDialog = false },
-            title = { Text("Reset Sync Data Status") },
-            text = { Text("This will reset the sync status of all logs. They will be re-synced in the next cycle. Use this if you are missing data on the cloud.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.resetSyncStatus()
-                    showResetConfirmDialog = false
-                }) { Text("Confirm") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showResetConfirmDialog = false }) { Text("Cancel") }
-            }
-        )
-    }
-
-    // Using centralized modals in MainActivity
-
-    // Clear Data Dialog
-    if (showClearDataDialog) {
-        AlertDialog(
-            onDismissRequest = { showClearDataDialog = false },
-            icon = { Icon(Icons.Default.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("Clear All App Data") },
-            text = { 
-                Text(
-                    "This will permanently delete all call logs, person notes, sync history, and settings. " +
-                    "This action cannot be undone.\n\nAre you sure you want to continue?"
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.clearAllAppData {
-                            showClearDataDialog = false
-                        }
-                    },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text("Clear All Data")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showClearDataDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    // Recording Enablement Dialog
-    if (uiState.showRecordingEnablementDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.toggleRecordingDialog(false) },
-            title = { Text("Enable Recording Sync") },
-            text = { Text("Would you like to scan and sync recordings for previous calls as well, or only for new calls starting now?") },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.updateCallRecordEnabled(enabled = true, scanOld = true) }
-                ) { Text("Scan All") }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { viewModel.updateCallRecordEnabled(enabled = true, scanOld = false) }
-                ) { Text("New Only") }
-            }
-        )
-    }
-
-    // Recording Disablement Dialog
-    if (uiState.showRecordingDisablementDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.toggleRecordingDisableDialog(false) },
-            title = { Text("Disable Recording Sync?") },
-            text = { Text("Recording sync will be stopped. Any currently pending uploads will be cancelled. New calls will not be checked for recordings.") },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.updateCallRecordEnabled(enabled = false) },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) { Text("Disable") }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.toggleRecordingDisableDialog(false) }) { Text("Cancel") }
-            }
-        )
-    }
+    // All recording/sync modals are now handled centrally in MainActivity
 
     Scaffold(
         topBar = {
@@ -346,7 +144,7 @@ fun SettingsScreen(
             // ===============================================
             SettingsSection(title = "Cloud & Account") {
                 // The Sync Card is technically part of this section but we keep its distinctive Card look
-                SyncCloudCard(uiState, viewModel, { viewModel.toggleSyncQueue(true) }, { showCloudSyncModal = true }, { showResetConfirmDialog = true })
+                SyncCloudCard(uiState, viewModel, { viewModel.toggleSyncQueue(true) }, { viewModel.toggleCloudSyncModal(true) }, { viewModel.toggleResetConfirmDialog(true) })
             }
 
             if (uiState.pairingCode.isNotEmpty()) {
@@ -450,7 +248,7 @@ fun SettingsScreen(
                         if (isSimLocked) {
                             Toast.makeText(context, "Locked by your organisation", Toast.LENGTH_SHORT).show()
                         } else {
-                            showTrackSimModal = true
+                            viewModel.toggleTrackSimModal(true)
                         }
                     }
                 )
@@ -460,7 +258,7 @@ fun SettingsScreen(
                 val excludedCount = uiState.excludedPersons.size
                 val isExclusionLocked = !uiState.allowPersonalExclusion && uiState.pairingCode.isNotEmpty()
                 ListItem(
-                    headlineContent = { Text("Excluded Contacts") },
+                    headlineContent = { Text("Ignored") },
                     supportingContent = { 
                         Text(
                             if (excludedCount == 0) "No numbers excluded" 
@@ -479,7 +277,7 @@ fun SettingsScreen(
                             Icon(Icons.Default.ChevronRight, contentDescription = null)
                         }
                     },
-                    modifier = Modifier.clickable { showExcludedModal = true }
+                    modifier = Modifier.clickable { viewModel.toggleExcludedModal(true) }
                 )
 
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
@@ -810,7 +608,7 @@ fun SettingsScreen(
                     trailingContent = {
                         Icon(Icons.Default.ChevronRight, contentDescription = null)
                     },
-                    modifier = Modifier.clickable { showCustomLookupModal = true }
+                    modifier = Modifier.clickable { viewModel.toggleCustomLookupModal(true) }
                 )
             }
 
@@ -868,7 +666,7 @@ fun SettingsScreen(
                     trailingContent = {
                         Icon(Icons.Default.ChevronRight, contentDescription = null)
                     },
-                    modifier = Modifier.clickable { showPermissionsModal = true }
+                    modifier = Modifier.clickable { viewModel.togglePermissionsModal(true) }
                 )
             }
 
@@ -917,8 +715,7 @@ fun SettingsScreen(
                         SettingsIcon(Icons.Default.BugReport, MaterialTheme.colorScheme.error) 
                     },
                     modifier = Modifier.clickable { 
-                        contactSubject = "Bug Report"
-                        showContactModal = true 
+                        viewModel.toggleContactModal(true, "Bug Report") 
                     }
                 )
                 
@@ -931,8 +728,7 @@ fun SettingsScreen(
                         SettingsIcon(Icons.Default.Lightbulb, Color(0xFFEAB308)) 
                     },
                     modifier = Modifier.clickable { 
-                        contactSubject = "Feature Request"
-                        showContactModal = true 
+                        viewModel.toggleContactModal(true, "Feature Request") 
                     }
                 )
 
@@ -986,8 +782,7 @@ fun SettingsScreen(
                         SettingsIcon(Icons.Default.NoAccounts, MaterialTheme.colorScheme.error) 
                     },
                     modifier = Modifier.clickable { 
-                        contactSubject = "Account Deletion Request"
-                        showContactModal = true 
+                        viewModel.toggleContactModal(true, "Account Deletion Request") 
                     }
                 )
 
@@ -1006,7 +801,7 @@ fun SettingsScreen(
                     trailingContent = {
                         Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                     },
-                    modifier = Modifier.clickable { showClearDataDialog = true }
+                    modifier = Modifier.clickable { viewModel.toggleClearDataDialog(true) }
                 )
             }
 
@@ -1054,7 +849,7 @@ fun SettingsScreen(
                 )
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(100.dp))
         }
     }
     }

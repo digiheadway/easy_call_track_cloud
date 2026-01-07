@@ -10,16 +10,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.miniclick.calltrackmanage.worker.RecordingUploadWorker
 import com.miniclick.calltrackmanage.ui.common.*
-import com.miniclick.calltrackmanage.ui.home.DialerScreen
-import com.miniclick.calltrackmanage.ui.home.CallsScreen
-import com.miniclick.calltrackmanage.ui.home.PersonsScreen
-import com.miniclick.calltrackmanage.ui.home.ReportsScreen
-import com.miniclick.calltrackmanage.ui.settings.SettingsScreen
+import com.miniclick.calltrackmanage.ui.home.*
+import com.miniclick.calltrackmanage.ui.settings.*
 import com.miniclick.calltrackmanage.ui.theme.CallCloudTheme
 import com.miniclick.calltrackmanage.ui.utils.AudioPlayer
 import com.miniclick.calltrackmanage.ui.onboarding.OnboardingScreen
@@ -255,7 +255,6 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel()) {
-    val lookupPhoneNumber by viewModel.lookupPhoneNumber.collectAsState()
     val personDetailsPhone by viewModel.personDetailsPhone.collectAsState()
     val settingsViewModel: SettingsViewModel = viewModel()
     val settingsState by settingsViewModel.uiState.collectAsState()
@@ -356,12 +355,12 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                     )
                 }
 
-                if (lookupPhoneNumber != null) {
+                if (settingsState.lookupPhoneNumber != null) {
                     PhoneLookupResultModal(
-                        phoneNumber = lookupPhoneNumber!!,
+                        phoneNumber = settingsState.lookupPhoneNumber!!,
                         uiState = settingsState,
                         viewModel = settingsViewModel,
-                        onDismiss = { viewModel.clearLookupPhoneNumber() }
+                        onDismiss = { settingsViewModel.showPhoneLookup(null) }
                     )
                 }
                 
@@ -408,6 +407,179 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                         activeRecordings = settingsState.activeRecordings,
                         onDismiss = { settingsViewModel.toggleRecordingQueue(false) },
                         onRetry = { settingsViewModel.retryRecordingUpload(it) }
+                    )
+                }
+
+                // --- Unified Settings Modals ---
+                
+                if (settingsState.showPermissionsModal) {
+                    PermissionsModal(
+                        permissions = settingsState.permissions,
+                        onDismiss = { settingsViewModel.togglePermissionsModal(false) }
+                    )
+                }
+
+                if (settingsState.showCloudSyncModal) {
+                    CloudSyncModal(
+                        uiState = settingsState,
+                        viewModel = settingsViewModel,
+                        onDismiss = { settingsViewModel.toggleCloudSyncModal(false) },
+                        onOpenAccountInfo = { field -> 
+                            settingsViewModel.toggleAccountInfoModal(true, field)
+                        },
+                        onCreateOrg = {
+                            settingsViewModel.toggleCreateOrgModal(true)
+                        },
+                        onJoinOrg = {
+                            settingsViewModel.toggleJoinOrgModal(true)
+                        },
+                        onKeepOffline = {
+                            settingsViewModel.toggleCloudSyncModal(false)
+                            viewModel.dismissOnboardingSession() 
+                        }
+                    )
+                }
+
+                if (settingsState.showAccountInfoModal) {
+                    AccountInfoModal(
+                        uiState = settingsState,
+                        viewModel = settingsViewModel,
+                        editField = settingsState.accountEditField,
+                        onDismiss = { settingsViewModel.toggleAccountInfoModal(false) }
+                    )
+                }
+
+                if (settingsState.showCreateOrgModal) {
+                    CreateOrgModal(
+                        onDismiss = { settingsViewModel.toggleCreateOrgModal(false) }
+                    )
+                }
+
+                if (settingsState.showJoinOrgModal) {
+                    JoinOrgModal(
+                        viewModel = settingsViewModel,
+                        onDismiss = { settingsViewModel.toggleJoinOrgModal(false) }
+                    )
+                }
+
+                if (settingsState.showTrackSimModal) {
+                    TrackSimModal(
+                        uiState = settingsState,
+                        viewModel = settingsViewModel,
+                        onDismiss = { settingsViewModel.toggleTrackSimModal(false) }
+                    )
+                }
+
+                if (settingsState.showCustomLookupModal) {
+                    CustomLookupModal(
+                        uiState = settingsState,
+                        viewModel = settingsViewModel,
+                        onDismiss = { settingsViewModel.toggleCustomLookupModal(false) }
+                    )
+                }
+
+                if (settingsState.showContactModal) {
+                    ContactModal(
+                        subject = settingsState.contactSubject,
+                        onDismiss = { settingsViewModel.toggleContactModal(false) }
+                    )
+                }
+
+                if (settingsState.showExcludedModal) {
+                    ExcludedContactsModal(
+                        excludedPersons = settingsState.excludedPersons,
+                        onAddNumbers = { settingsViewModel.addExcludedNumbers(it) },
+                        onRemoveNumber = { settingsViewModel.unexcludeNumber(it) },
+                        onDismiss = { settingsViewModel.toggleExcludedModal(false) },
+                        canAddNew = settingsState.allowPersonalExclusion || settingsState.pairingCode.isEmpty(),
+                        onAddNumbersWithType = { numbers, isNoTracking -> 
+                            settingsViewModel.addExcludedNumbersWithType(numbers, isNoTracking) 
+                        },
+                        onUpdateExclusionType = { phone, isNoTracking ->
+                            settingsViewModel.updateExclusionType(phone, isNoTracking)
+                        }
+                    )
+                }
+
+                if (settingsState.showWhatsappModal) {
+                    WhatsAppSelectionModal(
+                        currentSelection = settingsState.whatsappPreference,
+                        availableApps = settingsState.availableWhatsappApps,
+                        onSelect = { selection ->
+                            settingsViewModel.updateWhatsappPreference(selection)
+                            settingsViewModel.toggleWhatsappModal(false)
+                        },
+                        onDismiss = { settingsViewModel.toggleWhatsappModal(false) }
+                    )
+                }
+
+                if (settingsState.showResetConfirmDialog) {
+                    AlertDialog(
+                        onDismissRequest = { settingsViewModel.toggleResetConfirmDialog(false) },
+                        title = { Text("Reset Sync Data Status") },
+                        text = { Text("This will reset the sync status of all logs. They will be re-synced in the next cycle.") },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                settingsViewModel.resetSyncStatus()
+                                settingsViewModel.toggleResetConfirmDialog(false)
+                            }) { Text("Confirm") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { settingsViewModel.toggleResetConfirmDialog(false) }) { Text("Cancel") }
+                        }
+                    )
+                }
+
+                if (settingsState.showClearDataDialog) {
+                    AlertDialog(
+                        onDismissRequest = { settingsViewModel.toggleClearDataDialog(false) },
+                        icon = { Icon(Icons.Default.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
+                        title = { Text("Clear All App Data") },
+                        text = { Text("This will permanently delete all logs, notes, and settings. This cannot be undone.") },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    settingsViewModel.clearAllAppData {
+                                        settingsViewModel.toggleClearDataDialog(false)
+                                    }
+                                },
+                                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                            ) { Text("Clear All Data") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { settingsViewModel.toggleClearDataDialog(false) }) { Text("Cancel") }
+                        }
+                    )
+                }
+                
+                if (settingsState.showRecordingEnablementDialog) {
+                    AlertDialog(
+                        onDismissRequest = { settingsViewModel.toggleRecordingDialog(false) },
+                        title = { Text("Enable Recording Sync") },
+                        text = { Text("Would you like to scan recordings for previous calls as well?") },
+                        confirmButton = {
+                            Button(onClick = { settingsViewModel.updateCallRecordEnabled(enabled = true, scanOld = true) }) { Text("Scan All") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { settingsViewModel.updateCallRecordEnabled(enabled = true, scanOld = false) }) { Text("New Only") }
+                        }
+                    )
+                }
+
+                if (settingsState.showRecordingDisablementDialog) {
+                    AlertDialog(
+                        onDismissRequest = { settingsViewModel.toggleRecordingDisableDialog(false) },
+                        title = { Text("Disable Recording Sync?") },
+                        text = { Text("Recording sync will be stopped. Pending uploads will be cancelled.") },
+                        confirmButton = {
+                            Button(
+                                onClick = { settingsViewModel.updateCallRecordEnabled(enabled = false) },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                            ) { Text("Disable") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { settingsViewModel.toggleRecordingDisableDialog(false) }) { Text("Cancel") }
+                        }
                     )
                 }
             }
