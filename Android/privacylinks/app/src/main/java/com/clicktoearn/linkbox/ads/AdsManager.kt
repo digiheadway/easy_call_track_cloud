@@ -37,6 +37,12 @@ import com.google.firebase.remoteconfig.ktx.remoteConfig
 import com.google.firebase.remoteconfig.ktx.remoteConfigSettings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.isActive
 
 object AdsManager {
     private const val TAG = "AdsManager"
@@ -141,6 +147,56 @@ object AdsManager {
     private val placementLastShowTime = mutableMapOf<String, Long>()
     private var currentInterstitialPlacementKey: String? = null
 
+    // UI Loading State
+    val isAdLoading = MutableStateFlow(false)
+    private val adScope = MainScope()
+
+    private fun waitForAd(
+        loadAdAction: () -> Unit,
+        checkAdAvailable: () -> Boolean,
+        onAdReady: () -> Unit,
+        onTimeout: () -> Unit,
+        timeoutMs: Long = 4000L
+    ) {
+        if (checkAdAvailable()) {
+            onAdReady()
+            return
+        }
+
+        isAdLoading.value = true
+        loadAdAction()
+
+        adScope.launch {
+            val startTime = System.currentTimeMillis()
+            var adReady = false
+            
+            // Poll for ad availability
+            while (System.currentTimeMillis() - startTime < timeoutMs) {
+                if (checkAdAvailable()) {
+                    adReady = true
+                    break
+                }
+                delay(200) // Check every 200ms
+            }
+            
+            // Ensure minimum display time of 1s if it was super fast (optional, but requested "minimum 2-3s")
+            // The user said "minimum 2-3 seconds". Let's at least give it 2s to look deliberate if it loaded instantly 
+            // BUT only if we actually showed the loader.
+            val elapsed = System.currentTimeMillis() - startTime
+            if (elapsed < 2000) {
+                 delay(2000 - elapsed)
+            }
+
+            isAdLoading.value = false
+            
+            if (adReady) {
+                onAdReady()
+            } else {
+                onTimeout()
+            }
+        }
+    }
+
     fun init(context: Context) {
         if (isInitialized) return
         
@@ -238,14 +294,9 @@ object AdsManager {
     }
 
     internal fun isAdEnabled(key: String): Boolean {
-        val config = Firebase.remoteConfig
-        // Fallback to true if config hasn't been activated yet, as defaults are true
-        return if (config.info.lastFetchStatus == com.google.firebase.remoteconfig.FirebaseRemoteConfig.LAST_FETCH_STATUS_SUCCESS) {
-            config.getBoolean(key)
-        } else {
-            // Check default specifically if possible, or just return true as per our defaults
-            true 
-        }
+        // Firebase.remoteConfig.getBoolean() returns the default value if not fetched yet
+        // This respects the defaults set in setDefaultsAsync()
+        return Firebase.remoteConfig.getBoolean(key)
     }
 
     private fun getAdUnitId(key: String, prodId: String, testId: String): String {
@@ -516,44 +567,56 @@ object AdsManager {
     }
 
     fun showInterstitialAd(activity: Activity, placementKey: String? = null, onAdDismissed: () -> Unit) {
-        if (interstitialAd != null && isAdEnabled(KEY_SHOW_INTERSTITIAL) && canShowAd("interstitial", placementKey) is AdCheckResult.Success) {
-            pendingInterstitialCallback = onAdDismissed
-            currentInterstitialPlacementKey = placementKey
-            var adWasShownProperly = false
-            
-            interstitialAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
-                override fun onAdShowedFullScreenContent() {
-                    // Ad was successfully displayed - mark as shown properly
-                    adWasShownProperly = true
-                    Log.d(TAG, "Interstitial ad displayed successfully")
-                }
-                override fun onAdDismissedFullScreenContent() {
-                    // Only record if ad was shown properly (not failed)
-                    if (adWasShownProperly) {
-                        recordAdShown("interstitial", currentInterstitialPlacementKey)
-                    } else {
-                        Log.d(TAG, "Interstitial dismissed without proper display, not recording")
-                    }
-                    interstitialAd = null
-                    currentInterstitialPlacementKey = null
-                    pendingInterstitialCallback?.invoke()
-                    pendingInterstitialCallback = null
-                    loadInterstitialAd(activity)
-                }
-                override fun onAdFailedToShowFullScreenContent(error: AdError) {
-                    adWasShownProperly = false
-                    interstitialAd = null
-                    currentInterstitialPlacementKey = null
-                    pendingInterstitialCallback?.invoke()
-                    pendingInterstitialCallback = null
-                    loadInterstitialAd(activity)
-                }
-            }
-            interstitialAd?.show(activity)
-        } else {
+        if (!isAdEnabled(KEY_SHOW_INTERSTITIAL)) {
             onAdDismissed()
-            loadInterstitialAd(activity)
+            return
         }
+        
+        waitForAd(
+            loadAdAction = { loadInterstitialAd(activity) },
+            checkAdAvailable = { interstitialAd != null },
+            onAdReady = {
+                if (canShowAd("interstitial", placementKey) is AdCheckResult.Success) {
+                    pendingInterstitialCallback = onAdDismissed
+                    currentInterstitialPlacementKey = placementKey
+                    var adWasShownProperly = false
+                    
+                    interstitialAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
+                        override fun onAdShowedFullScreenContent() {
+                            adWasShownProperly = true
+                            Log.d(TAG, "Interstitial ad displayed successfully")
+                        }
+                        override fun onAdDismissedFullScreenContent() {
+                            if (adWasShownProperly) {
+                                recordAdShown("interstitial", currentInterstitialPlacementKey)
+                            }
+                            interstitialAd = null
+                            currentInterstitialPlacementKey = null
+                            pendingInterstitialCallback?.invoke()
+                            pendingInterstitialCallback = null
+                            loadInterstitialAd(activity)
+                        }
+                        override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                            adWasShownProperly = false
+                            interstitialAd = null
+                            currentInterstitialPlacementKey = null
+                            pendingInterstitialCallback?.invoke()
+                            pendingInterstitialCallback = null
+                            loadInterstitialAd(activity)
+                        }
+                    }
+                    interstitialAd?.show(activity)
+                } else {
+                    onAdDismissed()
+                    loadInterstitialAd(activity)
+                }
+            },
+            onTimeout = {
+                Log.d(TAG, "Interstitial Ad timeout - proceeding without ad")
+                onAdDismissed()
+                loadInterstitialAd(activity)
+            }
+        )
     }
 
     // Rewarded Ad
@@ -595,42 +658,40 @@ object AdsManager {
             return
         }
 
-        if (rewardedAd != null) {
-            var rewardEarned = false
-            
-            rewardedAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
-                override fun onAdDismissedFullScreenContent() {
-                    recordAdShown("rewarded")
-                    rewardedAd = null
-                    loadRewardedAd(activity)
-                    // Only invoke callback if user actually earned the reward
-                    if (!rewardEarned) {
-                        Log.d(TAG, "RewardedAd dismissed without earning reward (user pressed back?)")
-                        onAdClosed?.invoke("Reward cancelled for closing ad early")
+        waitForAd(
+            loadAdAction = { loadRewardedAd(activity) },
+            checkAdAvailable = { rewardedAd != null },
+            onAdReady = {
+                var rewardEarned = false
+                rewardedAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
+                    override fun onAdDismissedFullScreenContent() {
+                        recordAdShown("rewarded")
+                        rewardedAd = null
+                        loadRewardedAd(activity)
+                        if (!rewardEarned) {
+                            onAdClosed?.invoke("Reward cancelled for closing ad early")
+                        }
+                    }
+                    override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                        rewardedAd = null
+                        loadRewardedAd(activity)
+                        onAdClosed?.invoke("Failed to display ad. Please try again.")
                     }
                 }
-                override fun onAdFailedToShowFullScreenContent(error: AdError) {
-                    rewardedAd = null
-                    loadRewardedAd(activity)
-                    onAdClosed?.invoke("Failed to display ad. Please try again.")
+                rewardedAd?.show(activity) { rewardItem ->
+                    rewardEarned = true
+                    onRewardEarned()
                 }
+            },
+            onTimeout = {
+                if (strict) {
+                    onAdClosed?.invoke("Ad not ready yet. Please try again.")
+                } else {
+                    onRewardEarned()
+                }
+                loadRewardedAd(activity)
             }
-            rewardedAd?.show(activity) { rewardItem ->
-                rewardEarned = true
-                Log.d(TAG, "RewardedAd: User earned reward - Type: ${rewardItem.type}, Amount: ${rewardItem.amount}")
-                onRewardEarned()
-            }
-        } else {
-            // Ad not available
-            if (strict) {
-                Log.d(TAG, "RewardedAd not loaded (STRICT), not granting reward")
-                onAdClosed?.invoke("Ad not ready yet. Please try again in 5 seconds.")
-            } else {
-                Log.d(TAG, "RewardedAd not loaded (FAIL-SOFT), granting reward anyway")
-                onRewardEarned()
-            }
-            loadRewardedAd(activity)
-        }
+        )
     }
 
     // Rewarded Interstitial Ad
@@ -672,63 +733,104 @@ object AdsManager {
             return
         }
 
-        if (rewardedInterstitialAd != null) {
-            var rewardEarned = false
-            
-            rewardedInterstitialAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
-                override fun onAdDismissedFullScreenContent() {
-                    // Only record ad shown if user actually earned the reward (didn't back out early)
-                    if (rewardEarned) {
-                        recordAdShown("rewarded", placementKey)
-                        onRewardEarned()
-                    } else {
-                        Log.d(TAG, "RewardedInterstitialAd dismissed without earning reward (user pressed back?) - NOT recording as shown")
-                        onAdClosed?.invoke("Reward cancelled for closing ad early")
+        waitForAd(
+            loadAdAction = { loadRewardedInterstitialAd(activity) },
+            checkAdAvailable = { rewardedInterstitialAd != null },
+            onAdReady = {
+                var rewardEarned = false
+                rewardedInterstitialAd?.fullScreenContentCallback = object : FullScreenContentCallback() {
+                    override fun onAdDismissedFullScreenContent() {
+                        if (rewardEarned) {
+                            recordAdShown("rewarded", placementKey)
+                            onRewardEarned()
+                        } else {
+                            onAdClosed?.invoke("Reward cancelled for closing ad early")
+                        }
+                        rewardedInterstitialAd = null
+                        loadRewardedInterstitialAd(activity)
                     }
-                    rewardedInterstitialAd = null
-                    loadRewardedInterstitialAd(activity)
+                    override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                        rewardedInterstitialAd = null
+                        loadRewardedInterstitialAd(activity)
+                        onAdClosed?.invoke("Failed to display ad. Please try again.")
+                    }
                 }
-                override fun onAdFailedToShowFullScreenContent(error: AdError) {
-                    rewardedInterstitialAd = null
-                    loadRewardedInterstitialAd(activity)
-                    onAdClosed?.invoke("Failed to display ad. Please try again.")
+                rewardedInterstitialAd?.show(activity) { rewardItem ->
+                    rewardEarned = true
                 }
+            },
+            onTimeout = {
+                if (strict) {
+                    onAdClosed?.invoke("Ad not ready yet. Please try again.")
+                } else {
+                    onRewardEarned()
+                }
+                loadRewardedInterstitialAd(activity)
             }
-            rewardedInterstitialAd?.show(activity) { rewardItem ->
-                rewardEarned = true
-                Log.d(TAG, "RewardedInterstitialAd: User earned reward - Type: ${rewardItem.type}, Amount: ${rewardItem.amount}")
-            }
-        } else {
-            // Ad not available
-            if (strict) {
-                Log.d(TAG, "RewardedInterstitialAd not loaded (STRICT), not granting reward")
-                onAdClosed?.invoke("Ad not ready yet. Please try again in 5 seconds.")
-            } else {
-                Log.d(TAG, "RewardedInterstitialAd not loaded (FAIL-SOFT), granting reward anyway")
-                onRewardEarned()
-            }
-            loadRewardedInterstitialAd(activity)
-        }
+        )
     }
 
     // Placeholder for compatibility
     fun preloadBannerAds() {}
     
+    private fun getAdSize(context: Context, widthDp: Int): AdSize {
+        return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(context, widthDp)
+    }
+
     @Composable
-    fun BannerAdView() {
+    fun BannerAdView(modifier: Modifier = Modifier) {
         if (!isAdEnabled(KEY_SHOW_BANNER)) return
         val adUnitId = getAdUnitId(KEY_ID_BANNER, ADMOB_BANNER_ID, TEST_BANNER)
+        val context = LocalContext.current
+        
+        BoxWithConstraints(
+            modifier = modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            // Calculate available width in DP. 
+            // If infinite (e.g. in scrolling container with no width constraint), fall back to screen width.
+            val screenWidth = context.resources.displayMetrics.widthPixels
+            val density = context.resources.displayMetrics.density
+            val defaultWidth = (screenWidth / density).toInt()
+            
+            val availableWidth = if (maxWidth.value.isFinite() && maxWidth.value > 0) {
+                maxWidth.value.toInt()
+            } else {
+                defaultWidth
+            }
+            
+            // Prevent ad requests for 0 width (can happen during layout passes)
+            if (availableWidth <= 0) return@BoxWithConstraints
 
-        AndroidView(
-            modifier = Modifier.fillMaxWidth().height(50.dp),
-            factory = { context ->
+            val adView = remember(adUnitId, availableWidth) { 
                 AdView(context).apply {
-                    setAdSize(AdSize.BANNER)
+                    setAdSize(getAdSize(context, availableWidth))
                     this.adUnitId = adUnitId
-                    loadAd(AdRequest.Builder().build())
+                    
+                    // Create extra bundle for Collapsible Banner
+                    val extras = android.os.Bundle()
+                    extras.putString("collapsible", "bottom")
+                    
+                    val adRequest = AdRequest.Builder()
+                        .addNetworkExtrasBundle(com.google.ads.mediation.admob.AdMobAdapter::class.java, extras)
+                        .build()
+                        
+                    loadAd(adRequest)
                 }
             }
-        )
+
+            // Cleanup AdView when it leaves the composition
+            DisposableEffect(adView) {
+                onDispose {
+                    adView.destroy()
+                }
+            }
+
+            AndroidView(
+                modifier = Modifier.wrapContentSize(),
+                factory = { adView }
+            )
+        }
     }
 
     @Composable
@@ -740,6 +842,15 @@ object AdsManager {
     fun MediumRectangleAdView() {
         if (!isAdEnabled(KEY_SHOW_BANNER)) return
         val adUnitId = getAdUnitId(KEY_ID_BANNER, ADMOB_BANNER_ID, TEST_BANNER) // Using Banner ID for simplicity
+        val context = LocalContext.current
+
+        val adView = remember(adUnitId) {
+            AdView(context).apply {
+                setAdSize(AdSize.MEDIUM_RECTANGLE)
+                this.adUnitId = adUnitId
+                loadAd(AdRequest.Builder().build())
+            }
+        }
 
         Box(
             modifier = Modifier.fillMaxWidth(),
@@ -747,27 +858,24 @@ object AdsManager {
         ) {
             AndroidView(
                 modifier = Modifier.width(300.dp).height(250.dp),
-                factory = { context ->
-                    AdView(context).apply {
-                        setAdSize(AdSize.MEDIUM_RECTANGLE)
-                        this.adUnitId = adUnitId
-                        loadAd(AdRequest.Builder().build())
-                    }
-                }
+                factory = { adView }
             )
         }
     }
 
     // NATIVE ADS
-    fun loadNativeAd(context: Context) {
-        if (isLoadingNative || _nativeAd.value != null || !isAdEnabled(KEY_SHOW_NATIVE_VIDEO)) return
+    fun loadNativeAd(context: Context, forceRefresh: Boolean = false) {
+        if (isLoadingNative || (!forceRefresh && _nativeAd.value != null) || !isAdEnabled(KEY_SHOW_NATIVE_VIDEO)) return
         
         isLoadingNative = true
         val adUnitId = getAdUnitId(KEY_ID_NATIVE, ADMOB_NATIVE_ID, TEST_NATIVE)
         val adLoader = AdLoader.Builder(context, adUnitId)
             .forNativeAd { ad : NativeAd ->
+                val oldAd = _nativeAd.value
                 _nativeAd.value = ad
                 isLoadingNative = false
+                // Destroy the old ad to free resources and prevent memory leaks
+                oldAd?.destroy()
             }
             .withAdListener(object : AdListener() {
                 override fun onAdFailedToLoad(adError: LoadAdError) {
@@ -775,13 +883,17 @@ object AdsManager {
                     Log.e(TAG, "Native ad failed to load: ${adError.message}")
                 }
             })
-            .withNativeAdOptions(NativeAdOptions.Builder().build())
+            .withNativeAdOptions(
+                NativeAdOptions.Builder()
+                    .setVideoOptions(VideoOptions.Builder().setStartMuted(true).build())
+                    .build()
+            )
             .build()
         adLoader.loadAd(AdRequest.Builder().build())
     }
 
-    fun loadStandardNativeAd(context: Context) {
-        if (isLoadingStandardNative || _standardNativeAd.value != null || !isAdEnabled(KEY_SHOW_NATIVE)) return
+    fun loadStandardNativeAd(context: Context, forceRefresh: Boolean = false) {
+        if (isLoadingStandardNative || (!forceRefresh && _standardNativeAd.value != null) || !isAdEnabled(KEY_SHOW_NATIVE)) return
         
         isLoadingStandardNative = true
         val adUnitId = getAdUnitId(KEY_ID_NATIVE, ADMOB_NATIVE_ID, TEST_NATIVE)
@@ -795,7 +907,11 @@ object AdsManager {
                     isLoadingStandardNative = false
                 }
             })
-            .withNativeAdOptions(NativeAdOptions.Builder().build())
+            .withNativeAdOptions(
+                NativeAdOptions.Builder()
+                    .setVideoOptions(VideoOptions.Builder().setStartMuted(true).build())
+                    .build()
+            )
             .build()
         adLoader.loadAd(AdRequest.Builder().build())
     }
@@ -811,10 +927,13 @@ object AdsManager {
         
         val nativeAd by nativeAdFlow.collectAsState()
         val context = LocalContext.current
-        
+
+        // Auto-refresh logic: Refresh every 60 seconds
         LaunchedEffect(Unit) {
-            if (nativeAd == null) {
-                loadNativeAd(context)
+            while (true) {
+                delay(60_000L) // 60 seconds
+                // Only refresh if the screen is active (this coroutine is active)
+                loadNativeAd(context, forceRefresh = true)
             }
         }
 
@@ -826,10 +945,16 @@ object AdsManager {
                      val adViewView = inflater.inflate(R.layout.native_ad_layout_admob, null) as NativeAdView
                      populateNativeAdView(nativeAd!!, adViewView)
                      adViewView
+                },
+                update = { view ->
+                    if (nativeAd != null) {
+                        populateNativeAdView(nativeAd!!, view)
+                    }
                 }
              )
         } else {
-            NativeAdShimmer(modifier = modifier)
+            // Show placeholder or shimmer while loading initially
+             NativeAdPlaceholder(modifier)
         }
     }
     
@@ -875,11 +1000,9 @@ object AdsManager {
 
         // Media View (optional - show only if has media content)
         val mediaView = adView.mediaView
-        if (mediaView != null && nativeAd.mediaContent != null && nativeAd.mediaContent!!.hasVideoContent()) {
+        if (mediaView != null && nativeAd.mediaContent != null) {
             mediaView.mediaContent = nativeAd.mediaContent
-            mediaView.visibility = View.VISIBLE
-        } else if (mediaView != null && nativeAd.images?.isNotEmpty() == true) {
-            mediaView.mediaContent = nativeAd.mediaContent
+            mediaView.setImageScaleType(ImageView.ScaleType.CENTER_CROP)
             mediaView.visibility = View.VISIBLE
         } else {
             mediaView?.visibility = View.GONE
@@ -888,17 +1011,19 @@ object AdsManager {
         adView.setNativeAd(nativeAd)
     }
 
+    fun openAdInspector(context: Context) {
+        MobileAds.openAdInspector(context) { error ->
+            if (error != null) {
+                Log.e(TAG, "Ad Inspector failed to open: ${error.message}")
+            } else {
+                Log.d(TAG, "Ad Inspector closed.")
+            }
+        }
+    }
+
     @Composable
     fun NativeAdPlaceholder(modifier: Modifier = Modifier) {
-        Box(
-            modifier = modifier
-                .fillMaxWidth()
-                .height(100.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("Native Ad")
-        }
+        NativeAdShimmer(modifier)
     }
 
     @Composable

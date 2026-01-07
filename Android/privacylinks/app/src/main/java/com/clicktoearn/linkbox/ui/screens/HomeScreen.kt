@@ -106,7 +106,7 @@ fun HomeScreen(viewModel: LinkBoxViewModel, navController: NavController) {
     // Load content only once (on first launch or if not yet loaded)
     LaunchedEffect(Unit) {
         if (!viewModel.isHomeContentLoaded()) {
-            delay(600) // Short delay for shimmer effect
+            // delay(600) - Removed artificial delay
             viewModel.loadHomeContent(getSampleHomeSections())
         }
     }
@@ -230,6 +230,7 @@ fun HomeSectionContent(
                     content = item,
                     onClick = {
                         // Smart navigation: Privacy links go to SharedContent, regular URLs to WebView
+                        com.clicktoearn.linkbox.analytics.AnalyticsManager.logContentCardClick(item.title, item.url)
                         if (item.isPrivacyLink()) {
                             val token = item.extractToken()
                             if (token != null) {
@@ -414,7 +415,10 @@ fun HomeShimmerCard(brush: Brush) {
             .width(320.dp)
             .height(200.dp),
         shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
     ) {
         Box(
             modifier = Modifier
@@ -433,7 +437,8 @@ fun HomeShimmerCard(brush: Brush) {
                         .width(80.dp)
                         .height(28.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
                 )
                 
                 Column {
@@ -443,7 +448,8 @@ fun HomeShimmerCard(brush: Brush) {
                             .fillMaxWidth(0.8f)
                             .height(28.dp)
                             .clip(RoundedCornerShape(4.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     // Description shimmer
@@ -452,7 +458,8 @@ fun HomeShimmerCard(brush: Brush) {
                             .fillMaxWidth(0.6f)
                             .height(18.dp)
                             .clip(RoundedCornerShape(4.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
                     )
                 }
             }
@@ -462,10 +469,14 @@ fun HomeShimmerCard(brush: Brush) {
 
 @Composable
 fun rememberHomeShimmerBrush(): Brush {
+    // Use highly visible colors - surfaceVariant for base, onSurface for highlight
+    val baseColor = MaterialTheme.colorScheme.surfaceVariant
+    val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+    
     val shimmerColors = listOf(
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+        baseColor,
+        highlightColor,
+        baseColor
     )
 
     val transition = rememberInfiniteTransition(label = "home_shimmer")

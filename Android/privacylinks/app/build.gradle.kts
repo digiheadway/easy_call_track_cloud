@@ -15,8 +15,8 @@ android {
         applicationId = "com.clicktoearn.linkbox"
         minSdk = 21
         targetSdk = 35
-        versionCode = 20
-        versionName = "Ads Fixed"
+        versionCode = 23
+        versionName = "Tracking Improved"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -99,6 +99,7 @@ dependencies {
     implementation(libs.googleid)
     
     implementation(libs.play.services.ads)
+    implementation("com.google.android.ump:user-messaging-platform:2.2.0")
     implementation(libs.facebook.audience.network)
     implementation(libs.facebook.mediation.adapter)
     
@@ -119,4 +120,7 @@ dependencies {
     implementation(libs.lottie.compose)
     implementation(libs.androidx.constraintlayout)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
+
+    // Microsoft Clarity
+    implementation("com.microsoft.clarity:clarity-compose:3.+")
 }

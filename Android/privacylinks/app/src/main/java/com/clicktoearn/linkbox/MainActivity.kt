@@ -2,6 +2,14 @@ package com.clicktoearn.linkbox
 
 import com.clicktoearn.linkbox.utils.findActivity
 import androidx.compose.ui.platform.LocalContext
+import com.google.android.ump.ConsentDebugSettings
+import com.google.android.ump.ConsentInformation
+import com.google.android.ump.ConsentRequestParameters
+import com.google.android.ump.UserMessagingPlatform
+
+import com.microsoft.clarity.Clarity
+import com.microsoft.clarity.ClarityConfig
+import com.microsoft.clarity.models.LogLevel
 
 import android.content.Intent
 import android.os.Bundle
@@ -10,9 +18,14 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,6 +44,7 @@ import com.clicktoearn.linkbox.ui.screens.*
 import com.clicktoearn.linkbox.ui.theme.LinkBoxTheme
 import com.clicktoearn.linkbox.viewmodel.LinkBoxViewModel
 import com.clicktoearn.linkbox.viewmodel.LinkBoxViewModelFactory
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.clicktoearn.linkbox.ads.AdsManager
 
 class MainActivity : ComponentActivity() {
@@ -38,19 +52,79 @@ class MainActivity : ComponentActivity() {
         val app = application as LinkBoxApp
         LinkBoxViewModelFactory(app.repository, app.localRepository, app)
     }
+    
+    private var isReady = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Standard Splash Screen API initialization
+        val splashScreen = installSplashScreen()
+        
+        // Keep splash screen on until the first frame is ready
+        // This prevents the "blank blue screen" during Compose initialization
+        splashScreen.setKeepOnScreenCondition { !isReady }
+        
         super.onCreate(savedInstanceState)
         
         // Handle deep link from intent - highest priority
         handleDeepLink(intent)
         
-        // Defer ad loading to reduce startup time
+        // Initialize Analytics immediately (lightweight)
+        com.clicktoearn.linkbox.analytics.AnalyticsManager.init(this)
+        com.clicktoearn.linkbox.analytics.AnalyticsManager.logAppOpen()
+        
+        // Initialize Clarity in background
+        val clarityConfig = ClarityConfig(
+           projectId = "uxpn8i1g92",
+           logLevel = LogLevel.None
+        )
+        Clarity.initialize(applicationContext, clarityConfig)
+        
+        // Initialize Billing (non-blocking)
+        viewModel.initializeBilling(this)
+        
+        // Initialize AdsManager core (non-blocking, moves MobileAds.init to background)
+        AdsManager.init(this)
+        
+        // Set up Compose UI IMMEDIATELY - this is critical for instant rendering
+        setupComposeContent(savedInstanceState)
+        
+        // Handle Ad Consent (UMP) and ad loading asynchronously - doesn't block UI
+        initializeAdConsent(savedInstanceState)
+    }
+    
+    private fun initializeAdConsent(savedInstanceState: Bundle?) {
+        val params = ConsentRequestParameters.Builder()
+            .setTagForUnderAgeOfConsent(false)
+            .build()
+
+        val consentInformation = UserMessagingPlatform.getConsentInformation(this)
+        
+        consentInformation.requestConsentInfoUpdate(
+            this,
+            params,
+            {
+                UserMessagingPlatform.loadAndShowConsentFormIfRequired(
+                    this@MainActivity
+                ) { loadAndShowError ->
+                    if (loadAndShowError != null) {
+                        android.util.Log.w("MainActivity", "${loadAndShowError.errorCode}: ${loadAndShowError.message}")
+                    }
+                    if (consentInformation.canRequestAds()) {
+                        loadAds(savedInstanceState)
+                    }
+                }
+            },
+            { requestConsentError ->
+                android.util.Log.w("MainActivity", "${requestConsentError.errorCode}: ${requestConsentError.message}")
+                loadAds(savedInstanceState)
+            }
+        )
+    }
+
+    private fun loadAds(savedInstanceState: Bundle?) {
         window.decorView.post {
-            // Check cached premium status immediately to avoid unnecessary network calls and ads for premium users
             val app = application as LinkBoxApp
             if (app.isPremiumCached()) {
-                // Premium user: Skip all ad loading
                 return@post
             }
 
@@ -62,43 +136,62 @@ class MainActivity : ComponentActivity() {
             AdsManager.loadRewardedAd(this)
             AdsManager.loadRewardedInterstitialAd(this)
             
-            // Preload Native Ads for DeepLinkScreen
+            // Preload Native Ads
             AdsManager.loadNativeAd(this)
             AdsManager.loadStandardNativeAd(this)
             
             // Show app open ad after a short delay, but ONLY if not a deep link launch
-            // This prevents the ad from jumping in while the user is trying to see the link content
-            if (pendingDeepLinkToken == null) {
+            if (pendingDeepLinkToken == null && savedInstanceState == null) {
                 window.decorView.postDelayed({
                     AdsManager.loadAndShowAppOpenAd(this)
                 }, 500)
             }
         }
-        
-        // Initialize Billing
-        viewModel.initializeBilling(this)
-
+    }
+    
+    private fun setupComposeContent(savedInstanceState: Bundle?) {
         setContent {
+            // Mark as ready once Compose starts
+            SideEffect { isReady = true }
+            
             val isDarkMode by viewModel.isDarkMode.collectAsState()
             LinkBoxTheme(darkTheme = isDarkMode) {
-                // Screenshot Protection Observer
-                val isScreenshotBlocked by viewModel.isScreenshotBlocked.collectAsState()
-                val context = LocalContext.current
-                LaunchedEffect(isScreenshotBlocked) {
-                    val activity = context.findActivity()
-                    if (activity != null) {
-                        if (isScreenshotBlocked) {
-                            activity.window.setFlags(
-                                android.view.WindowManager.LayoutParams.FLAG_SECURE,
-                                android.view.WindowManager.LayoutParams.FLAG_SECURE
-                            )
-                        } else {
-                            activity.window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+                // Background Box to prevent window background leak
+                Box(modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)) {
+                    
+                    // Screenshot Protection Observer
+                    val isScreenshotBlocked by viewModel.isScreenshotBlocked.collectAsState()
+                    val context = LocalContext.current
+                    LaunchedEffect(isScreenshotBlocked) {
+                        val activity = context.findActivity()
+                        if (activity != null) {
+                            if (isScreenshotBlocked) {
+                                activity.window.setFlags(
+                                    android.view.WindowManager.LayoutParams.FLAG_SECURE,
+                                    android.view.WindowManager.LayoutParams.FLAG_SECURE
+                                )
+                            } else {
+                                activity.window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+                            }
+                        }
+                    }
+                
+                    val navController = rememberNavController()
+
+                
+                // Analytics: Track Screen Views
+                LaunchedEffect(navController) {
+                    navController.currentBackStackEntryFlow.collect { entry ->
+                        val route = entry.destination.route
+                        // Filter out internal routes or make them readable if needed
+                        if (route != null) {
+                            com.clicktoearn.linkbox.analytics.AnalyticsManager.logScreenView(route)
                         }
                     }
                 }
-                
-                val navController = rememberNavController()
+
                 var showExitSheet by remember { mutableStateOf(false) }
                 
                 // Handle back press
@@ -138,13 +231,23 @@ class MainActivity : ComponentActivity() {
                     Screen.Home.route
                 }
 
-                // Handle deep links immediately 
+                // Handle deep links for NEW intents (updates)
                 LaunchedEffect(pendingDeepLinkToken, deferredToken) {
                     val pendingDeferred = deferredToken
                     val pendingToken = pendingDeepLinkToken
                     
-                    // Only navigate if the current route is NOT already SharedContent for this token
-                    // This prevents re-triggering if startDestination already set it
+                    // Skip if this is the initial token already handled by startDestination
+                    if (pendingToken != null && pendingToken == initialDeepLinkToken) {
+                        return@LaunchedEffect
+                    }
+                    if (pendingDeferred != null && pendingDeferred == initialDeferredToken) {
+                        return@LaunchedEffect
+                    }
+                    
+                    // For subsequent updates, we need to ensure the graph is ready
+                    // A simple retry mechanism or check usually suffices, but since we filtered out
+                    // the startup case, the graph should be ready by the time a NEW intent arrives.
+                    
                     val currentRoute = navController.currentBackStackEntry?.destination?.route
                     
                     if (pendingDeferred != null) {
@@ -411,18 +514,26 @@ class MainActivity : ComponentActivity() {
                 )
             }
             
-            if (showExitSheet) {
-                ExitConfirmationSheet(
-                    onDismiss = { showExitSheet = false },
-                    onConfirmExit = { finish() }
-                )
+                val isAdLoading by AdsManager.isAdLoading.collectAsState()
+                if (isAdLoading) {
+                    com.clicktoearn.linkbox.ui.components.AdLoadingDialog(isVisible = true)
+                }
+                
+                if (showExitSheet) {
+                    ExitConfirmationSheet(
+                        onDismiss = { showExitSheet = false },
+                        onConfirmExit = { finish() }
+                    )
+                }
+                }
             }
         }
-    }
     }
 }
     
     private var pendingDeepLinkToken by mutableStateOf<String?>(null)
+
+
     
     /**
      * Handle deep link from intent

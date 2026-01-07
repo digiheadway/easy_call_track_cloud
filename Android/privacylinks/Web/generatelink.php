@@ -109,6 +109,12 @@ ini_set('display_errors', 1);
             <div class="output-actions">
                 <button class="btn btn-outline btn-sm" onclick="openPreview()">👁 Preview</button>
             </div>
+            
+            <div id="qrContainer" style="margin-top:1rem; text-align:center; display:none;">
+                <img id="qrImage" src="" alt="QR Code" style="width:150px; height:150px; border-radius:8px; border:4px solid #fff;">
+                <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.5rem">Scan to test</div>
+            </div>
+
             <div style="margin-top:1rem; font-size:0.65rem; color:var(--text-muted)">All variants:</div>
             <div id="allLinks" style="margin-top:0.5rem"></div>
         </div>
@@ -134,6 +140,7 @@ ini_set('display_errors', 1);
                 </div>
                 <div class="form-group"><label>File Size</label><input type="text" id="size" placeholder="e.g. 1.2 GB" oninput="onInput()"></div>
                 <div class="form-group"><label>Shared by</label><input type="text" id="by" placeholder="Your Name" oninput="onInput()"></div>
+                <div class="form-group"><label>Unique/Ref ID</label><input type="text" id="uniqueid" placeholder="(Optional) e.g. campaign_01" oninput="onInput()"></div>
                 <div class="form-group"><label>Preview Image</label><input type="url" id="preview" placeholder="https://..." oninput="onInput()"></div>
             </div>
         </div>
@@ -240,7 +247,7 @@ function useSample() {
 function saveForm() {
     const s = {
         token: document.getElementById('token').value, name: document.getElementById('name').value, size: document.getElementById('size').value,
-        by: document.getElementById('by').value,
+        by: document.getElementById('by').value, uniqueid: document.getElementById('uniqueid').value,
         type: document.getElementById('type').value, preview: document.getElementById('preview').value, downloads: document.getElementById('downloads').value,
         rating: document.getElementById('rating').value, views: document.getElementById('views').value, time: document.getElementById('time').value,
         badge: document.getElementById('badge').value, landing: selectedLanding
@@ -280,11 +287,14 @@ function buildUrl(l) {
     params.push(`type=${p.type}`);
     if (p.preview) params.push(`preview=${encodeURIComponent(p.preview)}`);
     if (p.downloads && p.downloads !== '1M+') params.push(`downloads=${encodeURIComponent(p.downloads)}`);
-    if (p.rating && p.rating !== '4.5★') params.push(`rating=${encodeURIComponent(p.rating)}`);
-    if (p.views) params.push(`views=${p.views}`);
-    if (p.time) params.push(`time=${p.time}`);
     if (p.badge) params.push(`badge=${encodeURIComponent(p.badge)}`);
     params.push(`landing=${l}`);
+    
+    // Use user-provided uniqueId or generate one
+    const pUniqueId = document.getElementById('uniqueid').value.trim();
+    const uniqueId = pUniqueId ? pUniqueId : ('content_' + p.token + '_' + Date.now().toString(36));
+    params.push(`uniqueid=${encodeURIComponent(uniqueId)}`);
+    
     return url + params.join('&');
 }
 
@@ -294,6 +304,12 @@ function generateLinks() {
     card.style.display = 'block';
     card.classList.add('open');
     document.getElementById('mainLink').textContent = buildUrl(selectedLanding);
+    
+    // Generate QR Code
+    const mainUrl = buildUrl(selectedLanding);
+    document.getElementById('qrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=${encodeURIComponent(mainUrl)}`;
+    document.getElementById('qrContainer').style.display = 'block';
+
     let html = '';
     for (let i = 1; i <= 6; i++) {
         const u = buildUrl(i);

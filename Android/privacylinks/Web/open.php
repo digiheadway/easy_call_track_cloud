@@ -1,10 +1,36 @@
 <?php
 $token = isset($_GET['token']) ? htmlspecialchars($_GET['token']) : '';
+$uniqueId = isset($_GET['uniqueid']) ? htmlspecialchars($_GET['uniqueid']) : '';
+$landing = isset($_GET['landing']) ? htmlspecialchars($_GET['landing']) : '';
+
+// Tracking Logic
+require_once __DIR__ . '/track.php';
+if ($uniqueId) {
+    trackClick($uniqueId, $landing);
+}
+
 $package = "com.clicktoearn.linkbox";
-// Add token to referrer parameter for deferred deep linking
-$referrerParam = $token ? "&referrer=" . urlencode("token=" . $token) : "";
+
+// Build Referrer Query
+$referrerParts = [];
+if ($token) $referrerParts[] = "token=" . $token;
+if ($uniqueId) $referrerParts[] = "uniqueid=" . $uniqueId;
+if ($landing) $referrerParts[] = "landing=" . $landing;
+
+$referrerQuery = implode("&", $referrerParts);
+$referrerParam = !empty($referrerQuery) ? "&referrer=" . urlencode($referrerQuery) : "";
+
 $playStoreLink = "https://play.google.com/store/apps/details?id=" . $package . $referrerParam;
-$intentUrl = "intent://open?token=" . $token . "#Intent;scheme=linkbox;package=" . $package . ";S.browser_fallback_url=" . urlencode($playStoreLink) . ";end";
+
+// Construct Intent URL
+// Note: We only strictly need token in the main intent URI host/path if the app uses that for matching. 
+// But checking existing logic: "intent://open?token="...
+// We can append other params to the query string part of the intent URI: intent://open?token=...&uniqueid=...
+$intentQueryParams = "token=" . urlencode($token);
+if ($uniqueId) $intentQueryParams .= "&uniqueid=" . urlencode($uniqueId);
+// (Landing usually not needed for direct app open, but can add if app supports it)
+
+$intentUrl = "intent://open?" . $intentQueryParams . "#Intent;scheme=linkbox;package=" . $package . ";S.browser_fallback_url=" . urlencode($playStoreLink) . ";end";
 ?>
 <!DOCTYPE html>
 <html lang="en">

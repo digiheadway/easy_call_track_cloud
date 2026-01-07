@@ -28,6 +28,7 @@ import com.clicktoearn.linkbox.ui.components.LinkBoxBottomSheet
 import com.clicktoearn.linkbox.ui.components.LoginRequiredSheet
 import com.clicktoearn.linkbox.ui.components.PremiumSubscriptionSheet
 import com.clicktoearn.linkbox.data.local.UserEntity
+import com.clicktoearn.linkbox.utils.LogCatUtils
 
 import androidx.navigation.NavController
 import java.net.URLEncoder
@@ -257,6 +258,9 @@ fun ProfileScreen(viewModel: LinkBoxViewModel, navController: NavController) {
                 ProfileMenuItem(icon = Icons.Filled.Info, label = "About") {
                     showAbout = true
                 }
+                ProfileMenuItem(icon = Icons.Filled.BugReport, label = "Report Bug") {
+                    LogCatUtils.shareLogFile(context)
+                }
                 ProfileMenuItem(icon = Icons.Filled.Security, label = "Privacy Policy") {
                     val url = URLEncoder.encode("https://privacy.be6.in/privacy-policy.html", StandardCharsets.UTF_8.toString())
                     navController.navigate("webview/$url/Privacy%20Policy/true/true")
@@ -467,6 +471,9 @@ fun ProfileScreen(viewModel: LinkBoxViewModel, navController: NavController) {
                 }
                 ProfileMenuItem(icon = Icons.Filled.Info, label = "About") {
                     showAbout = true
+                }
+                ProfileMenuItem(icon = Icons.Filled.BugReport, label = "Report Bug") {
+                    LogCatUtils.shareLogFile(context)
                 }
                 ProfileMenuItem(icon = Icons.Filled.Security, label = "Privacy Policy") {
                     val url = URLEncoder.encode("https://privacy.be6.in/privacy-policy.html", StandardCharsets.UTF_8.toString())
@@ -756,7 +763,21 @@ fun AboutSheet(onDismiss: () -> Unit) {
             style = MaterialTheme.typography.bodyLarge
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Text("Version: ${com.clicktoearn.linkbox.BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodySmall)
+        
+        val context = LocalContext.current
+        var versionClicks by remember { mutableIntStateOf(0) }
+        
+        Text(
+            text = "Version: ${com.clicktoearn.linkbox.BuildConfig.VERSION_NAME}", 
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.clickable {
+                versionClicks++
+                if (versionClicks == 5) {
+                    com.clicktoearn.linkbox.ads.AdsManager.openAdInspector(context)
+                    versionClicks = 0
+                }
+            }
+        )
         Text("Developed by ClickToEarn Team", style = MaterialTheme.typography.bodySmall)
     }
 }

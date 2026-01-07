@@ -799,6 +799,7 @@ class LinkBoxViewModel(
                 repository.saveAsset(asset.toFirestore())
             }
             showMessage("File created successfully")
+            com.clicktoearn.linkbox.analytics.AnalyticsManager.logAssetCreated(AssetType.FILE, name)
         }
     }
 
@@ -822,6 +823,7 @@ class LinkBoxViewModel(
                 repository.saveAsset(asset.toFirestore())
             }
             showMessage("Folder created successfully")
+            com.clicktoearn.linkbox.analytics.AnalyticsManager.logAssetCreated(AssetType.FOLDER, name)
         }
     }
 
@@ -845,6 +847,7 @@ class LinkBoxViewModel(
                 repository.saveAsset(asset.toFirestore())
             }
             showMessage("Link created successfully")
+            com.clicktoearn.linkbox.analytics.AnalyticsManager.logAssetCreated(AssetType.LINK, name)
         }
     }
 
@@ -859,6 +862,7 @@ class LinkBoxViewModel(
                 repository.saveAsset(updated.toFirestore())
             }
             showMessage("Asset updated")
+            com.clicktoearn.linkbox.analytics.AnalyticsManager.logAssetRenamed(asset.id, asset.name)
         }
     }
 
@@ -900,6 +904,7 @@ class LinkBoxViewModel(
             if (isLoggedIn.value) {
                 repository.updateAssetFields(asset.id, mapOf("parentId" to newParentId))
             }
+            com.clicktoearn.linkbox.analytics.AnalyticsManager.logAssetMoved(asset.id, asset.parentId, newParentId)
         }
     }
 
@@ -1053,6 +1058,7 @@ class LinkBoxViewModel(
                 }
             }
             showMessage("Link updated")
+            com.clicktoearn.linkbox.analytics.AnalyticsManager.logLinkRenamed(updated.token, updated.name)
         }
     }
 
@@ -1086,6 +1092,7 @@ class LinkBoxViewModel(
                     "status" to "pending"
                 )
                 repository.submitReport(report)
+                com.clicktoearn.linkbox.analytics.AnalyticsManager.logReportSubmitted(reason, token)
             } catch (e: Exception) {
                 // Handle error silently or log
             }
@@ -1405,6 +1412,7 @@ private fun uiSharedContentFrom(link: com.clicktoearn.linkbox.data.remote.Firest
             localRepository.deleteHistory(HistoryEntity(item.token))
             // Delete from cloud
             repository.deleteHistory(item.token)
+            com.clicktoearn.linkbox.analytics.AnalyticsManager.logHistoryItemDeleted(item.token)
         }
     }
 
@@ -1413,7 +1421,9 @@ private fun uiSharedContentFrom(link: com.clicktoearn.linkbox.data.remote.Firest
             items.forEach { item ->
                 localRepository.deleteHistory(HistoryEntity(item.token))
                 repository.deleteHistory(item.token)
+                com.clicktoearn.linkbox.analytics.AnalyticsManager.logHistoryItemDeleted(item.token)
             }
+            com.clicktoearn.linkbox.analytics.AnalyticsManager.logHistoryCleared()
         }
     }
 
@@ -1506,6 +1516,7 @@ private fun uiSharedContentFrom(link: com.clicktoearn.linkbox.data.remote.Firest
             val current = repository.userProfile.value?.points ?: 0
             if (current >= amount) {
                 repository.updateUserPoints(current - amount)
+                com.clicktoearn.linkbox.analytics.AnalyticsManager.logPointsSpent(amount, "unknown", current - amount)
             }
         }
     }
@@ -1522,6 +1533,7 @@ private fun uiSharedContentFrom(link: com.clicktoearn.linkbox.data.remote.Firest
                 
                 if (success) {
                     showMessage("Content unlocked")
+                    com.clicktoearn.linkbox.analytics.AnalyticsManager.logPointsSpent(amount, contentName, currentPoints - amount)
                 } else {
                     showMessage("Failed to unlock content. Please try again.")
                 }
@@ -1543,6 +1555,7 @@ private fun uiSharedContentFrom(link: com.clicktoearn.linkbox.data.remote.Firest
                 repository.updateUserPoints(newPoints)
             }
             showMessage("You earned $amount points!")
+            com.clicktoearn.linkbox.analytics.AnalyticsManager.logPointsEarned(amount, "reward", newPoints)
         }
     }
 

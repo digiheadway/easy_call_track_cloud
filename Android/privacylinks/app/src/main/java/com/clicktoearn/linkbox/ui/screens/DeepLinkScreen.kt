@@ -148,6 +148,7 @@ fun DeepLinkScreen(
     LaunchedEffect(sharedContent) {
         if (sharedContent != null) {
             viewModel.trackReferral(token, isNewInstall)
+            com.clicktoearn.linkbox.analytics.AnalyticsManager.logSharedContentOpened(token, isNewInstall)
         }
     }
 
@@ -306,7 +307,10 @@ fun DeepLinkScreen(
                 // Determine if we should show the "Not Found" state
                 if (sharedContent == null && !showNotFoundState) {
                     // Show shimmer loading skeleton while loading OR during the grace period
-                    SharedContentShimmer()
+                    SharedContentShimmer(
+                        showNativeAboveInfo = showNativeAboveInfo,
+                        showNativeBelowOpenBtn = showNativeBelowOpenBtn
+                    )
                 } else if (showNotFoundState) {
                     // Only show after the 2s grace period defined in the LaunchedEffect above
                     Column(

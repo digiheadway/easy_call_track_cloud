@@ -24,10 +24,14 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun shimmerBrush(showShimmer: Boolean = true): Brush {
     return if (showShimmer) {
+        // Use highly visible colors - surfaceVariant for base, onSurface for highlight
+        val baseColor = MaterialTheme.colorScheme.surfaceVariant
+        val highlightColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+        
         val shimmerColors = listOf(
-            Color.LightGray.copy(alpha = 0.6f),
-            Color.LightGray.copy(alpha = 0.2f),
-            Color.LightGray.copy(alpha = 0.6f)
+            baseColor,
+            highlightColor,
+            baseColor
         )
 
         val transition = rememberInfiniteTransition(label = "shimmer")
@@ -60,7 +64,10 @@ fun shimmerBrush(showShimmer: Boolean = true): Brush {
  * Displays loading UI that matches the actual content structure
  */
 @Composable
-fun SharedContentShimmer() {
+fun SharedContentShimmer(
+    showNativeAboveInfo: Boolean = true,
+    showNativeBelowOpenBtn: Boolean = true
+) {
     val brush = shimmerBrush()
     
     Column(
@@ -71,13 +78,15 @@ fun SharedContentShimmer() {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Ad placeholder shimmer
-        Spacer(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(brush)
-        )
+        if (showNativeAboveInfo) {
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(80.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(brush)
+            )
+        }
         
         // File/Info Section shimmer
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -159,14 +168,16 @@ fun SharedContentShimmer() {
         }
         
         // Rectangle ad placeholder shimmer
-        Spacer(modifier = Modifier.height(16.dp))
-        Spacer(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(brush)
-        )
+        if (showNativeBelowOpenBtn) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(brush)
+            )
+        }
         
         Spacer(modifier = Modifier.height(32.dp))
         

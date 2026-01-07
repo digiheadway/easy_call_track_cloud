@@ -7,6 +7,7 @@
 // Enable error reporting
 error_reporting(E_ALL);
 ini_set('display_errors', 1); 
+/*
  * Usage: https://privacy.be6.in/{token}?name=FileName&type=folder&landing=2&preview=https://...
  * 
  * Parameters (all optional):
@@ -16,6 +17,9 @@ ini_set('display_errors', 1);
  * - landing: Landing page design variant 1, 2, 3 (default: 1)
  * - preview: URL to preview image (optional, shows icon if not provided)
  */
+
+// Include click tracking logic
+require_once __DIR__ . '/track.php';
 
 // Configuration
 $defaultLanding = 1;
@@ -42,6 +46,16 @@ $landing = isset($_GET['landing']) ? intval($_GET['landing']) : $defaultLanding;
 $token = isset($_GET['token']) && !empty($_GET['token']) 
     ? htmlspecialchars($_GET['token'], ENT_QUOTES, 'UTF-8') 
     : 'shared';
+    
+// Get uniqueId for tracking (from URL)
+$uniqueId = isset($_GET['uniqueid']) && !empty($_GET['uniqueid']) 
+    ? htmlspecialchars($_GET['uniqueid'], ENT_QUOTES, 'UTF-8') 
+    : null;
+
+// Track the page view
+if ($uniqueId) {
+    trackView($uniqueId, $landing);
+}
 
 // Preview image URL (optional)
 $previewUrl = isset($_GET['preview']) && !empty($_GET['preview']) 
@@ -101,13 +115,34 @@ $isIOS = stripos($userAgent, 'iPhone') !== false || stripos($userAgent, 'iPad') 
 // App package name
 $packageName = 'com.clicktoearn.linkbox';
 
+// Build Referrer String with all params
+$referrerParams = "token=" . urlencode($token);
+if ($uniqueId) {
+    $referrerParams .= "&uniqueid=" . urlencode($uniqueId);
+}
+if ($landing) {
+    $referrerParams .= "&landing=" . $landing;
+}
+
 // Build URLs
 $currentUrl = "https://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-$appDeepLink = "https://privacy.be6.in/open?token=" . urlencode($token);
-$playStoreUrl = "https://play.google.com/store/apps/details?id={$packageName}&referrer=" . urlencode("token={$token}");
+
+// Build parameters for the deep link (same as referrer params but as direct GET params)
+// We reuse the logic but format it for the generic open endpoint
+$deepLinkParams = "token=" . urlencode($token);
+if ($uniqueId) {
+    $deepLinkParams .= "&uniqueid=" . urlencode($uniqueId);
+}
+if ($landing) {
+    $deepLinkParams .= "&landing=" . $landing;
+}
+
+$appDeepLink = "https://privacy.be6.in/open?" . $deepLinkParams;
+$playStoreUrl = "https://play.google.com/store/apps/details?id={$packageName}&referrer=" . urlencode($referrerParams);
 $appStoreUrl = "https://apps.apple.com/app/private-files/id123456789";
 
 // Intent URL for Android (Forcing custom scheme linkbox://open)
+// Note: We encode the playStoreUrl again because it is a parameter within the intent URL
 $intentUrl = "intent://open?token=" . urlencode($token) . "#Intent;"
     . "scheme=linkbox;"
     . "package={$packageName};"

@@ -137,11 +137,24 @@ class LinkBoxApp : Application() {
         if (!isFirstAppLaunch()) return
 
         val referrerManager = InstallReferrerManager(this)
-        referrerManager.fetchInstallReferrer { token ->
+        referrerManager.fetchInstallReferrer { params, _ ->
+            val token = params["token"]
+            
+            // Pass other params to analytics or logic if needed
+            val landingPage = params["landing"] ?: "landingpage0"
+            val uniqueId = params["uniqueid"]
+            
             if (token != null) {
                 android.util.Log.d("LinkBoxApp", "Deferred deep link detected with token: $token")
+                android.util.Log.d("LinkBoxApp", "Landing Page: $landingPage, Unique ID: $uniqueId")
+                
                 // Store the token for MainActivity to process
                 setPendingDeferredToken(token, true)
+                
+                // You could also store uniqueId if needed for tracking
+                if (uniqueId != null) {
+                    prefs.edit().putString("install_unique_id", uniqueId).apply()
+                }
             }
             // Always mark app as launched so we don't check again
             markAppLaunched()
@@ -215,28 +228,49 @@ class LinkBoxApp : Application() {
             return
         }
         
-        // Launch background coroutine to call the install tracking URL
-        applicationScope.launch {
-            try {
-                val url = URL("https://privacy.be6.in/log_flow.php?action=install")
-                val connection = url.openConnection() as HttpURLConnection
-                connection.requestMethod = "GET"
-                connection.connectTimeout = 10000
-                connection.readTimeout = 10000
-                
-                val responseCode = connection.responseCode
-                
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    // Mark install as tracked so it never triggers again
-                    prefs.edit().putBoolean("install_tracked", true).apply()
-                    android.util.Log.d("LinkBoxApp", "Install tracked successfully")
-                } else {
-                    android.util.Log.e("LinkBoxApp", "Install tracking failed: HTTP $responseCode")
+        // Use InstallReferrerManager to get referrer info
+        val referrerManager = InstallReferrerManager(this)
+        
+        // Fetch referrer first (or get cached) then track install
+        referrerManager.fetchInstallReferrer { _, referrerUrl -> 
+            // Launch background coroutine to call the install tracking URL
+            applicationScope.launch {
+                try {
+                    val baseUrl = "https://privacy.be6.in/log_flow.php?action=install"
+                    val urlBuilder = StringBuilder(baseUrl)
+                    
+                    if (!referrerUrl.isNullOrBlank()) {
+                        try {
+                            val encodedReferrer = java.net.URLEncoder.encode(referrerUrl, "UTF-8")
+                            urlBuilder.append("&referrer=").append(encodedReferrer)
+                        } catch (e: Exception) {
+                            android.util.Log.e("LinkBoxApp", "Error encoding referrer", e)
+                        }
+                    }
+                    
+                    val finalUrl = urlBuilder.toString()
+                    android.util.Log.d("LinkBoxApp", "Tracking install with URL: $finalUrl")
+                    
+                    val url = URL(finalUrl)
+                    val connection = url.openConnection() as HttpURLConnection
+                    connection.requestMethod = "GET"
+                    connection.connectTimeout = 10000
+                    connection.readTimeout = 10000
+                    
+                    val responseCode = connection.responseCode
+                    
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        // Mark install as tracked so it never triggers again
+                        prefs.edit().putBoolean("install_tracked", true).apply()
+                        android.util.Log.d("LinkBoxApp", "Install tracked successfully")
+                    } else {
+                        android.util.Log.e("LinkBoxApp", "Install tracking failed: HTTP $responseCode")
+                    }
+                    
+                    connection.disconnect()
+                } catch (e: Exception) {
+                    android.util.Log.e("LinkBoxApp", "Install tracking error: ${e.message}")
                 }
-                
-                connection.disconnect()
-            } catch (e: Exception) {
-                android.util.Log.e("LinkBoxApp", "Install tracking error: ${e.message}")
             }
         }
     }

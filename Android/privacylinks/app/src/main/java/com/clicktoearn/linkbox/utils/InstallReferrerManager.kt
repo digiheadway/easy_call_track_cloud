@@ -32,11 +32,18 @@ class InstallReferrerManager(private val context: Context) {
      * 
      * @param onComplete Callback with extracted token (null if no token found)
      */
-    fun fetchInstallReferrer(onComplete: (String?) -> Unit) {
+    /**
+     * Fetches install referrer from Play Store
+     * Only fetches once - subsequent calls return cached data
+     * 
+     * @param onComplete Callback with extracted parameters map and full referrer URL
+     */
+    fun fetchInstallReferrer(onComplete: (Map<String, String>, String?) -> Unit) {
         // Check if already fetched
         if (isReferrerFetched()) {
             Log.d(TAG, "Referrer already fetched, returning cached token")
-            onComplete(extractTokenFromReferrer(getSavedReferrerUrl()))
+            val savedReferrerUrl = getSavedReferrerUrl()
+            onComplete(extractParamsFromReferrer(savedReferrerUrl), savedReferrerUrl)
             return
         }
         
@@ -60,18 +67,20 @@ class InstallReferrerManager(private val context: Context) {
                             // Save referrer data
                             saveReferrerData(referrerUrl, clickTimestamp, installTimestamp)
                             
-                            // Extract token from referrer URL
-                            val token = extractTokenFromReferrer(referrerUrl)
+                            // Extract params from referrer URL
+                            val params = extractParamsFromReferrer(referrerUrl)
+                            val token = params["token"]
+                            
                             if (token != null) {
                                 Log.d(TAG, "Extracted token from referrer: $token")
                             } else {
                                 Log.d(TAG, "No token found in referrer URL")
                             }
                             
-                            onComplete(token)
+                            onComplete(params, referrerUrl)
                         } catch (e: Exception) {
                             Log.e(TAG, "Error getting referrer", e)
-                            onComplete(null)
+                            onComplete(emptyMap(), null)
                         } finally {
                             referrerClient.endConnection()
                         }
@@ -79,17 +88,17 @@ class InstallReferrerManager(private val context: Context) {
                     InstallReferrerClient.InstallReferrerResponse.FEATURE_NOT_SUPPORTED -> {
                         Log.w(TAG, "Install Referrer not supported on this device")
                         markReferrerFetched() // Don't retry
-                        onComplete(null)
+                        onComplete(emptyMap(), null)
                         referrerClient.endConnection()
                     }
                     InstallReferrerClient.InstallReferrerResponse.SERVICE_UNAVAILABLE -> {
                         Log.w(TAG, "Install Referrer service unavailable")
-                        onComplete(null)
+                        onComplete(emptyMap(), null)
                         referrerClient.endConnection()
                     }
                     else -> {
                         Log.e(TAG, "Install Referrer failed with code: $responseCode")
-                        onComplete(null)
+                        onComplete(emptyMap(), null)
                         referrerClient.endConnection()
                     }
                 }
@@ -103,33 +112,30 @@ class InstallReferrerManager(private val context: Context) {
     }
     
     /**
-     * Extracts token parameter from referrer URL
+     * Extracts parameters from referrer URL
      * 
-     * Expected format: "token=abc123" or "utm_source=...&token=abc123"
+     * Expected format: "token=abc123&landing=landing1&uniqueid=xyz..."
      * 
      * @param referrerUrl The referrer URL from Play Store
-     * @return Extracted token or null if not found
+     * @return Map of parameters or empty map if none found
      */
-    private fun extractTokenFromReferrer(referrerUrl: String?): String? {
-        if (referrerUrl.isNullOrBlank()) return null
+    fun extractParamsFromReferrer(referrerUrl: String?): Map<String, String> {
+        if (referrerUrl.isNullOrBlank()) return emptyMap()
         
         try {
             // Decode URL in case it's encoded
             val decodedUrl = URLDecoder.decode(referrerUrl, "UTF-8")
             
             // Parse parameters (format: key1=value1&key2=value2)
-            val params = decodedUrl.split("&").associate {
+            return decodedUrl.split("&").associate {
                 val parts = it.split("=", limit = 2)
                 val key = parts.getOrNull(0)?.trim() ?: ""
                 val value = parts.getOrNull(1)?.trim() ?: ""
                 key to value
-            }
-            
-            // Extract token parameter
-            return params["token"]?.takeIf { it.isNotBlank() }
+            }.filterKeys { it.isNotBlank() }
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing referrer URL", e)
-            return null
+            return emptyMap()
         }
     }
     
