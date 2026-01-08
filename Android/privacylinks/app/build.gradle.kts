@@ -15,8 +15,8 @@ android {
         applicationId = "com.clicktoearn.linkbox"
         minSdk = 21
         targetSdk = 35
-        versionCode = 23
-        versionName = "Tracking Improved"
+        versionCode = 24
+        versionName = "Ad Update & Improved Tracking"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
