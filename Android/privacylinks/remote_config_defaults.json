@@ -1,246 +1,291 @@
 {
   "conditions": [],
-  "parameters": {
-    "show_app_open": {
-      "defaultValue": {
-        "value": "true"
+  "parameters": {},
+  "parameterGroups": {
+    "Ads_Toggles": {
+      "description": "Global and granular ad visibility toggles",
+      "parameters": {
+        "show_app_open": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "app_wide_ad_app_open_ad": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "show_interstitial": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "show_banner": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "show_adaptive_banner": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "show_rewarded": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "show_rewarded_interstitial": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "show_native": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "show_native_video": {
+          "defaultValue": {
+            "value": "true"
+          }
+        }
       }
     },
-    "app_wide_ad_app_open_ad": {
-      "defaultValue": {
-        "value": "true"
+    "Ads_Deeplink_Screen": {
+      "description": "Ad placements for shared content/deeplink screens",
+      "parameters": {
+        "shared_content_native_above_info": {
+          "defaultValue": {
+            "value": "false"
+          }
+        },
+        "shared_content_banner_above_open_btn": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "shared_content_native_below_open_btn": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "shared_content_use_rewarded_interstitial": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "shared_content_ad_asset_open": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "shared_content_ad_link_open_rewarded": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "shared_content_ad_open_every_time": {
+          "defaultValue": {
+            "value": "1"
+          }
+        },
+        "shared_content_ad_sub_asset_open": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "shared_content_ad_open_asset_open_again_time": {
+          "defaultValue": {
+            "value": "60"
+          }
+        }
       }
     },
-    "show_interstitial": {
-      "defaultValue": {
-        "value": "true"
+    "Ads_Shared_Folder": {
+      "description": "Ad placements for shared folder list screens",
+      "parameters": {
+        "shared_folder_native_top": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "shared_folder_banner_bottom": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "shared_folder_ad_sub_asset_open": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "shared_folder_ad_link_open_rewarded": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "shared_folder_ad_open_again_time": {
+          "defaultValue": {
+            "value": "60"
+          }
+        }
       }
     },
-    "show_banner": {
-      "defaultValue": {
-        "value": "true"
+    "Ads_History_Screen": {
+      "description": "Ad placements for the History screen",
+      "parameters": {
+        "history_banner_top": {
+          "defaultValue": {
+            "value": "false"
+          }
+        },
+        "history_native_bottom": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "history_ad_open_assets": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "history_ad_link_open_rewarded": {
+          "defaultValue": {
+            "value": "true"
+          }
+        },
+        "history_ad_open_every_time": {
+          "defaultValue": {
+            "value": "1"
+          }
+        },
+        "history_ad_open_again_time": {
+          "defaultValue": {
+            "value": "60"
+          }
+        },
+        "history_ad_open_sub_elements": {
+          "defaultValue": {
+            "value": "true"
+          }
+        }
       }
     },
-    "show_adaptive_banner": {
-      "defaultValue": {
-        "value": "true"
+    "Ads_Exit_Modal": {
+      "description": "Ad placements for exit confirmation modal",
+      "parameters": {
+        "show_exit_interstitial": {
+          "defaultValue": {
+            "value": "false"
+          }
+        },
+        "show_exit_native": {
+          "defaultValue": {
+            "value": "false"
+          }
+        }
       }
     },
-    "show_rewarded": {
-      "defaultValue": {
-        "value": "true"
+    "Ads_Assets_Screen": {
+      "description": "Ad placements for My Assets screen",
+      "parameters": {
+        "assets_banner_top": {
+          "defaultValue": {
+            "value": "false"
+          }
+        },
+        "assets_native_bottom": {
+          "defaultValue": {
+            "value": "true"
+          }
+        }
       }
     },
-    "show_rewarded_interstitial": {
-      "defaultValue": {
-        "value": "true"
+    "Ads_WebView": {
+      "description": "Ad placements for the internal Web Browser",
+      "parameters": {
+        "webview_ad_intervals": {
+          "defaultValue": {
+            "value": "60,180,600,900,1200"
+          }
+        },
+        "webview_ad_repeat_interval": {
+          "defaultValue": {
+            "value": "600"
+          }
+        }
       }
     },
-    "show_native": {
-      "defaultValue": {
-        "value": "true"
+    "Ads_Unit_IDs": {
+      "description": "Google Ad Manager Ad Unit IDs",
+      "parameters": {
+        "id_app_open": {
+          "defaultValue": {
+            "value": "/22649815059/linkbox_app/interstitial"
+          }
+        },
+        "id_interstitial": {
+          "defaultValue": {
+            "value": "/22649815059/linkbox_app/interstitial"
+          }
+        },
+        "id_banner": {
+          "defaultValue": {
+            "value": "/22649815059/linkbox_app/banner"
+          }
+        },
+        "id_adaptive_banner": {
+          "defaultValue": {
+            "value": "/22649815059/linkbox_app/banner"
+          }
+        },
+        "id_rewarded": {
+          "defaultValue": {
+            "value": "/22649815059/linkbox_app/rewarded"
+          }
+        },
+        "id_rewarded_interstitial": {
+          "defaultValue": {
+            "value": "/22649815059/linkbox_app/rewarded_interstitial"
+          }
+        },
+        "id_native": {
+          "defaultValue": {
+            "value": "/22649815059/linkbox_app/native"
+          }
+        },
+        "id_native_video": {
+          "defaultValue": {
+            "value": "/22649815059/linkbox_app/native"
+          }
+        }
       }
     },
-    "show_native_video": {
-      "defaultValue": {
-        "value": "true"
-      }
-    },
-    "shared_content_native_above_info": {
-      "defaultValue": {
-        "value": "false"
-      }
-    },
-    "shared_content_banner_above_open_btn": {
-      "defaultValue": {
-        "value": "true"
-      }
-    },
-    "shared_content_native_below_open_btn": {
-      "defaultValue": {
-        "value": "true"
-      }
-    },
-    "shared_content_use_rewarded_interstitial": {
-      "defaultValue": {
-        "value": "true"
-      }
-    },
-    "shared_content_ad_asset_open": {
-      "defaultValue": {
-        "value": "true"
-      }
-    },
-    "shared_content_ad_link_open_rewarded": {
-      "defaultValue": {
-        "value": "true"
-      }
-    },
-    "shared_content_ad_open_every_time": {
-      "defaultValue": {
-        "value": "1"
-      }
-    },
-    "shared_content_ad_sub_asset_open": {
-      "defaultValue": {
-        "value": "true"
-      }
-    },
-    "shared_content_ad_open_asset_open_again_time": {
-      "defaultValue": {
-        "value": "60"
-      }
-    },
-    "shared_folder_native_top": {
-      "defaultValue": {
-        "value": "true"
-      }
-    },
-    "shared_folder_banner_bottom": {
-      "defaultValue": {
-        "value": "true"
-      }
-    },
-    "shared_folder_ad_sub_asset_open": {
-      "defaultValue": {
-        "value": "true"
-      }
-    },
-    "shared_folder_ad_link_open_rewarded": {
-      "defaultValue": {
-        "value": "true"
-      }
-    },
-    "shared_folder_ad_open_again_time": {
-      "defaultValue": {
-        "value": "60"
-      }
-    },
-    "history_banner_top": {
-      "defaultValue": {
-        "value": "false"
-      }
-    },
-    "history_native_bottom": {
-      "defaultValue": {
-        "value": "true"
-      }
-    },
-    "history_ad_open_assets": {
-      "defaultValue": {
-        "value": "true"
-      }
-    },
-    "history_ad_link_open_rewarded": {
-      "defaultValue": {
-        "value": "true"
-      }
-    },
-    "history_ad_open_every_time": {
-      "defaultValue": {
-        "value": "1"
-      }
-    },
-    "history_ad_open_again_time": {
-      "defaultValue": {
-        "value": "60"
-      }
-    },
-    "history_ad_open_sub_elements": {
-      "defaultValue": {
-        "value": "true"
-      }
-    },
-    "show_exit_interstitial": {
-      "defaultValue": {
-        "value": "false"
-      }
-    },
-    "show_exit_native": {
-      "defaultValue": {
-        "value": "false"
-      }
-    },
-    "assets_banner_top": {
-      "defaultValue": {
-        "value": "false"
-      }
-    },
-    "assets_native_bottom": {
-      "defaultValue": {
-        "value": "true"
-      }
-    },
-    "webview_ad_intervals": {
-      "defaultValue": {
-        "value": "60,180,600,900,1200"
-      }
-    },
-    "webview_ad_repeat_interval": {
-      "defaultValue": {
-        "value": "600"
-      }
-    },
-    "id_app_open": {
-      "defaultValue": {
-        "value": "/22649815059/linkbox_app/interstitial"
-      }
-    },
-    "id_interstitial": {
-      "defaultValue": {
-        "value": "/22649815059/linkbox_app/interstitial"
-      }
-    },
-    "id_banner": {
-      "defaultValue": {
-        "value": "/22649815059/linkbox_app/banner"
-      }
-    },
-    "id_adaptive_banner": {
-      "defaultValue": {
-        "value": "/22649815059/linkbox_app/banner"
-      }
-    },
-    "id_rewarded": {
-      "defaultValue": {
-        "value": "/22649815059/linkbox_app/rewarded"
-      }
-    },
-    "id_rewarded_interstitial": {
-      "defaultValue": {
-        "value": "/22649815059/linkbox_app/rewarded_interstitial"
-      }
-    },
-    "id_native": {
-      "defaultValue": {
-        "value": "/22649815059/linkbox_app/native"
-      }
-    },
-    "id_native_video": {
-      "defaultValue": {
-        "value": "/22649815059/linkbox_app/native"
-      }
-    },
-    "rewarded_limit_1min": {
-      "defaultValue": {
-        "value": "2"
-      }
-    },
-    "rewarded_limit_5min": {
-      "defaultValue": {
-        "value": "5"
-      }
-    },
-    "interstitial_limit_1min": {
-      "defaultValue": {
-        "value": "2"
-      }
-    },
-    "interstitial_limit_5min": {
-      "defaultValue": {
-        "value": "5"
+    "Ads_Frequency_Limits": {
+      "description": "Time-based limits for ad frequency",
+      "parameters": {
+        "rewarded_limit_1min": {
+          "defaultValue": {
+            "value": "2"
+          }
+        },
+        "rewarded_limit_5min": {
+          "defaultValue": {
+            "value": "5"
+          }
+        },
+        "interstitial_limit_1min": {
+          "defaultValue": {
+            "value": "2"
+          }
+        },
+        "interstitial_limit_5min": {
+          "defaultValue": {
+            "value": "5"
+          }
+        }
       }
     }
-  },
-  "parameterGroups": {}
+  }
 }
