@@ -23,10 +23,10 @@ define('API_VERSION', 'v1');
 
 // PhonePe Payment Gateway Configuration
 // Get your API keys from PhonePe Merchant Dashboard
-define('PHONEPE_MERCHANT_ID', 'MERCHANTUAT'); // Add your Merchant ID here
+define('PHONEPE_MERCHANT_ID', 'M22Z4XHRFV3KZ'); // Add your Merchant ID here
 define('PHONEPE_SALT_KEY', '894044d6-795b-4dfd-8023-004d853520bc'); // Add your Salt Key here
 define('PHONEPE_SALT_INDEX', '1'); // Salt Index
-define('PHONEPE_ENV', 'UAT'); // 'UAT' or 'PRODUCTION'
+define('PHONEPE_ENV', 'PRODUCTION'); // 'UAT' or 'PRODUCTION'
 define('PHONEPE_API_BASE', PHONEPE_ENV === 'PRODUCTION' 
     ? 'https://api.phonepe.com/apis/hermes' 
     : 'https://api-preprod.phonepe.com/apis/pg-sandbox');
