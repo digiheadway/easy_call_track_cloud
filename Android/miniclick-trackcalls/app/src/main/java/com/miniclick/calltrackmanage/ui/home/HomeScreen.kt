@@ -7,9 +7,11 @@ import android.content.IntentFilter
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import kotlinx.coroutines.launch
 import androidx.compose.animation.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -49,10 +51,20 @@ fun CallsScreen(
     val context = LocalContext.current
     var showFilterModal by remember { mutableStateOf(false) }
     
-    val lazyListState = rememberLazyListState()
+    val pagerState = rememberPagerState(
+        initialPage = uiState.callTypeFilter.ordinal,
+        pageCount = { CallTabFilter.entries.size }
+    )
+    
+    // Independent scroll states for each tab
+    val scrollStates = remember { 
+        List(CallTabFilter.entries.size) { LazyListState() } 
+    }
+    
     val isFabVisible by remember {
         derivedStateOf {
-            lazyListState.firstVisibleItemIndex == 0 && lazyListState.firstVisibleItemScrollOffset == 0
+            val currentState = scrollStates.getOrNull(pagerState.currentPage)
+            currentState == null || (currentState.firstVisibleItemIndex == 0 && currentState.firstVisibleItemScrollOffset == 0)
         }
     }
 
@@ -159,57 +171,58 @@ fun CallsScreen(
         )
     }
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        floatingActionButton = {
-            AnimatedVisibility(
-                visible = isDialerEnabled && isFabVisible,
-                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Unified Header Unit
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 2.dp,
+                shadowElevation = 2.dp
             ) {
-                FloatingActionButton(
-                    onClick = onOpenDialer,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(Icons.Default.Dialpad, contentDescription = "Dialer")
-                }
-            }
-        }
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // Header Row
-            CallsHeader(
-                onSearchClick = viewModel::toggleSearchVisibility,
-                onFilterClick = { showFilterModal = true },
-                isSearchActive = uiState.isSearchVisible,
-                isFilterActive = showFilterModal,
-                filterCount = uiState.activeFilterCount,
-                dateRange = uiState.dateRange,
-                onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) },
-                totalCallsCount = uiState.tabFilteredLogs[CallTabFilter.ALL]?.size ?: 0
-            )
-            
-            val pagerState = rememberPagerState(pageCount = { CallTabFilter.entries.size })
-            
-            // Sync with ViewModel
-            LaunchedEffect(uiState.callTypeFilter) {
-                if (pagerState.currentPage != uiState.callTypeFilter.ordinal) {
-                    pagerState.animateScrollToPage(uiState.callTypeFilter.ordinal)
-                }
-            }
-            
-            LaunchedEffect(pagerState.currentPage) {
-                if (pagerState.currentPage != uiState.callTypeFilter.ordinal) {
-                    viewModel.setCallTypeFilter(CallTabFilter.entries[pagerState.currentPage])
-                }
-            }
+                Column {
+                    // Header Row
+                    CallsHeader(
+                        onSearchClick = viewModel::toggleSearchVisibility,
+                        onFilterClick = { showFilterModal = true },
+                        isSearchActive = uiState.isSearchVisible,
+                        isFilterActive = showFilterModal,
+                        filterCount = uiState.activeFilterCount,
+                        dateRange = uiState.dateRange,
+                        onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) }
+                    )
+                    
+                    val scope = rememberCoroutineScope()
 
-            CallTypeTabs(
-                selectedFilter = uiState.callTypeFilter,
-                onFilterSelected = viewModel::setCallTypeFilter,
-                counts = uiState.callTypeCounts
-            )
+                    Spacer(Modifier.height(4.dp))
+
+                    // 1. Pager -> ViewModel Sync (When user settles on a page)
+                    LaunchedEffect(pagerState.settledPage) {
+                        val newFilter = CallTabFilter.entries[pagerState.settledPage]
+                        if (uiState.callTypeFilter != newFilter) {
+                            viewModel.setCallTypeFilter(newFilter)
+                        }
+                    }
+                    
+                    // 2. ViewModel -> Pager Sync (When external filter changes, e.g. from modal)
+                    LaunchedEffect(uiState.callTypeFilter) {
+                        if (pagerState.targetPage != uiState.callTypeFilter.ordinal && 
+                            !pagerState.isScrollInProgress) {
+                            pagerState.animateScrollToPage(uiState.callTypeFilter.ordinal)
+                        }
+                    }
+                    
+                    // UI Tabs (Driven by Pager for fluidity)
+                    CallTypeTabs(
+                        selectedFilter = CallTabFilter.entries[pagerState.currentPage],
+                        onFilterSelected = { filter ->
+                            scope.launch {
+                                pagerState.animateScrollToPage(filter.ordinal)
+                            }
+                        },
+                        counts = uiState.callTypeCounts
+                    )
+                }
+            }
             
             syncStatusBar()
             
@@ -250,8 +263,10 @@ fun CallsScreen(
                     Box(Modifier.fillMaxSize()) {
                         when {
                             uiState.isLoading -> {
-                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator()
+                                Column(Modifier.fillMaxSize()) {
+                                    repeat(10) {
+                                        CallRowShimmer()
+                                    }
                                 }
                             }
                             uiState.simSelection == "Off" -> {
@@ -301,7 +316,7 @@ fun CallsScreen(
                                                 ) {
                                                     Icon(Icons.Default.CloudDownload, null)
                                                     Spacer(Modifier.width(8.dp))
-                                                    Text("Fetch Call Logs")
+                                                    Text("Refresh Again")
                                                 }
                                             }
                                         )
@@ -327,12 +342,32 @@ fun CallsScreen(
                                     },
                                     canExclude = uiState.allowPersonalExclusion || !uiState.isSyncSetup,
                                     onCustomLookup = { settingsViewModel.showPhoneLookup(it) },
-                                    lazyListState = lazyListState
+                                    lazyListState = scrollStates[page]
                                 )
                             }
                         }
                     }
                 }
+            }
+        }
+
+        // Floating Action Button Overlay
+        AnimatedVisibility(
+            visible = isDialerEnabled && isFabVisible,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+        ) {
+            FloatingActionButton(
+                onClick = onOpenDialer,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = RoundedCornerShape(16.dp),
+                elevation = FloatingActionButtonDefaults.elevation(8.dp)
+            ) {
+                Icon(Icons.Default.Dialpad, contentDescription = "Dialer")
             }
         }
     }
@@ -349,6 +384,8 @@ fun PersonsScreen(
     val settingsState by settingsViewModel.uiState.collectAsState()
     val context = LocalContext.current
     var showFilterModal by remember { mutableStateOf(false) }
+
+    val pagerState = rememberPagerState(pageCount = { PersonTabFilter.entries.size })
 
     val availableLabels = remember(uiState.persons) { 
         uiState.persons.mapNotNull { it.label }
@@ -420,38 +457,55 @@ fun PersonsScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Header
-        PersonsHeader(
-            onSearchClick = viewModel::toggleSearchVisibility,
-            onFilterClick = { showFilterModal = true },
-            isSearchActive = uiState.isSearchVisible,
-            isFilterActive = showFilterModal,
-            filterCount = uiState.activeFilterCount,
-            dateRange = uiState.dateRange,
-            onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) },
-            totalPersonsCount = uiState.tabFilteredPersons[PersonTabFilter.ALL]?.size ?: 0
-        )
-        
-        val pagerState = rememberPagerState(pageCount = { PersonTabFilter.entries.size })
-            
-        // Sync with ViewModel
-        LaunchedEffect(uiState.personTabFilter) {
-            if (pagerState.currentPage != uiState.personTabFilter.ordinal) {
-                pagerState.animateScrollToPage(uiState.personTabFilter.ordinal)
-            }
-        }
-        
-        LaunchedEffect(pagerState.currentPage) {
-            if (pagerState.currentPage != uiState.personTabFilter.ordinal) {
-                viewModel.setPersonTabFilter(PersonTabFilter.entries[pagerState.currentPage])
-            }
-        }
+        // Unified Header Unit
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 2.dp,
+            shadowElevation = 2.dp
+        ) {
+            Column {
+                // Header
+                PersonsHeader(
+                    onSearchClick = viewModel::toggleSearchVisibility,
+                    onFilterClick = { showFilterModal = true },
+                    isSearchActive = uiState.isSearchVisible,
+                    isFilterActive = showFilterModal,
+                    filterCount = uiState.activeFilterCount,
+                    dateRange = uiState.dateRange,
+                    onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) }
+                )
+                
+                val scope = rememberCoroutineScope()
 
-        PersonTypeTabs(
-            selectedFilter = uiState.personTabFilter,
-            onFilterSelected = viewModel::setPersonTabFilter,
-            counts = uiState.personTypeCounts
-        )
+                Spacer(Modifier.height(4.dp))
+
+                // 1. Pager -> ViewModel Sync (When user settles on a page)
+                LaunchedEffect(pagerState.settledPage) {
+                    val newFilter = PersonTabFilter.entries[pagerState.settledPage]
+                    if (uiState.personTabFilter != newFilter) {
+                        viewModel.setPersonTabFilter(newFilter)
+                    }
+                }
+                
+                // 2. ViewModel -> Pager Sync (When external filter changes)
+                LaunchedEffect(uiState.personTabFilter) {
+                    if (pagerState.targetPage != uiState.personTabFilter.ordinal && 
+                        !pagerState.isScrollInProgress) {
+                        pagerState.animateScrollToPage(uiState.personTabFilter.ordinal)
+                    }
+                }
+
+                PersonTypeTabs(
+                    selectedFilter = PersonTabFilter.entries[pagerState.currentPage],
+                    onFilterSelected = { filter ->
+                        scope.launch {
+                            pagerState.animateScrollToPage(filter.ordinal)
+                        }
+                    },
+                    counts = uiState.personTypeCounts
+                )
+            }
+        }
         
         syncStatusBar()
         
@@ -492,8 +546,10 @@ fun PersonsScreen(
 
                 Box(Modifier.fillMaxSize()) {
                     if (uiState.isLoading) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
+                        Column(Modifier.fillMaxSize()) {
+                            repeat(8) {
+                                PersonCardShimmer()
+                            }
                         }
                     } else if (uiState.simSelection == "Off") {
                         // ... sim off ...

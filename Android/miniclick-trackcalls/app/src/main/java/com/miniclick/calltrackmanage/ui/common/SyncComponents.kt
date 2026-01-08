@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,6 +26,9 @@ import com.miniclick.calltrackmanage.ui.settings.SettingsUiState
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
+import com.miniclick.calltrackmanage.service.CallTrackInCallService
+import android.telecom.Call
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -776,14 +780,32 @@ fun GlobalSyncStatusBar(
     onShowQueue: () -> Unit
 ) {
     val activeProcess by com.miniclick.calltrackmanage.data.ProcessMonitor.activeProcess.collectAsState()
+    val callStatus by CallTrackInCallService.callStatus.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
     
+    // Track duration for active calls
+    var activeDuration by remember { mutableStateOf(0L) }
+    LaunchedEffect(callStatus?.state) {
+        if (callStatus?.state == Call.STATE_ACTIVE) {
+            val startTime = System.currentTimeMillis()
+            while (callStatus?.state == Call.STATE_ACTIVE) {
+                activeDuration = (System.currentTimeMillis() - startTime) / 1000
+                delay(1000)
+            }
+        } else {
+            activeDuration = 0
+        }
+    }
+
     val totalPending = pendingNewCalls + pendingMetadata + pendingPersonUpdates
     
     // Only show bar if:
     // 1. There's an active local process (importing, finding recordings)
     // 2. Sync is setup AND there are pending items or network issues
+    // 3. Or if there's an active/ringing call
     val showBar = activeProcess != null || 
-                  (isSyncSetup && (totalPending > 0 || pendingRecordings > 0 || activeUploads > 0 || !isNetworkAvailable))
+                  (isSyncSetup && (totalPending > 0 || pendingRecordings > 0 || activeUploads > 0 || !isNetworkAvailable)) ||
+                  callStatus != null
 
     android.util.Log.d("GlobalSyncStatusBar", "showBar: $showBar, activeProcess: ${activeProcess?.title}, totalPending: $totalPending, pendingRecordings: $pendingRecordings, activeUploads: $activeUploads, isNetworkAvailable: $isNetworkAvailable, isSyncSetup: $isSyncSetup")
 
@@ -801,12 +823,14 @@ fun GlobalSyncStatusBar(
         // - Cloud backup pending = primary container
         // - No network = error container (only if sync setup)
         val backgroundColor = when {
+            callStatus != null -> Color(0xFF30D158) // Green for calls
             isLocalProcess -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f)
             !isNetworkAvailable && isSyncSetup -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.95f)
             else -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f)
         }
         
         val contentColor = when {
+            callStatus != null -> Color.White
             isLocalProcess -> MaterialTheme.colorScheme.onSurfaceVariant
             !isNetworkAvailable && isSyncSetup -> MaterialTheme.colorScheme.onErrorContainer
             else -> MaterialTheme.colorScheme.onPrimaryContainer
@@ -815,7 +839,17 @@ fun GlobalSyncStatusBar(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onShowQueue),
+                .clickable {
+                    if (callStatus != null) {
+                        try {
+                            val intent = android.content.Intent(context, com.miniclick.calltrackmanage.ui.call.InCallActivity::class.java)
+                            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                            context.startActivity(intent)
+                        } catch (e: Exception) {}
+                    } else {
+                        onShowQueue()
+                    }
+                },
             color = backgroundColor,
             shadowElevation = 2.dp
         ) {
@@ -828,6 +862,17 @@ fun GlobalSyncStatusBar(
             ) {
                 // Determine what to show - prioritize local processes, then network, then cloud backup
                 val text = when {
+                    // Ongoing Call - HIGHEST PRIORITY
+                    callStatus != null -> {
+                        val stateStr = when (callStatus!!.state) {
+                            Call.STATE_RINGING -> "Incoming Call..."
+                            Call.STATE_DIALING -> "Dialing..."
+                            Call.STATE_ACTIVE -> "Active Call - ${String.format("%02d:%02d", activeDuration / 60, activeDuration % 60)}"
+                            Call.STATE_DISCONNECTED -> "Call Ended"
+                            else -> "In Call"
+                        }
+                        "${callStatus!!.phoneNumber} • $stateStr"
+                    }
                     // Local processes (no network needed)
                     process != null -> {
                         val progressPct = if (process.isIndeterminate) "" else " ${(process.progress * 100).toInt()}%"
@@ -850,6 +895,7 @@ fun GlobalSyncStatusBar(
                 }
 
                 val icon = when {
+                    callStatus != null -> if (callStatus!!.state == Call.STATE_RINGING) Icons.Default.Call else Icons.AutoMirrored.Filled.CallMade
                     process != null -> Icons.Default.Sync  // Local processing
                     !isNetworkAvailable && isSyncSetup -> Icons.Default.CloudOff
                     activeUploads > 0 -> Icons.Default.CloudUpload

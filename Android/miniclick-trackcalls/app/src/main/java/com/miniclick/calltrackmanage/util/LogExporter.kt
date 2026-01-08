@@ -46,7 +46,7 @@ object LogExporter {
                     fos.write("Total Calls in Database: ${calls.size}\n".toByteArray())
                     
                     calls.takeLast(50).forEach { call ->
-                        fos.write("Call: ${call.compositeId} | Status: ${call.syncStatus} | Date: ${Date(call.callDate)}\n".toByteArray())
+                        fos.write("Call: ${call.compositeId} | Meta: ${call.metadataSyncStatus} | Rec: ${call.recordingSyncStatus} | Date: ${Date(call.callDate)}\n".toByteArray())
                     }
                 } catch (e: Exception) {
                     fos.write("Error summarying database: ${e.message}\n".toByteArray())

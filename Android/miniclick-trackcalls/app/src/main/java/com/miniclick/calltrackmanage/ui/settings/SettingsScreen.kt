@@ -48,46 +48,6 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    val hasStoragePermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-        androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_MEDIA_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
-    } else {
-        androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_EXTERNAL_STORAGE) == android.content.pm.PackageManager.PERMISSION_GRANTED
-    }
-
-    val folderLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree()
-    ) { uri ->
-        uri?.let {
-            try {
-                 context.contentResolver.takePersistableUriPermission(it, 
-                     Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-            } catch (e: Exception) { e.printStackTrace() }
-            viewModel.updateRecordingPath(it.toString())
-        }
-    }
-
-    val exportLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
-        uri?.let { viewModel.exportData(it) }
-    }
-
-    val importLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        uri?.let { viewModel.importData(it) }
-    }
-
-    val storagePermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            viewModel.toggleRecordingDialog(true)
-        } else {
-            android.widget.Toast.makeText(context, "Storage permission required for recordings", android.widget.Toast.LENGTH_SHORT).show()
-        }
-    }
-
     if (onBack != null) {
         androidx.activity.compose.BackHandler {
             onBack()
@@ -96,6 +56,29 @@ fun SettingsScreen(
 
     LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
         viewModel.onResume()
+    }
+
+    // Permission launcher for Notifications (Android 13+)
+    val notificationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (!isGranted) {
+                Toast.makeText(context, "These features require notifications to appear after your calls", Toast.LENGTH_LONG).show()
+            }
+        }
+    )
+
+    fun checkAndRequestNotificationPermission() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            val hasPerm = androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            
+            if (!hasPerm) {
+                notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
     }
 
     // All recording/sync modals are now handled centrally in MainActivity
@@ -177,316 +160,220 @@ fun SettingsScreen(
             // ===============================================
             // 2. TRACKING CONFIGURATION
             // ===============================================
-            val dateString = if (uiState.trackStartDate == 0L) "Default (Yesterday)" else 
-                SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(uiState.trackStartDate))
-
             SettingsSection(title = "Tracking Configuration") {
-                val isDateLocked = !uiState.allowChangingTrackingStartDate && uiState.pairingCode.isNotEmpty()
+                // Tracking Status Summary
+                val trackingStatus = when {
+                    uiState.simSelection == "Off" -> "Disabled"
+                    !uiState.callTrackEnabled -> "Disabled by Organisation"
+                    else -> "Active"
+                }
+                val trackingStatusColor = when {
+                    uiState.simSelection == "Off" || !uiState.callTrackEnabled -> MaterialTheme.colorScheme.onSurfaceVariant
+                    else -> MaterialTheme.colorScheme.primary
+                }
+                
                 ListItem(
-                    headlineContent = { Text("Call Tracking Starting Date") },
-                    supportingContent = { Text(dateString) },
-                    leadingContent = { 
-                        SettingsIcon(Icons.Default.CalendarToday, MaterialTheme.colorScheme.primary) 
-                    },
-                    trailingContent = {
-                        if (isDateLocked) {
-                            Icon(Icons.Default.Lock, contentDescription = "Locked", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-                        } else {
-                            Icon(Icons.Default.ChevronRight, contentDescription = null)
-                        }
-                    },
-                    modifier = Modifier.clickable {
-                        if (isDateLocked) {
-                            Toast.makeText(context, "Locked by your organisation", Toast.LENGTH_SHORT).show()
-                        } else {
-                            showDatePicker(context, uiState.trackStartDate) { newDate ->
-                                viewModel.updateTrackStartDate(newDate)
-                            }
-                        }
-                    }
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                val isSimLocked = !uiState.allowUpdatingTrackingSims && uiState.pairingCode.isNotEmpty()
-                ListItem(
-                    headlineContent = { Text("Track Calls") },
+                    headlineContent = { Text("Tracking Settings") },
                     supportingContent = { 
-                        val currentSim = when(uiState.simSelection) {
-                            "Off" -> "Off"
-                            "Both" -> "Both SIMs"
-                            else -> uiState.simSelection.replace("Sim", "SIM ")
-                        }
-                        val phoneInfo = if (uiState.simSelection != "Off") {
-                            val details = mutableListOf<String>()
-                            if (uiState.simSelection == "Sim1" || uiState.simSelection == "Both") {
-                                details.add("S1: ${uiState.callerPhoneSim1.ifEmpty { "Not set" }}")
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    trackingStatus,
+                                    color = trackingStatusColor
+                                )
+                                if (uiState.callRecordEnabled) {
+                                    Text(" • Recording", color = MaterialTheme.colorScheme.primary)
+                                }
                             }
-                            if (uiState.simSelection == "Sim2" || uiState.simSelection == "Both") {
-                                details.add("S2: ${uiState.callerPhoneSim2.ifEmpty { "Not set" }}")
-                            }
-                            " (" + details.joinToString(" | ") + ")"
-                        } else ""
-                        
-                        if (isSimLocked) {
-                            Text(currentSim + phoneInfo, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        } else {
-                            Text(currentSim + phoneInfo) 
-                        }
-                    },
-                    leadingContent = { 
-                        SettingsIcon(Icons.Default.SimCard, MaterialTheme.colorScheme.tertiary) 
-                    },
-                    trailingContent = {
-                        if (isSimLocked) {
-                            Icon(Icons.Default.Lock, contentDescription = "Locked", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-                        } else {
-                            Icon(Icons.Default.ChevronRight, contentDescription = null)
-                        }
-                    },
-                    modifier = Modifier.clickable { 
-                        if (isSimLocked) {
-                            Toast.makeText(context, "Locked by your organisation", Toast.LENGTH_SHORT).show()
-                        } else {
-                            viewModel.toggleTrackSimModal(true)
-                        }
-                    }
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                val excludedCount = uiState.excludedPersons.size
-                val isExclusionLocked = !uiState.allowPersonalExclusion && uiState.pairingCode.isNotEmpty()
-                ListItem(
-                    headlineContent = { Text("Ignored") },
-                    supportingContent = { 
-                        Text(
-                            if (excludedCount == 0) "No numbers excluded" 
-                            else "$excludedCount number${if (excludedCount > 1) "s" else ""} excluded"
-                        )
-                    },
-                    leadingContent = { 
-                        SettingsIcon(Icons.Default.PersonOff, MaterialTheme.colorScheme.error) 
-                    },
-                    trailingContent = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (isExclusionLocked) {
-                                Icon(Icons.Default.Lock, contentDescription = "Adding locked", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(4.dp))
-                            }
-                            Icon(Icons.Default.ChevronRight, contentDescription = null)
-                        }
-                    },
-                    modifier = Modifier.clickable { viewModel.toggleExcludedModal(true) }
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                // Attach Recordings Toggle
-                ListItem(
-                    headlineContent = { Text("Attach Recordings") },
-                    supportingContent = { 
-                        if (uiState.callRecordEnabled && !hasStoragePermission) {
-                            Text("Permission Required to attach recordings", color = MaterialTheme.colorScheme.error)
-                        } else {
-                            Text("Upload recordings to the cloud")
+                            Text(
+                                "SIM cards, start date, recordings & exclusions",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     },
                     leadingContent = { 
                         SettingsIcon(
-                            Icons.Default.Mic, 
-                            if (uiState.callRecordEnabled && !hasStoragePermission) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+                            if (trackingStatus == "Active") Icons.Default.TrackChanges else Icons.Default.TrackChanges, 
+                            trackingStatusColor
                         ) 
                     },
                     trailingContent = {
-                        Switch(
-                            checked = uiState.callRecordEnabled && hasStoragePermission,
-                            onCheckedChange = { enabled ->
-                                if (enabled) {
-                                    val hasStorage = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                                        androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_MEDIA_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                                    } else {
-                                        androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_EXTERNAL_STORAGE) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                                    }
-                                    
-                                    if (hasStorage) {
-                                        viewModel.toggleRecordingDialog(true)
-                                    } else {
-                                        storagePermissionLauncher.launch(
-                                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) 
-                                                android.Manifest.permission.READ_MEDIA_AUDIO 
-                                            else 
-                                                android.Manifest.permission.READ_EXTERNAL_STORAGE
-                                        )
-                                    }
-                                } else {
-                                    viewModel.toggleRecordingDisableDialog(true)
-                                }
-                            }
-                        )
+                        Icon(Icons.Default.ChevronRight, contentDescription = null)
+                    },
+                    modifier = Modifier.clickable { 
+                        viewModel.toggleTrackingSettings(true)
                     }
                 )
+            }
 
-                // Recording Path with verification
-                var showPathWarningDialog by remember { mutableStateOf(false) }
+
+            // ===============================================
+            // 2.5 DIALER SETTINGS
+            // ===============================================
+            SettingsSection(title = "Dialer Settings") {
+                // Default Dialer Status
+                val isDefault = uiState.isSystemDefaultDialer
+                ListItem(
+                    headlineContent = { Text("Default Dialer Status") },
+                    supportingContent = { Text(if (isDefault) "App is your default dialer" else "Not set as default dialer") },
+                    leadingContent = { 
+                        SettingsIcon(
+                            Icons.Default.AdminPanelSettings, 
+                            if (isDefault) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        ) 
+                    },
+                    trailingContent = {
+                        if (isDefault) {
+                            Text("Active", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                        } else {
+                            Button(
+                                onClick = {
+                                    try {
+                                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                                            val roleManager = context.getSystemService(android.content.Context.ROLE_SERVICE) as android.app.role.RoleManager
+                                            if (roleManager.isRoleAvailable(android.app.role.RoleManager.ROLE_DIALER)) {
+                                                val intent = roleManager.createRequestRoleIntent(android.app.role.RoleManager.ROLE_DIALER)
+                                                context.startActivity(intent)
+                                            }
+                                        } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                                            val intent = Intent(android.telecom.TelecomManager.ACTION_CHANGE_DEFAULT_DIALER).apply {
+                                                putExtra(android.telecom.TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME, context.packageName)
+                                            }
+                                            context.startActivity(intent)
+                                        }
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "Cannot open settings: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                modifier = Modifier.height(32.dp)
+                            ) {
+                                Text("Set Default", style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
+                    }
+                )
                 
-                // Warning Dialog for editing verified path
-                if (showPathWarningDialog) {
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                // Show Dial Button
+                ListItem(
+                     headlineContent = { Text("Show Dial Button") },
+                     supportingContent = { Text("Show call button in call lists") },
+                     leadingContent = { SettingsIcon(Icons.Default.TouchApp, MaterialTheme.colorScheme.secondary) },
+                     trailingContent = { 
+                         Switch(
+                             checked = uiState.showDialButton, 
+                             onCheckedChange = { viewModel.updateShowDialButton(it) }
+                         ) 
+                     }
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                // Call Action Behavior
+                var showCallActionModal by remember { mutableStateOf(false) }
+                ListItem(
+                    headlineContent = { Text("Call Click Action") },
+                    supportingContent = { Text(if (uiState.callActionBehavior == "Direct") "Direct Call" else "Open in Dialpad") },
+                    leadingContent = { SettingsIcon(Icons.Default.Call, MaterialTheme.colorScheme.primary) },
+                    trailingContent = { Icon(Icons.Default.ChevronRight, null) },
+                    modifier = Modifier.clickable { showCallActionModal = true }
+                )
+                
+                if (showCallActionModal) {
                     AlertDialog(
-                        onDismissRequest = { showPathWarningDialog = false },
-                        icon = { Icon(Icons.Default.Warning, null, tint = Color(0xFFEAB308)) },
-                        title = { Text("Change Recording Path?") },
+                        onDismissRequest = { showCallActionModal = false },
+                        title = { Text("When clicking Call") },
                         text = {
                             Column {
-                                Text(
-                                    "Current path is verified with ${uiState.recordingCount} recordings found.",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Spacer(Modifier.height(8.dp))
-                                Text(
-                                    "Changing this may break recording detection. Only change if recordings are not being found correctly.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { 
+                                            viewModel.updateCallActionBehavior("Direct")
+                                            showCallActionModal = false 
+                                        }
+                                        .padding(vertical = 12.dp)
+                                ) {
+                                    RadioButton(
+                                        selected = uiState.callActionBehavior == "Direct",
+                                        onClick = null
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Column {
+                                        Text("Direct Call", style = MaterialTheme.typography.bodyLarge)
+                                        Text("Call immediately", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                                
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { 
+                                            viewModel.updateCallActionBehavior("Open in Dialpad")
+                                            showCallActionModal = false 
+                                        }
+                                        .padding(vertical = 12.dp)
+                                ) {
+                                    RadioButton(
+                                        selected = uiState.callActionBehavior == "Open in Dialpad",
+                                        onClick = null
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Column {
+                                        Text("Open in Dialpad", style = MaterialTheme.typography.bodyLarge)
+                                        Text("Open phone app with number filled", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
                             }
                         },
                         confirmButton = {
-                            Button(
-                                onClick = {
-                                    showPathWarningDialog = false
-                                    folderLauncher.launch(null)
-                                }
-                            ) {
-                                Text("Change Anyway")
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showPathWarningDialog = false }) {
+                            TextButton(onClick = { showCallActionModal = false }) {
                                 Text("Cancel")
                             }
                         }
                     )
                 }
-                
-                AnimatedVisibility(
-                    visible = uiState.callRecordEnabled,
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut()
-                ) {
-                    ListItem(
-                        headlineContent = { 
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Recording Path")
-                                if (uiState.isRecordingPathVerified) {
-                                    Spacer(Modifier.width(8.dp))
-                                    Icon(
-                                        Icons.Default.CheckCircle,
-                                        contentDescription = "Verified",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        },
-                        supportingContent = { 
-                            Column {
-                                val displayPath = if (uiState.recordingPath.isNotEmpty()) {
-                                    try {
-                                        val decoded = Uri.decode(uiState.recordingPath)
-                                        // Show relative path from storage
-                                        if (decoded.contains("/storage/emulated/0/")) {
-                                            decoded.replace("/storage/emulated/0/", "")
-                                        } else {
-                                            decoded.takeLast(40)
-                                        }
-                                    } catch(e: Exception) { uiState.recordingPath.takeLast(40) }
-                                } else {
-                                    "Not detected"
-                                }
-                                
-                                Text(displayPath, maxLines = 1)
-                                
-                                // Status line
-                                val statusText = buildString {
-                                    if (uiState.isRecordingPathCustom) {
-                                        append("Custom")
-                                    } else {
-                                        append("Auto-detected")
-                                    }
-                                    if (uiState.recordingCount > 0) {
-                                        append(" • ${uiState.recordingCount} recordings")
-                                    }
-                                }
-                                
-                                Text(
-                                    statusText,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = if (uiState.isRecordingPathVerified) 
-                                        MaterialTheme.colorScheme.primary 
-                                    else 
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        },
-                        leadingContent = { 
-                            SettingsIcon(Icons.Default.FolderOpen, MaterialTheme.colorScheme.tertiary) 
-                        },
-                        trailingContent = {
-                            Row {
-                                if (uiState.isRecordingPathCustom) {
-                                    // Show reset button if custom path is set
-                                    IconButton(onClick = { viewModel.clearCustomRecordingPath() }) {
-                                        Icon(
-                                            Icons.Default.Refresh,
-                                            contentDescription = "Use Auto-Detected",
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                }
-                                Icon(Icons.Default.ChevronRight, contentDescription = null)
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { 
-                                if (uiState.isRecordingPathVerified && uiState.recordingCount > 0) {
-                                    showPathWarningDialog = true
-                                } else {
-                                    folderLauncher.launch(null)
-                                }
-                            }
-                    )
-                }
             }
 
+            Spacer(Modifier.height(16.dp))
+
             // ===============================================
-            // POST-CALL PROMPTS
+            // 3. FEATURES (Moved Post-Call Prompts here)
             // ===============================================
-            SettingsSection(title = "Post-Call Prompts") {
-                // 1. Google Dialer Recording Reminder (Only if recording is enabled AND it's a Google Dialer phone)
+            SettingsSection(title = "Features") {
+                // Recording Share Reminder (Only if recording is enabled AND it's a Google Dialer phone)
                 if (uiState.callRecordEnabled && uiState.isGoogleDialer) {
                     ListItem(
-                        headlineContent = { Text("Recording Share Reminder") },
+                        headlineContent = { Text("Share Recording Prompt") },
                         supportingContent = { 
-                            Text("Reminder to share recording after calls") 
+                            Text("Show a notification after calls to quickly share the recording") 
                         },
                         leadingContent = { 
-                            SettingsIcon(Icons.Default.NotificationsActive, MaterialTheme.colorScheme.primary) 
+                            SettingsIcon(Icons.Default.Share, MaterialTheme.colorScheme.primary) 
                         },
                         trailingContent = {
                             Switch(
                                 checked = uiState.showRecordingReminder,
-                                onCheckedChange = { viewModel.updateShowRecordingReminder(it) }
+                                onCheckedChange = { 
+                                    if (it) checkAndRequestNotificationPermission()
+                                    viewModel.updateShowRecordingReminder(it) 
+                                }
                             )
                         }
                     )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 }
 
-                // 2. Note for Unknowns
+                // Note for Unknowns
                 ListItem(
-                    headlineContent = { Text("Note for Unknowns") },
+                    headlineContent = { Text("Label Unknown Callers") },
                     supportingContent = { 
-                        Text("Prompt for note/label after unknown calls") 
+                        Text("Show a notification to add a name/note for unsaved numbers") 
                     },
                     leadingContent = { 
                         SettingsIcon(Icons.Default.EditNote, MaterialTheme.colorScheme.secondary) 
@@ -494,14 +381,15 @@ fun SettingsScreen(
                     trailingContent = {
                         Switch(
                             checked = uiState.showUnknownNoteReminder,
-                            onCheckedChange = { viewModel.updateShowUnknownNoteReminder(it) }
+                            onCheckedChange = { 
+                                if (it) checkAndRequestNotificationPermission()
+                                viewModel.updateShowUnknownNoteReminder(it) 
+                            }
                         )
                     }
                 )
-            }
-            // 3. FEATURES
-            // ===============================================
-            SettingsSection(title = "Features") {
+                
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
                 // WhatsApp Preference
                 var showWhatsappModal by remember { mutableStateOf(false) }
@@ -600,19 +488,16 @@ fun SettingsScreen(
                         Text(if (uiState.customLookupEnabled) "Custom data lookup active" else "Configure custom phone data lookup")
                     },
                     leadingContent = { 
-                        SettingsIcon(Icons.Default.ManageSearch, MaterialTheme.colorScheme.primary) 
+                        SettingsIcon(Icons.AutoMirrored.Filled.ManageSearch, MaterialTheme.colorScheme.primary) 
                     },
                     trailingContent = {
                         Icon(Icons.Default.ChevronRight, contentDescription = null)
                     },
                     modifier = Modifier.clickable { viewModel.toggleCustomLookupModal(true) }
                 )
-            }
 
-            // ===============================================
-            // 4. DEVICE
-            // ===============================================
-            SettingsSection(title = "Device") {
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
                 // Theme
                 var showThemeModal by remember { mutableStateOf(false) }
                 ListItem(
@@ -637,34 +522,6 @@ fun SettingsScreen(
                         onDismiss = { showThemeModal = false }
                     )
                 }
-
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                // Permissions moved here
-                val grantedCount = uiState.permissions.count { it.isGranted }
-                val totalCount = uiState.permissions.size
-                ListItem(
-                    headlineContent = { Text("App Permissions") },
-                    supportingContent = { 
-                        Text(
-                            "$grantedCount of $totalCount permissions granted",
-                            color = if (grantedCount == totalCount) 
-                                MaterialTheme.colorScheme.primary 
-                            else 
-                                MaterialTheme.colorScheme.error
-                        )
-                    },
-                    leadingContent = { 
-                        SettingsIcon(
-                            if (grantedCount == totalCount) Icons.Default.CheckCircle else Icons.Default.Warning,
-                            if (grantedCount == totalCount) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                        ) 
-                    },
-                    trailingContent = {
-                        Icon(Icons.Default.ChevronRight, contentDescription = null)
-                    },
-                    modifier = Modifier.clickable { viewModel.togglePermissionsModal(true) }
-                )
             }
 
             Spacer(Modifier.height(16.dp))
@@ -672,28 +529,27 @@ fun SettingsScreen(
             // ===============================================
             // 5. DATA MANAGEMENT
             // ===============================================
-            SettingsSection(title = "Data Management") {
+            SettingsSection(title = "Data") {
                 ListItem(
-                    headlineContent = { Text("Export Data") },
-                    supportingContent = { Text("Backup your local call logs and notes to a file") },
+                    headlineContent = { Text("Data Management") },
+                    supportingContent = { 
+                        Column {
+                            Text("Backup & restore your data")
+                            Text(
+                                "Export and import call logs, notes, and settings",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    },
                     leadingContent = { 
-                        SettingsIcon(Icons.Default.Download, MaterialTheme.colorScheme.primary) 
+                        SettingsIcon(Icons.Default.Storage, MaterialTheme.colorScheme.primary) 
+                    },
+                    trailingContent = {
+                        Icon(Icons.Default.ChevronRight, contentDescription = null)
                     },
                     modifier = Modifier.clickable { 
-                        exportLauncher.launch("miniclick_backup_${System.currentTimeMillis()}.json")
-                    }
-                )
-                
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                ListItem(
-                    headlineContent = { Text("Import Data") },
-                    supportingContent = { Text("Restore data from a previously exported backup file") },
-                    leadingContent = { 
-                        SettingsIcon(Icons.Default.Upload, MaterialTheme.colorScheme.secondary) 
-                    },
-                    modifier = Modifier.clickable { 
-                        importLauncher.launch(arrayOf("application/json"))
+                        viewModel.toggleDataManagementScreen(true)
                     }
                 )
             }
@@ -701,10 +557,55 @@ fun SettingsScreen(
             Spacer(Modifier.height(16.dp))
 
             // ===============================================
-            // 6. SUPPORT
+            // 6. SUPPORT & SHARE
             // ===============================================
-            SettingsSection(title = "Support") {
-                // Support items
+            SettingsSection(title = "Support & Share") {
+                // Rate App
+                ListItem(
+                    headlineContent = { Text("Rate App") },
+                    supportingContent = { Text("Love the app? Rate us on Play Store") },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.Star, Color(0xFFEAB308)) 
+                    },
+                    trailingContent = {
+                        Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null)
+                    },
+                    modifier = Modifier.clickable { 
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${context.packageName}"))
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}"))
+                            context.startActivity(intent)
+                        }
+                    }
+                )
+                
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                // Share App
+                ListItem(
+                    headlineContent = { Text("Share App") },
+                    supportingContent = { Text("Share this app with friends & colleagues") },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.Share, MaterialTheme.colorScheme.primary) 
+                    },
+                    trailingContent = {
+                        Icon(Icons.Default.ChevronRight, contentDescription = null)
+                    },
+                    modifier = Modifier.clickable { 
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_SUBJECT, "Check out Easy Call Track")
+                            putExtra(Intent.EXTRA_TEXT, "Track and manage your calls with Easy Call Track!\n\nDownload: https://play.google.com/store/apps/details?id=${context.packageName}")
+                        }
+                        context.startActivity(Intent.createChooser(shareIntent, "Share via"))
+                    }
+                )
+                
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                // Report Bug
                 ListItem(
                     headlineContent = { Text("Report Bug") },
                     supportingContent = { Text("Something not working? Let us know") },
@@ -718,8 +619,9 @@ fun SettingsScreen(
                 
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 
+                // Request Feature
                 ListItem(
-                    headlineContent = { Text("Request Feature/Improvement") },
+                    headlineContent = { Text("Request Feature") },
                     supportingContent = { Text("Have an idea? We'd love to hear it") },
                     leadingContent = { 
                         SettingsIcon(Icons.Default.Lightbulb, Color(0xFFEAB308)) 
@@ -728,125 +630,39 @@ fun SettingsScreen(
                         viewModel.toggleContactModal(true, "Feature Request") 
                     }
                 )
-
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                ListItem(
-                    headlineContent = { Text("Export Session Logs") },
-                    supportingContent = { Text("Download and share app logs for support") },
-                    leadingContent = { 
-                        SettingsIcon(Icons.Default.HistoryEdu, MaterialTheme.colorScheme.primary) 
-                    },
-                    modifier = Modifier.clickable { 
-                        viewModel.exportLogs()
-                    }
-                )
-                
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                
-                ListItem(
-                    headlineContent = { Text("Reset Onboarding") },
-                    supportingContent = { Text("View the initial app setup tutorial again") },
-                    leadingContent = { 
-                        SettingsIcon(Icons.Default.Replay, MaterialTheme.colorScheme.secondary) 
-                    },
-                    modifier = Modifier.clickable { 
-                        mainViewModel.resetOnboardingSession()
-                        viewModel.resetOnboarding()
-                    }
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                ListItem(
-                    headlineContent = { Text("Privacy Policy") },
-                    supportingContent = { Text("Review how we handle your data") },
-                    leadingContent = { 
-                        SettingsIcon(Icons.Default.Security, MaterialTheme.colorScheme.primary) 
-                    },
-                    modifier = Modifier.clickable { 
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://miniclickcrm.com/privacy"))
-                        context.startActivity(intent)
-                    }
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                ListItem(
-                    headlineContent = { Text("Delete Account") },
-                    supportingContent = { Text("Request permanent deletion of your account and data") },
-                    leadingContent = { 
-                        SettingsIcon(Icons.Default.NoAccounts, MaterialTheme.colorScheme.error) 
-                    },
-                    modifier = Modifier.clickable { 
-                        viewModel.toggleContactModal(true, "Account Deletion Request") 
-                    }
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                ListItem(
-                    headlineContent = { 
-                        Text("Clear All App Data", color = MaterialTheme.colorScheme.error) 
-                    },
-                    supportingContent = { 
-                        Text("Delete all call logs, notes, and settings locally")
-                    },
-                    leadingContent = { 
-                        SettingsIcon(Icons.Default.DeleteForever, MaterialTheme.colorScheme.error) 
-                    },
-                    trailingContent = {
-                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                    },
-                    modifier = Modifier.clickable { viewModel.toggleClearDataDialog(true) }
-                )
             }
 
             Spacer(Modifier.height(16.dp))
 
             // ===============================================
-            // 7. TROUBLESHOOTING
+            // 7. EXTRAS
             // ===============================================
-            SettingsSection(title = "Troubleshooting") {
+            SettingsSection(title = "More") {
                 ListItem(
-                    headlineContent = { Text("Recheck Recordings") },
-                    supportingContent = { Text("Force a re-scan of local folders for call recordings") },
+                    headlineContent = { Text("Extras") },
+                    supportingContent = { 
+                        Column {
+                            Text("Troubleshooting, privacy & data management")
+                            Text(
+                                "Advanced options & account settings",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    },
                     leadingContent = { 
-                        SettingsIcon(Icons.Default.ManageSearch, MaterialTheme.colorScheme.primary) 
+                        SettingsIcon(Icons.Default.MoreHoriz, MaterialTheme.colorScheme.tertiary) 
+                    },
+                    trailingContent = {
+                        Icon(Icons.Default.ChevronRight, contentDescription = null)
                     },
                     modifier = Modifier.clickable { 
-                        viewModel.recheckRecordings()
-                    }
-                )
-                
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                ListItem(
-                    headlineContent = { Text("Re-import Call History") },
-                    supportingContent = { Text("Re-fetch call logs from system and sync them") },
-                    leadingContent = { 
-                        SettingsIcon(Icons.Default.History, MaterialTheme.colorScheme.secondary) 
-                    },
-                    modifier = Modifier.clickable { 
-                        viewModel.reImportCallHistory()
-                    }
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                ListItem(
-                    headlineContent = { Text("Re-import Recordings") },
-                    supportingContent = { Text("Reset recording sync status and retry all uploads") },
-                    leadingContent = { 
-                        SettingsIcon(Icons.Default.CloudSync, MaterialTheme.colorScheme.tertiary) 
-                    },
-                    modifier = Modifier.clickable { 
-                        viewModel.reImportRecordings()
+                        viewModel.toggleExtrasScreen(true)
                     }
                 )
             }
 
-            Spacer(Modifier.height(100.dp))
+            Spacer(Modifier.height(120.dp))
         }
     }
     }

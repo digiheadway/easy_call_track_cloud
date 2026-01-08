@@ -153,7 +153,7 @@ fun PersonsList(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(
-                            Icons.Default.ManageSearch,
+                            Icons.AutoMirrored.Filled.ManageSearch,
                             contentDescription = null,
                             modifier = Modifier.size(20.dp),
                             tint = MaterialTheme.colorScheme.primary
@@ -248,94 +248,102 @@ fun PersonsList(
         )
     }
     
-    LazyColumn(
-        state = lazyListState,
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
-    ) {
-        items(persons, key = { it.number }) { person ->
-            val isExpanded = expandedNumber == person.number
-            val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = lazyListState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(top = 8.dp, bottom = 240.dp)
+        ) {
+            items(persons, key = { it.number }) { person ->
+                val isExpanded = expandedNumber == person.number
+                val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
 
-            PersonCard(
-                person = person,
-                isExpanded = isExpanded,
-                recordings = recordings,
-                audioPlayer = audioPlayer,
-                viewModel = viewModel,
-                onCardClick = {
-                    expandedNumber = if (isExpanded) null else person.number
-                },
-                onLongClick = {
-                    longPressTarget = person
-                },
-                onCallClick = {
-                    viewModel.initiateCall(person.number)
-                },
-                onCopyClick = {
-                    val cleaned = cleanNumber(person.number)
-                    val clip = android.content.ClipData.newPlainText("Phone Number", cleaned)
-                    clipboardManager.setPrimaryClip(clip)
-                    android.widget.Toast.makeText(context, "Copied: $cleaned", android.widget.Toast.LENGTH_SHORT).show()
-                },
-                onWhatsAppClick = {
-                    try {
+                PersonCard(
+                    person = person,
+                    isExpanded = isExpanded,
+                    recordings = recordings,
+                    audioPlayer = audioPlayer,
+                    viewModel = viewModel,
+                    onCardClick = {
+                        expandedNumber = if (isExpanded) null else person.number
+                    },
+                    onLongClick = {
+                        longPressTarget = person
+                    },
+                    onCallClick = {
+                        viewModel.initiateCall(person.number)
+                    },
+                    onCopyClick = {
                         val cleaned = cleanNumber(person.number)
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/91$cleaned"))
-                        if (whatsappPreference != "Always Ask") {
-                            intent.setPackage(whatsappPreference)
+                        val clip = android.content.ClipData.newPlainText("Phone Number", cleaned)
+                        clipboardManager.setPrimaryClip(clip)
+                        android.widget.Toast.makeText(context, "Copied: $cleaned", android.widget.Toast.LENGTH_SHORT).show()
+                    },
+                    onWhatsAppClick = {
+                        try {
+                            val cleaned = cleanNumber(person.number)
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/91$cleaned"))
+                            if (whatsappPreference != "Always Ask") {
+                                intent.setPackage(whatsappPreference)
+                            }
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            // Fallback if preferred package fails
+                            if (whatsappPreference != "Always Ask") {
+                               try {
+                                   val cleaned = cleanNumber(person.number)
+                                   val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/91$cleaned"))
+                                   intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                   context.startActivity(intent)
+                               } catch(e2: Exception) { e2.printStackTrace() }
+                            }
                         }
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        // Fallback if preferred package fails
-                        if (whatsappPreference != "Always Ask") {
-                           try {
-                               val cleaned = cleanNumber(person.number)
-                               val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/91$cleaned"))
-                               intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                               context.startActivity(intent)
-                           } catch(e2: Exception) { e2.printStackTrace() }
+                    },
+                    onPersonNoteClick = { personNoteTarget = person },
+                    onCallNoteClick = { callNoteTarget = it },
+                    onAddContactClick = {
+                        try {
+                            val cleaned = cleanNumber(person.number)
+                            val intent = Intent(Intent.ACTION_INSERT_OR_EDIT).apply {
+                                type = android.provider.ContactsContract.Contacts.CONTENT_ITEM_TYPE
+                                putExtra(android.provider.ContactsContract.Intents.Insert.PHONE, cleaned)
+                            }
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
-                    }
-                },
-                onPersonNoteClick = { personNoteTarget = person },
-                onCallNoteClick = { callNoteTarget = it },
-                onAddContactClick = {
-                    try {
-                        val cleaned = cleanNumber(person.number)
-                        val intent = Intent(Intent.ACTION_INSERT_OR_EDIT).apply {
-                            type = android.provider.ContactsContract.Contacts.CONTENT_ITEM_TYPE
-                            putExtra(android.provider.ContactsContract.Intents.Insert.PHONE, cleaned)
+                    },
+                    onAddToCrmClick = {
+                        try {
+                            val intent = Intent("com.example.salescrm.ACTION_ADD_LEAD").apply {
+                                putExtra("lead_name", person.name ?: "")
+                                putExtra("lead_phone", person.number)
+                            }
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            context.startActivity(intent)
+                        } catch (e: android.content.ActivityNotFoundException) {
+                            android.widget.Toast.makeText(context, "SalesCRM app not installed", android.widget.Toast.LENGTH_SHORT).show()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            android.widget.Toast.makeText(context, "Failed to open CRM", android.widget.Toast.LENGTH_SHORT).show()
                         }
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                },
-                onAddToCrmClick = {
-                    try {
-                        val intent = Intent("com.example.salescrm.ACTION_ADD_LEAD").apply {
-                            putExtra("lead_name", person.name ?: "")
-                            putExtra("lead_phone", person.number)
-                        }
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        context.startActivity(intent)
-                    } catch (e: android.content.ActivityNotFoundException) {
-                        android.widget.Toast.makeText(context, "SalesCRM app not installed", android.widget.Toast.LENGTH_SHORT).show()
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        android.widget.Toast.makeText(context, "Failed to open CRM", android.widget.Toast.LENGTH_SHORT).show()
-                    }
-                },
-                onViewMoreClick = { onViewMoreClick(person) },
-                onLabelClick = { labelTarget = person },
-                onAttachRecording = onAttachRecording,
-                onMarkAllReviewed = { viewModel.markAllCallsReviewed(person.number) }
-            )
+                    },
+                    onViewMoreClick = { onViewMoreClick(person) },
+                    onLabelClick = { labelTarget = person },
+                    onAttachRecording = onAttachRecording,
+                    onMarkAllReviewed = { viewModel.markAllCallsReviewed(person.number) }
+                )
+            }
         }
+
+        VerticalScrollbar(
+            lazyListState = lazyListState,
+            itemCount = persons.size,
+            modifier = Modifier.align(Alignment.CenterEnd)
+        )
     }
 }
 
@@ -479,25 +487,12 @@ fun PersonCard(
                     }
                     
                     if (!person.personNote.isNullOrEmpty()) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(top = 2.dp)
-                        ) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.StickyNote2,
-                                null,
-                                modifier = Modifier.size(12.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                text = person.personNote,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                        NoteChip(
+                            note = person.personNote,
+                            icon = Icons.AutoMirrored.Filled.StickyNote2,
+                            onClick = onPersonNoteClick,
+                            color = MaterialTheme.colorScheme.primaryContainer
+                        )
                     }
 
                     if (!person.label.isNullOrEmpty()) {

@@ -13,7 +13,7 @@ import androidx.core.content.ContextCompat
 
 object CallUtils {
     
-    fun makeCall(context: Context, phoneNumber: String, subId: Int? = null) {
+    fun makeCall(context: Context, phoneNumber: String, subId: Int? = null, forceDialer: Boolean = false) {
         val cleaned = cleanNumber(phoneNumber)
         if (cleaned.isEmpty()) return
 
@@ -40,10 +40,10 @@ object CallUtils {
                 }
             }
 
-            if (isDefaultDialer && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!forceDialer && isDefaultDialer && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 // If we are the default dialer, place the call through TelecomManager
                 telecomManager.placeCall(uri, extras)
-            } else if (hasCallPermission) {
+            } else if (!forceDialer && hasCallPermission) {
                 // If we have permission but NOT default dialer, use ACTION_CALL
                 val intent = Intent(Intent.ACTION_CALL, uri).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

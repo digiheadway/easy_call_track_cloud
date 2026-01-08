@@ -30,148 +30,161 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
     private val settingsRepository = SettingsRepository.getInstance(context)
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        if (androidx.core.content.ContextCompat.checkSelfPermission(applicationContext, android.Manifest.permission.READ_CALL_LOG) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            Log.d(TAG, "Missing READ_CALL_LOG permission. Skipping sync pass.")
-            return@withContext Result.success()
-        }
-        
-        // Check if this is a quick sync (skip system import)
-        val skipSystemImport = inputData.getBoolean(KEY_SKIP_SYSTEM_IMPORT, false)
-        
-        Log.d(TAG, "Starting sync pass... (skipSystemImport=$skipSystemImport)")
-        setForeground(createForegroundInfo("Syncing Calls with Server.."))
-        
-        // PHASE 0: Sync from system call log to local Room DB (OFFLINE-FIRST)
-        // Skip this phase for quick syncs (e.g., after note edit) to avoid showing
-        // "Importing Data" / "Finding Recordings" status for minor operations
-        if (!skipSystemImport) {
-            try {
-                callDataRepository.syncFromSystemCallLog()
-                Log.d(TAG, "Local call import completed")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to import calls from system", e)
-            }
-        } else {
-            Log.d(TAG, "Skipping system call log import (quick sync mode)")
-        }
-        
-        // Check if server sync is configured
-        val orgId = settingsRepository.getOrganisationId()
-        val userId = settingsRepository.getUserId()
-        val phone1 = settingsRepository.getCallerPhoneSim1()
-        val phone2 = settingsRepository.getCallerPhoneSim2()
-        val simSelection = settingsRepository.getSimSelection()
-
-        if (orgId.isEmpty() || userId.isEmpty()) {
-            Log.d(TAG, "Server sync not configured (no pairing). Local import done.")
-            return@withContext Result.success()
-        }
-
-        if (!settingsRepository.isCallTrackEnabled()) {
-            Log.d(TAG, "Call tracking disabled by organisation. Skipping server sync phases.")
-            // Still fetch config to see if it gets re-enabled later
-            try {
-                fetchConfigFromServer(orgId, userId)
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to fetch config while tracking is disabled", e)
-            }
-            return@withContext Result.success()
-        }
-
-        val deviceId = android.provider.Settings.Secure.getString(
-            applicationContext.contentResolver,
-            android.provider.Settings.Secure.ANDROID_ID
-        ) ?: "unknown_device"
+        val powerManager = applicationContext.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+        val wakeLock = powerManager.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "CallTrack:SyncWakeLock")
+        // Acquire wake lock with a timeout to prevent infinite battery drain in case of bugs (e.g. 10 mins)
+        wakeLock.acquire(10 * 60 * 1000L)
+        Log.d(TAG, "WakeLock acquired for sync")
 
         try {
-            // Phase 1: Fetch Config FROM server (Excluded contacts, Settings) 
-            // We do this first as other phases might depend on the latest settings/exclusion list
-            fetchConfigFromServer(orgId, userId)
+            if (androidx.core.content.ContextCompat.checkSelfPermission(applicationContext, android.Manifest.permission.READ_CALL_LOG) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "Missing READ_CALL_LOG permission. Skipping sync pass.")
+                return@withContext Result.success()
+            }
+            
+            // Check if this is a quick sync (skip system import)
+            val skipSystemImport = inputData.getBoolean(KEY_SKIP_SYSTEM_IMPORT, false)
+            
+            Log.d(TAG, "Starting sync pass... (skipSystemImport=$skipSystemImport)")
+            setForeground(createForegroundInfo("Syncing Calls with Server.."))
+            
+            // PHASE 0: Sync from system call log to local Room DB (OFFLINE-FIRST)
+            // Skip this phase for quick syncs (e.g., after note edit) to avoid showing
+            // "Importing Data" / "Finding Recordings" status for minor operations
+            if (!skipSystemImport) {
+                try {
+                    callDataRepository.syncFromSystemCallLog()
+                    Log.d(TAG, "Local call import completed")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to import calls from system", e)
+                }
+            } else {
+                Log.d(TAG, "Skipping system call log import (quick sync mode)")
+            }
+            
+            // Check if server sync is configured
+            val orgId = settingsRepository.getOrganisationId()
+            val userId = settingsRepository.getUserId()
+            val phone1 = settingsRepository.getCallerPhoneSim1()
+            val phone2 = settingsRepository.getCallerPhoneSim2()
+            val simSelection = settingsRepository.getSimSelection()
 
-            coroutineScope {
-                // Phase 2: PULL - Fetch updates from server (delta sync)
-                val lastSyncTime = settingsRepository.getLastSyncTime()
-                val pullJob = async { pullServerUpdates(orgId, userId, deviceId, lastSyncTime) }
-                
-                // Phase 3 & 4: PUSH - Sync pending calls and persons in parallel with PULL
-                val pushJob = async {
-                    var localSynced = 0
-                    val allPendingCalls = callDataRepository.getCallsNeedingMetadataSync()
-                    Log.d(TAG, "Parallel Push: Processing ${allPendingCalls.size} calls")
+            if (orgId.isEmpty() || userId.isEmpty()) {
+                Log.d(TAG, "Server sync not configured (no pairing). Local import done.")
+                return@withContext Result.success()
+            }
+
+            if (!settingsRepository.isCallTrackEnabled()) {
+                Log.d(TAG, "Call tracking disabled by organisation. Skipping server sync phases.")
+                // Still fetch config to see if it gets re-enabled later
+                try {
+                    fetchConfigFromServer(orgId, userId)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to fetch config while tracking is disabled", e)
+                }
+                return@withContext Result.success()
+            }
+
+            val deviceId = android.provider.Settings.Secure.getString(
+                applicationContext.contentResolver,
+                android.provider.Settings.Secure.ANDROID_ID
+            ) ?: "unknown_device"
+
+            try {
+                // Phase 1: Fetch Config FROM server (Excluded contacts, Settings) 
+                // We do this first as other phases might depend on the latest settings/exclusion list
+                fetchConfigFromServer(orgId, userId)
+
+                coroutineScope {
+                    // Phase 2: PULL - Fetch updates from server (delta sync)
+                    val lastSyncTime = settingsRepository.getLastSyncTime()
+                    val pullJob = async { pullServerUpdates(orgId, userId, deviceId, lastSyncTime) }
                     
-                    val (newCalls, updateCalls) = allPendingCalls.partition { 
-                        it.metadataSyncStatus == MetadataSyncStatus.PENDING || it.metadataSyncStatus == MetadataSyncStatus.FAILED 
-                    }
-                    
-                    // 3a. Process Updates
-                    for (call in updateCalls) {
-                        if (callDataRepository.isExcludedFromSync(call.phoneNumber)) {
-                            callDataRepository.markMetadataSynced(call.compositeId, System.currentTimeMillis())
-                            continue
+                    // Phase 3 & 4: PUSH - Sync pending calls and persons in parallel with PULL
+                    val pushJob = async {
+                        var localSynced = 0
+                        val allPendingCalls = callDataRepository.getCallsNeedingMetadataSync()
+                        Log.d(TAG, "Parallel Push: Processing ${allPendingCalls.size} calls")
+                        
+                        val (newCalls, updateCalls) = allPendingCalls.partition { 
+                            it.metadataSyncStatus == MetadataSyncStatus.PENDING || it.metadataSyncStatus == MetadataSyncStatus.FAILED 
                         }
-                        try {
-                            pushCallUpdates(call)
-                            localSynced++
-                        } catch (e: Exception) { Log.e(TAG, "Update push failed for ${call.compositeId}", e) }
-                    }
-                    
-                    // 3b. Process New Calls (BATCHED)
-                    val callsToSync = newCalls.filter { call ->
-                        if (callDataRepository.isExcludedFromSync(call.phoneNumber)) {
-                            callDataRepository.markMetadataSynced(call.compositeId, System.currentTimeMillis())
-                            callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.NOT_APPLICABLE)
-                            false
-                        } else {
-                            val activePhone = getPhoneForCall(call.subscriptionId, phone1, phone2)
-                            when (simSelection) {
-                                "Sim1" -> activePhone == phone1
-                                "Sim2" -> activePhone == phone2
-                                else -> true
+                        
+                        // 3a. Process Updates
+                        for (call in updateCalls) {
+                            if (callDataRepository.isExcludedFromSync(call.phoneNumber)) {
+                                callDataRepository.markMetadataSynced(call.compositeId, System.currentTimeMillis())
+                                continue
+                            }
+                            try {
+                                pushCallUpdates(call)
+                                localSynced++
+                            } catch (e: Exception) { Log.e(TAG, "Update push failed for ${call.compositeId}", e) }
+                        }
+                        
+                        // 3b. Process New Calls (BATCHED)
+                        val callsToSync = newCalls.filter { call ->
+                            if (callDataRepository.isExcludedFromSync(call.phoneNumber)) {
+                                callDataRepository.markMetadataSynced(call.compositeId, System.currentTimeMillis())
+                                callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.NOT_APPLICABLE)
+                                false
+                            } else {
+                                val activePhone = getPhoneForCall(call.subscriptionId, phone1, phone2)
+                                when (simSelection) {
+                                    "Sim1" -> activePhone == phone1
+                                    "Sim2" -> activePhone == phone2
+                                    else -> true
+                                }
                             }
                         }
+                        
+                        if (callsToSync.isNotEmpty()) {
+                            val chunks = callsToSync.chunked(100)
+                            for ((index, batch) in chunks.withIndex()) {
+                                try {
+                                    syncBatchCalls(batch, orgId, userId, deviceId, phone1, phone2)
+                                    localSynced += batch.size
+                                } catch (e: Exception) { Log.e(TAG, "Batch sync failed", e) }
+                            }
+                        }
+                        localSynced
                     }
                     
-                    if (callsToSync.isNotEmpty()) {
-                        val chunks = callsToSync.chunked(100)
-                        for ((index, batch) in chunks.withIndex()) {
-                            try {
-                                syncBatchCalls(batch, orgId, userId, deviceId, phone1, phone2)
-                                localSynced += batch.size
-                            } catch (e: Exception) { Log.e(TAG, "Batch sync failed", e) }
-                        }
+                    val pushPersonsJob = async {
+                        pushPendingPersonUpdates(orgId, userId)
                     }
-                    localSynced
-                }
-                
-                val pushPersonsJob = async {
-                    pushPendingPersonUpdates(orgId, userId)
-                }
 
-                // Wait for all parallel operations to complete
-                val (pullRes, syncedCount, _) = awaitAll(pullJob, pushJob, pushPersonsJob)
-                
-                // Update sync time only after successful pass
-                settingsRepository.setLastSyncTime(System.currentTimeMillis())
-                
-                val finalSyncedCount = syncedCount as? Int ?: 0
-                val pendingRecordingCount = callDataRepository.getCallsNeedingRecordingSync().size
-                
-                if (pendingRecordingCount > 0) {
-                    Log.d(TAG, "Triggering RecordingUploadWorker for $pendingRecordingCount pending recordings")
-                    RecordingUploadWorker.runNow(applicationContext)
-                }
+                    // Wait for all parallel operations to complete
+                    val (pullRes, syncedCount, _) = awaitAll(pullJob, pushJob, pushPersonsJob)
+                    
+                    // Update sync time only after successful pass
+                    settingsRepository.setLastSyncTime(System.currentTimeMillis())
+                    
+                    val finalSyncedCount = syncedCount as? Int ?: 0
+                    val pendingRecordingCount = callDataRepository.getCallsNeedingRecordingSync().size
+                    
+                    if (pendingRecordingCount > 0) {
+                        Log.d(TAG, "Triggering RecordingUploadWorker for $pendingRecordingCount pending recordings")
+                        RecordingUploadWorker.runNow(applicationContext)
+                    }
 
-                Result.success(workDataOf(
-                    "synced_calls" to finalSyncedCount,
-                    "pending_recordings" to pendingRecordingCount
-                ))
+                    Result.success(workDataOf(
+                        "synced_calls" to finalSyncedCount,
+                        "pending_recordings" to pendingRecordingCount
+                    ))
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                Log.d(TAG, "Sync work cancelled", e)
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Metadata sync failed", e)
+                Result.retry()
             }
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            Log.d(TAG, "Sync work cancelled", e)
-            throw e
-        } catch (e: Exception) {
-            Log.e(TAG, "Metadata sync failed", e)
-            Result.retry()
+        } finally {
+            if (wakeLock.isHeld) {
+                wakeLock.release()
+                Log.d(TAG, "WakeLock released")
+            }
         }
     }
     
@@ -481,8 +494,8 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             val channel = android.app.NotificationChannel(
                 channelId,
-                "Background Sync",
-                android.app.NotificationManager.IMPORTANCE_LOW
+                "Sync Service",
+                android.app.NotificationManager.IMPORTANCE_DEFAULT
             )
             val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
             notificationManager.createNotificationChannel(channel)
@@ -494,6 +507,7 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             .setContentText(progress)
             .setSmallIcon(com.miniclick.calltrackmanage.R.drawable.ic_launcher_foreground)
             .setOngoing(true)
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
             .setOnlyAlertOnce(true)
             .build()
 

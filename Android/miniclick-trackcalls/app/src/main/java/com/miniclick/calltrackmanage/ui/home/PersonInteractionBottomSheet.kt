@@ -165,7 +165,7 @@ fun PersonInteractionBottomSheet(
 
                 IconButton(onClick = { onCustomLookup(person.number) }) {
                     Icon(
-                        imageVector = Icons.Default.ManageSearch,
+                        imageVector = Icons.AutoMirrored.Filled.ManageSearch,
                         contentDescription = "Custom Lookup",
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -193,7 +193,7 @@ fun PersonInteractionBottomSheet(
                         AssistChip(
                             onClick = { showPersonNoteDialog = true },
                             label = { Text(person.personNote, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                            leadingIcon = { Icon(Icons.Default.StickyNote2, null, modifier = Modifier.size(14.dp)) },
+                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.StickyNote2, null, modifier = Modifier.size(14.dp)) },
                             colors = AssistChipDefaults.assistChipColors(
                                 labelColor = MaterialTheme.colorScheme.primary,
                                 leadingIconContentColor = MaterialTheme.colorScheme.primary
@@ -203,7 +203,7 @@ fun PersonInteractionBottomSheet(
                         AssistChip(
                             onClick = { showPersonNoteDialog = true },
                             label = { Text("Add Person Note", style = MaterialTheme.typography.labelSmall) },
-                            leadingIcon = { Icon(Icons.Default.NoteAdd, null, modifier = Modifier.size(14.dp)) }
+                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.NoteAdd, null, modifier = Modifier.size(14.dp)) }
                         )
                     }
                 }
@@ -220,7 +220,7 @@ fun PersonInteractionBottomSheet(
                     AssistChip(
                         onClick = { showPersonNoteDialog = true },
                         label = { Text("Add Person Note", style = MaterialTheme.typography.labelSmall) },
-                        leadingIcon = { Icon(Icons.Default.NoteAdd, null, modifier = Modifier.size(14.dp)) }
+                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.NoteAdd, null, modifier = Modifier.size(14.dp)) }
                     )
                 }
             }
@@ -257,7 +257,7 @@ fun PersonInteractionBottomSheet(
             
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(bottom = navBarPadding + 24.dp)
+                contentPadding = PaddingValues(bottom = navBarPadding + 60.dp)
             ) {
                 items(sortedCalls, key = { it.compositeId }) { log ->
                     // Trigger check for recording path

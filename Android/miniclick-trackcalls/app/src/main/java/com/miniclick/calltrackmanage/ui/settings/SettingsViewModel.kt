@@ -101,6 +101,9 @@ data class SettingsUiState(
     val showRecordingReminder: Boolean = true,
     val showUnknownNoteReminder: Boolean = true,
     val isGoogleDialer: Boolean = false,
+    val showDialButton: Boolean = true,
+    val callActionBehavior: String = "Direct",
+    val isSystemDefaultDialer: Boolean = false,
     
     // Unified Modal States
     val showPermissionsModal: Boolean = false,
@@ -115,10 +118,14 @@ data class SettingsUiState(
     val showResetConfirmDialog: Boolean = false,
     val showCustomLookupModal: Boolean = false,
     val showWhatsappModal: Boolean = false,
+    val showTrackingSettings: Boolean = false,
+    val showExtrasScreen: Boolean = false,
+    val showDataManagementScreen: Boolean = false,
     val contactSubject: String = "",
     val accountEditField: String? = null,
     val lookupPhoneNumber: String? = null,
-    val skippedSteps: Set<String> = emptySet()
+    val skippedSteps: Set<String> = emptySet(),
+    val isTrackStartDateSet: Boolean = false
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -132,6 +139,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
     init {
+        // Load critical settings synchronously for immediate UI rendering (avoid onboarding flash)
+        val initialOrgId = settingsRepository.getOrganisationId()
+        _uiState.update { it.copy(
+            trackStartDate = settingsRepository.getTrackStartDate(),
+            isTrackStartDateSet = settingsRepository.isTrackStartDateSet(),
+            simSelection = settingsRepository.getSimSelection(),
+            skippedSteps = settingsRepository.getSkippedSteps(),
+            isSyncSetup = initialOrgId.isNotEmpty(),
+            pairingCode = if (initialOrgId.isNotEmpty()) "$initialOrgId-${settingsRepository.getUserId()}" else ""
+        ) }
+
         viewModelScope.launch(Dispatchers.IO) {
             loadSettings()
             checkPermissions()
@@ -258,8 +276,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 showRecordingReminder = settingsRepository.isShowRecordingReminder(),
                 showUnknownNoteReminder = settingsRepository.isShowUnknownNoteReminder(),
                 isGoogleDialer = isGoogleDialer(),
+                isSystemDefaultDialer = isSystemDefaultDialer(),
+                showDialButton = settingsRepository.isShowDialButton(),
+                callActionBehavior = settingsRepository.getCallActionBehavior(),
                 isSyncSetup = orgId.isNotEmpty(),
-                skippedSteps = settingsRepository.getSkippedSteps()
+                skippedSteps = settingsRepository.getSkippedSteps(),
+                isTrackStartDateSet = settingsRepository.isTrackStartDateSet()
             )
         }
         refreshRecordingPathInfo()
@@ -268,6 +290,21 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private fun isGoogleDialer(): Boolean {
         val telecomManager = getApplication<Application>().getSystemService(Context.TELECOM_SERVICE) as? android.telecom.TelecomManager
         return telecomManager?.defaultDialerPackage == "com.google.android.dialer"
+    }
+
+    private fun isSystemDefaultDialer(): Boolean {
+        val telecomManager = getApplication<Application>().getSystemService(Context.TELECOM_SERVICE) as? android.telecom.TelecomManager
+        return telecomManager?.defaultDialerPackage == getApplication<Application>().packageName
+    }
+
+    fun updateShowDialButton(show: Boolean) {
+        settingsRepository.setShowDialButton(show)
+        _uiState.update { it.copy(showDialButton = show) }
+    }
+
+    fun updateCallActionBehavior(behavior: String) {
+        settingsRepository.setCallActionBehavior(behavior)
+        _uiState.update { it.copy(callActionBehavior = behavior) }
     }
     
     fun updateThemeMode(mode: String) {
@@ -737,6 +774,18 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun toggleWhatsappModal(show: Boolean) {
         if (show) fetchWhatsappApps()
         _uiState.update { it.copy(showWhatsappModal = show) }
+    }
+
+    fun toggleTrackingSettings(show: Boolean) {
+        _uiState.update { it.copy(showTrackingSettings = show) }
+    }
+
+    fun toggleExtrasScreen(show: Boolean) {
+        _uiState.update { it.copy(showExtrasScreen = show) }
+    }
+
+    fun toggleDataManagementScreen(show: Boolean) {
+        _uiState.update { it.copy(showDataManagementScreen = show) }
     }
 
     fun showPhoneLookup(phone: String?) {

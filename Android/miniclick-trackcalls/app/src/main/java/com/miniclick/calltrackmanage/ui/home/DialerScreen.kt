@@ -17,7 +17,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Backspace
+import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.*
@@ -271,7 +271,7 @@ fun DialerScreen(
                 modifier = Modifier.size(56.dp)
             ) {
                 if (phoneNumber.isNotEmpty()) {
-                    Icon(Icons.Default.Backspace, "Backspace", modifier = Modifier.size(24.dp))
+                    Icon(Icons.AutoMirrored.Filled.Backspace, "Backspace", modifier = Modifier.size(24.dp))
                 }
             }
         }

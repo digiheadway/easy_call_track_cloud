@@ -106,12 +106,18 @@ This document provides a detailed analysis of the current state of the Call Trac
 
 ## Summary Action Plan
 
-| Rank | Task | Impact | Difficulty |
-| :--- | :--- | :--- | :--- |
-| 1 | Move Report calculations to ViewModel | High | Medium |
-| 2 | Implement Shimmer Loading UI | High | Medium |
-| 3 | Apply `.distinctUntilChanged()` to settings | Medium | Easy |
-| 4 | Batch Server Sync Updates | Medium | Hard |
-| 5 | Refactor CallDataRepository into smaller units | Low | Hard |
+| Rank | Task | Impact | Difficulty | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | Move Report calculations to ViewModel | High | Medium | ✅ Done |
+| 2 | Implement Shimmer Loading UI | High | Medium | ✅ Done |
+| 3 | Apply `.distinctUntilChanged()` to settings | Medium | Easy | ✅ Done |
+| 4.1 | Enhanced Loading Experience (Shimmer) | High | Medium | ✅ Done |
+| 4.2 | Interactive Reports (Clickable Stats) | Medium | Medium | ✅ Done |
+| 5.2 | Hardcoded Values to Enums | Medium | Easy | ✅ Done |
+| 6.1 | Add Smart Search History | Low | Easy | ✅ Done |
+| 6.2 | Add Call Duration Alerts | Low | Easy | ✅ Done |
+| 4 | Batch Server Sync Updates | Medium | Hard | Pending |
+| 5.1 | Refactor CallDataRepository into smaller units | Low | Hard | Pending |
+| 6.3 | Remove Duplicate Recording Scans | Low | Medium | Pending |
 
 ---

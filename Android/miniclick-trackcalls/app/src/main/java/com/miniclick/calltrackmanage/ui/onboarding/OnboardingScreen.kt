@@ -95,7 +95,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             add(OnboardingStep(
                 "Organize Your Calls",
                 "Add private notes and color-coded labels to your calls to keep track of important details.",
-                Icons.Default.NoteAdd,
+                Icons.AutoMirrored.Filled.NoteAdd,
                 OnboardingStepType.FeatureIntro
             ))
             

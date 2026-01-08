@@ -285,8 +285,40 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
 
     // Modals are handled inside the content Box to ensure proper layering
 
-    Scaffold(
-        bottomBar = {
+    // Full-screen Tracking Settings Page
+    if (settingsState.showTrackingSettings) {
+        TrackingSettingsScreen(
+            uiState = settingsState,
+            viewModel = settingsViewModel,
+            onBack = { settingsViewModel.toggleTrackingSettings(false) }
+        )
+        return
+    }
+
+    // Full-screen Extras Page
+    if (settingsState.showExtrasScreen) {
+        ExtrasScreen(
+            uiState = settingsState,
+            viewModel = settingsViewModel,
+            onResetOnboarding = { viewModel.resetOnboardingSession() },
+            onBack = { settingsViewModel.toggleExtrasScreen(false) }
+        )
+        return
+    }
+
+    // Full-screen Data Management Page
+    if (settingsState.showDataManagementScreen) {
+        DataManagementScreen(
+            uiState = settingsState,
+            viewModel = settingsViewModel,
+            onBack = { settingsViewModel.toggleDataManagementScreen(false) }
+        )
+        return
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            bottomBar = {
             Column {
                 NavigationBar {
                     tabs.forEach { tab ->
@@ -350,7 +382,14 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                         syncStatusBar = syncStatusBar
                     )
                     AppTab.REPORTS -> ReportsScreen(
-                        syncStatusBar = syncStatusBar
+                        syncStatusBar = syncStatusBar,
+                        onNavigateToTab = { tabIndex ->
+                            selectedTab = when(tabIndex) {
+                                0 -> AppTab.CALLS
+                                1 -> AppTab.PERSONS
+                                else -> AppTab.CALLS
+                            }
+                        }
                     )
                     AppTab.SETTINGS -> SettingsScreen(
                         syncStatusBar = syncStatusBar
@@ -364,27 +403,6 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                         viewModel = settingsViewModel,
                         onDismiss = { settingsViewModel.showPhoneLookup(null) }
                     )
-                }
-                
-                // Dialer Bottom Sheet
-                if (showDialerSheet) {
-                    ModalBottomSheet(
-                        onDismissRequest = { showDialerSheet = false },
-                        sheetState = dialerSheetState,
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        dragHandle = { BottomSheetDefaults.DragHandle() },
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        // DialerScreen content
-                        Box(modifier = Modifier.fillMaxSize()) {
-                             DialerScreen(
-                                 onIdentifyCallHistory = { 
-                                     showDialerSheet = false
-                                 },
-                                 onClose = { showDialerSheet = false }
-                             )
-                        }
-                    }
                 }
 
                 // Sync Queue Modals
@@ -591,6 +609,29 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                         dismissButton = {
                             TextButton(onClick = { settingsViewModel.toggleRecordingDisableDialog(false) }) { Text("Cancel") }
                         }
+                    )
+                }
+            }
+        }
+    }
+
+        // Dialer Full Screen Overlay
+        androidx.compose.animation.AnimatedVisibility(
+            visible = showDialerSheet,
+            enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) + androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) + androidx.compose.animation.fadeOut()
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp
+            ) {
+                Box(modifier = Modifier.fillMaxSize().systemBarsPadding()) {
+                    DialerScreen(
+                        onIdentifyCallHistory = { 
+                            showDialerSheet = false
+                        },
+                        onClose = { showDialerSheet = false }
                     )
                 }
             }

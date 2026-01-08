@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.miniclick.calltrackmanage.MainViewModel
 import com.miniclick.calltrackmanage.ui.settings.SettingsViewModel
+import com.miniclick.calltrackmanage.ui.settings.SettingsUiState
 import com.miniclick.calltrackmanage.ui.settings.AccountInfoModal
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -79,6 +80,7 @@ fun SetupGuide(
     var hasCallLog by remember { mutableStateOf(checkPermission(Manifest.permission.READ_CALL_LOG)) }
     var hasContacts by remember { mutableStateOf(checkPermission(Manifest.permission.READ_CONTACTS)) }
     var hasPhoneState by remember { mutableStateOf(checkPermission(Manifest.permission.READ_PHONE_STATE)) }
+    var hasCallPhone by remember { mutableStateOf(checkPermission(Manifest.permission.CALL_PHONE)) }
     var hasSimInfo by remember { 
         mutableStateOf(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) 
@@ -106,6 +108,7 @@ fun SetupGuide(
         hasCallLog = checkPermission(Manifest.permission.READ_CALL_LOG)
         hasContacts = checkPermission(Manifest.permission.READ_CONTACTS)
         hasPhoneState = checkPermission(Manifest.permission.READ_PHONE_STATE)
+        hasCallPhone = checkPermission(Manifest.permission.CALL_PHONE)
         hasSimInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) checkPermission(Manifest.permission.READ_PHONE_NUMBERS) else true
         hasNotifications = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) checkPermission(Manifest.permission.POST_NOTIFICATIONS) else true
         hasStorage = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) checkPermission(Manifest.permission.READ_MEDIA_AUDIO) else checkPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
@@ -183,7 +186,7 @@ fun SetupGuide(
     // --- Steps Logic ---
     
     val steps = remember(
-        hasCallLog, hasContacts, hasPhoneState, hasSimInfo, hasNotifications, hasStorage,
+        hasCallLog, hasContacts, hasPhoneState, hasCallPhone, hasSimInfo, hasNotifications, hasStorage,
         uiState.simSelection, uiState.callerPhoneSim1, uiState.callerPhoneSim2,
         uiState.sim1SubId, uiState.sim2SubId, uiState.availableSims,
         uiState.callRecordEnabled, uiState.userDeclinedRecording,
@@ -231,13 +234,13 @@ fun SetupGuide(
                     singlePermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
                 }))
             }
-            if (!hasPhoneState && !uiState.skippedSteps.contains("PHONE_STATE")) {
-                add(GuideStep("PHONE_STATE", "MiniClick Calls", "Detect active calls to show caller information in real-time.", Icons.Default.Phone, "Allow Access", onAction = {
+            if ((!hasPhoneState || !hasCallPhone) && !uiState.skippedSteps.contains("PHONE_STATE")) {
+                add(GuideStep("PHONE_STATE", "MiniClick Calls", "Detect active calls and enable direct calling.", Icons.Default.Phone, "Allow Access", onAction = {
+                    val perms = mutableListOf(Manifest.permission.READ_PHONE_STATE, Manifest.permission.CALL_PHONE)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        multiPermissionLauncher.launch(arrayOf(Manifest.permission.READ_PHONE_STATE, Manifest.permission.READ_PHONE_NUMBERS))
-                    } else {
-                        singlePermissionLauncher.launch(Manifest.permission.READ_PHONE_STATE)
+                        perms.add(Manifest.permission.READ_PHONE_NUMBERS)
                     }
+                    multiPermissionLauncher.launch(perms.toTypedArray())
                 }))
             }
             
@@ -260,7 +263,7 @@ fun SetupGuide(
             }
 
             // 5. Start Date
-            if (!uiState.skippedSteps.contains("START_DATE")) {
+            if (!uiState.isTrackStartDateSet && !uiState.skippedSteps.contains("START_DATE")) {
                 val isSet = uiState.trackStartDate != 0L
                 val dateStr = if (isSet) java.text.SimpleDateFormat("MMM dd, yyyy").format(java.util.Date(uiState.trackStartDate)) else ""
                 
@@ -280,7 +283,7 @@ fun SetupGuide(
             }
 
             // 6. SIM Selection
-            if (!uiState.skippedSteps.contains("SIM_SELECTION")) {
+            if (uiState.simSelection == "Off" && !uiState.skippedSteps.contains("SIM_SELECTION")) {
                 val isDone = uiState.simSelection != "Off"
                 add(GuideStep(
                     type = "SIM_SELECTION", 
@@ -296,11 +299,9 @@ fun SetupGuide(
 
             // 7. Recording (Attach Recording)
             val isRecordingDone = uiState.callRecordEnabled && hasStorage
-            val showRecordingStep = (uiState.callRecordEnabled && !hasStorage) || 
-                                   (!uiState.callRecordEnabled && !uiState.userDeclinedRecording) ||
-                                   (isRecordingDone && !uiState.skippedSteps.contains("RECORDING"))
+            val showRecordingStep = !isRecordingDone && !uiState.skippedSteps.contains("RECORDING")
             
-            if (showRecordingStep && !uiState.skippedSteps.contains("RECORDING")) {
+            if (showRecordingStep) {
                 add(GuideStep(
                     type = "RECORDING",
                     title = if (isRecordingDone) "Recording Attached" else "Attach Call Recording?",

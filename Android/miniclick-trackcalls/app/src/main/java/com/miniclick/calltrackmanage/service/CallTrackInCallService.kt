@@ -1,6 +1,16 @@
 package com.miniclick.calltrackmanage.service
 
+import android.telecom.Call
 import android.telecom.InCallService
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
+data class CallStateInfo(
+    val phoneNumber: String = "",
+    val state: Int = Call.STATE_DISCONNECTED,
+    val duration: Long = 0
+)
 
 /**
  * A dummy implementation of InCallService required by Android to 
@@ -9,7 +19,26 @@ import android.telecom.InCallService
 class CallTrackInCallService : InCallService() {
     
     companion object {
-        var currentCall: android.telecom.Call? = null
+        private val _callStatus = MutableStateFlow<CallStateInfo?>(null)
+        val callStatus: StateFlow<CallStateInfo?> = _callStatus.asStateFlow()
+
+        var currentCall: Call? = null
+            set(value) {
+                field = value
+                if (value == null) {
+                    _callStatus.value = null
+                } else {
+                    updateStatus(value)
+                }
+            }
+        
+        fun updateStatus(call: Call) {
+            _callStatus.value = CallStateInfo(
+                phoneNumber = call.details?.handle?.schemeSpecificPart ?: "Unknown",
+                state = call.state
+            )
+        }
+
         const val CHANNEL_ID = "call_channel"
         const val NOTIFICATION_ID = 12345
         
@@ -47,6 +76,7 @@ class CallTrackInCallService : InCallService() {
         call.registerCallback(object : android.telecom.Call.Callback() {
             override fun onStateChanged(call: android.telecom.Call, state: Int) {
                 super.onStateChanged(call, state)
+                updateStatus(call)
                 updateNotification(call)
                 if (state == android.telecom.Call.STATE_DISCONNECTED) {
                     currentCall = null

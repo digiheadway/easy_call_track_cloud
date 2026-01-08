@@ -7,7 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.miniclick.calltrackmanage.data.CallDataRepository
 import com.miniclick.calltrackmanage.data.RecordingRepository
 import com.miniclick.calltrackmanage.data.db.CallDataEntity
-import com.miniclick.calltrackmanage.data.db.CallLogStatus
+import com.miniclick.calltrackmanage.data.db.MetadataSyncStatus
 import com.miniclick.calltrackmanage.data.db.PersonDataEntity
 import com.miniclick.calltrackmanage.data.SettingsRepository
 import android.telephony.SubscriptionManager
@@ -22,8 +22,8 @@ import kotlinx.coroutines.flow.*
 import com.miniclick.calltrackmanage.ui.settings.SimInfo
 
 // Filter enums for chip dropdowns
-enum class CallTabFilter { ALL, INCOMING, NOT_ATTENDED, OUTGOING, NOT_RESPONDED, IGNORED }
-enum class PersonTabFilter { ALL, CONNECTED, ATTENDED, RESPONDED, NEVER_CONNECTED, NOT_ATTENDED, NEVER_ATTENDED, NOT_RESPONDED, NEVER_RESPONDED, IGNORED }
+enum class CallTabFilter { ALL, ATTENDED, NOT_ATTENDED, RESPONDED, NOT_RESPONDED, IGNORED }
+enum class PersonTabFilter { ALL, ATTENDED, RESPONDED, NOT_ATTENDED, NOT_RESPONDED, IGNORED }
 enum class ConnectedFilter { ALL, CONNECTED, NOT_CONNECTED }
 enum class NotesFilter { ALL, WITH_NOTE, WITHOUT_NOTE }
 enum class PersonNotesFilter { ALL, WITH_NOTE, WITHOUT_NOTE }
@@ -33,7 +33,8 @@ enum class ReviewedFilter { ALL, REVIEWED, NOT_REVIEWED }
 enum class CustomNameFilter { ALL, WITH_NAME, WITHOUT_NAME }
 enum class ViewMode { CALLS, PERSONS }
 enum class DateRange { TODAY, LAST_3_DAYS, LAST_7_DAYS, LAST_14_DAYS, LAST_30_DAYS, THIS_MONTH, PREVIOUS_MONTH, CUSTOM, ALL }
-enum class PersonSortBy { LAST_CALL, MOST_CALLS }
+enum class PersonSortBy { LAST_CALL, MOST_CALLS, NAME }
+enum class CallSortBy { DATE, DURATION, NUMBER }
 enum class SortDirection { ASCENDING, DESCENDING }
 
 data class HomeUiState(
@@ -41,7 +42,7 @@ data class HomeUiState(
     val filteredLogs: List<CallDataEntity> = emptyList(),
     val persons: List<PersonDataEntity> = emptyList(),
     val filteredPersons: List<PersonDataEntity> = emptyList(),
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val isSyncing: Boolean = false,
     val searchQuery: String = "",
     val selectedTab: Int = 0,
@@ -85,6 +86,8 @@ data class HomeUiState(
     val isSyncSetup: Boolean = false,
     val personSortBy: PersonSortBy = PersonSortBy.LAST_CALL,
     val personSortDirection: SortDirection = SortDirection.DESCENDING,
+    val callSortBy: CallSortBy = CallSortBy.DATE,
+    val callSortDirection: SortDirection = SortDirection.DESCENDING,
     val allowPersonalExclusion: Boolean = false,
     val callRecordEnabled: Boolean = true,
     val activeRecordings: List<CallDataEntity> = emptyList(),
@@ -104,7 +107,66 @@ data class HomeUiState(
     // Call Flow (SIM Picker)
     val showCallSimPicker: Boolean = false,
     val callFlowNumber: String? = null,
-    val availableSims: List<SimInfo> = emptyList()
+    val availableSims: List<SimInfo> = emptyList(),
+
+    // Reports Stats
+    val reportStats: ReportStats = ReportStats(),
+
+    // Search History
+    val searchHistory: List<String> = emptyList(),
+    
+    // Dialer Settings
+    val showDialButton: Boolean = true,
+    val callActionBehavior: String = "Direct"
+)
+
+// Extension to determine if a call status counts as "Attended" or "Responded" based on the new > 3s rule
+fun CallDataEntity.isStatusConnected(): Boolean = duration > 3
+
+data class ReportStats(
+    val totalCalls: Int = 0,
+    val incomingCalls: Int = 0,
+    val outgoingCalls: Int = 0,
+    val missedCalls: Int = 0,
+    val rejectedCalls: Int = 0,
+    val connectedCalls: Int = 0,
+    val notConnectedCalls: Int = 0,
+    val connectedIncoming: Int = 0,
+    val connectedOutgoing: Int = 0,
+    val totalDuration: Long = 0,
+    val avgDuration: Long = 0,
+    val maxDuration: Long = 0,
+    val incomingDuration: Long = 0,
+    val outgoingDuration: Long = 0,
+    val uniqueContacts: Int = 0,
+    val savedContacts: Int = 0,
+    val unsavedContacts: Int = 0,
+    val callsWithNotes: Int = 0,
+    val reviewedCalls: Int = 0,
+    val callsWithRecordings: Int = 0,
+    val personsWithNotes: Int = 0,
+    val personsWithLabels: Int = 0,
+    val shortCalls: Int = 0, // Calls with duration < threshold (low engagement)
+    val topCallers: List<TopCaller> = emptyList(),
+    val mostTalked: List<TopCaller> = emptyList(),
+    val dailyStats: Map<String, DayStat> = emptyMap(),
+    val hourlyStats: Map<Int, Int> = emptyMap(),
+    val labelDistribution: List<Pair<String, Int>> = emptyList()
+)
+
+data class TopCaller(
+    val phoneNumber: String,
+    val displayName: String,
+    val callCount: Int,
+    val totalDuration: Long,
+    val incomingCount: Int,
+    val outgoingCount: Int,
+    val missedCount: Int
+)
+
+data class DayStat(
+    val count: Int,
+    val duration: Long
 )
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
@@ -121,10 +183,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
+        loadSettingsSync()
         viewModelScope.launch(Dispatchers.IO) {
             refreshSettings()
             loadRecordingPath()
-            loadPersistentState()
+            triggerFilter()
         }
         
         // Trigger immediate sync from system CallLog on app open
@@ -230,6 +293,21 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+
+        // Reactive Settings Observers
+        viewModelScope.launch {
+            settingsRepository.getSimSelectionFlow()
+                .distinctUntilChanged()
+                .collect { refreshSettings() }
+        }
+
+        viewModelScope.launch {
+            settingsRepository.getTrackStartDateFlow()
+                .distinctUntilChanged()
+                .collect { refreshSettings() }
+        }
+
+        // Add more flows here as needed...
     }
 
     private fun loadRecordingPath() {
@@ -328,13 +406,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun loadPersistentState() {
+    private fun loadSettingsSync() {
         val searchVisible = settingsRepository.isSearchVisible()
         val filtersVisible = settingsRepository.isFiltersVisible()
         val searchQuery = settingsRepository.getSearchQuery()
         val labelFilter = settingsRepository.getLabelFilter()
         
         val typeFilter = try { CallTabFilter.valueOf(settingsRepository.getCallTypeFilter()) } catch(e: Exception) { CallTabFilter.ALL }
+        val pTypeFilter = try { PersonTabFilter.valueOf(settingsRepository.getPersonTabFilter()) } catch(e: Exception) { PersonTabFilter.ALL }
         val connFilter = try { ConnectedFilter.valueOf(settingsRepository.getConnectedFilter()) } catch(e: Exception) { ConnectedFilter.ALL }
         val nFilter = try { NotesFilter.valueOf(settingsRepository.getNotesFilter()) } catch(e: Exception) { NotesFilter.ALL }
         val pnFilter = try { PersonNotesFilter.valueOf(settingsRepository.getPersonNotesFilter()) } catch(e: Exception) { PersonNotesFilter.ALL }
@@ -349,6 +428,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             searchQuery = searchQuery,
             labelFilter = labelFilter,
             callTypeFilter = typeFilter,
+            personTabFilter = pTypeFilter,
             connectedFilter = connFilter,
             notesFilter = nFilter,
             personNotesFilter = pnFilter,
@@ -360,6 +440,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             customStartDate = settingsRepository.getCustomStartDate().let { if (it == 0L) null else it },
             customEndDate = settingsRepository.getCustomEndDate().let { if (it == 0L) null else it }
         ) }
+    }
+
+    private fun loadPersistentState() {
+        loadSettingsSync()
         triggerFilter()
     }
 
@@ -373,9 +457,24 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         triggerFilter()
     }
 
+    fun submitSearch(query: String) {
+        if (query.length >= 2) {
+            settingsRepository.addSearchHistory(query)
+            loadSearchHistory()
+        }
+    }
+
+    fun loadSearchHistory() {
+        _uiState.update { it.copy(searchHistory = settingsRepository.getSearchHistory()) }
+    }
+
+    fun clearSearchHistory() {
+        settingsRepository.clearSearchHistory()
+        loadSearchHistory()
+    }
+
     fun onTabSelected(tabIndex: Int) {
         _uiState.update { it.copy(selectedTab = tabIndex) }
-        triggerFilter()
     }
     
     fun toggleSearchVisibility() {
@@ -404,6 +503,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setPersonTabFilter(filter: PersonTabFilter) {
         _uiState.update { it.copy(personTabFilter = filter) }
+        settingsRepository.setPersonTabFilter(filter.name)
         // Optimization: Do NOT call triggerFilter() here.
         // tabFilteredPersons already contains data for all tabs.
     }
@@ -481,6 +581,18 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         triggerFilter()
     }
 
+    fun setCallSortBy(sortBy: CallSortBy) {
+        _uiState.update { it.copy(callSortBy = sortBy) }
+        triggerFilter()
+    }
+
+    fun toggleCallSortDirection() {
+        _uiState.update { 
+            it.copy(callSortDirection = if (it.callSortDirection == SortDirection.ASCENDING) SortDirection.DESCENDING else SortDirection.ASCENDING) 
+        }
+        triggerFilter()
+    }
+
     private var filterJob: kotlinx.coroutines.Job? = null
     private fun triggerFilter() {
         filterJob?.cancel()
@@ -500,9 +612,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             // 3. Perform Single-Pass Person Filtering Across ALL Tabs
             val tabPersons = processPersonFilters(currentState, logsByPhone)
             
-            // 4. Pre-compute PersonGroups for UI list and bottom sheets (Reactive lookup)
-            // This is critical for smooth scrolling as it avoids computation in the Composable
-            val groups = logsByPhone.mapValues { (number, calls) ->
+            // 4. Get base logs for reporting and grouping (ALL tab)
+            val allTabLogs = tabLogs[CallTabFilter.ALL] ?: emptyList()
+
+            // 5. Compute PersonGroups for ONLY the filtered calls (Huge optimization for history)
+            // This map contains summary info for each contact based on the current global filter (e.g. date range)
+            val groups = allTabLogs.groupBy { it.phoneNumber }.mapValues { (number, calls) ->
                 val sortedCalls = calls.sortedByDescending { it.callDate }
                 val person = personsMap[number] ?: personsMap[getCachedNormalizedNumber(number)]
                 PersonGroup(
@@ -520,6 +635,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
 
+            // 6. Calculate Report Statistics (Heavy Operation)
+            // Use ALL tab logs for reports so the stats are consistent regardless of which tab you're viewing
+            val reportStats = calculateReportStats(allTabLogs, currentState.persons)
+
             val activeFilterCount = calculateFilterCount(currentState)
             
             _uiState.update { it.copy(
@@ -530,9 +649,150 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 activeFilterCount = activeFilterCount,
                 callTypeCounts = tabLogs.mapValues { it.value.size },
                 personTypeCounts = tabPersons.mapValues { it.value.size },
-                personGroups = groups
+                personGroups = groups,
+                reportStats = reportStats,
+                isLoading = false
             ) }
         }
+    }
+
+    private fun calculateReportStats(logs: List<CallDataEntity>, persons: List<PersonDataEntity>): ReportStats {
+        if (logs.isEmpty()) return ReportStats()
+
+        // Basic counts
+        val totalCalls = logs.size
+        val incomingCalls = logs.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE }
+        val outgoingCalls = logs.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE }
+        val missedCalls = logs.count { it.callType == android.provider.CallLog.Calls.MISSED_TYPE }
+        val rejectedCalls = logs.count { it.callType == android.provider.CallLog.Calls.REJECTED_TYPE || it.callType == 5 || it.callType == 6 }
+        
+        // Connected/Attended (> 3s as per new rule)
+        val connectedCalls = logs.count { it.duration > 3 }
+        val notConnectedCalls = logs.count { it.duration <= 3 }
+        val connectedIncoming = logs.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE && it.duration > 3 }
+        val connectedOutgoing = logs.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE && it.duration > 3 }
+        
+        // Duration stats
+        val totalDuration = logs.sumOf { it.duration }
+        val avgDuration = if (connectedCalls > 0) totalDuration / connectedCalls else 0L
+        val maxDuration = logs.maxOfOrNull { it.duration } ?: 0L
+        val incomingDuration = logs.filter { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE }.sumOf { it.duration }
+        val outgoingDuration = logs.filter { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE }.sumOf { it.duration }
+        
+        // Unique contacts
+        val uniqueContacts = logs.distinctBy { it.phoneNumber }.size
+        val savedContacts = logs.filter { !it.contactName.isNullOrEmpty() }.distinctBy { it.phoneNumber }.size
+        val unsavedContacts = logs.filter { it.contactName.isNullOrEmpty() }.distinctBy { it.phoneNumber }.size
+        
+        // Notes & Reviews
+        val callsWithNotes = logs.count { !it.callNote.isNullOrEmpty() }
+        val reviewedCalls = logs.count { it.reviewed }
+        val personsWithNotes = persons.count { !it.personNote.isNullOrEmpty() }
+        val personsWithLabels = persons.count { !it.label.isNullOrEmpty() }
+        
+        // Recordings
+        val callsWithRecordings = logs.count { !it.localRecordingPath.isNullOrEmpty() }
+
+        // Short Calls (low engagement indicator)
+        val shortCallThreshold = settingsRepository.getShortCallThresholdSeconds()
+        val shortCalls = logs.count { it.duration > 0 && it.duration < shortCallThreshold }
+        
+        // Top callers
+        val topCallers = logs
+            .groupBy { it.phoneNumber }
+            .map { (number, calls) ->
+                val name = calls.firstOrNull { !it.contactName.isNullOrEmpty() }?.contactName
+                TopCaller(
+                    phoneNumber = number,
+                    displayName = name ?: number,
+                    callCount = calls.size,
+                    totalDuration = calls.sumOf { it.duration },
+                    incomingCount = calls.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE },
+                    outgoingCount = calls.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE },
+                    missedCount = calls.count { it.callType == android.provider.CallLog.Calls.MISSED_TYPE }
+                )
+            }
+            .sortedByDescending { it.callCount }
+            .take(5)
+        
+        // Most talked (by duration)
+        val mostTalked = logs
+            .groupBy { it.phoneNumber }
+            .map { (number, calls) ->
+                val name = calls.firstOrNull { !it.contactName.isNullOrEmpty() }?.contactName
+                TopCaller(
+                    phoneNumber = number,
+                    displayName = name ?: number,
+                    callCount = calls.size,
+                    totalDuration = calls.sumOf { it.duration },
+                    incomingCount = calls.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE },
+                    outgoingCount = calls.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE },
+                    missedCount = calls.count { it.callType == android.provider.CallLog.Calls.MISSED_TYPE }
+                )
+            }
+            .filter { it.totalDuration > 0 }
+            .sortedByDescending { it.totalDuration }
+            .take(5)
+        
+        // Daily breakdown
+        val dailyStats = logs
+            .groupBy { 
+                java.text.SimpleDateFormat("EEE", java.util.Locale.getDefault()).format(java.util.Date(it.callDate))
+            }
+            .mapValues { (_, calls) ->
+                DayStat(
+                    count = calls.size,
+                    duration = calls.sumOf { it.duration }
+                )
+            }
+        
+        // Hourly breakdown (0-23)
+        val hourlyStats = logs
+            .groupBy { 
+                java.util.Calendar.getInstance().apply { timeInMillis = it.callDate }.get(java.util.Calendar.HOUR_OF_DAY)
+            }
+            .mapValues { (_, calls) -> calls.size }
+        
+        // Label distribution
+        val labelDistribution = persons
+            .flatMap { person ->
+                person.label?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
+            }
+            .groupingBy { it }
+            .eachCount()
+            .toList()
+            .sortedByDescending { it.second }
+
+        return ReportStats(
+            totalCalls = totalCalls,
+            incomingCalls = incomingCalls,
+            outgoingCalls = outgoingCalls,
+            missedCalls = missedCalls,
+            rejectedCalls = rejectedCalls,
+            connectedCalls = connectedCalls,
+            notConnectedCalls = notConnectedCalls,
+            connectedIncoming = connectedIncoming,
+            connectedOutgoing = connectedOutgoing,
+            totalDuration = totalDuration,
+            avgDuration = avgDuration,
+            maxDuration = maxDuration,
+            incomingDuration = incomingDuration,
+            outgoingDuration = outgoingDuration,
+            uniqueContacts = uniqueContacts,
+            savedContacts = savedContacts,
+            unsavedContacts = unsavedContacts,
+            callsWithNotes = callsWithNotes,
+            reviewedCalls = reviewedCalls,
+            callsWithRecordings = callsWithRecordings,
+            personsWithNotes = personsWithNotes,
+            personsWithLabels = personsWithLabels,
+            shortCalls = shortCalls,
+            topCallers = topCallers,
+            mostTalked = mostTalked,
+            dailyStats = dailyStats,
+            hourlyStats = hourlyStats,
+            labelDistribution = labelDistribution
+        )
     }
 
     private fun getCachedNormalizedNumber(number: String): String {
@@ -648,15 +908,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 
                 when (call.callType) {
                     android.provider.CallLog.Calls.INCOMING_TYPE -> {
-                        if (isConnected) {
-                            tabMaps[CallTabFilter.INCOMING]?.add(call)
+                        if (call.duration > 3) {
+                            tabMaps[CallTabFilter.ATTENDED]?.add(call)
                         } else {
                             tabMaps[CallTabFilter.NOT_ATTENDED]?.add(call)
                         }
                     }
                     android.provider.CallLog.Calls.OUTGOING_TYPE -> {
-                        if (isConnected) {
-                            tabMaps[CallTabFilter.OUTGOING]?.add(call)
+                        if (call.duration > 3) {
+                            tabMaps[CallTabFilter.RESPONDED]?.add(call)
                         } else {
                             tabMaps[CallTabFilter.NOT_RESPONDED]?.add(call)
                         }
@@ -669,6 +929,30 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+        
+        // Final Sorting for all call tabs
+        val isDesc = current.callSortDirection == SortDirection.DESCENDING
+        val sortBy = current.callSortBy
+        
+        tabMaps.values.forEach { list ->
+            if (list.isNotEmpty()) {
+                when (sortBy) {
+                    CallSortBy.DATE -> {
+                        if (isDesc) list.sortByDescending { it.callDate }
+                        else list.sortBy { it.callDate }
+                    }
+                    CallSortBy.DURATION -> {
+                        if (isDesc) list.sortByDescending { it.duration }
+                        else list.sortBy { it.duration }
+                    }
+                    CallSortBy.NUMBER -> {
+                        if (isDesc) list.sortByDescending { it.phoneNumber }
+                        else list.sortBy { it.phoneNumber }
+                    }
+                }
+            }
+        }
+        
         return tabMaps
     }
 
@@ -693,8 +977,34 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val tabMaps = java.util.EnumMap<PersonTabFilter, ArrayList<PersonDataEntity>>(PersonTabFilter::class.java)
         PersonTabFilter.entries.forEach { tabMaps[it] = ArrayList<PersonDataEntity>() }
 
+        val dRange = current.dateRange
+        val todayStart = getStartOfDay(0)
+        val threeDaysStart = getStartOfDay(2)
+        val sevenDaysStart = getStartOfDay(6)
+        val fourteenDaysStart = getStartOfDay(13)
+        val thirtyDaysStart = getStartOfDay(29)
+        val thisMonthStart = getStartOfThisMonth()
+        val prevMonthStart = getStartOfPreviousMonth()
+        val cStart = current.customStartDate ?: 0L
+        val cEnd = current.customEndDate ?: Long.MAX_VALUE
+
         for (person in current.persons) {
             if (person.isNoTracking) continue
+
+            // Date range filter apply in person based on last call
+            val lastDate = person.lastCallDate ?: 0L
+            val matchesDate = when (dRange) {
+                DateRange.TODAY -> lastDate >= todayStart
+                DateRange.LAST_3_DAYS -> lastDate >= threeDaysStart
+                DateRange.LAST_7_DAYS -> lastDate >= sevenDaysStart
+                DateRange.LAST_14_DAYS -> lastDate >= fourteenDaysStart
+                DateRange.LAST_30_DAYS -> lastDate >= thirtyDaysStart
+                DateRange.THIS_MONTH -> lastDate >= thisMonthStart
+                DateRange.PREVIOUS_MONTH -> lastDate in prevMonthStart until thisMonthStart
+                DateRange.CUSTOM -> lastDate in cStart..cEnd
+                DateRange.ALL -> true
+            }
+            if (!matchesDate) continue
             
             if (hasLabelFilter) {
                 val personLabels = person.label?.split(",")?.map { it.trim() } ?: emptyList()
@@ -732,42 +1042,32 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             if (isIgnored) {
                 tabMaps[PersonTabFilter.IGNORED]?.add(person)
             } else {
-                val hasCombinedDuration = person.totalDuration > 0
-                
                 tabMaps[PersonTabFilter.ALL]?.add(person)
                 
-                if (hasCombinedDuration) {
-                    tabMaps[PersonTabFilter.CONNECTED]?.add(person)
-                    tabMaps[PersonTabFilter.ATTENDED]?.add(person)
-                } else {
-                    tabMaps[PersonTabFilter.NEVER_CONNECTED]?.add(person)
-                }
-
-                val hasResponded = pCalls.any { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE && it.duration > 0 }
-                if (hasResponded) {
-                    tabMaps[PersonTabFilter.RESPONDED]?.add(person)
-                }
+                // Categorize based on LAST call status (>3s rule as per request)
+                val lastType = person.lastCallType
+                val lastDur = person.lastCallDuration ?: 0L
                 
-                val neverResponded = pCalls.all { it.callType != android.provider.CallLog.Calls.OUTGOING_TYPE || it.duration <= 0 }
-                if (neverResponded) {
-                    tabMaps[PersonTabFilter.NEVER_RESPONDED]?.add(person)
-                }
-                
-                val hasNotResponded = pCalls.any { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE && it.duration <= 0 }
-                if (hasNotResponded) {
-                    tabMaps[PersonTabFilter.NOT_RESPONDED]?.add(person)
-                }
-
-                val hasNotAttended = pCalls.any { 
-                    (it.callType == android.provider.CallLog.Calls.INCOMING_TYPE || it.callType == android.provider.CallLog.Calls.MISSED_TYPE || it.callType == 5) && it.duration <= 0 
-                }
-                if (hasNotAttended) {
-                    tabMaps[PersonTabFilter.NOT_ATTENDED]?.add(person)
-                }
-                
-                val neverAttended = pCalls.all { it.callType != android.provider.CallLog.Calls.INCOMING_TYPE || it.duration <= 0 }
-                if (neverAttended) {
-                    tabMaps[PersonTabFilter.NEVER_ATTENDED]?.add(person)
+                when (lastType) {
+                    android.provider.CallLog.Calls.INCOMING_TYPE -> {
+                        if (lastDur > 3) {
+                            tabMaps[PersonTabFilter.ATTENDED]?.add(person)
+                        } else {
+                            tabMaps[PersonTabFilter.NOT_ATTENDED]?.add(person)
+                        }
+                    }
+                    android.provider.CallLog.Calls.OUTGOING_TYPE -> {
+                        if (lastDur > 3) {
+                            tabMaps[PersonTabFilter.RESPONDED]?.add(person)
+                        } else {
+                            tabMaps[PersonTabFilter.NOT_RESPONDED]?.add(person)
+                        }
+                    }
+                    android.provider.CallLog.Calls.MISSED_TYPE,
+                    android.provider.CallLog.Calls.REJECTED_TYPE,
+                    5 -> {
+                        tabMaps[PersonTabFilter.NOT_ATTENDED]?.add(person)
+                    }
                 }
             }
         }
@@ -780,12 +1080,17 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             if (list.isNotEmpty()) {
                 when (sortBy) {
                     PersonSortBy.LAST_CALL -> {
-                        if (isDesc) list.sortByDescending { it.lastCallDate ?: 0L }
-                        else list.sortBy { it.lastCallDate ?: 0L }
+                        if (isDesc) list.sortByDescending { it.lastCallDate }
+                        else list.sortBy { it.lastCallDate }
                     }
                     PersonSortBy.MOST_CALLS -> {
                         if (isDesc) list.sortByDescending { it.totalCalls }
                         else list.sortBy { it.totalCalls }
+                    }
+                    PersonSortBy.NAME -> {
+                        val comparator = compareBy<PersonDataEntity> { it.contactName ?: it.phoneNumber }
+                        if (isDesc) list.sortWith(comparator.reversed())
+                        else list.sortWith(comparator)
                     }
                 }
             }
@@ -817,7 +1122,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         } else {
             // Single SIM or unknown - dial directly using default
             val subId = activeSims.firstOrNull()?.subscriptionId
-            com.miniclick.calltrackmanage.ui.utils.CallUtils.makeCall(getApplication(), number, subId)
+            val forceDialer = currentState.callActionBehavior == "Open in Dialpad"
+            com.miniclick.calltrackmanage.ui.utils.CallUtils.makeCall(getApplication(), number, subId, forceDialer)
         }
     }
 
@@ -827,8 +1133,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun executeCall(subId: Int?) {
         val number = _uiState.value.callFlowNumber ?: return
         val ctx = getApplication<Application>()
+        val forceDialer = _uiState.value.callActionBehavior == "Open in Dialpad"
         
-        com.miniclick.calltrackmanage.ui.utils.CallUtils.makeCall(ctx, number, subId)
+        com.miniclick.calltrackmanage.ui.utils.CallUtils.makeCall(ctx, number, subId, forceDialer)
         cancelCallFlow()
     }
 
@@ -905,9 +1212,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     // SYNC STATUS
     // ============================================
     
-    fun updateCallStatus(compositeId: String, status: CallLogStatus) {
+    fun updateCallStatus(compositeId: String, status: MetadataSyncStatus) {
         viewModelScope.launch {
-            callDataRepository.updateSyncStatus(compositeId, status)
+            callDataRepository.updateMetadataSyncStatus(compositeId, status)
         }
     }
 
@@ -1000,6 +1307,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                         callRecordEnabled != _uiState.value.callRecordEnabled ||
                         callerPhone1 != _uiState.value.callerPhoneSim1 ||
                         callerPhone2 != _uiState.value.callerPhoneSim2
+        
+        val showDialButton = settingsRepository.isShowDialButton()
+        val callActionBehavior = settingsRepository.getCallActionBehavior()
 
         _uiState.update { it.copy(
             simSelection = simSelection, 
@@ -1011,7 +1321,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             sim2SubId = sim2SubId,
             callerPhoneSim1 = callerPhone1,
             callerPhoneSim2 = callerPhone2,
-            availableSims = sims
+            availableSims = sims,
+            showDialButton = showDialButton,
+            callActionBehavior = callActionBehavior
         ) }
 
         if (needsSync) {

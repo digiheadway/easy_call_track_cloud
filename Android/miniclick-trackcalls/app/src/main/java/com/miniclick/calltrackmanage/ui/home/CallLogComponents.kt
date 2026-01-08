@@ -36,7 +36,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.miniclick.calltrackmanage.data.db.CallDataEntity
-import com.miniclick.calltrackmanage.data.db.CallLogStatus
+import com.miniclick.calltrackmanage.data.db.MetadataSyncStatus
+import com.miniclick.calltrackmanage.data.db.RecordingSyncStatus
 import com.miniclick.calltrackmanage.ui.common.*
 import com.miniclick.calltrackmanage.ui.utils.*
 import java.text.SimpleDateFormat
@@ -157,7 +158,7 @@ fun CallLogList(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(
-                            Icons.Default.ManageSearch,
+                            Icons.AutoMirrored.Filled.ManageSearch,
                             contentDescription = null,
                             modifier = Modifier.size(20.dp),
                             tint = MaterialTheme.colorScheme.primary
@@ -260,139 +261,148 @@ fun CallLogList(
         logs.groupBy { getDateHeader(it.callDate) }
     }
 
-    LazyColumn(
-        modifier = modifier,
-        state = lazyListState,
-        contentPadding = PaddingValues(bottom = 100.dp)
-    ) {
-        groupedLogs.forEach { (header, headerLogs) ->
-            item {
-                DateSectionHeader(
-                    dateLabel = header,
-                    totalCalls = headerLogs.size,
-                    uniqueCalls = headerLogs.distinctBy { it.phoneNumber }.size
-                )
-            }
-            items(headerLogs, key = { it.compositeId }) { log ->
-                val isExpanded = expandedLogId == log.compositeId
-                // Trigger check on expand
-                if (isExpanded) {
-                    LaunchedEffect(log.compositeId) {
-                        viewModel.getRecordingForLog(log)
-                    }
+    Box(modifier = modifier) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            state = lazyListState,
+            contentPadding = PaddingValues(top = 8.dp, bottom = 240.dp)
+        ) {
+            groupedLogs.forEach { (header, headerLogs) ->
+                item {
+                    DateSectionHeader(
+                        dateLabel = header,
+                        totalCalls = headerLogs.size,
+                        uniqueCalls = headerLogs.distinctBy { it.phoneNumber }.size
+                    )
                 }
-                
-                // Check for recording - use localRecordingPath from entity or recordings cache
-                val recordingPath = log.localRecordingPath ?: recordings[log.compositeId]
-                val hasRecording = !recordingPath.isNullOrEmpty()
-                
-                val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                
-                CallLogItem(
-                    log = log,
-                    isExpanded = isExpanded,
-                    hasRecording = hasRecording,
-                    recordingPath = recordingPath,
-                    onCardClick = { 
-                        expandedLogId = if (isExpanded) null else log.compositeId
-                    },
-                    onLongClick = {
-                        longPressTarget = log
-                    },
-                    onPlayClick = { path -> 
-                        val callTypeStr = when (log.callType) {
-                            android.provider.CallLog.Calls.INCOMING_TYPE -> "Incoming"
-                            android.provider.CallLog.Calls.OUTGOING_TYPE -> "Outgoing"
-                            android.provider.CallLog.Calls.MISSED_TYPE -> "Missed"
-                            5 -> "Rejected"
-                            6 -> "Blocked"
-                            else -> "Call"
+                items(headerLogs, key = { it.compositeId }) { log ->
+                    val isExpanded = expandedLogId == log.compositeId
+                    // Trigger check on expand
+                    if (isExpanded) {
+                        LaunchedEffect(log.compositeId) {
+                            viewModel.getRecordingForLog(log)
                         }
-                        val timeStr = SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()).format(java.util.Date(log.callDate))
-                        audioPlayer.play(
-                            path,
-                            PlaybackMetadata(
-                                name = log.contactName,
-                                phoneNumber = log.phoneNumber,
-                                callTime = timeStr,
-                                callType = callTypeStr
+                    }
+                    
+                    // Check for recording - use localRecordingPath from entity or recordings cache
+                    val recordingPath = log.localRecordingPath ?: recordings[log.compositeId]
+                    val hasRecording = !recordingPath.isNullOrEmpty()
+                    
+                    val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    
+                    CallLogItem(
+                        log = log,
+                        isExpanded = isExpanded,
+                        hasRecording = hasRecording,
+                        recordingPath = recordingPath,
+                        onCardClick = { 
+                            expandedLogId = if (isExpanded) null else log.compositeId
+                        },
+                        onLongClick = {
+                            longPressTarget = log
+                        },
+                        onPlayClick = { path -> 
+                            val callTypeStr = when (log.callType) {
+                                android.provider.CallLog.Calls.INCOMING_TYPE -> "Incoming"
+                                android.provider.CallLog.Calls.OUTGOING_TYPE -> "Outgoing"
+                                android.provider.CallLog.Calls.MISSED_TYPE -> "Missed"
+                                5 -> "Rejected"
+                                6 -> "Blocked"
+                                else -> "Call"
+                            }
+                            val timeStr = SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()).format(java.util.Date(log.callDate))
+                            audioPlayer.play(
+                                path,
+                                PlaybackMetadata(
+                                    name = log.contactName,
+                                    phoneNumber = log.phoneNumber,
+                                    callTime = timeStr,
+                                    callType = callTypeStr
+                                )
                             )
-                        )
-                    },
-                    onCallNoteClick = { callNoteTarget = log },
-                    onPersonNoteClick = { personNoteTarget = log },
-                    onCallClick = {
-                        viewModel.initiateCall(log.phoneNumber)
-                    },
-                    onCopyClick = {
-                        val cleaned = cleanNumber(log.phoneNumber)
-                        val clip = android.content.ClipData.newPlainText("Phone Number", cleaned)
-                        clipboardManager.setPrimaryClip(clip)
-                        android.widget.Toast.makeText(context, "Copied: $cleaned", android.widget.Toast.LENGTH_SHORT).show()
-                    },
-                    onWhatsAppClick = {
-                        try {
+                        },
+                        onCallNoteClick = { callNoteTarget = log },
+                        onPersonNoteClick = { personNoteTarget = log },
+                        onCallClick = {
+                            viewModel.initiateCall(log.phoneNumber)
+                        },
+                        onCopyClick = {
                             val cleaned = cleanNumber(log.phoneNumber)
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/91$cleaned"))
-                            if (whatsappPreference != "Always Ask") {
-                                intent.setPackage(whatsappPreference)
+                            val clip = android.content.ClipData.newPlainText("Phone Number", cleaned)
+                            clipboardManager.setPrimaryClip(clip)
+                            android.widget.Toast.makeText(context, "Copied: $cleaned", android.widget.Toast.LENGTH_SHORT).show()
+                        },
+                        onWhatsAppClick = {
+                            try {
+                                val cleaned = cleanNumber(log.phoneNumber)
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/91$cleaned"))
+                                if (whatsappPreference != "Always Ask") {
+                                    intent.setPackage(whatsappPreference)
+                                }
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                // Fallback
+                                if (whatsappPreference != "Always Ask") {
+                                   try {
+                                       val cleaned = cleanNumber(log.phoneNumber)
+                                       val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/91$cleaned"))
+                                       intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                       context.startActivity(intent)
+                                   } catch(e2: Exception) { e2.printStackTrace() }
+                                }
                             }
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                            // Fallback
-                            if (whatsappPreference != "Always Ask") {
-                               try {
-                                   val cleaned = cleanNumber(log.phoneNumber)
-                                   val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/91$cleaned"))
-                                   intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                   context.startActivity(intent)
-                               } catch(e2: Exception) { e2.printStackTrace() }
+                        },
+                        onAddContactClick = {
+                            try {
+                                val cleaned = cleanNumber(log.phoneNumber)
+                                val intent = Intent(Intent.ACTION_INSERT_OR_EDIT).apply {
+                                    type = android.provider.ContactsContract.Contacts.CONTENT_ITEM_TYPE
+                                    putExtra(android.provider.ContactsContract.Intents.Insert.PHONE, cleaned)
+                                }
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
                             }
-                        }
-                    },
-                    onAddContactClick = {
-                        try {
-                            val cleaned = cleanNumber(log.phoneNumber)
-                            val intent = Intent(Intent.ACTION_INSERT_OR_EDIT).apply {
-                                type = android.provider.ContactsContract.Contacts.CONTENT_ITEM_TYPE
-                                putExtra(android.provider.ContactsContract.Intents.Insert.PHONE, cleaned)
+                        },
+                        onAddToCrmClick = {
+                            try {
+                                val cleaned = cleanNumber(log.phoneNumber)
+                                val intent = Intent("com.example.salescrm.ACTION_ADD_LEAD").apply {
+                                    putExtra("lead_name", log.contactName ?: "")
+                                    putExtra("lead_phone", cleaned)
+                                }
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                context.startActivity(intent)
+                            } catch (e: android.content.ActivityNotFoundException) {
+                                android.widget.Toast.makeText(context, "SalesCRM app not installed", android.widget.Toast.LENGTH_SHORT).show()
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                android.widget.Toast.makeText(context, "Failed to open CRM", android.widget.Toast.LENGTH_SHORT).show()
                             }
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    },
-                    onAddToCrmClick = {
-                        try {
-                            val cleaned = cleanNumber(log.phoneNumber)
-                            val intent = Intent("com.example.salescrm.ACTION_ADD_LEAD").apply {
-                                putExtra("lead_name", log.contactName ?: "")
-                                putExtra("lead_phone", cleaned)
-                            }
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            context.startActivity(intent)
-                        } catch (e: android.content.ActivityNotFoundException) {
-                            android.widget.Toast.makeText(context, "SalesCRM app not installed", android.widget.Toast.LENGTH_SHORT).show()
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                            android.widget.Toast.makeText(context, "Failed to open CRM", android.widget.Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    onViewMoreClick = {
-                        personGroupsMap[log.phoneNumber]?.let { onViewMoreClick(it) }
-                    },
-                    audioPlayer = audioPlayer,
-                    personGroup = personGroupsMap[log.phoneNumber],
-                    onLabelClick = { labelTarget = log },
-                    onAttachRecording = onAttachRecording,
-                    onReviewedToggle = { viewModel.updateReviewed(log.compositeId, !log.reviewed) },
-                    callRecordEnabled = uiState.callRecordEnabled
-                )
+                        },
+                        onViewMoreClick = {
+                            personGroupsMap[log.phoneNumber]?.let { onViewMoreClick(it) }
+                        },
+                        audioPlayer = audioPlayer,
+                        personGroup = personGroupsMap[log.phoneNumber],
+                        onLabelClick = { labelTarget = log },
+                        onAttachRecording = onAttachRecording,
+                        onReviewedToggle = { viewModel.updateReviewed(log.compositeId, !log.reviewed) },
+                        callRecordEnabled = uiState.callRecordEnabled,
+                        showDialButton = uiState.showDialButton
+                    )
+                }
             }
         }
+
+        VerticalScrollbar(
+            lazyListState = lazyListState,
+            itemCount = logs.size + groupedLogs.size,
+            modifier = Modifier.align(Alignment.CenterEnd)
+        )
     }
 }
 
@@ -419,7 +429,8 @@ fun CallLogItem(
     onLabelClick: () -> Unit,
     onAttachRecording: (CallDataEntity) -> Unit,
     onReviewedToggle: () -> Unit,
-    callRecordEnabled: Boolean
+    callRecordEnabled: Boolean,
+    showDialButton: Boolean
 ) {
     val currentFile by audioPlayer.currentFile.collectAsState()
     
@@ -541,43 +552,20 @@ fun CallLogItem(
                         val hasPersonNote = personGroup?.personNote?.isNotEmpty() == true
                         
                         if (hasCallNote) {
-                            Row(
-                                verticalAlignment = Alignment.Top,
-                                modifier = Modifier.clickable { onCallNoteClick() }
-                            ) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.StickyNote2,
-                                    null,
-                                    modifier = Modifier.size(12.dp).padding(top = 2.dp),
-                                    tint = MaterialTheme.colorScheme.secondary
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    text = log.callNote!!,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.secondary
-                                )
-                            }
+                            NoteChip(
+                                note = log.callNote!!,
+                                icon = Icons.AutoMirrored.Filled.StickyNote2,
+                                onClick = onCallNoteClick
+                            )
                         }
                         
                         if (hasPersonNote) {
-                            Row(
-                                verticalAlignment = Alignment.Top,
-                                modifier = Modifier.clickable { onPersonNoteClick() }
-                            ) {
-                                Icon(
-                                    Icons.Default.Person,
-                                    null,
-                                    modifier = Modifier.size(12.dp).padding(top = 2.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    text = personGroup!!.personNote,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
+                            NoteChip(
+                                note = personGroup!!.personNote,
+                                icon = Icons.Default.Person,
+                                onClick = onPersonNoteClick,
+                                color = MaterialTheme.colorScheme.primaryContainer
+                            )
                         }
                         
                         // Label Chip
@@ -589,7 +577,7 @@ fun CallLogItem(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // COLUMN 3: Time & Status Badge
+                // COLUMN 3: Time, Status Badge & Call Count Chip
                 Column(
                     modifier = Modifier.fillMaxHeight(),
                     horizontalAlignment = Alignment.End,
@@ -600,10 +588,58 @@ fun CallLogItem(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    log.syncStatus.let { 
+                    
+                    if (showDialButton && !isExpanded) {
                         Spacer(Modifier.height(4.dp))
-                        StatusIndicator(it) 
+                        FilledIconButton(
+                            onClick = onCallClick,
+                            modifier = Modifier.size(32.dp),
+                            colors = IconButtonDefaults.filledIconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                contentColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(
+                                Icons.Default.Call, 
+                                contentDescription = "Call",
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
+                    
+                    // Call Count Chip (like Persons screen)
+                    if (personGroup != null && personGroup.calls.size > 1) {
+                        Spacer(Modifier.height(4.dp))
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onViewMoreClick() }
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                horizontalArrangement = Arrangement.spacedBy(3.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.History,
+                                    null,
+                                    modifier = Modifier.size(12.dp),
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                                Text(
+                                    text = "${personGroup.calls.size}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                    } else {
+                        StatusIndicator(log.metadataSyncStatus, log.recordingSyncStatus) 
+                    }
+                }
                 }
             }
             
@@ -762,7 +798,6 @@ fun CallLogItem(
                 }
             }
         }
-        }
     }
 }
 
@@ -859,14 +894,20 @@ fun ActionIconButton(
 }
 
 @Composable
-fun StatusIndicator(status: CallLogStatus) {
-    val (color, icon) = when (status) {
-        CallLogStatus.PENDING -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f) to Icons.Outlined.Timer
-        CallLogStatus.COMPRESSING -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f) to Icons.Default.CloudSync
-        CallLogStatus.UPLOADING -> MaterialTheme.colorScheme.primary.copy(alpha = 0.6f) to Icons.Default.CloudUpload
-        CallLogStatus.COMPLETED -> Color(0xFF4CAF50).copy(alpha = 0.6f) to Icons.Default.CheckCircle
-        CallLogStatus.FAILED -> MaterialTheme.colorScheme.error.copy(alpha = 0.6f) to Icons.Default.Error
-        CallLogStatus.NOTE_UPDATE_PENDING -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f) to Icons.AutoMirrored.Filled.StickyNote2
+fun StatusIndicator(metadataStatus: MetadataSyncStatus, recordingStatus: RecordingSyncStatus) {
+    // Prioritize showing recording status if it's in an active state
+    val (color, icon) = when {
+        // Recording states take priority when active
+        recordingStatus == RecordingSyncStatus.COMPRESSING -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f) to Icons.Default.CloudSync
+        recordingStatus == RecordingSyncStatus.UPLOADING -> MaterialTheme.colorScheme.primary.copy(alpha = 0.6f) to Icons.Default.CloudUpload
+        recordingStatus == RecordingSyncStatus.FAILED -> MaterialTheme.colorScheme.error.copy(alpha = 0.6f) to Icons.Default.Error
+        recordingStatus == RecordingSyncStatus.PENDING -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f) to Icons.Outlined.Timer
+        // Metadata sync states
+        metadataStatus == MetadataSyncStatus.UPDATE_PENDING -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f) to Icons.AutoMirrored.Filled.StickyNote2
+        metadataStatus == MetadataSyncStatus.PENDING -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f) to Icons.Outlined.Timer
+        metadataStatus == MetadataSyncStatus.FAILED -> MaterialTheme.colorScheme.error.copy(alpha = 0.6f) to Icons.Default.Error
+        // All synced
+        else -> Color(0xFF4CAF50).copy(alpha = 0.6f) to Icons.Default.CheckCircle
     }
 
     Icon(
@@ -1073,14 +1114,10 @@ fun InteractionRow(
                 )
                 
                 if (!call.callNote.isNullOrEmpty()) {
-                    Text(
-                        text = call.callNote,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { onNoteClick(call) }
-                            .padding(top = 2.dp)
+                    NoteChip(
+                        note = call.callNote,
+                        icon = Icons.AutoMirrored.Filled.StickyNote2,
+                        onClick = { onNoteClick(call) }
                     )
                 }
             }

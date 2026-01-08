@@ -26,9 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.miniclick.calltrackmanage.ui.common.CallFilterModal
-import com.miniclick.calltrackmanage.ui.common.CallTypeTabs
-import com.miniclick.calltrackmanage.ui.common.EmptyState
+import com.miniclick.calltrackmanage.ui.common.*
 import com.miniclick.calltrackmanage.ui.utils.formatDurationShort
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -53,142 +51,7 @@ fun ReportsScreen(
             .sorted() 
     }
     
-    // Calculate comprehensive stats from ALL call logs (not filtered by tab type)
-    val stats = remember(uiState.filteredLogs, uiState.callLogs, uiState.persons, uiState.dateRange) {
-        val logs = uiState.filteredLogs
-        val allLogs = uiState.callLogs
-        val persons = uiState.persons
-        
-        // Basic counts
-        val totalCalls = logs.size
-        val incomingCalls = logs.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE }
-        val outgoingCalls = logs.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE }
-        val missedCalls = logs.count { it.callType == android.provider.CallLog.Calls.MISSED_TYPE }
-        val rejectedCalls = logs.count { it.callType == android.provider.CallLog.Calls.REJECTED_TYPE || it.callType == 5 || it.callType == 6 }
-        
-        // Connected/Attended
-        val connectedCalls = logs.count { it.duration > 0 }
-        val notConnectedCalls = logs.count { it.duration <= 0 }
-        val connectedIncoming = logs.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE && it.duration > 0 }
-        val connectedOutgoing = logs.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE && it.duration > 0 }
-        
-        // Duration stats
-        val totalDuration = logs.sumOf { it.duration }
-        val avgDuration = if (connectedCalls > 0) totalDuration / connectedCalls else 0L
-        val maxDuration = logs.maxOfOrNull { it.duration } ?: 0L
-        val incomingDuration = logs.filter { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE }.sumOf { it.duration }
-        val outgoingDuration = logs.filter { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE }.sumOf { it.duration }
-        
-        // Unique contacts
-        val uniqueContacts = logs.distinctBy { it.phoneNumber }.size
-        val savedContacts = logs.filter { !it.contactName.isNullOrEmpty() }.distinctBy { it.phoneNumber }.size
-        val unsavedContacts = logs.filter { it.contactName.isNullOrEmpty() }.distinctBy { it.phoneNumber }.size
-        
-        // Notes & Reviews
-        val callsWithNotes = logs.count { !it.callNote.isNullOrEmpty() }
-        val reviewedCalls = logs.count { it.reviewed }
-        val personsWithNotes = persons.count { !it.personNote.isNullOrEmpty() }
-        val personsWithLabels = persons.count { !it.label.isNullOrEmpty() }
-        
-        // Recordings
-        val callsWithRecordings = logs.count { !it.localRecordingPath.isNullOrEmpty() }
-        
-        // Top callers
-        val topCallers = logs
-            .groupBy { it.phoneNumber }
-            .map { (number, calls) ->
-                val name = calls.firstOrNull { !it.contactName.isNullOrEmpty() }?.contactName
-                TopCaller(
-                    phoneNumber = number,
-                    displayName = name ?: number,
-                    callCount = calls.size,
-                    totalDuration = calls.sumOf { it.duration },
-                    incomingCount = calls.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE },
-                    outgoingCount = calls.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE },
-                    missedCount = calls.count { it.callType == android.provider.CallLog.Calls.MISSED_TYPE }
-                )
-            }
-            .sortedByDescending { it.callCount }
-            .take(5)
-        
-        // Most talked (by duration)
-        val mostTalked = logs
-            .groupBy { it.phoneNumber }
-            .map { (number, calls) ->
-                val name = calls.firstOrNull { !it.contactName.isNullOrEmpty() }?.contactName
-                TopCaller(
-                    phoneNumber = number,
-                    displayName = name ?: number,
-                    callCount = calls.size,
-                    totalDuration = calls.sumOf { it.duration },
-                    incomingCount = calls.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE },
-                    outgoingCount = calls.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE },
-                    missedCount = calls.count { it.callType == android.provider.CallLog.Calls.MISSED_TYPE }
-                )
-            }
-            .filter { it.totalDuration > 0 }
-            .sortedByDescending { it.totalDuration }
-            .take(5)
-        
-        // Daily breakdown
-        val dailyStats = logs
-            .groupBy { 
-                SimpleDateFormat("EEE", Locale.getDefault()).format(Date(it.callDate))
-            }
-            .mapValues { (_, calls) ->
-                DayStat(
-                    count = calls.size,
-                    duration = calls.sumOf { it.duration }
-                )
-            }
-        
-        // Hourly breakdown (0-23)
-        val hourlyStats = logs
-            .groupBy { 
-                Calendar.getInstance().apply { timeInMillis = it.callDate }.get(Calendar.HOUR_OF_DAY)
-            }
-            .mapValues { (_, calls) -> calls.size }
-        
-        // Label distribution
-        val labelDistribution = persons
-            .flatMap { person ->
-                person.label?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
-            }
-            .groupingBy { it }
-            .eachCount()
-            .toList()
-            .sortedByDescending { it.second }
-        
-        ReportStats(
-            totalCalls = totalCalls,
-            incomingCalls = incomingCalls,
-            outgoingCalls = outgoingCalls,
-            missedCalls = missedCalls,
-            rejectedCalls = rejectedCalls,
-            connectedCalls = connectedCalls,
-            notConnectedCalls = notConnectedCalls,
-            connectedIncoming = connectedIncoming,
-            connectedOutgoing = connectedOutgoing,
-            totalDuration = totalDuration,
-            avgDuration = avgDuration,
-            maxDuration = maxDuration,
-            incomingDuration = incomingDuration,
-            outgoingDuration = outgoingDuration,
-            uniqueContacts = uniqueContacts,
-            savedContacts = savedContacts,
-            unsavedContacts = unsavedContacts,
-            callsWithNotes = callsWithNotes,
-            reviewedCalls = reviewedCalls,
-            callsWithRecordings = callsWithRecordings,
-            personsWithNotes = personsWithNotes,
-            personsWithLabels = personsWithLabels,
-            topCallers = topCallers,
-            mostTalked = mostTalked,
-            dailyStats = dailyStats,
-            hourlyStats = hourlyStats,
-            labelDistribution = labelDistribution
-        )
-    }
+    val stats = uiState.reportStats
     
     Column(
         modifier = Modifier
@@ -257,7 +120,18 @@ fun ReportsScreen(
             )
         }
         
-        if (uiState.simSelection == "Off") {
+        if (uiState.isLoading) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item { ReportsCardShimmer() }
+                item { ReportsCardShimmer() }
+                item { ReportsCardShimmer() }
+                item { ReportsCardShimmer() }
+            }
+        } else if (uiState.simSelection == "Off") {
             EmptyState(
                 icon = Icons.Default.SimCard,
                 title = "Select Sim Card to Track",
@@ -282,7 +156,7 @@ fun ReportsScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 120.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Overview Summary Card - Clickable to Calls
@@ -291,7 +165,10 @@ fun ReportsScreen(
                         totalCalls = stats.totalCalls,
                         uniqueContacts = stats.uniqueContacts,
                         totalDuration = stats.totalDuration,
-                        onClick = { viewModel.setCallTypeFilter(CallTabFilter.ALL) }
+                        onClick = {
+                            viewModel.setCallTypeFilter(CallTabFilter.ALL)
+                            onNavigateToTab?.invoke(0) // Navigate to Calls
+                        }
                     )
                 }
                 
@@ -299,7 +176,10 @@ fun ReportsScreen(
                 item {
                     CallTypesCard(
                         stats = stats,
-                        onTypeClick = { filter -> viewModel.setCallTypeFilter(filter) }
+                        onTypeClick = { filter ->
+                            viewModel.setCallTypeFilter(filter)
+                            onNavigateToTab?.invoke(0) // Navigate to Calls
+                        }
                     )
                 }
                 
@@ -339,7 +219,13 @@ fun ReportsScreen(
                 
                 // Contacts Breakdown
                 item {
-                    ContactsBreakdownCard(stats = stats)
+                    ContactsBreakdownCard(
+                        stats = stats,
+                        onTypeClick = { filter ->
+                            viewModel.setContactsFilter(filter)
+                            onNavigateToTab?.invoke(0) // Navigate to Calls
+                        }
+                    )
                 }
                 
                 // Notes & Activity Card
@@ -371,53 +257,6 @@ fun ReportsScreen(
         }
     }
 }
-
-// ========================= Data Classes =========================
-
-data class ReportStats(
-    val totalCalls: Int,
-    val incomingCalls: Int,
-    val outgoingCalls: Int,
-    val missedCalls: Int,
-    val rejectedCalls: Int,
-    val connectedCalls: Int,
-    val notConnectedCalls: Int,
-    val connectedIncoming: Int,
-    val connectedOutgoing: Int,
-    val totalDuration: Long,
-    val avgDuration: Long,
-    val maxDuration: Long,
-    val incomingDuration: Long,
-    val outgoingDuration: Long,
-    val uniqueContacts: Int,
-    val savedContacts: Int,
-    val unsavedContacts: Int,
-    val callsWithNotes: Int,
-    val reviewedCalls: Int,
-    val callsWithRecordings: Int,
-    val personsWithNotes: Int,
-    val personsWithLabels: Int,
-    val topCallers: List<TopCaller>,
-    val mostTalked: List<TopCaller>,
-    val dailyStats: Map<String, DayStat>,
-    val hourlyStats: Map<Int, Int>,
-    val labelDistribution: List<Pair<String, Int>>
-)
-
-data class TopCaller(
-    val phoneNumber: String,
-    val displayName: String,
-    val callCount: Int,
-    val totalDuration: Long,
-    val incomingCount: Int,
-    val outgoingCount: Int,
-    val missedCount: Int
-)
-
-data class DayStat(
-    val count: Int,
-    val duration: Long
-)
 
 // ========================= Card Components =========================
 
@@ -498,28 +337,28 @@ fun CallTypesCard(
             Spacer(Modifier.height(16.dp))
             
             ClickableStatRow(
-                label = "Incoming (Connected)",
+                label = "Attended (Incoming >3s)",
                 value = stats.connectedIncoming.toString(),
                 icon = Icons.AutoMirrored.Filled.CallReceived,
                 color = Color(0xFF4CAF50),
-                onClick = { onTypeClick(CallTabFilter.INCOMING) }
+                onClick = { onTypeClick(CallTabFilter.ATTENDED) }
             )
             ClickableStatRow(
-                label = "Outgoing (Connected)",
+                label = "Responded (Outgoing >3s)",
                 value = stats.connectedOutgoing.toString(),
                 icon = Icons.AutoMirrored.Filled.CallMade,
                 color = Color(0xFF2196F3),
-                onClick = { onTypeClick(CallTabFilter.OUTGOING) }
+                onClick = { onTypeClick(CallTabFilter.RESPONDED) }
             )
             ClickableStatRow(
-                label = "Missed / Not Attended",
-                value = stats.missedCalls.toString(),
+                label = "NOT ATTENDED (Incoming <=3s)",
+                value = (stats.incomingCalls - stats.connectedIncoming).toString(),
                 icon = Icons.AutoMirrored.Filled.CallMissed,
                 color = Color(0xFFF44336),
                 onClick = { onTypeClick(CallTabFilter.NOT_ATTENDED) }
             )
             ClickableStatRow(
-                label = "Not Responded (Outgoing)",
+                label = "Not Responded (Outgoing <=3s)",
                 value = (stats.outgoingCalls - stats.connectedOutgoing).toString(),
                 icon = Icons.AutoMirrored.Filled.PhoneMissed,
                 color = Color(0xFFFF9800),
@@ -622,7 +461,7 @@ fun ConnectionStatsCard(stats: ReportStats) {
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 MiniProgressStat(
-                    label = "Incoming Answered",
+                    label = "Incoming Attended",
                     value = "$incomingRate%",
                     progress = incomingRate / 100f,
                     color = Color(0xFF4CAF50)
@@ -859,7 +698,10 @@ fun TopCallersCard(
 }
 
 @Composable
-fun ContactsBreakdownCard(stats: ReportStats) {
+fun ContactsBreakdownCard(
+    stats: ReportStats,
+    onTypeClick: (ContactsFilter) -> Unit
+) {
     ElevatedCard(
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth()
@@ -880,19 +722,22 @@ fun ContactsBreakdownCard(stats: ReportStats) {
                     value = stats.uniqueContacts.toString(),
                     label = "Total",
                     icon = Icons.Default.People,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
+                    onClick = { onTypeClick(ContactsFilter.ALL) }
                 )
                 StatItem(
                     value = stats.savedContacts.toString(),
                     label = "Saved",
                     icon = Icons.Default.PersonAdd,
-                    color = Color(0xFF4CAF50)
+                    color = Color(0xFF4CAF50),
+                    onClick = { onTypeClick(ContactsFilter.IN_CONTACTS) }
                 )
                 StatItem(
                     value = stats.unsavedContacts.toString(),
                     label = "Unsaved",
                     icon = Icons.Default.PersonOff,
-                    color = Color(0xFFFF9800)
+                    color = Color(0xFFFF9800),
+                    onClick = { onTypeClick(ContactsFilter.NOT_IN_CONTACTS) }
                 )
             }
         }
@@ -931,6 +776,14 @@ fun NotesActivityCard(stats: ReportStats) {
                 icon = Icons.Default.Mic,
                 color = Color(0xFFF44336)
             )
+            if (stats.shortCalls > 0) {
+                StatRow(
+                    label = "Short Calls (<10s)",
+                    value = stats.shortCalls.toString(),
+                    icon = Icons.Default.Warning,
+                    color = Color(0xFFFF9800) // Orange warning color
+                )
+            }
             StatRow(
                 label = "Persons with Notes",
                 value = stats.personsWithNotes.toString(),
@@ -1157,10 +1010,12 @@ fun StatItem(
     value: String,
     label: String,
     icon: ImageVector,
-    color: Color
+    color: Color,
+    onClick: (() -> Unit)? = null
 ) {
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
     ) {
         Box(
             modifier = Modifier

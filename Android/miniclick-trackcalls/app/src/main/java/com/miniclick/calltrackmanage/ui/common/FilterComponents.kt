@@ -190,7 +190,6 @@ fun CallFilterModal(
                 onClear = { viewModel.setCustomNameFilter(CustomNameFilter.ALL) }
             )
 
-            // Minimum Calls (For Persons view)
             if (uiState.viewMode == ViewMode.PERSONS) {
                 FilterSection(
                     title = "Minimum Calls",
@@ -208,6 +207,53 @@ fun CallFilterModal(
                         viewModel.setMinCallCount(count)
                     },
                     onClear = { viewModel.setMinCallCount(0) }
+                )
+            }
+
+            // Sorting Section
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+            Text(
+                text = "Sorting",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            if (uiState.viewMode == ViewMode.CALLS) {
+                FilterSection(
+                    title = "Sort By",
+                    icon = Icons.Default.Sort,
+                    currentValue = uiState.callSortBy.name,
+                    options = CallSortBy.entries.map { it.name },
+                    onSelect = { viewModel.setCallSortBy(CallSortBy.valueOf(it)) },
+                    onClear = { viewModel.setCallSortBy(CallSortBy.DATE) }
+                )
+                
+                FilterSection(
+                    title = "Order",
+                    icon = if (uiState.callSortDirection == SortDirection.DESCENDING) Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
+                    currentValue = uiState.callSortDirection.name,
+                    options = SortDirection.entries.map { it.name },
+                    onSelect = { viewModel.toggleCallSortDirection() },
+                    onClear = {}
+                )
+            } else {
+                FilterSection(
+                    title = "Sort By",
+                    icon = Icons.Default.Sort,
+                    currentValue = uiState.personSortBy.name,
+                    options = PersonSortBy.entries.map { it.name },
+                    onSelect = { viewModel.setPersonSortBy(PersonSortBy.valueOf(it)) },
+                    onClear = { viewModel.setPersonSortBy(PersonSortBy.LAST_CALL) }
+                )
+                
+                FilterSection(
+                    title = "Order",
+                    icon = if (uiState.personSortDirection == SortDirection.DESCENDING) Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
+                    currentValue = uiState.personSortDirection.name,
+                    options = SortDirection.entries.map { it.name },
+                    onSelect = { viewModel.togglePersonSortDirection() },
+                    onClear = {}
                 )
             }
             
@@ -229,61 +275,80 @@ fun CallTypeTabs(
     onFilterSelected: (CallTabFilter) -> Unit,
     counts: Map<CallTabFilter, Int> = emptyMap()
 ) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp
+    ScrollableTabRow(
+        selectedTabIndex = selectedFilter.ordinal,
+        edgePadding = 16.dp,
+        divider = {},
+        indicator = { tabPositions ->
+            if (selectedFilter.ordinal < tabPositions.size) {
+                TabRowDefaults.SecondaryIndicator(
+                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedFilter.ordinal]),
+                    color = MaterialTheme.colorScheme.primary,
+                    height = 3.dp
+                )
+            }
+        },
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.primary
     ) {
-        ScrollableTabRow(
-            selectedTabIndex = selectedFilter.ordinal,
-            edgePadding = 16.dp,
-            divider = {},
-            indicator = { tabPositions ->
-                if (selectedFilter.ordinal < tabPositions.size) {
-                    TabRowDefaults.SecondaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedFilter.ordinal]),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            },
-            containerColor = Color.Transparent,
-            contentColor = MaterialTheme.colorScheme.primary
-        ) {
-            CallTabFilter.entries.forEach { filter ->
-                val count = counts[filter]
-                Tab(
-                    selected = selectedFilter == filter,
-                    onClick = { onFilterSelected(filter) },
-                    text = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = filter.name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() },
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = if (selectedFilter == filter) FontWeight.Bold else FontWeight.Normal
-                            )
-                            if (count != null && count > 0) {
-                                Spacer(Modifier.width(6.dp))
-                                Surface(
-                                    color = if (selectedFilter == filter) 
-                                        MaterialTheme.colorScheme.primary 
+        CallTabFilter.entries.forEach { filter ->
+            val count = counts[filter] ?: 0
+            val isSelected = selectedFilter == filter
+            
+            val icon = when (filter) {
+                CallTabFilter.ALL -> Icons.Default.AllInclusive
+                CallTabFilter.ATTENDED -> Icons.Default.CallReceived
+                CallTabFilter.NOT_ATTENDED -> Icons.Default.CallMissed
+                CallTabFilter.RESPONDED -> Icons.Default.CallMade
+                CallTabFilter.NOT_RESPONDED -> Icons.AutoMirrored.Filled.CallMissedOutgoing
+                CallTabFilter.IGNORED -> Icons.Default.Block
+            }
+
+            Tab(
+                selected = isSelected,
+                onClick = { onFilterSelected(filter) },
+                text = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = filter.name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() },
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (count > 0) {
+                            Spacer(Modifier.width(6.dp))
+                            Surface(
+                                color = if (isSelected) 
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                                else 
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(
+                                    text = if (count > 999) "999+" else count.toString(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    color = if (isSelected) 
+                                        MaterialTheme.colorScheme.primary
                                     else 
-                                        MaterialTheme.colorScheme.surfaceVariant,
-                                    shape = RoundedCornerShape(10.dp)
-                                ) {
-                                    Text(
-                                        text = count.toString(),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                        color = if (selectedFilter == filter) 
-                                            MaterialTheme.colorScheme.onPrimary 
-                                        else 
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                                        MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
                     }
-                )
-            }
+                }
+            )
         }
     }
 }
@@ -294,61 +359,80 @@ fun PersonTypeTabs(
     onFilterSelected: (PersonTabFilter) -> Unit,
     counts: Map<PersonTabFilter, Int> = emptyMap()
 ) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp
+    ScrollableTabRow(
+        selectedTabIndex = selectedFilter.ordinal,
+        edgePadding = 16.dp,
+        divider = {},
+        indicator = { tabPositions ->
+            if (selectedFilter.ordinal < tabPositions.size) {
+                TabRowDefaults.SecondaryIndicator(
+                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedFilter.ordinal]),
+                    color = MaterialTheme.colorScheme.primary,
+                    height = 3.dp
+                )
+            }
+        },
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.primary
     ) {
-        ScrollableTabRow(
-            selectedTabIndex = selectedFilter.ordinal,
-            edgePadding = 16.dp,
-            divider = {},
-            indicator = { tabPositions ->
-                if (selectedFilter.ordinal < tabPositions.size) {
-                    TabRowDefaults.SecondaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedFilter.ordinal]),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            },
-            containerColor = Color.Transparent,
-            contentColor = MaterialTheme.colorScheme.primary
-        ) {
-            PersonTabFilter.entries.forEach { filter ->
-                val count = counts[filter]
-                Tab(
-                    selected = selectedFilter == filter,
-                    onClick = { onFilterSelected(filter) },
-                    text = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = filter.name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() },
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = if (selectedFilter == filter) FontWeight.Bold else FontWeight.Normal
-                            )
-                            if (count != null && count > 0) {
-                                Spacer(Modifier.width(6.dp))
-                                Surface(
-                                    color = if (selectedFilter == filter) 
-                                        MaterialTheme.colorScheme.primary 
+        PersonTabFilter.entries.forEach { filter ->
+            val count = counts[filter] ?: 0
+            val isSelected = selectedFilter == filter
+            
+            val icon = when (filter) {
+                PersonTabFilter.ALL -> Icons.Default.Group
+                PersonTabFilter.ATTENDED -> Icons.Default.RecordVoiceOver
+                PersonTabFilter.RESPONDED -> Icons.Default.Quickreply
+                PersonTabFilter.NOT_ATTENDED -> Icons.Default.PhoneCallback
+                PersonTabFilter.NOT_RESPONDED -> Icons.Default.PhoneForwarded
+                PersonTabFilter.IGNORED -> Icons.Default.PersonOff
+            }
+
+            Tab(
+                selected = isSelected,
+                onClick = { onFilterSelected(filter) },
+                text = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = filter.name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() },
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (count > 0) {
+                            Spacer(Modifier.width(6.dp))
+                            Surface(
+                                color = if (isSelected) 
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                                else 
+                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(
+                                    text = if (count > 999) "999+" else count.toString(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    color = if (isSelected) 
+                                        MaterialTheme.colorScheme.primary
                                     else 
-                                        MaterialTheme.colorScheme.surfaceVariant,
-                                    shape = RoundedCornerShape(10.dp)
-                                ) {
-                                    Text(
-                                        text = count.toString(),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                        color = if (selectedFilter == filter) 
-                                            MaterialTheme.colorScheme.onPrimary 
-                                        else 
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                                        MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
                     }
-                )
-            }
+                }
+            )
         }
     }
 }
@@ -415,8 +499,18 @@ private fun FilterSection(
                     "NOT_CONNECTED" -> "Not Connected"
                     "IN_CONTACTS" -> "In Contacts"
                     "NOT_IN_CONTACTS" -> "Not in Contacts"
+                    "LAST_CALL" -> "Last Call"
+                    "MOST_CALLS" -> "Most Calls"
+                    "NAME" -> "Name"
+                    "DATE" -> "Date"
+                    "DURATION" -> "Duration"
+                    "NUMBER" -> "Number"
+                    "ASCENDING" -> "Ascending"
+                    "DESCENDING" -> "Descending"
                     "REVIEWED" -> "Reviewed"
                     "NOT_REVIEWED" -> "Not Reviewed"
+                    "ATTENDED" -> "Attended"
+                    "RESPONDED" -> "Responded"
                     else -> option.lowercase().replaceFirstChar { it.uppercase() }.replace("_", " ")
                 }
                 

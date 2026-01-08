@@ -46,6 +46,9 @@ class SettingsRepository private constructor(private val context: Context) {
     private val KEY_SHOW_UNKNOWN_NOTE_REMINDER = "show_unknown_note_reminder"
     private val KEY_AGREEMENT_ACCEPTED = "agreement_accepted"
     private val KEY_SKIPPED_STEPS = "skipped_onboarding_steps"
+    private val KEY_SHORT_CALL_THRESHOLD_SECONDS = "short_call_threshold_seconds"
+    private val KEY_SHOW_DIAL_BUTTON = "show_dial_button"
+    private val KEY_CALL_ACTION_BEHAVIOR = "call_action_behavior" // "Direct", "Dialpad"
 
     // Persistence for Home Screen State
     private val KEY_SEARCH_VISIBLE = "search_visible"
@@ -59,10 +62,13 @@ class SettingsRepository private constructor(private val context: Context) {
     private val KEY_FILTER_PERSON_NOTES = "filter_person_notes"
     private val KEY_FILTER_REVIEWED = "filter_reviewed"
     private val KEY_FILTER_CUSTOM_NAME = "filter_custom_name"
+    private val KEY_FILTER_PERSON_TYPE = "filter_person_type"
     private val KEY_FILTER_LABEL = "filter_label"
     private val KEY_FILTER_DATE_RANGE = "filter_date_range"
     private val KEY_CUSTOM_START_DATE = "filter_custom_start_date"
     private val KEY_CUSTOM_END_DATE = "filter_custom_end_date"
+    private val KEY_SEARCH_HISTORY = "search_history"
+    private val MAX_SEARCH_HISTORY = 10
 
     private val prefs by lazy {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -114,6 +120,17 @@ class SettingsRepository private constructor(private val context: Context) {
 
     fun setSimSelection(selection: String) {
         prefs.edit().putString(KEY_SIM_SELECTION, selection).apply()
+    }
+
+    fun getSimSelectionFlow(): Flow<String> = callbackFlow {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
+            if (key == KEY_SIM_SELECTION) {
+                trySend(getSimSelection())
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(getSimSelection())
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }
 
     // Track Start Date
@@ -331,6 +348,12 @@ class SettingsRepository private constructor(private val context: Context) {
     fun isShowUnknownNoteReminder(): Boolean = prefs.getBoolean(KEY_SHOW_UNKNOWN_NOTE_REMINDER, true)
     fun setShowUnknownNoteReminder(show: Boolean) = prefs.edit().putBoolean(KEY_SHOW_UNKNOWN_NOTE_REMINDER, show).apply()
 
+    fun isShowDialButton(): Boolean = prefs.getBoolean(KEY_SHOW_DIAL_BUTTON, true)
+    fun setShowDialButton(show: Boolean) = prefs.edit().putBoolean(KEY_SHOW_DIAL_BUTTON, show).apply()
+
+    fun getCallActionBehavior(): String = prefs.getString(KEY_CALL_ACTION_BEHAVIOR, "Direct") ?: "Direct"
+    fun setCallActionBehavior(behavior: String) = prefs.edit().putString(KEY_CALL_ACTION_BEHAVIOR, behavior).apply()
+
     // Home Screen State Persistence
     fun isSearchVisible(): Boolean = prefs.getBoolean(KEY_SEARCH_VISIBLE, false)
     fun setSearchVisible(visible: Boolean) = prefs.edit().putBoolean(KEY_SEARCH_VISIBLE, visible).apply()
@@ -343,6 +366,9 @@ class SettingsRepository private constructor(private val context: Context) {
 
     fun getCallTypeFilter(): String = prefs.getString(KEY_FILTER_CALL_TYPE, "ALL") ?: "ALL"
     fun setCallTypeFilter(filter: String) = prefs.edit().putString(KEY_FILTER_CALL_TYPE, filter).apply()
+
+    fun getPersonTabFilter(): String = prefs.getString(KEY_FILTER_PERSON_TYPE, "ALL") ?: "ALL"
+    fun setPersonTabFilter(filter: String) = prefs.edit().putString(KEY_FILTER_PERSON_TYPE, filter).apply()
 
     fun getConnectedFilter(): String = prefs.getString(KEY_FILTER_CONNECTED, "ALL") ?: "ALL"
     fun setConnectedFilter(filter: String) = prefs.edit().putString(KEY_FILTER_CONNECTED, filter).apply()
@@ -371,6 +397,17 @@ class SettingsRepository private constructor(private val context: Context) {
     fun getDateRangeFilter(): String = prefs.getString(KEY_FILTER_DATE_RANGE, "LAST_7_DAYS") ?: "LAST_7_DAYS"
     fun setDateRangeFilter(filter: String) = prefs.edit().putString(KEY_FILTER_DATE_RANGE, filter).apply()
 
+    fun getDateRangeFlow(): Flow<String> = callbackFlow {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
+            if (key == KEY_FILTER_DATE_RANGE) {
+                trySend(getDateRangeFilter())
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(getDateRangeFilter())
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
     fun getCustomStartDate(): Long = prefs.getLong(KEY_CUSTOM_START_DATE, 0L)
     fun setCustomStartDate(date: Long) = prefs.edit().putLong(KEY_CUSTOM_START_DATE, date).apply()
 
@@ -398,4 +435,27 @@ class SettingsRepository private constructor(private val context: Context) {
         if (skipped) current.add(step) else current.remove(step)
         prefs.edit().putStringSet(KEY_SKIPPED_STEPS, current).apply()
     }
+
+    // Search History
+    fun getSearchHistory(): List<String> {
+        val historySet = prefs.getStringSet(KEY_SEARCH_HISTORY, emptySet()) ?: emptySet()
+        return historySet.toList().take(MAX_SEARCH_HISTORY)
+    }
+
+    fun addSearchHistory(query: String) {
+        if (query.isBlank() || query.length < 2) return
+        val current = getSearchHistory().toMutableList()
+        current.remove(query) // Remove if exists to avoid duplicates
+        current.add(0, query) // Add to front
+        val trimmed = current.take(MAX_SEARCH_HISTORY).toSet()
+        prefs.edit().putStringSet(KEY_SEARCH_HISTORY, trimmed).apply()
+    }
+
+    fun clearSearchHistory() {
+        prefs.edit().remove(KEY_SEARCH_HISTORY).apply()
+    }
+
+    // Short Call Alert Threshold (default 10 seconds)
+    fun getShortCallThresholdSeconds(): Int = prefs.getInt(KEY_SHORT_CALL_THRESHOLD_SECONDS, 10)
+    fun setShortCallThresholdSeconds(seconds: Int) = prefs.edit().putInt(KEY_SHORT_CALL_THRESHOLD_SECONDS, seconds).apply()
 }

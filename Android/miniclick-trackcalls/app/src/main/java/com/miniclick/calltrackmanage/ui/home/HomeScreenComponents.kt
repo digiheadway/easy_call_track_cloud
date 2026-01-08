@@ -20,82 +20,59 @@ fun CallsHeader(
     isFilterActive: Boolean,
     filterCount: Int,
     dateRange: DateRange,
-    onDateRangeChange: (DateRange, Long?, Long?) -> Unit,
-    totalCallsCount: Int = 0
+    onDateRangeChange: (DateRange, Long?, Long?) -> Unit
 ) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            // Title with Count Chip
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Calls",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+        // Title
+        Text(
+            text = "Calls",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        
+        // Action Icons
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // Search Icon
+            IconButton(onClick = onSearchClick) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search",
+                    tint = if (isSearchActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                if (totalCallsCount > 0) {
-                    Spacer(Modifier.width(8.dp))
-                    Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            text = totalCallsCount.toString(),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        )
-                    }
-                }
             }
             
-            // Action Icons
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // Search Icon
-                IconButton(onClick = onSearchClick) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = if (isSearchActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                
-                // Filter Icon
-                IconButton(onClick = onFilterClick) {
-                    BadgedBox(
-                        badge = {
-                            if (filterCount > 0) {
-                                Badge(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary
-                                ) {
-                                    Text(filterCount.toString())
-                                }
+            // Filter Icon
+            IconButton(onClick = onFilterClick) {
+                BadgedBox(
+                    badge = {
+                        if (filterCount > 0) {
+                            Badge(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ) {
+                                Text(filterCount.toString())
                             }
                         }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.FilterList,
-                            contentDescription = "Filter",
-                            tint = if (isFilterActive || filterCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FilterList,
+                        contentDescription = "Filter",
+                        tint = if (isFilterActive || filterCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-
-                // Date Range Icon (Last)
-                DateRangeHeaderAction(dateRange, onDateRangeChange)
             }
+
+            // Date Range Icon (Last)
+            DateRangeHeaderAction(dateRange, onDateRangeChange)
         }
     }
 }
@@ -108,80 +85,57 @@ fun PersonsHeader(
     isFilterActive: Boolean,
     filterCount: Int,
     dateRange: DateRange,
-    onDateRangeChange: (DateRange, Long?, Long?) -> Unit,
-    totalPersonsCount: Int = 0
+    onDateRangeChange: (DateRange, Long?, Long?) -> Unit
 ) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            // Title with Count Chip
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Persons",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+        // Title
+        Text(
+            text = "Persons",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        
+        // Action Icons
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onSearchClick) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search",
+                    tint = if (isSearchActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                if (totalPersonsCount > 0) {
-                    Spacer(Modifier.width(8.dp))
-                    Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            text = totalPersonsCount.toString(),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        )
-                    }
-                }
             }
             
-            // Action Icons
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onSearchClick) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = if (isSearchActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                
-                IconButton(onClick = onFilterClick) {
-                    BadgedBox(
-                        badge = {
-                            if (filterCount > 0) {
-                                Badge(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary
-                                ) {
-                                    Text(filterCount.toString())
-                                }
+            IconButton(onClick = onFilterClick) {
+                BadgedBox(
+                    badge = {
+                        if (filterCount > 0) {
+                            Badge(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ) {
+                                Text(filterCount.toString())
                             }
                         }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.FilterList,
-                            contentDescription = "Filter",
-                            tint = if (isFilterActive || filterCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FilterList,
+                        contentDescription = "Filter",
+                        tint = if (isFilterActive || filterCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-
-                // Date Range Icon (Last)
-                DateRangeHeaderAction(dateRange, onDateRangeChange)
             }
+
+            // Date Range Icon (Last)
+            DateRangeHeaderAction(dateRange, onDateRangeChange)
         }
     }
 }
