@@ -299,49 +299,49 @@
         },
         "id_interstitial": {
           "defaultValue": {
-            "value": "ca-app-pub-2002073902256509/8720216169"
+            "value": "/22649815059/linkbox_app/interstitial"
           },
           "description": "AdMob Interstitial Ad Unit ID",
           "valueType": "STRING"
         },
         "id_banner": {
           "defaultValue": {
-            "value": "ca-app-pub-2002073902256509/7885646646"
+            "value": "/22649815059/linkbox_app/banner"
           },
           "description": "AdMob Banner Ad Unit ID",
           "valueType": "STRING"
         },
         "id_adaptive_banner": {
           "defaultValue": {
-            "value": "ca-app-pub-2002073902256509/7885646646"
+            "value": "/22649815059/linkbox_app/banner"
           },
           "description": "AdMob Adaptive Banner Ad Unit ID",
           "valueType": "STRING"
         },
         "id_rewarded": {
           "defaultValue": {
-            "value": "ca-app-pub-2002073902256509/7803893775"
+            "value": "/22649815059/linkbox_app/rewarded"
           },
           "description": "AdMob Rewarded Ad Unit ID",
           "valueType": "STRING"
         },
         "id_rewarded_interstitial": {
           "defaultValue": {
-            "value": "ca-app-pub-2002073902256509/7407134493"
+            "value": "/22649815059/linkbox_app/rewarded_interstitial"
           },
           "description": "AdMob Rewarded Interstitial Ad Unit ID",
           "valueType": "STRING"
         },
         "id_native": {
           "defaultValue": {
-            "value": "ca-app-pub-2002073902256509/5259483304"
+            "value": "/22649815059/linkbox_app/native"
           },
           "description": "AdMob Native Ad Unit ID",
           "valueType": "STRING"
         },
         "id_native_video": {
           "defaultValue": {
-            "value": "ca-app-pub-2002073902256509/5259483304"
+            "value": "/22649815059/linkbox_app/native"
           },
           "description": "AdMob Native Video Ad Unit ID",
           "valueType": "STRING"

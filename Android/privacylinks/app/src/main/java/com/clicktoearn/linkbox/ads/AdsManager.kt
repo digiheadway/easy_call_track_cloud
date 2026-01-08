@@ -50,12 +50,12 @@ object AdsManager {
     // ==================== CONFIGURATION ====================
     
     // AdMob Ad Unit IDs (Provided by USER)
-    private const val ADMOB_APP_OPEN_ID = "ca-app-pub-2002073902256509/6094052821"
-    private const val ADMOB_BANNER_ID = "ca-app-pub-2002073902256509/7885646646"
-    private const val ADMOB_INTERSTITIAL_ID = "ca-app-pub-2002073902256509/8720216169"
-    private const val ADMOB_NATIVE_ID = "ca-app-pub-2002073902256509/5259483304"
-    private const val ADMOB_REWARDED_INTERSTITIAL_ID = "ca-app-pub-2002073902256509/7407134493"
-    private const val ADMOB_REWARDED_ID = "ca-app-pub-2002073902256509/7803893775"
+    private const val ADMOB_APP_OPEN_ID = "ca-app-pub-2002073902256509/6094052821" // Not updated by user
+    private const val ADMOB_BANNER_ID = "/22649815059/linkbox_app/banner"
+    private const val ADMOB_INTERSTITIAL_ID = "/22649815059/linkbox_app/interstitial"
+    private const val ADMOB_NATIVE_ID = "/22649815059/linkbox_app/native"
+    private const val ADMOB_REWARDED_INTERSTITIAL_ID = "/22649815059/linkbox_app/rewarded_interstitial"
+    private const val ADMOB_REWARDED_ID = "/22649815059/linkbox_app/rewarded"
 
     // AdMob Test IDs (For Debugging)
     private const val TEST_APP_OPEN = "ca-app-pub-3940256099942544/9257395921"
