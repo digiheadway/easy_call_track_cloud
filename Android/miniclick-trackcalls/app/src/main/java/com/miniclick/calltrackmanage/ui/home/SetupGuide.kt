@@ -256,9 +256,7 @@ fun SetupGuide(
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                             singlePermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         }
-                    },
-                    secondaryActionLabel = "Skip",
-                    onSecondaryAction = { settingsViewModel.setStepSkipped("NOTIFICATIONS") }
+                    }
                 ))
             }
 

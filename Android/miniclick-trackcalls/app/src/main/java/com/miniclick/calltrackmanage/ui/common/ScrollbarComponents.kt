@@ -71,8 +71,10 @@ fun VerticalScrollbar(
             .alpha(alpha)
             .onGloballyPositioned { containerHeight = it.size.height.toFloat() }
     ) {
+        val density = androidx.compose.ui.platform.LocalDensity.current
         val scrollbarHeight = 60.dp
-        val maxScroll = constraints.maxHeight.toFloat() - 100f // Approximate handle height
+        val scrollbarHeightPx = with(density) { scrollbarHeight.toPx() }
+        val maxScroll = constraints.maxHeight.toFloat() - scrollbarHeightPx
         
         Box(
             modifier = Modifier

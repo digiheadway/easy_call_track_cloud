@@ -280,26 +280,7 @@ fun PersonsList(
                         android.widget.Toast.makeText(context, "Copied: $cleaned", android.widget.Toast.LENGTH_SHORT).show()
                     },
                     onWhatsAppClick = {
-                        try {
-                            val cleaned = cleanNumber(person.number)
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/91$cleaned"))
-                            if (whatsappPreference != "Always Ask") {
-                                intent.setPackage(whatsappPreference)
-                            }
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                            // Fallback if preferred package fails
-                            if (whatsappPreference != "Always Ask") {
-                               try {
-                                   val cleaned = cleanNumber(person.number)
-                                   val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/91$cleaned"))
-                                   intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                   context.startActivity(intent)
-                               } catch(e2: Exception) { e2.printStackTrace() }
-                            }
-                        }
+                        viewModel.onWhatsAppClick(person.number)
                     },
                     onPersonNoteClick = { personNoteTarget = person },
                     onCallNoteClick = { callNoteTarget = it },

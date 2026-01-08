@@ -59,7 +59,8 @@ fun CallLogList(
     onAttachRecording: (CallDataEntity) -> Unit,
     canExclude: Boolean = true,
     onCustomLookup: (String) -> Unit,
-    lazyListState: LazyListState = rememberLazyListState()
+    lazyListState: LazyListState = rememberLazyListState(),
+    showDialButton: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsState()
     // Note Dialog States
@@ -333,26 +334,7 @@ fun CallLogList(
                             android.widget.Toast.makeText(context, "Copied: $cleaned", android.widget.Toast.LENGTH_SHORT).show()
                         },
                         onWhatsAppClick = {
-                            try {
-                                val cleaned = cleanNumber(log.phoneNumber)
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/91$cleaned"))
-                                if (whatsappPreference != "Always Ask") {
-                                    intent.setPackage(whatsappPreference)
-                                }
-                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                                // Fallback
-                                if (whatsappPreference != "Always Ask") {
-                                   try {
-                                       val cleaned = cleanNumber(log.phoneNumber)
-                                       val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/91$cleaned"))
-                                       intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                       context.startActivity(intent)
-                                   } catch(e2: Exception) { e2.printStackTrace() }
-                                }
-                            }
+                            viewModel.onWhatsAppClick(log.phoneNumber)
                         },
                         onAddContactClick = {
                             try {
@@ -392,7 +374,7 @@ fun CallLogList(
                         onAttachRecording = onAttachRecording,
                         onReviewedToggle = { viewModel.updateReviewed(log.compositeId, !log.reviewed) },
                         callRecordEnabled = uiState.callRecordEnabled,
-                        showDialButton = uiState.showDialButton
+                        showDialButton = showDialButton
                     )
                 }
             }
@@ -570,7 +552,11 @@ fun CallLogItem(
                         
                         // Label Chip
                         if (!personGroup?.label.isNullOrEmpty()) {
-                            LabelChip(label = personGroup!!.label!!, onClick = onLabelClick)
+                            personGroup!!.label!!.split(",").forEach { label ->
+                                if (label.isNotBlank()) {
+                                    LabelChip(label = label.trim(), onClick = onLabelClick)
+                                }
+                            }
                         }
                     }
                 }
@@ -581,35 +567,10 @@ fun CallLogItem(
                 Column(
                     modifier = Modifier.fillMaxHeight(),
                     horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.Center
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(log.callDate)),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    
-                    if (showDialButton && !isExpanded) {
-                        Spacer(Modifier.height(4.dp))
-                        FilledIconButton(
-                            onClick = onCallClick,
-                            modifier = Modifier.size(32.dp),
-                            colors = IconButtonDefaults.filledIconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                contentColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Icon(
-                                Icons.Default.Call, 
-                                contentDescription = "Call",
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                    
-                    // Call Count Chip (like Persons screen)
+                    // Call Count Chip (like Persons screen) OR Status
                     if (personGroup != null && personGroup.calls.size > 1) {
-                        Spacer(Modifier.height(4.dp))
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.primaryContainer,
@@ -639,7 +600,12 @@ fun CallLogItem(
                     } else {
                         StatusIndicator(log.metadataSyncStatus, log.recordingSyncStatus) 
                     }
-                }
+
+                    Text(
+                        text = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(log.callDate)),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
             
@@ -797,6 +763,7 @@ fun CallLogItem(
                     }
                 }
             }
+        }
         }
     }
 }
@@ -990,7 +957,28 @@ fun PlaybackControls(
         // Seekbar
         Slider(
             value = if (isThisPlaying) progress else 0f,
-            onValueChange = { if (isThisPlaying) audioPlayer.seekTo(it) },
+            onValueChange = { 
+                val callTypeStr = when (log.callType) {
+                    android.provider.CallLog.Calls.INCOMING_TYPE -> "Incoming"
+                    android.provider.CallLog.Calls.OUTGOING_TYPE -> "Outgoing"
+                    android.provider.CallLog.Calls.MISSED_TYPE -> "Missed"
+                    5 -> "Rejected"
+                    6 -> "Blocked"
+                    else -> "Call"
+                }
+                val timeStr = SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()).format(java.util.Date(log.callDate))
+                
+                audioPlayer.playOrResume(
+                    recordingPath, 
+                    PlaybackMetadata(
+                        name = log.contactName,
+                        phoneNumber = log.phoneNumber,
+                        callTime = timeStr,
+                        callType = callTypeStr
+                    )
+                )
+                audioPlayer.seekTo(it) 
+            },
             modifier = Modifier.weight(1f),
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,

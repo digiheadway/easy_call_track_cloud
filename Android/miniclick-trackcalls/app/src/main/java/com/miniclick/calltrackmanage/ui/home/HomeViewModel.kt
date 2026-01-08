@@ -36,6 +36,7 @@ enum class DateRange { TODAY, LAST_3_DAYS, LAST_7_DAYS, LAST_14_DAYS, LAST_30_DA
 enum class PersonSortBy { LAST_CALL, MOST_CALLS, NAME }
 enum class CallSortBy { DATE, DURATION, NUMBER }
 enum class SortDirection { ASCENDING, DESCENDING }
+enum class ReportCategory { OVERVIEW, DAILY_AVERAGE, DATA_ANALYSIS, FREQUENCY }
 
 data class HomeUiState(
     val callLogs: List<CallDataEntity> = emptyList(),
@@ -109,6 +110,10 @@ data class HomeUiState(
     val callFlowNumber: String? = null,
     val availableSims: List<SimInfo> = emptyList(),
 
+    // WhatsApp Flow
+    val showWhatsappSelectionDialog: Boolean = false,
+    val whatsappTargetNumber: String? = null,
+
     // Reports Stats
     val reportStats: ReportStats = ReportStats(),
 
@@ -116,8 +121,10 @@ data class HomeUiState(
     val searchHistory: List<String> = emptyList(),
     
     // Dialer Settings
-    val showDialButton: Boolean = true,
-    val callActionBehavior: String = "Direct"
+    val callActionBehavior: String = "Direct",
+    val availableWhatsappApps: List<com.miniclick.calltrackmanage.ui.settings.AppInfo> = emptyList(),
+    val reportCategory: ReportCategory = ReportCategory.OVERVIEW,
+    val showComparisons: Boolean = false
 )
 
 // Extension to determine if a call status counts as "Attended" or "Responded" based on the new > 3s rule
@@ -301,6 +308,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 .collect { refreshSettings() }
         }
 
+        viewModelScope.launch(Dispatchers.IO) {
+            val ctx = getApplication<Application>()
+            val apps = com.miniclick.calltrackmanage.ui.utils.WhatsAppUtils.fetchAvailableWhatsappApps(ctx)
+            _uiState.update { it.copy(availableWhatsappApps = apps) }
+        }
+
         viewModelScope.launch {
             settingsRepository.getTrackStartDateFlow()
                 .distinctUntilChanged()
@@ -438,7 +451,16 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             customNameFilter = cnFilter,
             dateRange = try { DateRange.valueOf(settingsRepository.getDateRangeFilter()) } catch(e: Exception) { DateRange.LAST_7_DAYS },
             customStartDate = settingsRepository.getCustomStartDate().let { if (it == 0L) null else it },
-            customEndDate = settingsRepository.getCustomEndDate().let { if (it == 0L) null else it }
+            customEndDate = settingsRepository.getCustomEndDate().let { if (it == 0L) null else it },
+            
+            // Critical setup flags for UI consistency
+            simSelection = settingsRepository.getSimSelection(),
+            trackStartDate = settingsRepository.getTrackStartDate(),
+            isSyncSetup = settingsRepository.getOrganisationId().isNotEmpty(),
+            whatsappPreference = settingsRepository.getWhatsappPreference(),
+            callRecordEnabled = settingsRepository.isCallRecordEnabled(),
+            callActionBehavior = settingsRepository.getCallActionBehavior(),
+            reportCategory = try { ReportCategory.valueOf(settingsRepository.getReportCategory()) } catch(e: Exception) { ReportCategory.OVERVIEW }
         ) }
     }
 
@@ -569,6 +591,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         triggerFilter()
     }
 
+    fun toggleShowComparisons() {
+        _uiState.update { it.copy(showComparisons = !it.showComparisons) }
+    }
+
+    fun setReportCategory(category: ReportCategory) {
+        _uiState.update { it.copy(reportCategory = category) }
+        settingsRepository.setReportCategory(category.name)
+    }
+
     fun setPersonSortBy(sortBy: PersonSortBy) {
         _uiState.update { it.copy(personSortBy = sortBy) }
         triggerFilter()
@@ -612,12 +643,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             // 3. Perform Single-Pass Person Filtering Across ALL Tabs
             val tabPersons = processPersonFilters(currentState, logsByPhone)
             
-            // 4. Get base logs for reporting and grouping (ALL tab)
-            val allTabLogs = tabLogs[CallTabFilter.ALL] ?: emptyList()
+            // 4. Get base logs for reporting (ALL tab)
+            val visibleLogs = tabLogs[CallTabFilter.ALL] ?: emptyList()
+            
+            // Logs for Person Groups should include IGNORED so we can display them in the Ignore tab
+            val logsForGroups = visibleLogs + (tabLogs[CallTabFilter.IGNORED] ?: emptyList())
 
             // 5. Compute PersonGroups for ONLY the filtered calls (Huge optimization for history)
             // This map contains summary info for each contact based on the current global filter (e.g. date range)
-            val groups = allTabLogs.groupBy { it.phoneNumber }.mapValues { (number, calls) ->
+            val groups = logsForGroups.groupBy { it.phoneNumber }.mapValues { (number, calls) ->
                 val sortedCalls = calls.sortedByDescending { it.callDate }
                 val person = personsMap[number] ?: personsMap[getCachedNormalizedNumber(number)]
                 PersonGroup(
@@ -637,7 +671,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
             // 6. Calculate Report Statistics (Heavy Operation)
             // Use ALL tab logs for reports so the stats are consistent regardless of which tab you're viewing
-            val reportStats = calculateReportStats(allTabLogs, currentState.persons)
+            val reportStats = calculateReportStats(visibleLogs, currentState.persons)
 
             val activeFilterCount = calculateFilterCount(currentState)
             
@@ -1277,6 +1311,44 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun onWhatsAppClick(number: String) {
+        val currentState = _uiState.value
+        if (currentState.whatsappPreference == "Always Ask") {
+            _uiState.update { it.copy(
+                whatsappTargetNumber = number,
+                showWhatsappSelectionDialog = true
+            )}
+        } else {
+            com.miniclick.calltrackmanage.ui.utils.WhatsAppUtils.openWhatsApp(
+                getApplication(),
+                number,
+                currentState.whatsappPreference
+            )
+        }
+    }
+
+    fun selectWhatsappAndOpen(packageName: String, setAsDefault: Boolean) {
+        val number = _uiState.value.whatsappTargetNumber ?: return
+        if (setAsDefault) {
+            settingsRepository.setWhatsappPreference(packageName)
+            _uiState.update { it.copy(whatsappPreference = packageName) }
+        }
+        
+        com.miniclick.calltrackmanage.ui.utils.WhatsAppUtils.openWhatsApp(
+            getApplication(),
+            number,
+            packageName
+        )
+        dismissWhatsappSelection()
+    }
+
+    fun dismissWhatsappSelection() {
+        _uiState.update { it.copy(
+            showWhatsappSelectionDialog = false,
+            whatsappTargetNumber = null
+        )}
+    }
+
     fun refreshSettings() {
         val simSelection = settingsRepository.getSimSelection()
         val trackStartDate = settingsRepository.getTrackStartDate()
@@ -1322,7 +1394,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             callerPhoneSim1 = callerPhone1,
             callerPhoneSim2 = callerPhone2,
             availableSims = sims,
-            showDialButton = showDialButton,
             callActionBehavior = callActionBehavior
         ) }
 

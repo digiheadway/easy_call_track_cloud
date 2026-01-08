@@ -23,6 +23,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _personDetailsPhone = MutableStateFlow<String?>(null)
     val personDetailsPhone: StateFlow<String?> = _personDetailsPhone.asStateFlow()
 
+    private val _dialerInitialNumber = MutableStateFlow<String?>(null)
+    val dialerInitialNumber: StateFlow<String?> = _dialerInitialNumber.asStateFlow()
+
     private val _isSessionOnboardingDismissed = MutableStateFlow(false)
     val isSessionOnboardingDismissed: StateFlow<Boolean> = _isSessionOnboardingDismissed.asStateFlow()
     // Observe onboarding completion status
@@ -88,6 +91,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setPersonDetailsPhone(phone: String?) {
         _personDetailsPhone.value = phone
+    }
+
+    fun setDialerNumber(number: String?) {
+        _dialerInitialNumber.value = number
     }
 
     fun dismissOnboardingSession() {

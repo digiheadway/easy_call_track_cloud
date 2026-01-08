@@ -145,10 +145,20 @@ class MainActivity : ComponentActivity() {
             viewModel.setPersonDetailsPhone(phoneNumber)
         }
 
-        // Handle shared recording files (Google Dialer support)
+        // Handle shared recording files
         if (intent.action == Intent.ACTION_SEND && intent.type?.startsWith("audio/") == true) {
             (intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))?.let { uri ->
                 processSharedRecording(uri)
+            }
+        }
+        
+        // Handle Dialer Intent (ACTION_DIAL or ACTION_VIEW with tel:)
+        if (intent.action == Intent.ACTION_DIAL || intent.action == Intent.ACTION_VIEW) {
+            if (intent.data?.scheme == "tel") {
+                val number = intent.data?.schemeSpecificPart
+                if (!number.isNullOrEmpty()) {
+                    viewModel.setDialerNumber(number)
+                }
             }
         }
     }
@@ -269,9 +279,23 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
         AppTab.entries.filter { it != AppTab.DIALER }
     }
     
-    // Dialer Sheet State
+    // Dialer State
     var showDialerSheet by remember { mutableStateOf(false) }
-    val dialerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val dialerInitialNumber by viewModel.dialerInitialNumber.collectAsState()
+    
+    // Auto-open dialer if initial number is set
+    LaunchedEffect(dialerInitialNumber) {
+        if (!dialerInitialNumber.isNullOrEmpty()) {
+            showDialerSheet = true
+        }
+    }
+    
+    // Clear initial number when sheet closes
+    LaunchedEffect(showDialerSheet) {
+        if (!showDialerSheet) {
+            viewModel.setDialerNumber(null)
+        }
+    }
     
     // Sync Queue Modal States - Using SettingsViewModel
     val showSyncQueue = settingsState.showSyncQueue
@@ -363,7 +387,8 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                         isNetworkAvailable = settingsState.isNetworkAvailable,
                         isSyncSetup = settingsState.isSyncSetup,
                         onSyncNow = { settingsViewModel.syncCallManually() },
-                        onShowQueue = { settingsViewModel.toggleSyncQueue(true) }
+                        onShowQueue = { settingsViewModel.toggleSyncQueue(true) },
+                        audioPlayer = audioPlayer
                     )
                 }
 
@@ -375,7 +400,8 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                         syncStatusBar = syncStatusBar,
                         personDetailsPhone = personDetailsPhone,
                         onClearPersonDetails = { viewModel.setPersonDetailsPhone(null) },
-                        isDialerEnabled = settingsState.isDialerEnabled
+                        isDialerEnabled = settingsState.isDialerEnabled,
+                        showDialButton = settingsState.showDialButton
                     )
                     AppTab.PERSONS -> PersonsScreen(
                         audioPlayer = audioPlayer,
@@ -534,7 +560,7 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                     WhatsAppSelectionModal(
                         currentSelection = settingsState.whatsappPreference,
                         availableApps = settingsState.availableWhatsappApps,
-                        onSelect = { selection ->
+                        onSelect = { selection, _ ->
                             settingsViewModel.updateWhatsappPreference(selection)
                             settingsViewModel.toggleWhatsappModal(false)
                         },
@@ -628,6 +654,7 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
             ) {
                 Box(modifier = Modifier.fillMaxSize().systemBarsPadding()) {
                     DialerScreen(
+                        initialNumber = dialerInitialNumber ?: "",
                         onIdentifyCallHistory = { 
                             showDialerSheet = false
                         },

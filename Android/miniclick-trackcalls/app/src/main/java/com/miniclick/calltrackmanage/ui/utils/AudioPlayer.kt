@@ -32,7 +32,8 @@ class AudioPlayer(private val context: Context) {
     private val ACTION_PLAY_PAUSE = "com.miniclick.calltrackmanage.ACTION_PLAY_PAUSE"
     private val ACTION_STOP = "com.miniclick.calltrackmanage.ACTION_STOP"
 
-    private var currentMetadata: PlaybackMetadata? = null
+    private val _metadata = MutableStateFlow<PlaybackMetadata?>(null)
+    val metadata = _metadata.asStateFlow()
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -111,13 +112,13 @@ class AudioPlayer(private val context: Context) {
         )
 
         // Build title from metadata
-        val title = currentMetadata?.let { meta ->
+        val title = _metadata.value?.let { meta ->
             if (_isPlaying.value) "Playing: ${meta.name ?: meta.phoneNumber}" 
             else "Paused: ${meta.name ?: meta.phoneNumber}"
         } ?: "Call Recording"
 
         // Build subtitle from metadata
-        val subtitle = currentMetadata?.let { meta ->
+        val subtitle = _metadata.value?.let { meta ->
             "Playing Recording • ${meta.callTime}"
         } ?: if (_isPlaying.value) "Playing Recording..." else "Playback Paused"
 
@@ -131,12 +132,12 @@ class AudioPlayer(private val context: Context) {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .addAction(
-                if (_isPlaying.value) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play,
+                if (_isPlaying.value) R.drawable.ic_notification_pause else R.drawable.ic_notification_play,
                 if (_isPlaying.value) "Pause" else "Play",
                 playPausePendingIntent
             )
             .addAction(
-                android.R.drawable.ic_delete,
+                R.drawable.ic_notification_close,
                 "Close",
                 stopPendingIntent
             )
@@ -174,7 +175,7 @@ class AudioPlayer(private val context: Context) {
         }
 
         stop()
-        currentMetadata = metadata
+        _metadata.value = metadata
         try {
             mediaPlayer = MediaPlayer().apply {
                 setDataSource(path)
@@ -196,6 +197,14 @@ class AudioPlayer(private val context: Context) {
         }
     }
 
+    fun playOrResume(path: String, metadata: PlaybackMetadata? = null) {
+        if (_currentFile.value == path) {
+            resume()
+        } else {
+            play(path, metadata)
+        }
+    }
+
     fun togglePlayPause() {
         mediaPlayer?.let {
             if (it.isPlaying) {
@@ -206,6 +215,16 @@ class AudioPlayer(private val context: Context) {
                 _isPlaying.value = true
             }
             updateNotification()
+        }
+    }
+
+    fun resume() {
+        mediaPlayer?.let {
+            if (!it.isPlaying) {
+                it.start()
+                _isPlaying.value = true
+                updateNotification()
+            }
         }
     }
 
@@ -241,7 +260,7 @@ class AudioPlayer(private val context: Context) {
         _progress.value = 0f
         _currentPosition.value = 0
         _currentFile.value = null
-        currentMetadata = null
+        _metadata.value = null
         timer?.cancel()
         notificationManager.cancel(NOTIFICATION_ID)
     }

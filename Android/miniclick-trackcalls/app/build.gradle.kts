@@ -15,8 +15,8 @@ android {
         applicationId = "com.miniclick.calltrackmanage"
         minSdk = 22
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.3"
+        versionCode = 5
+        versionName = "Fixes"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

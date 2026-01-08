@@ -495,7 +495,7 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             val channel = android.app.NotificationChannel(
                 channelId,
                 "Sync Service",
-                android.app.NotificationManager.IMPORTANCE_DEFAULT
+                android.app.NotificationManager.IMPORTANCE_LOW
             )
             val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
             notificationManager.createNotificationChannel(channel)
@@ -507,10 +507,9 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             .setContentText(progress)
             .setSmallIcon(com.miniclick.calltrackmanage.R.drawable.ic_launcher_foreground)
             .setOngoing(true)
-            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
             .setOnlyAlertOnce(true)
             .build()
-
+            
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
             Log.d(TAG, "Creating ForegroundInfo with DATA_SYNC type")
             return ForegroundInfo(1003, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)

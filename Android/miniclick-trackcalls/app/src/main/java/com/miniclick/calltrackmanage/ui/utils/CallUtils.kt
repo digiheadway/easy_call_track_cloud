@@ -71,7 +71,8 @@ object CallUtils {
                 }
                 context.startActivity(intent)
             } catch (e2: Exception) {
-                Toast.makeText(context, "Could not initiate call", Toast.LENGTH_SHORT).show()
+                e2.printStackTrace()
+                 Toast.makeText(context, "Could not initiate call: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }

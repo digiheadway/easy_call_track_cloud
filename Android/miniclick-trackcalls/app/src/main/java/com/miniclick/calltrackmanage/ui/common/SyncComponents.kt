@@ -27,6 +27,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import com.miniclick.calltrackmanage.service.CallTrackInCallService
+import com.miniclick.calltrackmanage.ui.utils.AudioPlayer
 import android.telecom.Call
 import kotlinx.coroutines.delay
 
@@ -777,11 +778,18 @@ fun GlobalSyncStatusBar(
     isNetworkAvailable: Boolean,
     isSyncSetup: Boolean = true,
     onSyncNow: () -> Unit,
-    onShowQueue: () -> Unit
+    onShowQueue: () -> Unit,
+    audioPlayer: AudioPlayer? = null
 ) {
     val activeProcess by com.miniclick.calltrackmanage.data.ProcessMonitor.activeProcess.collectAsState()
     val callStatus by CallTrackInCallService.callStatus.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
+    
+    // Audio Player State
+    val isAudioPlaying = audioPlayer?.isPlaying?.collectAsState()?.value ?: false
+    val audioMetadata = audioPlayer?.metadata?.collectAsState()?.value
+    val audioPos = audioPlayer?.currentPosition?.collectAsState()?.value ?: 0
+    val audioDur = audioPlayer?.duration?.collectAsState()?.value ?: 0
     
     // Track duration for active calls
     var activeDuration by remember { mutableStateOf(0L) }
@@ -803,11 +811,13 @@ fun GlobalSyncStatusBar(
     // 1. There's an active local process (importing, finding recordings)
     // 2. Sync is setup AND there are pending items or network issues
     // 3. Or if there's an active/ringing call
+    // 4. Or if Audio is playing
     val showBar = activeProcess != null || 
                   (isSyncSetup && (totalPending > 0 || pendingRecordings > 0 || activeUploads > 0 || !isNetworkAvailable)) ||
-                  callStatus != null
+                  callStatus != null ||
+                  isAudioPlaying
 
-    android.util.Log.d("GlobalSyncStatusBar", "showBar: $showBar, activeProcess: ${activeProcess?.title}, totalPending: $totalPending, pendingRecordings: $pendingRecordings, activeUploads: $activeUploads, isNetworkAvailable: $isNetworkAvailable, isSyncSetup: $isSyncSetup")
+    // android.util.Log.d("GlobalSyncStatusBar", "showBar: $showBar ...")
 
     AnimatedVisibility(
         visible = showBar,
@@ -819,11 +829,9 @@ fun GlobalSyncStatusBar(
         val isLocalProcess = process != null
         
         // Color scheme:
-        // - Local process (import/find) = neutral surface color
-        // - Cloud backup pending = primary container
-        // - No network = error container (only if sync setup)
         val backgroundColor = when {
             callStatus != null -> Color(0xFF30D158) // Green for calls
+            isAudioPlaying -> MaterialTheme.colorScheme.tertiaryContainer 
             isLocalProcess -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f)
             !isNetworkAvailable && isSyncSetup -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.95f)
             else -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f)
@@ -831,6 +839,7 @@ fun GlobalSyncStatusBar(
         
         val contentColor = when {
             callStatus != null -> Color.White
+            isAudioPlaying -> MaterialTheme.colorScheme.onTertiaryContainer
             isLocalProcess -> MaterialTheme.colorScheme.onSurfaceVariant
             !isNetworkAvailable && isSyncSetup -> MaterialTheme.colorScheme.onErrorContainer
             else -> MaterialTheme.colorScheme.onPrimaryContainer
@@ -846,6 +855,8 @@ fun GlobalSyncStatusBar(
                             intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)
                             context.startActivity(intent)
                         } catch (e: Exception) {}
+                    } else if (isAudioPlaying) {
+                        audioPlayer?.togglePlayPause()
                     } else {
                         onShowQueue()
                     }
@@ -873,6 +884,15 @@ fun GlobalSyncStatusBar(
                         }
                         "${callStatus!!.phoneNumber} • $stateStr"
                     }
+                    // Audio Playing
+                    isAudioPlaying && audioMetadata != null -> {
+                        val name = audioMetadata.name ?: audioMetadata.phoneNumber
+                        val pos = audioPos / 1000
+                        val dur = audioDur / 1000
+                        val timeStr = String.format("%d:%02d / %d:%02d", pos / 60, pos % 60, dur / 60, dur % 60)
+                        "Playing: $name • $timeStr"
+                    }
+                    isAudioPlaying -> "Playing Recording..."
                     // Local processes (no network needed)
                     process != null -> {
                         val progressPct = if (process.isIndeterminate) "" else " ${(process.progress * 100).toInt()}%"
@@ -885,9 +905,17 @@ fun GlobalSyncStatusBar(
                         if (pendingTotal > 0) "Offline • Backup Paused ($pendingTotal items)" else "Offline"
                     }
                     // Active uploads
-                    activeUploads > 0 -> "Uploading $activeUploads recording${if (activeUploads > 1) "s" else ""}..."
+                    activeUploads > 0 -> {
+                        "Uploading $activeUploads recording${if (activeUploads > 1) "s" else ""}..."
+                    }
                     // Pending cloud backup
-                    totalPending > 0 -> "Backing up $totalPending item${if (totalPending > 1) "s" else ""}..."
+                    totalPending > 0 -> {
+                        val parts = mutableListOf<String>()
+                        if (pendingNewCalls > 0) parts.add("$pendingNewCalls calls")
+                        if (pendingMetadata > 0) parts.add("$pendingMetadata updates")
+                        if (pendingPersonUpdates > 0) parts.add("$pendingPersonUpdates contacts")
+                        "Syncing: ${parts.joinToString(", ")}"
+                    }
                     // Recordings in queue
                     pendingRecordings > 0 -> "Queue: $pendingRecordings recording${if (pendingRecordings > 1) "s" else ""} waiting"
                     // Fallback (shouldn't happen)
@@ -896,10 +924,13 @@ fun GlobalSyncStatusBar(
 
                 val icon = when {
                     callStatus != null -> if (callStatus!!.state == Call.STATE_RINGING) Icons.Default.Call else Icons.AutoMirrored.Filled.CallMade
+                    isAudioPlaying -> Icons.Default.PlayArrow
                     process != null -> Icons.Default.Sync  // Local processing
                     !isNetworkAvailable && isSyncSetup -> Icons.Default.CloudOff
                     activeUploads > 0 -> Icons.Default.CloudUpload
-                    totalPending > 0 -> Icons.Default.CloudSync
+                    pendingNewCalls > 0 -> Icons.Default.PhoneCallback
+                    pendingMetadata > 0 -> Icons.Default.EditNote
+                    pendingPersonUpdates > 0 -> Icons.Default.Person
                     pendingRecordings > 0 -> Icons.Default.Mic
                     else -> Icons.Default.Sync
                 }
@@ -921,7 +952,19 @@ fun GlobalSyncStatusBar(
                 )
                 
                 // Show progress indicator only when actively doing something
-                if (process != null || (isNetworkAvailable && (activeUploads > 0 || totalPending > 0))) {
+                 // Prioritize audio bar first
+                if (isAudioPlaying) {
+                     Spacer(Modifier.width(12.dp))
+                     LinearProgressIndicator(
+                            progress = { if (audioDur > 0) audioPos.toFloat() / audioDur.toFloat() else 0f },
+                            modifier = Modifier
+                                .width(60.dp)
+                                .height(4.dp)
+                                .clip(CircleShape),
+                            color = contentColor,
+                            trackColor = contentColor.copy(alpha = 0.2f),
+                     )
+                } else if (process != null || (isNetworkAvailable && (activeUploads > 0 || totalPending > 0))) {
                     Spacer(Modifier.width(12.dp))
                     
                     if (process != null && !process.isIndeterminate) {

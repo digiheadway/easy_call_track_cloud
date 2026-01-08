@@ -1,6 +1,7 @@
 package com.miniclick.calltrackmanage.ui.settings
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -795,10 +796,12 @@ fun CustomLookupModal(
 fun WhatsAppSelectionModal(
     currentSelection: String,
     availableApps: List<AppInfo>,
-    onSelect: (String) -> Unit,
-    onDismiss: () -> Unit
+    onSelect: (String, Boolean) -> Unit,
+    onDismiss: () -> Unit,
+    showSetDefault: Boolean = false
 ) {
     val sheetState = rememberModalBottomSheetState()
+    var setAsDefault by remember { mutableStateOf(false) }
     
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -811,34 +814,73 @@ fun WhatsAppSelectionModal(
                 .padding(bottom = 32.dp)
         ) {
             Text(
-                "Default WhatsApp",
+                if (showSetDefault) "Select WhatsApp" else "Default WhatsApp",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                "Choose which app to open when tapping WhatsApp links",
+                "Choose which app to open for WhatsApp messages",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(16.dp))
+            
+            if (showSetDefault) {
+                Surface(
+                    onClick = { setAsDefault = !setAsDefault },
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (setAsDefault) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = setAsDefault, 
+                            onCheckedChange = { setAsDefault = it },
+                            colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Always use this app (Make Default)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+            }
             
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Always Ask option
-                SelectionChip(
-                    label = "Always Ask",
-                    isSelected = currentSelection == "Always Ask",
-                    onClick = { onSelect("Always Ask") }
-                )
+                // "Always Ask" option (Only show if not already choosing from Ask)
+                if (!showSetDefault) {
+                    SelectionChip(
+                        label = "Always Ask",
+                        isSelected = currentSelection == "Always Ask",
+                        onClick = { onSelect("Always Ask", false) }
+                    )
+                }
                 
                 // Available WhatsApp apps
                 availableApps.forEach { app ->
                     SelectionChip(
                         label = app.label,
                         isSelected = currentSelection == app.packageName,
-                        onClick = { onSelect(app.packageName) }
+                        onClick = { onSelect(app.packageName, setAsDefault) }
+                    )
+                }
+                
+                if (availableApps.isEmpty()) {
+                    Text(
+                        "No WhatsApp apps detected",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(vertical = 16.dp)
                     )
                 }
             }

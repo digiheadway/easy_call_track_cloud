@@ -32,6 +32,10 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import android.content.Context
+import android.content.Intent
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun ReportsScreen(
@@ -100,16 +104,79 @@ fun ReportsScreen(
                         }
                     }
 
-                    // Date Range Icon (Last)
+                    // Date Range Icon
                     DateRangeHeaderAction(
                         dateRange = uiState.dateRange,
                         onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) }
                     )
+
+                    var showMainHeadMenu by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(onClick = { showMainHeadMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "More",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showMainHeadMenu,
+                            onDismissRequest = { showMainHeadMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Show Comparisons") },
+                                onClick = { 
+                                    showMainHeadMenu = false
+                                    viewModel.toggleShowComparisons()
+                                },
+                                leadingIcon = { 
+                                    Icon(
+                                        if (uiState.showComparisons) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked, 
+                                        contentDescription = null,
+                                        tint = if (uiState.showComparisons) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    ) 
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Export Full Report") },
+                                onClick = { 
+                                    showMainHeadMenu = false
+                                    // Placeholder for full report export
+                                },
+                                leadingIcon = { Icon(Icons.Default.Download, contentDescription = null) }
+                            )
+                        }
+                    }
                 }
             }
         }
         
         syncStatusBar()
+
+        // Report Categorization Chips
+        LazyRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(ReportCategory.entries.toTypedArray()) { category ->
+                FilterChip(
+                    selected = uiState.reportCategory == category,
+                    onClick = { viewModel.setReportCategory(category) },
+                    label = { 
+                        Text(
+                            text = category.name.replace("_", " ").lowercase()
+                                .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+                        ) 
+                    },
+                    leadingIcon = if (uiState.reportCategory == category) {
+                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    } else null
+                )
+            }
+        }
 
         if (showFilterModal) {
             CallFilterModal(
@@ -159,98 +226,148 @@ fun ReportsScreen(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 120.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Overview Summary Card - Clickable to Calls
-                item {
-                    OverviewCard(
-                        totalCalls = stats.totalCalls,
-                        uniqueContacts = stats.uniqueContacts,
-                        totalDuration = stats.totalDuration,
-                        onClick = {
-                            viewModel.setCallTypeFilter(CallTabFilter.ALL)
-                            onNavigateToTab?.invoke(0) // Navigate to Calls
-                        }
-                    )
-                }
+                // Filter based on category
+                val category = uiState.reportCategory
                 
-                // Call Types Breakdown - Each row clickable
-                item {
-                    CallTypesCard(
-                        stats = stats,
-                        onTypeClick = { filter ->
-                            viewModel.setCallTypeFilter(filter)
-                            onNavigateToTab?.invoke(0) // Navigate to Calls
-                        }
-                    )
-                }
-                
-                // Connection Stats Card
-                item {
-                    ConnectionStatsCard(stats = stats)
-                }
-                
-                // Duration Stats Card
-                item {
-                    DurationStatsCard(stats = stats)
-                }
-                
-                // Top Callers (by call count)
-                if (stats.topCallers.isNotEmpty()) {
+                // OVERVIEW Section
+                if (category == ReportCategory.OVERVIEW) {
                     item {
-                        TopCallersCard(
-                            title = "Most Frequent Callers",
-                            subtitle = "By number of calls",
-                            callers = stats.topCallers,
-                            showDuration = false
+                        OverviewCard(
+                            totalCalls = stats.totalCalls,
+                            uniqueContacts = stats.uniqueContacts,
+                            totalDuration = stats.totalDuration,
+                            onClick = {
+                                viewModel.setCallTypeFilter(CallTabFilter.ALL)
+                                onNavigateToTab?.invoke(0) // Navigate to Calls
+                            }
+                        )
+                    }
+                    
+                    item {
+                        CallTypesCard(
+                            stats = stats,
+                            onTypeClick = { filter ->
+                                viewModel.setCallTypeFilter(filter)
+                                onNavigateToTab?.invoke(0) // Navigate to Calls
+                            }
+                        )
+                    }
+                    
+                    item {
+                        ConnectionStatsCard(stats = stats)
+                    }
+                    
+                    item {
+                        DurationStatsCard(stats = stats)
+                    }
+
+                    if (uiState.showComparisons) {
+                        item {
+                            ComparisonsCard(stats = stats)
+                        }
+                    }
+
+                    item {
+                        ContactsBreakdownCard(
+                            stats = stats,
+                            onTypeClick = { filter ->
+                                viewModel.setContactsFilter(filter)
+                                onNavigateToTab?.invoke(0) // Navigate to Calls
+                            }
+                        )
+                    }
+                    
+                    item {
+                        NotesActivityCard(stats = stats)
+                    }
+                    
+                    if (stats.labelDistribution.isNotEmpty()) {
+                        item {
+                            LabelDistributionCard(labels = stats.labelDistribution)
+                        }
+                    }
+                }
+                
+                // DAILY AVERAGE Section
+                if (category == ReportCategory.DAILY_AVERAGE) {
+                    if (stats.dailyStats.isNotEmpty()) {
+                        item {
+                            DailyActivityCard(dailyStats = stats.dailyStats)
+                        }
+                        
+                        item {
+                            DailyAverageSummaryCard(stats = stats)
+                        }
+                    } else {
+                        item {
+                            EmptyState(
+                                icon = Icons.Default.CalendarToday,
+                                title = "No daily data",
+                                description = "Daily averages will appear here as you track more calls."
+                            )
+                        }
+                    }
+                }
+                
+                // DATA ANALYSIS Section
+                if (category == ReportCategory.DATA_ANALYSIS) {
+                    if (stats.hourlyStats.isNotEmpty()) {
+                        item {
+                            HourlyActivityCard(hourlyStats = stats.hourlyStats)
+                        }
+                    }
+                    
+                    if (stats.labelDistribution.isNotEmpty()) {
+                        item {
+                            LabelDistributionCard(labels = stats.labelDistribution)
+                        }
+                    }
+
+                    item {
+                        ConnectionStatsCard(
+                            stats = stats,
+                            viewModel = viewModel,
+                            onNavigateToTab = onNavigateToTab
                         )
                     }
                 }
                 
-                // Most Talked (by duration)
-                if (stats.mostTalked.isNotEmpty()) {
-                    item {
-                        TopCallersCard(
-                            title = "Longest Conversations",
-                            subtitle = "By total talk time",
-                            callers = stats.mostTalked,
-                            showDuration = true
-                        )
-                    }
-                }
-                
-                // Contacts Breakdown
-                item {
-                    ContactsBreakdownCard(
-                        stats = stats,
-                        onTypeClick = { filter ->
-                            viewModel.setContactsFilter(filter)
-                            onNavigateToTab?.invoke(0) // Navigate to Calls
+                // FREQUENCY Section
+                if (category == ReportCategory.FREQUENCY) {
+                    // Top Callers (by call count)
+                    if (stats.topCallers.isNotEmpty()) {
+                        item {
+                            TopCallersCard(
+                                title = "Most Frequent Callers",
+                                subtitle = "By number of calls",
+                                callers = stats.topCallers,
+                                showDuration = false,
+                                onNavigateToTab = onNavigateToTab
+                            )
                         }
-                    )
-                }
-                
-                // Notes & Activity Card
-                item {
-                    NotesActivityCard(stats = stats)
-                }
-                
-                // Labels Distribution
-                if (stats.labelDistribution.isNotEmpty()) {
-                    item {
-                        LabelDistributionCard(labels = stats.labelDistribution)
                     }
-                }
-                
-                // Daily Activity
-                if (stats.dailyStats.isNotEmpty()) {
-                    item {
-                        DailyActivityCard(dailyStats = stats.dailyStats)
+                    
+                    // Most Talked (by duration)
+                    if (stats.mostTalked.isNotEmpty()) {
+                        item {
+                            TopCallersCard(
+                                title = "Longest Conversations",
+                                subtitle = "By total talk time",
+                                callers = stats.mostTalked,
+                                showDuration = true,
+                                onNavigateToTab = onNavigateToTab
+                            )
+                        }
                     }
-                }
-                
-                // Hourly Activity
-                if (stats.hourlyStats.isNotEmpty()) {
-                    item {
-                        HourlyActivityCard(hourlyStats = stats.hourlyStats)
+
+                    if (stats.topCallers.isEmpty() && stats.mostTalked.isEmpty()) {
+                        item {
+                            EmptyState(
+                                icon = Icons.Default.TrendingUp,
+                                title = "No frequency data",
+                                description = "Frequency analysis will appear once you have call activity."
+                            )
+                        }
                     }
                 }
             }
@@ -259,6 +376,81 @@ fun ReportsScreen(
 }
 
 // ========================= Card Components =========================
+
+private fun shareReportData(context: Context, title: String, data: String) {
+    try {
+        val sendIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TEXT, "Report: $title\n\n$data")
+            type = "text/plain"
+        }
+        val shareIntent = Intent.createChooser(sendIntent, "Export $title")
+        context.startActivity(shareIntent)
+    } catch (e: Exception) {
+        Toast.makeText(context, "Failed to export data", Toast.LENGTH_SHORT).show()
+    }
+}
+
+@Composable
+fun ReportCardHeader(
+    title: String,
+    onDrillDown: (() -> Unit)? = null,
+    exportData: String = ""
+) {
+    var showMenu by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Box {
+            IconButton(onClick = { showMenu = true }) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "Options",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Drill Down") },
+                    onClick = { 
+                        showMenu = false
+                        onDrillDown?.invoke()
+                    },
+                    leadingIcon = { Icon(Icons.Default.Insights, contentDescription = null) }
+                )
+                DropdownMenuItem(
+                    text = { Text("Check Data") },
+                    onClick = { showMenu = false },
+                    leadingIcon = { Icon(Icons.Default.Checklist, contentDescription = null) }
+                )
+                DropdownMenuItem(
+                    text = { Text("Export") },
+                    onClick = { 
+                        showMenu = false
+                        if (exportData.isNotEmpty()) {
+                            shareReportData(context, title, exportData)
+                        } else {
+                            Toast.makeText(context, "No data to export", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) }
+                )
+            }
+        }
+    }
+}
 
 @Composable
 fun OverviewCard(
@@ -271,25 +463,17 @@ fun OverviewCard(
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Overview",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "View all",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            ReportCardHeader(
+                title = "Overview",
+                onDrillDown = onClick,
+                exportData = """
+                    Total Calls: $totalCalls
+                    Contacts: $uniqueContacts
+                    Talk Time: ${formatDurationShort(totalDuration)}
+                """.trimIndent()
+            )
             Spacer(Modifier.height(16.dp))
             
             Row(
@@ -300,19 +484,22 @@ fun OverviewCard(
                     value = totalCalls.toString(),
                     label = "Total Calls",
                     icon = Icons.Default.Call,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
+                    onClick = onClick
                 )
                 StatItem(
                     value = uniqueContacts.toString(),
                     label = "Contacts",
                     icon = Icons.Default.People,
-                    color = MaterialTheme.colorScheme.secondary
+                    color = MaterialTheme.colorScheme.secondary,
+                    onClick = onClick
                 )
                 StatItem(
                     value = formatDurationShort(totalDuration),
                     label = "Talk Time",
                     icon = Icons.Default.Timer,
-                    color = MaterialTheme.colorScheme.tertiary
+                    color = MaterialTheme.colorScheme.tertiary,
+                    onClick = onClick
                 )
             }
         }
@@ -329,10 +516,15 @@ fun CallTypesCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Call Types",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+            ReportCardHeader(
+                title = "Call Types",
+                onDrillDown = { onTypeClick(CallTabFilter.ALL) },
+                exportData = """
+                    Attended: ${stats.connectedIncoming}
+                    Responded: ${stats.connectedOutgoing}
+                    Not Attended: ${stats.incomingCalls - stats.connectedIncoming}
+                    Not Responded: ${stats.outgoingCalls - stats.connectedOutgoing}
+                """.trimIndent()
             )
             Spacer(Modifier.height(16.dp))
             
@@ -378,30 +570,49 @@ fun CallTypesCard(
 }
 
 @Composable
-fun ConnectionStatsCard(stats: ReportStats) {
+fun ConnectionStatsCard(
+    stats: ReportStats,
+    viewModel: HomeViewModel = viewModel(),
+    onNavigateToTab: ((Int) -> Unit)? = null
+) {
     ElevatedCard(
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Connection Analysis",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+            ReportCardHeader(
+                title = "Connection Analysis",
+                onDrillDown = { 
+                    viewModel.setCallTypeFilter(CallTabFilter.ALL)
+                    onNavigateToTab?.invoke(0)
+                },
+                exportData = """
+                    Connected: ${stats.connectedCalls}
+                    Not Connected: ${stats.notConnectedCalls}
+                    Rate: ${if (stats.totalCalls > 0) (stats.connectedCalls * 100 / stats.totalCalls) else 0}%
+                """.trimIndent()
             )
             Spacer(Modifier.height(16.dp))
             
-            StatRow(
+            ClickableStatRow(
                 label = "Connected Calls",
                 value = "${stats.connectedCalls}",
                 icon = Icons.Default.CheckCircle,
-                color = Color(0xFF4CAF50)
+                color = Color(0xFF4CAF50),
+                onClick = {
+                    viewModel.setConnectedFilter(ConnectedFilter.CONNECTED)
+                    onNavigateToTab?.invoke(0)
+                }
             )
-            StatRow(
+            ClickableStatRow(
                 label = "Not Connected",
                 value = "${stats.notConnectedCalls}",
                 icon = Icons.Default.Cancel,
-                color = Color(0xFFF44336)
+                color = Color(0xFFF44336),
+                onClick = {
+                    viewModel.setConnectedFilter(ConnectedFilter.NOT_CONNECTED)
+                    onNavigateToTab?.invoke(0)
+                }
             )
             
             Spacer(Modifier.height(12.dp))
@@ -410,7 +621,11 @@ fun ConnectionStatsCard(stats: ReportStats) {
             val connectionRate = if (stats.totalCalls > 0) 
                 (stats.connectedCalls * 100 / stats.totalCalls) else 0
             
-            Column {
+            Column(
+                modifier = Modifier.clickable { 
+                    // No direct filter for Rate, drill down to ALL
+                }
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -478,16 +693,23 @@ fun ConnectionStatsCard(stats: ReportStats) {
 }
 
 @Composable
-fun DurationStatsCard(stats: ReportStats) {
+fun DurationStatsCard(
+    stats: ReportStats,
+    onNavigateToTab: ((Int) -> Unit)? = null
+) {
     ElevatedCard(
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Duration Insights",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+            ReportCardHeader(
+                title = "Duration Insights",
+                onDrillDown = { onNavigateToTab?.invoke(0) },
+                exportData = """
+                    Total: ${formatDurationShort(stats.totalDuration)}
+                    Average: ${formatDurationShort(stats.avgDuration)}
+                    Longest: ${formatDurationShort(stats.maxDuration)}
+                """.trimIndent()
             )
             Spacer(Modifier.height(16.dp))
             
@@ -592,17 +814,18 @@ fun TopCallersCard(
     title: String,
     subtitle: String,
     callers: List<TopCaller>,
-    showDuration: Boolean
+    showDuration: Boolean,
+    onNavigateToTab: ((Int) -> Unit)? = null
 ) {
     ElevatedCard(
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+            ReportCardHeader(
+                title = title,
+                onDrillDown = { onNavigateToTab?.invoke(0) },
+                exportData = callers.joinToString("\n") { "${it.displayName}: ${it.callCount} calls" }
             )
             Text(
                 text = subtitle,
@@ -707,10 +930,13 @@ fun ContactsBreakdownCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Contacts Breakdown",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+            ReportCardHeader(
+                title = "Contacts Breakdown",
+                onDrillDown = { onTypeClick(ContactsFilter.ALL) },
+                exportData = """
+                    Saved: ${stats.savedContacts}
+                    Unsaved: ${stats.unsavedContacts}
+                """.trimIndent()
             )
             Spacer(Modifier.height(16.dp))
             
@@ -745,56 +971,84 @@ fun ContactsBreakdownCard(
 }
 
 @Composable
-fun NotesActivityCard(stats: ReportStats) {
+fun NotesActivityCard(
+    stats: ReportStats,
+    viewModel: HomeViewModel = viewModel(),
+    onNavigateToTab: ((Int) -> Unit)? = null
+) {
     ElevatedCard(
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Notes & Activity",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+            ReportCardHeader(
+                title = "Notes & Activity",
+                onDrillDown = { onNavigateToTab?.invoke(0) },
+                exportData = """
+                    Calls with Notes: ${stats.callsWithNotes}
+                    Reviewed Calls: ${stats.reviewedCalls}
+                    Calls with Recordings: ${stats.callsWithRecordings}
+                """.trimIndent()
             )
             Spacer(Modifier.height(16.dp))
             
-            StatRow(
+            ClickableStatRow(
                 label = "Calls with Notes",
                 value = stats.callsWithNotes.toString(),
                 icon = Icons.AutoMirrored.Filled.StickyNote2,
-                color = MaterialTheme.colorScheme.secondary
+                color = MaterialTheme.colorScheme.secondary,
+                onClick = {
+                    viewModel.setNotesFilter(NotesFilter.WITH_NOTE)
+                    onNavigateToTab?.invoke(0)
+                }
             )
-            StatRow(
+            ClickableStatRow(
                 label = "Reviewed Calls",
                 value = stats.reviewedCalls.toString(),
                 icon = Icons.Default.CheckCircle,
-                color = Color(0xFF4CAF50)
+                color = Color(0xFF4CAF50),
+                onClick = {
+                    viewModel.setReviewedFilter(ReviewedFilter.REVIEWED)
+                    onNavigateToTab?.invoke(0)
+                }
             )
-            StatRow(
+            ClickableStatRow(
                 label = "Calls with Recordings",
                 value = stats.callsWithRecordings.toString(),
                 icon = Icons.Default.Mic,
-                color = Color(0xFFF44336)
+                color = Color(0xFFF44336),
+                onClick = {
+                    // Filter needed for recordings?
+                    onNavigateToTab?.invoke(0)
+                }
             )
             if (stats.shortCalls > 0) {
-                StatRow(
+                ClickableStatRow(
                     label = "Short Calls (<10s)",
                     value = stats.shortCalls.toString(),
                     icon = Icons.Default.Warning,
-                    color = Color(0xFFFF9800) // Orange warning color
+                    color = Color(0xFFFF9800),
+                    onClick = { onNavigateToTab?.invoke(0) }
                 )
             }
-            StatRow(
+            ClickableStatRow(
                 label = "Persons with Notes",
                 value = stats.personsWithNotes.toString(),
                 icon = Icons.Default.PersonPin,
-                color = MaterialTheme.colorScheme.tertiary
+                color = MaterialTheme.colorScheme.tertiary,
+                onClick = {
+                    viewModel.setPersonNotesFilter(PersonNotesFilter.WITH_NOTE)
+                    onNavigateToTab?.invoke(1) // Persons tab
+                }
             )
-            StatRow(
+            ClickableStatRow(
                 label = "Persons with Labels",
                 value = stats.personsWithLabels.toString(),
                 icon = Icons.AutoMirrored.Filled.Label,
-                color = Color(0xFF9C27B0)
+                color = Color(0xFF9C27B0),
+                onClick = {
+                    onNavigateToTab?.invoke(1) // Persons tab
+                }
             )
         }
     }
@@ -807,10 +1061,9 @@ fun LabelDistributionCard(labels: List<Pair<String, Int>>) {
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Label Distribution",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+            ReportCardHeader(
+                title = "Label Distribution",
+                exportData = labels.joinToString("\n") { "${it.first}: ${it.second}" }
             )
             Spacer(Modifier.height(12.dp))
             
@@ -842,11 +1095,7 @@ fun DailyActivityCard(dailyStats: Map<String, DayStat>) {
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Daily Activity",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            ReportCardHeader(title = "Daily Activity")
             Text(
                 text = "Calls per day of week",
                 style = MaterialTheme.typography.labelSmall,
@@ -911,11 +1160,7 @@ fun HourlyActivityCard(hourlyStats: Map<Int, Int>) {
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Hourly Activity",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            ReportCardHeader(title = "Hourly Activity")
             Text(
                 text = "Peak hours for calls",
                 style = MaterialTheme.typography.labelSmall,
@@ -998,6 +1243,117 @@ fun HourlyActivityCard(hourlyStats: Map<Int, Int>) {
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+// ========================= New Report Cards =========================
+
+@Composable
+fun ComparisonsCard(stats: ReportStats) {
+    ElevatedCard(
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            ReportCardHeader(title = "Comparisons")
+            Text(
+                text = "vs. past similar data",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(16.dp))
+            
+            ComparisonItem(
+                label = "Connected Rate",
+                current = "${if (stats.totalCalls > 0) (stats.connectedCalls * 100 / stats.totalCalls) else 0}%",
+                trend = "+5%", // Mock trend for visual demo
+                isPositive = true
+            )
+            ComparisonItem(
+                label = "Avg. Duration",
+                current = formatDurationShort(stats.avgDuration),
+                trend = "-12s", // Mock trend for visual demo
+                isPositive = false
+            )
+            ComparisonItem(
+                label = "Daily Avg Calls",
+                current = if (stats.dailyStats.isNotEmpty()) (stats.totalCalls / stats.dailyStats.size).toString() else "0",
+                trend = "+2", // Mock trend for visual demo
+                isPositive = true
+            )
+        }
+    }
+}
+
+@Composable
+fun ComparisonItem(
+    label: String,
+    current: String,
+    trend: String,
+    isPositive: Boolean
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = label, style = MaterialTheme.typography.bodyMedium)
+            Text(text = current, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = if (isPositive) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
+                contentDescription = null,
+                tint = if (isPositive) Color(0xFF4CAF50) else Color(0xFFF44336),
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                text = trend,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = if (isPositive) Color(0xFF4CAF50) else Color(0xFFF44336)
+            )
+        }
+    }
+}
+
+@Composable
+fun DailyAverageSummaryCard(stats: ReportStats) {
+    val avgCalls = if (stats.dailyStats.isNotEmpty()) stats.totalCalls / stats.dailyStats.size else 0
+    val avgDuration = if (stats.dailyStats.isNotEmpty()) stats.totalDuration / stats.dailyStats.size else 0
+    
+    ElevatedCard(
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            ReportCardHeader(
+                title = "Daily Averages",
+                exportData = "Avg Calls/Day: $avgCalls\nAvg Time/Day: ${formatDurationShort(avgDuration)}"
+            )
+            Spacer(Modifier.height(16.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                StatItem(
+                    value = avgCalls.toString(),
+                    label = "Calls/Day",
+                    icon = Icons.Default.Call,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                StatItem(
+                    value = formatDurationShort(avgDuration),
+                    label = "Time/Day",
+                    icon = Icons.Default.Timer,
+                    color = MaterialTheme.colorScheme.secondary
+                )
             }
         }
     }

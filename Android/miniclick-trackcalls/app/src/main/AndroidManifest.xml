@@ -71,7 +71,12 @@
             android:exported="true"
             android:theme="@style/Theme.CallCloud"
             android:launchMode="singleTop"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="portrait"
+            android:showOnLockScreen="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity="" />
 
         <!-- Required to be eligible for Default Dialer role -->
         <service
@@ -96,6 +101,11 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+
+        <receiver
+            android:name=".service.CallActionReceiver"
+            android:enabled="true"
+            android:exported="false" />
 
         <receiver
             android:name=".receiver.CallReceiver"

@@ -136,11 +136,15 @@ fun TrackSimModal(
                 else -> "Off"
             }
             
-            // Always allow saving the selection
+            // Primary Action: Save or Setup
             Button(
                 onClick = {
                     viewModel.updateSimSelection(selectedValue)
-                    onDismiss()
+                    if (nextSimToSetup != null) {
+                        showSetupModal = nextSimToSetup
+                    } else {
+                        onDismiss()
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -148,12 +152,15 @@ fun TrackSimModal(
                 shape = RoundedCornerShape(14.dp)
             ) {
                 Text(
-                    if (selectedValue == "Off") "Disable Tracking" else "Save Selection",
+                    when {
+                        selectedValue == "Off" -> "Disable Tracking"
+                        nextSimToSetup != null -> "Setup SIM $nextSimToSetup"
+                        else -> "Save Selection"
+                    },
                     style = MaterialTheme.typography.titleMedium
                 )
             }
             
-            // Note: Setup is available inline on each SIM card, no need for secondary button
             
             Spacer(Modifier.height(32.dp))
         }

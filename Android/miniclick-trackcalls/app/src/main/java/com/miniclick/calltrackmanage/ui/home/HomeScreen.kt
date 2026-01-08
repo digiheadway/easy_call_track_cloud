@@ -30,6 +30,7 @@ import com.miniclick.calltrackmanage.data.RecordingRepository
 import com.miniclick.calltrackmanage.data.db.CallDataEntity
 import com.miniclick.calltrackmanage.ui.common.*
 import com.miniclick.calltrackmanage.ui.settings.SettingsViewModel
+import com.miniclick.calltrackmanage.ui.settings.WhatsAppSelectionModal
 import com.miniclick.calltrackmanage.ui.utils.AudioPlayer
 import com.miniclick.calltrackmanage.ui.utils.getFileNameFromUri
 import com.miniclick.calltrackmanage.worker.RecordingUploadWorker
@@ -44,7 +45,8 @@ fun CallsScreen(
     syncStatusBar: @Composable () -> Unit = {},
     personDetailsPhone: String? = null,
     onClearPersonDetails: () -> Unit = {},
-    isDialerEnabled: Boolean = true
+    isDialerEnabled: Boolean = true,
+    showDialButton: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val settingsState by settingsViewModel.uiState.collectAsState()
@@ -171,6 +173,18 @@ fun CallsScreen(
         )
     }
 
+    if (uiState.showWhatsappSelectionDialog) {
+        WhatsAppSelectionModal(
+            currentSelection = uiState.whatsappPreference,
+            availableApps = uiState.availableWhatsappApps,
+            onSelect = { selection, setAsDefault -> 
+                viewModel.selectWhatsappAndOpen(selection, setAsDefault)
+            },
+            onDismiss = { viewModel.dismissWhatsappSelection() },
+            showSetDefault = true
+        )
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Unified Header Unit
@@ -193,7 +207,7 @@ fun CallsScreen(
                     
                     val scope = rememberCoroutineScope()
 
-                    Spacer(Modifier.height(4.dp))
+
 
                     // 1. Pager -> ViewModel Sync (When user settles on a page)
                     LaunchedEffect(pagerState.settledPage) {
@@ -342,7 +356,8 @@ fun CallsScreen(
                                     },
                                     canExclude = uiState.allowPersonalExclusion || !uiState.isSyncSetup,
                                     onCustomLookup = { settingsViewModel.showPhoneLookup(it) },
-                                    lazyListState = scrollStates[page]
+                                    lazyListState = scrollStates[page],
+                                    showDialButton = showDialButton
                                 )
                             }
                         }
@@ -353,7 +368,7 @@ fun CallsScreen(
 
         // Floating Action Button Overlay
         AnimatedVisibility(
-            visible = isDialerEnabled && isFabVisible,
+            visible = isDialerEnabled && showDialButton && isFabVisible,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp),
@@ -385,7 +400,10 @@ fun PersonsScreen(
     val context = LocalContext.current
     var showFilterModal by remember { mutableStateOf(false) }
 
-    val pagerState = rememberPagerState(pageCount = { PersonTabFilter.entries.size })
+    val pagerState = rememberPagerState(
+        initialPage = uiState.personTabFilter.ordinal,
+        pageCount = { PersonTabFilter.entries.size }
+    )
 
     val availableLabels = remember(uiState.persons) { 
         uiState.persons.mapNotNull { it.label }
@@ -456,6 +474,18 @@ fun PersonsScreen(
         )
     }
 
+    if (uiState.showWhatsappSelectionDialog) {
+        WhatsAppSelectionModal(
+            currentSelection = uiState.whatsappPreference,
+            availableApps = uiState.availableWhatsappApps,
+            onSelect = { selection, setAsDefault -> 
+                viewModel.selectWhatsappAndOpen(selection, setAsDefault)
+            },
+            onDismiss = { viewModel.dismissWhatsappSelection() },
+            showSetDefault = true
+        )
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         // Unified Header Unit
         Surface(
@@ -477,7 +507,7 @@ fun PersonsScreen(
                 
                 val scope = rememberCoroutineScope()
 
-                Spacer(Modifier.height(4.dp))
+
 
                 // 1. Pager -> ViewModel Sync (When user settles on a page)
                 LaunchedEffect(pagerState.settledPage) {

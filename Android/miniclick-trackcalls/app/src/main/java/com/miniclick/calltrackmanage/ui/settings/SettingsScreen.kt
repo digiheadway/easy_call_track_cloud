@@ -67,6 +67,15 @@ fun SettingsScreen(
             }
         }
     )
+    
+    // Role launcher for Default Dialer (Android Q+)
+    val defaultDialerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(),
+        onResult = { _ ->
+            // Refresh the ViewModel state to update UI
+            viewModel.onResume()
+        }
+    )
 
     fun checkAndRequestNotificationPermission() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
@@ -234,16 +243,28 @@ fun SettingsScreen(
                                             val roleManager = context.getSystemService(android.content.Context.ROLE_SERVICE) as android.app.role.RoleManager
                                             if (roleManager.isRoleAvailable(android.app.role.RoleManager.ROLE_DIALER)) {
                                                 val intent = roleManager.createRequestRoleIntent(android.app.role.RoleManager.ROLE_DIALER)
-                                                context.startActivity(intent)
+                                                defaultDialerLauncher.launch(intent)
+                                            } else {
+                                                throw Exception("Role not available")
                                             }
                                         } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
                                             val intent = Intent(android.telecom.TelecomManager.ACTION_CHANGE_DEFAULT_DIALER).apply {
                                                 putExtra(android.telecom.TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME, context.packageName)
                                             }
-                                            context.startActivity(intent)
+                                            defaultDialerLauncher.launch(intent)
                                         }
                                     } catch (e: Exception) {
-                                        Toast.makeText(context, "Cannot open settings: ${e.message}", Toast.LENGTH_SHORT).show()
+                                        // Fallback for Q+ failure to try M way
+                                        try {
+                                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                                                val intent = Intent(android.telecom.TelecomManager.ACTION_CHANGE_DEFAULT_DIALER).apply {
+                                                    putExtra(android.telecom.TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME, context.packageName)
+                                                }
+                                                defaultDialerLauncher.launch(intent)
+                                            }
+                                        } catch (e2: Exception) {
+                                            Toast.makeText(context, "Cannot open settings: ${e.message}", Toast.LENGTH_SHORT).show()
+                                        }
                                     }
                                 },
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
@@ -418,7 +439,7 @@ fun SettingsScreen(
                     WhatsAppSelectionModal(
                         currentSelection = uiState.whatsappPreference,
                         availableApps = uiState.availableWhatsappApps,
-                        onSelect = { selection ->
+                        onSelect = { selection, _ ->
                             viewModel.updateWhatsappPreference(selection)
                             showWhatsappModal = false
                         },

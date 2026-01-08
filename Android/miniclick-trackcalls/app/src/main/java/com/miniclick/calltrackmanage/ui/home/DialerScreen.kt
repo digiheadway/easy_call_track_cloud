@@ -37,11 +37,14 @@ import androidx.compose.material.icons.filled.Close
 
 @Composable
 fun DialerScreen(
+    initialNumber: String = "",
     onIdentifyCallHistory: () -> Unit, 
     onClose: () -> Unit = {},
     viewModel: HomeViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
-    var phoneNumber by remember { mutableStateOf("") }
+    androidx.activity.compose.BackHandler(onBack = onClose)
+
+    var phoneNumber by remember(initialNumber) { mutableStateOf(initialNumber) }
     val context = LocalContext.current
     
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
