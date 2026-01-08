@@ -50,7 +50,7 @@ object AdsManager {
     // ==================== CONFIGURATION ====================
     
     // AdMob Ad Unit IDs (Provided by USER)
-    private const val ADMOB_APP_OPEN_ID = "ca-app-pub-2002073902256509/6094052821" // Not updated by user
+    private const val ADMOB_APP_OPEN_ID = "" // Disabled - no unit in new panel
     private const val ADMOB_BANNER_ID = "/22649815059/linkbox_app/banner"
     private const val ADMOB_INTERSTITIAL_ID = "/22649815059/linkbox_app/interstitial"
     private const val ADMOB_NATIVE_ID = "/22649815059/linkbox_app/native"
@@ -221,7 +221,7 @@ object AdsManager {
         remoteConfig.setConfigSettingsAsync(configSettings)
         
         val defaults = mapOf(
-            KEY_SHOW_APP_OPEN to true,
+            KEY_SHOW_APP_OPEN to false,
             KEY_SHOW_INTERSTITIAL to true,
             KEY_SHOW_BANNER to true,
             KEY_SHOW_ADAPTIVE_BANNER to true,

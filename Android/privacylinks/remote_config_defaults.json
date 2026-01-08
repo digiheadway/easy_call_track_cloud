@@ -5,14 +5,14 @@
       "parameters": {
         "show_app_open": {
           "defaultValue": {
-            "value": "true"
+            "value": "false"
           },
           "description": "Enable/disable App Open ads",
           "valueType": "BOOLEAN"
         },
         "app_wide_ad_app_open_ad": {
           "defaultValue": {
-            "value": "true"
+            "value": "false"
           },
           "description": "Global toggle for App Open ads across the entire application",
           "valueType": "BOOLEAN"
@@ -292,7 +292,7 @@
       "parameters": {
         "id_app_open": {
           "defaultValue": {
-            "value": "ca-app-pub-2002073902256509/6094052821"
+            "value": ""
           },
           "description": "AdMob App Open Ad Unit ID",
           "valueType": "STRING"
