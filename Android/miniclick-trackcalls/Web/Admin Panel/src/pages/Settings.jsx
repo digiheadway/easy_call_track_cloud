@@ -27,8 +27,11 @@ export default function Settings() {
         org_name: '',
         phone: '',
         billing_address: '',
-        gst_number: '',
-        state: ''
+        city: '',
+        state: '',
+        zip_code: '',
+        country: '',
+        gst_number: ''
     });
 
     const [loading, setLoading] = useState(false);
@@ -53,8 +56,11 @@ export default function Settings() {
                 org_name: user.org_name || '',
                 phone: user.phone || '',
                 billing_address: user.billing_address || '',
-                gst_number: user.gst_number || '',
-                state: user.state || ''
+                city: user.city || '',
+                state: user.state || '',
+                zip_code: user.zip_code || '',
+                country: user.country || '',
+                gst_number: user.gst_number || ''
             });
         }
     }, [user]);
@@ -169,31 +175,71 @@ export default function Settings() {
 
                                 <div>
                                     <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-2">Billing Address</label>
-                                    <textarea
-                                        rows="3"
-                                        className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white w-full"
-                                        value={formData.billing_address}
-                                        onChange={(e) => setFormData({ ...formData, billing_address: e.target.value })}
-                                    ></textarea>
+                                    <div className="space-y-4 p-4 border border-gray-100 dark:border-gray-700/50 rounded-xl bg-gray-50/50 dark:bg-gray-800/50">
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Street Address</label>
+                                            <textarea
+                                                rows="2"
+                                                className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white w-full"
+                                                placeholder="Street address, P.O. box, etc."
+                                                value={formData.billing_address}
+                                                onChange={(e) => setFormData({ ...formData, billing_address: e.target.value })}
+                                            ></textarea>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">City</label>
+                                                <input
+                                                    type="text"
+                                                    className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+                                                    value={formData.city}
+                                                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">State / Province</label>
+                                                <input
+                                                    type="text"
+                                                    className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+                                                    value={formData.state}
+                                                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Zip / Postal Code</label>
+                                                <input
+                                                    type="text"
+                                                    className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+                                                    value={formData.zip_code}
+                                                    onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Country</label>
+                                                <input
+                                                    type="text"
+                                                    className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+                                                    value={formData.country}
+                                                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 gap-6">
                                     <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-2">GST Number</label>
+                                        <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-2">GST / Tax ID</label>
                                         <input
                                             type="text"
                                             className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+                                            placeholder="Optional"
                                             value={formData.gst_number}
                                             onChange={(e) => setFormData({ ...formData, gst_number: e.target.value })}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-2">State</label>
-                                        <input
-                                            type="text"
-                                            className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white"
-                                            value={formData.state}
-                                            onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                                         />
                                     </div>
                                 </div>

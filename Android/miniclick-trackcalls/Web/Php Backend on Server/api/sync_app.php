@@ -825,7 +825,7 @@ if ($action === "update_call") {
     }
     
     if (empty($updates)) {
-        out(["success" => true, "message" => "Nothing to update", "server_time" => time() * 1000]);
+        out(["server_time" => time() * 1000], 200, "Nothing to update");
     }
     
     // Add updated_at = NOW() 
@@ -840,10 +840,8 @@ if ($action === "update_call") {
     // Use execute with array instead of bind_param for dynamic args
     if ($stmt->execute($params)) {
         out([
-            "success" => true, 
-            "message" => "Call updated",
             "server_time" => time() * 1000
-        ]);
+        ], 200, "Call updated");
     } else {
         errorOut("Failed to update call: " . $conn->error, 500);
     }
@@ -923,10 +921,8 @@ if ($action === "update_person") {
     }
     
     out([
-        "success" => true,
-        "message" => "Person updated",
         "server_time" => time() * 1000
-    ]);
+    ], 200, "Person updated");
 }
 
 /* =====================================================

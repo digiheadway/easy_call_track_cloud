@@ -47,11 +47,20 @@ if ($method === 'PUT') {
             if (isset($data['billing_address'])) {
                 $fields[] = "billing_address = '" . Database::escape($data['billing_address']) . "'";
             }
-            if (isset($data['gst_number'])) {
-                $fields[] = "gst_number = '" . Database::escape($data['gst_number']) . "'";
+            if (isset($data['city'])) {
+                $fields[] = "city = '" . Database::escape($data['city']) . "'";
             }
             if (isset($data['state'])) {
                 $fields[] = "state = '" . Database::escape($data['state']) . "'";
+            }
+            if (isset($data['zip_code'])) {
+                $fields[] = "zip_code = '" . Database::escape($data['zip_code']) . "'";
+            }
+            if (isset($data['country'])) {
+                $fields[] = "country = '" . Database::escape($data['country']) . "'";
+            }
+            if (isset($data['gst_number'])) {
+                $fields[] = "gst_number = '" . Database::escape($data['gst_number']) . "'";
             }
 
             if (empty($fields)) {
