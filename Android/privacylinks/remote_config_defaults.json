@@ -7,7 +7,7 @@
           "defaultValue": {
             "value": "true"
           },
-          "description": "Enable/disable App Open ads",
+          "description": "Enable/disable App Open ads (currently using Interstitial fallback)",
           "valueType": "BOOLEAN"
         },
         "app_wide_ad_app_open_ad": {
@@ -294,7 +294,7 @@
           "defaultValue": {
             "value": "/22649815059/linkbox_app/interstitial"
           },
-          "description": "AdMob App Open Ad Unit ID",
+          "description": "Ad ID for Splash screen (Using Interstitial replacement)",
           "valueType": "STRING"
         },
         "id_interstitial": {
