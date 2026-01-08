@@ -233,7 +233,7 @@
                 if (data.data && data.data.token) {
                     localStorage.setItem('cc_token', data.data.token);
                     const emailParam = encodeURIComponent(email);
-                    window.location.href = `verify-email.html?email=${emailParam}`;
+                    window.location.href = `../verify-email/?email=${emailParam}`;
                 } else {
                     throw new Error('Invalid response from server');
                 }

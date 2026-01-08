@@ -40,16 +40,31 @@ $TMP_DIR    = dirname(__DIR__) . "/public/tmp_chunks/";
 /* ============================
    HELPERS
 ============================ */
-function out($data, $code = 200)
+function out($data, $code = 200, $message = "Success")
 {
     http_response_code($code);
-    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    // If $data already has success/error keys, we might be in a transition phase.
+    // For the "generic" style, we wrap everything in data if it's not already there.
+    $response = [
+        "success" => true,
+        "message" => $message,
+        "error" => null,
+        "data" => $data
+    ];
+    echo json_encode($response, JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 function errorOut($msg, $code = 400)
 {
-    out(["success" => false, "error" => $msg], $code);
+    http_response_code($code);
+    echo json_encode([
+        "success" => false,
+        "message" => $msg,
+        "error" => $msg,
+        "data" => null
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
 }
 
 function safeCaller($caller)
@@ -146,8 +161,6 @@ if ($action === "verify_pairing_code") {
             errorOut("Failed to link device: " . $conn->error, 500);
         }
         out([
-            "success" => true,
-            "message" => "Pairing successful - Device linked",
             "employee_name" => $employee['name'],
             "settings" => [
                 "allow_personal_exclusion" => (int)$employee['allow_personal_exclusion'],
@@ -162,7 +175,7 @@ if ($action === "verify_pairing_code") {
                 "allowed_storage_gb" => (float)($employee['allowed_storage_gb'] ?? 0),
                 "storage_used_bytes" => (int)($employee['storage_used_bytes'] ?? 0)
             ]
-        ]);
+        ], 200, "Pairing successful - Device linked");
     }
     
     // Employee already has a linked device
@@ -174,8 +187,6 @@ if ($action === "verify_pairing_code") {
         $upd->execute();
 
         out([
-                "success" => true,
-                "message" => "Device already verified",
                 "employee_name" => $employee['name'],
                 "settings" => [
                     "allow_personal_exclusion" => (int)$employee['allow_personal_exclusion'],
@@ -190,7 +201,7 @@ if ($action === "verify_pairing_code") {
                     "allowed_storage_gb" => (float)($employee['allowed_storage_gb'] ?? 0),
                     "storage_used_bytes" => (int)($employee['storage_used_bytes'] ?? 0)
                 ]
-            ]);
+            ], 200, "Device already verified");
         } else {
             // Different device - BLOCK (employee must unpair old device first)
             // TESTER BYPASS: Allow uptown-5 to switch freely
@@ -200,8 +211,6 @@ if ($action === "verify_pairing_code") {
                 $upd->bind_param("sssii", $device_id, $device_model, $os_version, $battery_level, $employee_id);
                 $upd->execute();
                 out([
-                    "success" => true,
-                    "message" => "Tester device switched",
                     "employee_name" => $employee['name'],
                     "settings" => [
                         "allow_personal_exclusion" => (int)$employee['allow_personal_exclusion'],
@@ -216,7 +225,7 @@ if ($action === "verify_pairing_code") {
                         "allowed_storage_gb" => (float)($employee['allowed_storage_gb'] ?? 0),
                         "storage_used_bytes" => (int)($employee['storage_used_bytes'] ?? 0)
                     ]
-                ]);
+                ], 200, "Tester device switched");
             }
             errorOut("Your account is already paired to another device. Please unpair from the old device first (Settings > Disconnect Organisation) or contact your administrator.", 403);
         }
@@ -321,11 +330,10 @@ if ($action === "start_call") {
     // The `after_call_insert` trigger now handles contact upsert and stats automatically.
 
     out([
-        "success" => true,
         "unique_id" => $unique_id,
         "upload_status" => $upload_status,
         "created_ts" => $created_at
-    ]);
+    ], 200, "Call started");
 }
 
 /* =====================================================
@@ -433,10 +441,9 @@ if ($action === "batch_sync_calls") {
     }
 
     out([
-        "success" => true,
         "synced_ids" => $synced_ids,
         "server_time" => time() * 1000
-    ]);
+    ], 200, "Batch sync completed");
 }
 
 /* =====================================================
@@ -484,7 +491,7 @@ if ($action === "upload_chunk") {
         errorOut("Failed to save chunk", 500);
     }
     
-    out(["success" => true, "chunk_saved" => $index]);
+    out(["chunk_saved" => $index]);
 }
 
 /* =====================================================
@@ -510,7 +517,7 @@ if ($action === "finalize_upload") {
         errorOut("Call not found");
 
     if ($call['upload_status'] === 'completed') {
-        out(["success" => true, "message" => "No recording required/Already Done"]);
+        out([], 200, "No recording required/Already Done");
     }
 
     $callerSafe = safeCaller($call['caller_phone']);
@@ -573,7 +580,7 @@ if ($action === "finalize_upload") {
     $upd->bind_param("ss", $recording_url, $unique_id);
     $upd->execute();
 
-    out(["success" => true, "recording_url" => $recording_url]);
+    out(["recording_url" => $recording_url], 200, "Upload finalized");
 }
 
 /* =====================================================
@@ -768,11 +775,10 @@ if ($action === "fetch_updates") {
     }
 
     out([
-        "success" => true,
         "call_updates" => $call_updates,
         "person_updates" => $person_updates,
         "server_time" => time() * 1000
-    ]);
+    ], 200, "Updates retrieved");
 }
 
 /* =====================================================
@@ -989,7 +995,6 @@ if ($action === "fetch_config") {
     $settings = $res2->fetch_assoc();
 
     out([
-        "success" => true,
         "excluded_contacts" => $excluded,
         "settings" => [
             "allow_personal_exclusion" => (int)($settings['allow_personal_exclusion'] ?? 0),
@@ -1004,7 +1009,7 @@ if ($action === "fetch_config") {
             "allowed_storage_gb" => (float)($settings['allowed_storage_gb'] ?? 0),
             "storage_used_bytes" => (int)($settings['storage_used_bytes'] ?? 0)
         ]
-    ]);
+    ], 200, "Configuration retrieved");
 }
 /* =====================================================
    🔟 CHECK RECORDINGS STATUS (Batch Check)
@@ -1015,7 +1020,7 @@ if ($action === "check_recordings_status") {
     $unique_ids = json_decode($unique_ids_json, true);
     
     if (!is_array($unique_ids) || empty($unique_ids)) {
-        out(["success" => true, "completed_ids" => []]);
+        out(["completed_ids" => []]);
     }
     
     // Sanitize IDs
@@ -1034,7 +1039,7 @@ if ($action === "check_recordings_status") {
         $completed[] = $row['unique_id'];
     }
     
-    out(["success" => true, "completed_ids" => $completed]);
+    out(["completed_ids" => $completed]);
 }
 /* =====================================================
    ADD DEMO CALL (For testing - bypasses device verification)
@@ -1102,7 +1107,6 @@ if ($action === "add_demo_call") {
     }
     
     out([
-        "success" => true,
         "message" => "Demo call added successfully",
         "unique_id" => $unique_id,
         "org_id" => $org_id,

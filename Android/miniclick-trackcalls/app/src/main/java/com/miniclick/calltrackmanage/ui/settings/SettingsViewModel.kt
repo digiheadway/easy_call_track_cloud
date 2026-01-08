@@ -941,42 +941,37 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     batteryLevel = if (batteryPct >= 0) batteryPct else null
                 )
 
-                if (response.isSuccessful && response.body()?.get("success") == true) {
-                    val employeeName = response.body()?.get("employee_name")?.toString() ?: "Unknown"
-                    @Suppress("UNCHECKED_CAST")
-                    val settings = response.body()?.get("settings") as? Map<String, Any>
+                val apiResponse = response.body()
+                if (response.isSuccessful && apiResponse?.success == true && apiResponse.data != null) {
+                    val data = apiResponse.data
+                    val employeeName = data.employeeName
+                    val settings = data.settings
                     
-                    if (settings != null) {
-                        val allowChanging = parseBooleanSettings(settings["allow_changing_tracking_start_date"])
-                        val defaultDateStr = settings["default_tracking_starting_date"] as? String
+                    val allowChanging = settings.allowChangingTrackingStartDate == 1
+                    val defaultDateStr = settings.defaultTrackingStartingDate
 
-                        settingsRepository.setAllowPersonalExclusion(parseBooleanSettings(settings["allow_personal_exclusion"]))
-                        settingsRepository.setAllowChangingTrackStartDate(allowChanging)
-                        settingsRepository.setAllowUpdatingTrackSims(parseBooleanSettings(settings["allow_updating_tracking_sims"]))
-                        settingsRepository.setDefaultTrackStartDate(defaultDateStr)
-                        settingsRepository.setCallTrackEnabled(parseBooleanSettings(settings["call_track"]))
-                        settingsRepository.setCallRecordEnabled(parseBooleanSettings(settings["call_record_crm"]))
+                    settingsRepository.setAllowPersonalExclusion(settings.allowPersonalExclusion == 1)
+                    settingsRepository.setAllowChangingTrackStartDate(allowChanging)
+                    settingsRepository.setAllowUpdatingTrackSims(settings.allowUpdatingTrackingSims == 1)
+                    settingsRepository.setDefaultTrackStartDate(defaultDateStr)
+                    settingsRepository.setCallTrackEnabled(settings.callTrack == 1)
+                    settingsRepository.setCallRecordEnabled(settings.callRecordCrm == 1)
 
-                        if (!allowChanging && !defaultDateStr.isNullOrBlank()) {
-                            try {
-                                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-                                sdf.parse(defaultDateStr)?.let { date ->
-                                    settingsRepository.setTrackStartDate(date.time)
-                                }
-                            } catch (e: Exception) {
-                                Log.e("SettingsViewModel", "Failed to parse default date: $defaultDateStr", e)
+                    if (!allowChanging && !defaultDateStr.isNullOrBlank()) {
+                        try {
+                            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                            sdf.parse(defaultDateStr)?.let { date ->
+                                settingsRepository.setTrackStartDate(date.time)
                             }
+                        } catch (e: Exception) {
+                            Log.e("SettingsViewModel", "Failed to parse default date: $defaultDateStr", e)
                         }
                     }
 
-
-                    @Suppress("UNCHECKED_CAST")
-                    val planData = response.body()?.get("plan") as? Map<String, Any>
-                    if (planData != null) {
-                        settingsRepository.setPlanExpiryDate(planData["expiry_date"] as? String)
-                        settingsRepository.setAllowedStorageGb((planData["allowed_storage_gb"] as? Number)?.toFloat() ?: 0f)
-                        settingsRepository.setStorageUsedBytes((planData["storage_used_bytes"] as? Number)?.toLong() ?: 0L)
-                    }
+                    val planData = data.plan
+                    settingsRepository.setPlanExpiryDate(planData.expiryDate)
+                    settingsRepository.setAllowedStorageGb(planData.allowedStorageGb)
+                    settingsRepository.setStorageUsedBytes(planData.storageUsedBytes)
 
                     // For now, use ORGID as org name (could be fetched from backend in future)
                     _uiState.update { 
@@ -1009,8 +1004,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     } catch (e: Exception) { null }
 
                     val error = errorMsg 
-                        ?: response.body()?.get("error")?.toString() 
-                        ?: response.body()?.get("message")?.toString()
+                        ?: apiResponse?.error
+                        ?: apiResponse?.message
                         ?: "Invalid pairing code (Status: ${response.code()})"
                     
                     _uiState.update { it.copy(verificationStatus = "failed") }
@@ -1298,7 +1293,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
                 Log.d("SettingsViewModel", "Verification response: ${response.code()}, body: ${response.body()}")
 
-                if (response.isSuccessful && response.body()?.get("success") == true) {
+                val apiResponse = response.body()
+                if (response.isSuccessful && apiResponse?.success == true && apiResponse.data != null) {
+                    val data = apiResponse.data
                     // SUCCESS! Now save everything to repository
                     settingsRepository.setOrganisationId(orgId)
                     settingsRepository.setUserId(userId)
@@ -1314,34 +1311,31 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         )
                     }
                     
-                    val employeeName = response.body()?.get("employee_name")?.toString() ?: "User"
-                    @Suppress("UNCHECKED_CAST")
-                    val settings = response.body()?.get("settings") as? Map<String, Any>
+                    val employeeName = data.employeeName
+                    val settings = data.settings
                     
-                    if (settings != null) {
-                        val allowChanging = parseBooleanSettings(settings["allow_changing_tracking_start_date"])
-                        val defaultDateStr = settings["default_tracking_starting_date"] as? String
+                    val allowChanging = settings.allowChangingTrackingStartDate == 1
+                    val defaultDateStr = settings.defaultTrackingStartingDate
 
-                        settingsRepository.setAllowPersonalExclusion(parseBooleanSettings(settings["allow_personal_exclusion"]))
-                        settingsRepository.setAllowChangingTrackStartDate(allowChanging)
-                        settingsRepository.setAllowUpdatingTrackSims(parseBooleanSettings(settings["allow_updating_tracking_sims"]))
-                        settingsRepository.setDefaultTrackStartDate(defaultDateStr)
-                        settingsRepository.setCallTrackEnabled(parseBooleanSettings(settings["call_track"]))
-                        settingsRepository.setCallRecordEnabled(parseBooleanSettings(settings["call_record_crm"]))
+                    settingsRepository.setAllowPersonalExclusion(settings.allowPersonalExclusion == 1)
+                    settingsRepository.setAllowChangingTrackStartDate(allowChanging)
+                    settingsRepository.setAllowUpdatingTrackSims(settings.allowUpdatingTrackingSims == 1)
+                    settingsRepository.setDefaultTrackStartDate(defaultDateStr)
+                    settingsRepository.setCallTrackEnabled(settings.callTrack == 1)
+                    settingsRepository.setCallRecordEnabled(settings.callRecordCrm == 1)
 
-                        if (!allowChanging && !defaultDateStr.isNullOrBlank()) {
-                            try {
-                                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-                                sdf.parse(defaultDateStr)?.let { date ->
-                                    settingsRepository.setTrackStartDate(date.time)
-                                }
-                            } catch (e: Exception) {
-                                Log.e("SettingsViewModel", "Failed to parse default date: $defaultDateStr", e)
+                    if (!allowChanging && !defaultDateStr.isNullOrBlank()) {
+                        try {
+                            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                            sdf.parse(defaultDateStr)?.let { date ->
+                                settingsRepository.setTrackStartDate(date.time)
                             }
+                        } catch (e: Exception) {
+                            Log.e("SettingsViewModel", "Failed to parse default date: $defaultDateStr", e)
                         }
                     }
 
-                    val message = response.body()?.get("message")?.toString() ?: "Pairing successful"
+                    val message = apiResponse.message ?: "Pairing successful"
                     
                     Toast.makeText(ctx, "✓ $message\nWelcome, $employeeName!", Toast.LENGTH_LONG).show()
                     Log.d("SettingsViewModel", "Pairing successful for employee: $employeeName")
@@ -1361,8 +1355,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     } catch (e: Exception) { null }
 
                     val error = errorMsg 
-                        ?: response.body()?.get("error")?.toString() 
-                        ?: response.body()?.get("message")?.toString()
+                        ?: apiResponse?.error
+                        ?: apiResponse?.message
                         ?: "Verification failed. (Status: ${response.code()})"
                     
                     Log.e("SettingsViewModel", "Verification failed: $error (Code: ${response.code()})")

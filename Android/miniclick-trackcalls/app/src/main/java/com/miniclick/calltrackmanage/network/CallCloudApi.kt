@@ -17,7 +17,7 @@ interface CallCloudApi {
         @Field("device_model") deviceModel: String? = null,
         @Field("os_version") osVersion: String? = null,
         @Field("battery_level") batteryLevel: Int? = null
-    ): Response<Map<String, Any>>
+    ): Response<ApiResponse<PairingResponse>>
 
     @FormUrlEncoded
     @POST("sync_app.php")
@@ -34,7 +34,7 @@ interface CallCloudApi {
         @Field("duration") duration: Int,
         @Field("call_time") callTime: String,
         @Field("upload_status") uploadStatus: String? = null
-    ): Response<Map<String, Any>>
+    ): Response<ApiResponse<StartCallResponse>>
 
     // NEW: Batch Sync Calls
     @FormUrlEncoded
@@ -46,7 +46,7 @@ interface CallCloudApi {
         @Field("device_id") deviceId: String,
         @Field("device_phone") devicePhone: String,
         @Field("calls_json") callsJson: String
-    ): Response<Map<String, Any>>
+    ): Response<ApiResponse<BatchSyncResponse>>
 
     @Multipart
     @POST("sync_app.php")
@@ -55,7 +55,7 @@ interface CallCloudApi {
         @Part("unique_id") uniqueId: RequestBody,
         @Part("chunk_index") chunkIndex: RequestBody,
         @Part chunk: MultipartBody.Part
-    ): Response<Map<String, Any>>
+    ): Response<ApiResponse<ChunkUploadResponse>>
 
     @FormUrlEncoded
     @POST("sync_app.php")
@@ -63,7 +63,7 @@ interface CallCloudApi {
         @Field("action") action: String,
         @Field("unique_id") uniqueId: String,
         @Field("total_chunks") totalChunks: Int
-    ): Response<Map<String, Any>>
+    ): Response<ApiResponse<FinalizeUploadResponse>>
 
     @FormUrlEncoded
     @POST("sync_app.php")
@@ -73,7 +73,7 @@ interface CallCloudApi {
         @Field("note") note: String?,
         @Field("person_note") personNote: String?,
         @Field("label") label: String?
-    ): Response<Map<String, Any>>
+    ): Response<ApiResponse<Any>>
 
     @FormUrlEncoded
     @POST("sync_app.php")
@@ -93,7 +93,7 @@ interface CallCloudApi {
         @Field("user_id") userId: String,
         @Field("device_id") deviceId: String,
         @Field("last_sync_time") lastSyncTime: Long
-    ): Response<Map<String, Any>>
+    ): Response<ApiResponse<SyncResponse>>
     
     // NEW: Update call metadata (reviewed, note, caller_name, upload_status)
     @FormUrlEncoded
@@ -106,7 +106,7 @@ interface CallCloudApi {
         @Field("caller_name") callerName: String?,
         @Field("upload_status") uploadStatus: String? = null,
         @Field("updated_at") updatedAt: Long
-    ): Response<Map<String, Any>>
+    ): Response<ApiResponse<ServerTimeResponse>>
     
     // NEW: Update person metadata (personNote, label, name)
     @FormUrlEncoded
@@ -119,7 +119,7 @@ interface CallCloudApi {
         @Field("label") label: String?,
         @Field("name") name: String?,
         @Field("updated_at") updatedAt: Long
-    ): Response<Map<String, Any>>
+    ): Response<ApiResponse<ServerTimeResponse>>
 
     // NEW: Fetch organizational config (Excluded contacts + Employee settings)
     @FormUrlEncoded
@@ -131,13 +131,13 @@ interface CallCloudApi {
         @Field("os_version") osVersion: String? = null,
         @Field("battery_level") batteryLevel: Int? = null,
         @Field("device_model") deviceModel: String? = null
-    ): Response<Map<String, Any>>
+    ): Response<ApiResponse<ConfigResponse>>
     @FormUrlEncoded
     @POST("sync_app.php")
     suspend fun checkRecordingsStatus(
         @Field("action") action: String,
         @Field("unique_ids") uniqueIdsJson: String
-    ): Response<Map<String, Any>>
+    ): Response<ApiResponse<CompletedRecordingsResponse>>
 
     @GET
     suspend fun fetchData(@Url url: String): Response<Map<String, Any>>

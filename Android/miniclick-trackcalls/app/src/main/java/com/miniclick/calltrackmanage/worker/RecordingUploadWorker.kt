@@ -136,17 +136,19 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                         Log.d(TAG, "Checking server status for top ${idList.size} recordings")
                         val statusResp = NetworkClient.api.checkRecordingsStatus("check_recordings_status", jsonIds)
                         
-                        if (statusResp.isSuccessful && statusResp.body()?.get("success") == true) {
-                            @Suppress("UNCHECKED_CAST")
-                            val completedIds = statusResp.body()?.get("completed_ids") as? List<String>
-                            
-                            if (!completedIds.isNullOrEmpty()) {
-                                Log.i(TAG, "Server identified ${completedIds.size} recordings as already completed.")
-                                alreadyCompletedSet.addAll(completedIds)
+                        if (statusResp.isSuccessful) {
+                            val apiResp = statusResp.body()
+                            if (apiResp?.success == true) {
+                                val completedIds = apiResp.data?.completedIds
                                 
-                                for (id in completedIds) {
-                                    callDataRepository.updateRecordingSyncStatus(id, RecordingSyncStatus.COMPLETED)
-                                    callDataRepository.updateSyncError(id, null)
+                                if (!completedIds.isNullOrEmpty()) {
+                                    Log.i(TAG, "Server identified ${completedIds.size} recordings as already completed.")
+                                    alreadyCompletedSet.addAll(completedIds)
+                                    
+                                    for (id in completedIds) {
+                                        callDataRepository.updateRecordingSyncStatus(id, RecordingSyncStatus.COMPLETED)
+                                        callDataRepository.updateSyncError(id, null)
+                                    }
                                 }
                             }
                         }
@@ -324,7 +326,7 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                 totalChunks = totalChunks
             )
             
-            val success = finalResp.isSuccessful && finalResp.body()?.get("success") == true
+            val success = finalResp.isSuccessful && finalResp.body()?.success == true
             Log.d(TAG, "Finalize upload for $uniqueId: success=$success")
             success
         } catch (e: Exception) {

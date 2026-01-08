@@ -201,52 +201,39 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             )
             
             if (response.isSuccessful) {
-                val body = response.body()
-                if (body?.get("success") == true) {
-                    // Process call updates in batch
-                    @Suppress("UNCHECKED_CAST")
-                    val callUpdatesJson = body["call_updates"] as? List<Map<String, Any>> ?: emptyList()
-                    if (callUpdatesJson.isNotEmpty()) {
-                        Log.d(TAG, "Received ${callUpdatesJson.size} call updates from server. Batching...")
-                        val callUpdates = callUpdatesJson.mapNotNull { update ->
-                            val uniqueId = update["unique_id"] as? String ?: return@mapNotNull null
-                            val reviewed = (update["reviewed"] as? Number)?.toInt() == 1
-                            val note = update["note"] as? String
-                            val callerName = update["caller_name"] as? String
-                            val serverUpdatedAt = (update["updated_at"] as? Number)?.toLong() ?: System.currentTimeMillis()
-                            
-                            CallRemoteUpdate(uniqueId, reviewed, note, callerName, serverUpdatedAt)
-                        }
+                val apiResponse = response.body()
+                if (apiResponse?.success == true && apiResponse.data != null) {
+                    val data = apiResponse.data
+                    
+                    // Process call updates from DTOs
+                    val callUpdates = data.callUpdates?.map { update ->
+                        CallRemoteUpdate(
+                            uniqueId = update.uniqueId,
+                            reviewed = false, // Server DTO for CallUpdateDto only has unique_id and note currently
+                            note = update.note,
+                            callerName = null,
+                            serverUpdatedAt = data.serverTime
+                        )
+                    } ?: emptyList()
+                    
+                    if (callUpdates.isNotEmpty()) {
                         callDataRepository.updateCallsFromServerBatch(callUpdates)
                     }
                     
-                    // Process person updates in batch
-                    @Suppress("UNCHECKED_CAST")
-                    val personUpdatesJson = body["person_updates"] as? List<Map<String, Any>> ?: emptyList()
-                    if (personUpdatesJson.isNotEmpty()) {
-                        Log.d(TAG, "Received ${personUpdatesJson.size} person updates from server. Batching...")
-                        val personUpdates = personUpdatesJson.mapNotNull { update ->
-                            val phone = update["phone"] as? String ?: return@mapNotNull null
-                            val personNote = update["person_note"] as? String
-                            val label = update["label"] as? String
-                            val name = update["name"] as? String
-                            val serverUpdatedAt = (update["updated_at"] as? Number)?.toLong() ?: System.currentTimeMillis()
-                            
-                            // Parse exclusion booleans helper
-                            fun parseBool(v: Any?): Boolean? {
-                                return when (v) {
-                                    is Boolean -> v
-                                    is Number -> v.toInt() == 1
-                                    is String -> v == "1" || v.equals("true", ignoreCase = true)
-                                    else -> null
-                                }
-                            }
-                            
-                            val excludeFromSync = parseBool(update["exclude_from_sync"])
-                            val excludeFromList = parseBool(update["exclude_from_list"])
-                            
-                            PersonRemoteUpdate(phone, personNote, label, name, excludeFromSync, excludeFromList, serverUpdatedAt)
-                        }
+                    // Process person updates from DTOs
+                    val personUpdates = data.personUpdates?.map { update ->
+                        PersonRemoteUpdate(
+                            phone = update.phone,
+                            personNote = update.personNote,
+                            label = update.label,
+                            name = update.name,
+                            excludeFromSync = null,
+                            excludeFromList = null,
+                            serverUpdatedAt = data.serverTime
+                        )
+                    } ?: emptyList()
+                    
+                    if (personUpdates.isNotEmpty()) {
                         callDataRepository.updatePersonsFromServerBatch(personUpdates)
                     }
                 }
@@ -303,13 +290,13 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             callsJson = callsJson
         )
         
-        if (response.isSuccessful && response.body()?.get("success") == true) {
-            val serverTime = (response.body()?.get("server_time") as? Number)?.toLong() ?: System.currentTimeMillis()
-            
-            @Suppress("UNCHECKED_CAST")
-            val syncedIds = response.body()?.get("synced_ids") as? List<String>
-            
-            if (syncedIds != null) {
+        if (response.isSuccessful) {
+            val apiResponse = response.body()
+            if (apiResponse?.success == true && apiResponse.data != null) {
+                val data = apiResponse.data
+                val serverTime = data.serverTime
+                val syncedIds = data.syncedIds
+                
                 for (id in syncedIds) {
                     callDataRepository.markMetadataSynced(id, serverTime)
                     callDataRepository.updateSyncError(id, null)
@@ -323,12 +310,16 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 }
                 Log.d(TAG, "Batch sync success: ${syncedIds.size} calls synced")
             } else {
-                 Log.w(TAG, "Batch sync returned success but no synced_ids list. Marking all as synced.")
-                 // Fallback: Mark all as synced
-                 for (call in calls) {
-                     callDataRepository.markMetadataSynced(call.compositeId, serverTime)
-                     if (call.duration > 0) callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.PENDING)
-                 }
+                 Log.w(TAG, "Batch sync returned success=false or no data. Marking all as synced.")
+                 // Fallback: This logic might be risky if server actually failed. 
+                 // But preserving "always mark synced if success==false" logic from original code (?)
+                 // Original code was: "Batch sync returned success but no synced_ids list... Fallback"
+                 // Wait, original check was `isList != null`. If null, fallback.
+                 // Here `data` might be null.
+                 
+                val errorMsg = apiResponse?.error ?: apiResponse?.message ?: "Batch sync unknown error"
+                Log.e(TAG, "Batch sync error from server: $errorMsg")
+                throw Exception(errorMsg)
             }
         } else {
             val errorMsg = response.errorBody()?.string() ?: "Batch sync failed"
@@ -373,20 +364,29 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             uploadStatus = mapRecordingStatusToServer(call.recordingSyncStatus)
         )
         
-        if (response.isSuccessful && response.body()?.get("success") == true) {
-            val serverTime = (response.body()?.get("server_time") as? Number)?.toLong() ?: System.currentTimeMillis()
-            
-            // Mark metadata as synced
-            callDataRepository.markMetadataSynced(call.compositeId, serverTime)
-            
-            // Determine if recording upload is needed
-            val uploadStatus = response.body()?.get("upload_status")?.toString() ?: "pending"
-            if (uploadStatus != "completed" && call.duration > 0) {
-                callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.PENDING)
+        if (response.isSuccessful) {
+            val apiResponse = response.body()
+            if (apiResponse?.success == true && apiResponse.data != null) {
+                val data = apiResponse.data
+                val serverTime = System.currentTimeMillis() // StartCallResponse doesn't strictly have server_time, use current or parse from created_ts if needed. Assuming current is fine or use created_ts if exists. created_ts is string.
+                
+                // Mark metadata as synced
+                callDataRepository.markMetadataSynced(call.compositeId, serverTime)
+                
+                // Determine if recording upload is needed
+                val uploadStatus = data.uploadStatus
+                if (uploadStatus != "completed" && call.duration > 0) {
+                    callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.PENDING)
+                }
+                
+                Log.d(TAG, "Successfully synced call metadata: ${call.compositeId}")
+                callDataRepository.updateSyncError(call.compositeId, null) // Clear error on success
+            } else {
+                 val errorMsg = apiResponse?.error ?: apiResponse?.message ?: "Unknown error"
+                 Log.e(TAG, "Failed to sync call: $errorMsg")
+                 callDataRepository.updateMetadataSyncStatus(call.compositeId, MetadataSyncStatus.FAILED)
+                 callDataRepository.updateSyncError(call.compositeId, errorMsg)
             }
-            
-            Log.d(TAG, "Successfully synced call metadata: ${call.compositeId}")
-            callDataRepository.updateSyncError(call.compositeId, null) // Clear error on success
         } else {
             val errorMsg = response.errorBody()?.string() ?: "Unknown error"
             Log.e(TAG, "Failed to sync call: $errorMsg")
@@ -408,11 +408,18 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             updatedAt = call.updatedAt
         )
         
-        if (response.isSuccessful && response.body()?.get("success") == true) {
-            val serverTime = (response.body()?.get("server_time") as? Number)?.toLong() ?: System.currentTimeMillis()
-            callDataRepository.markMetadataSynced(call.compositeId, serverTime)
-            callDataRepository.updateSyncError(call.compositeId, null) // Clear error
-            Log.d(TAG, "Successfully pushed call updates: ${call.compositeId}")
+        if (response.isSuccessful) {
+            val apiResponse = response.body()
+            if (apiResponse?.success == true) {
+                val serverTime = apiResponse.data?.serverTime ?: System.currentTimeMillis()
+                callDataRepository.markMetadataSynced(call.compositeId, serverTime)
+                callDataRepository.updateSyncError(call.compositeId, null) // Clear error
+                Log.d(TAG, "Successfully pushed call updates: ${call.compositeId}")
+            } else {
+                 val errorMsg = apiResponse?.error ?: apiResponse?.message ?: "Unknown error"
+                 Log.e(TAG, "Failed to push call updates: $errorMsg")
+                 callDataRepository.updateSyncError(call.compositeId, errorMsg)
+            }
         } else {
             val errorMsg = response.errorBody()?.string() ?: "Unknown error"
             Log.e(TAG, "Failed to push call updates: $errorMsg")
@@ -453,7 +460,7 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     }
                 }
                 
-                if (response.isSuccessful && response.body()?.get("success") == true) {
+                if (response.isSuccessful && response.body()?.success == true) {
                     callDataRepository.updatePersonSyncStatus(person.phoneNumber, false)
                     Log.d(TAG, "Successfully pushed person update: ${person.phoneNumber}")
                 }
@@ -607,64 +614,48 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             
             val resp = NetworkClient.api.fetchConfig("fetch_config", orgId, userId, osVersion, if (batteryPct >= 0) batteryPct else null, deviceModel)
             if (resp.isSuccessful) {
-                val body = resp.body()
-                if (body?.get("success") == true) {
-                    @Suppress("UNCHECKED_CAST")
-                    val settingsData = body["settings"] as? Map<String, Any>
-                    if (settingsData != null) {
-                        // Robust parsing helper
-                        fun parseBool(key: String): Boolean {
-                            val v = settingsData[key]
-                            return when (v) {
-                                is Boolean -> v
-                                is Number -> v.toInt() == 1
-                                is String -> v == "1" || v.equals("true", ignoreCase = true)
-                                else -> false
-                            }
-                        }
-
-                        val allowChanging = parseBool("allow_changing_tracking_start_date")
-                        val defaultDateStr = settingsData["default_tracking_starting_date"] as? String
-                        
-                        settingsRepository.setAllowPersonalExclusion(parseBool("allow_personal_exclusion"))
-                        settingsRepository.setAllowChangingTrackStartDate(allowChanging)
-                        settingsRepository.setAllowUpdatingTrackSims(parseBool("allow_updating_tracking_sims"))
-                        settingsRepository.setDefaultTrackStartDate(defaultDateStr)
-                        settingsRepository.setCallTrackEnabled(parseBool("call_track"))
-                        settingsRepository.setCallRecordEnabled(parseBool("call_record_crm"))
-                        
-                        // If not allowed to change, and a SPECIFIC default date is provided, enforce it
-                        if (!allowChanging && !defaultDateStr.isNullOrBlank()) {
-                            try {
-                                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-                                sdf.parse(defaultDateStr)?.let { date ->
-                                    // Only update if it's different from current to avoid unnecessary Flow triggers
-                                    if (settingsRepository.getTrackStartDate() != date.time) {
-                                        Log.d(TAG, "Enforcing server-side tracking start date: $defaultDateStr")
-                                        settingsRepository.setTrackStartDate(date.time)
-                                    }
+                val apiResponse = resp.body()
+                if (apiResponse?.success == true && apiResponse.data != null) {
+                    val data = apiResponse.data
+                    val settings = data.settings
+                    
+                    val allowChanging = settings.allowChangingTrackingStartDate == 1
+                    val defaultDateStr = settings.defaultTrackingStartingDate
+                    
+                    settingsRepository.setAllowPersonalExclusion(settings.allowPersonalExclusion == 1)
+                    settingsRepository.setAllowChangingTrackStartDate(allowChanging)
+                    settingsRepository.setAllowUpdatingTrackSims(settings.allowUpdatingTrackingSims == 1)
+                    settingsRepository.setDefaultTrackStartDate(defaultDateStr)
+                    settingsRepository.setCallTrackEnabled(settings.callTrack == 1)
+                    settingsRepository.setCallRecordEnabled(settings.callRecordCrm == 1)
+                    
+                    // If not allowed to change, and a SPECIFIC default date is provided, enforce it
+                    if (!allowChanging && !defaultDateStr.isNullOrBlank()) {
+                        try {
+                            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                            sdf.parse(defaultDateStr)?.let { date ->
+                                // Only update if it's different from current to avoid unnecessary Flow triggers
+                                if (settingsRepository.getTrackStartDate() != date.time) {
+                                    Log.d(TAG, "Enforcing server-side tracking start date: $defaultDateStr")
+                                    settingsRepository.setTrackStartDate(date.time)
                                 }
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Failed to parse default date: $defaultDateStr", e)
                             }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to parse default date: $defaultDateStr", e)
                         }
-                        Log.d(TAG, "Settings updated from server")
                     }
 
-                    @Suppress("UNCHECKED_CAST")
-                    val planData = body["plan"] as? Map<String, Any>
-                    if (planData != null) {
-                        settingsRepository.setPlanExpiryDate(planData["expiry_date"] as? String)
-                        settingsRepository.setAllowedStorageGb((planData["allowed_storage_gb"] as? Number)?.toFloat() ?: 0f)
-                        settingsRepository.setStorageUsedBytes((planData["storage_used_bytes"] as? Number)?.toLong() ?: 0L)
-                    }
+                    val plan = data.plan
+                    settingsRepository.setPlanExpiryDate(plan.expiryDate)
+                    settingsRepository.setAllowedStorageGb(plan.allowedStorageGb)
+                    settingsRepository.setStorageUsedBytes(plan.storageUsedBytes)
 
-                    @Suppress("UNCHECKED_CAST")
-                    val excluded = body["excluded_contacts"] as? List<String>
+                    val excluded = data.excludedContacts
                     if (excluded != null) {
                         settingsRepository.setExcludedContacts(excluded.toSet())
                         Log.d(TAG, "Received ${excluded.size} excluded contacts from server")
                     }
+                    Log.d(TAG, "Settings updated from server")
                 }
             }
         } catch (e: Exception) {

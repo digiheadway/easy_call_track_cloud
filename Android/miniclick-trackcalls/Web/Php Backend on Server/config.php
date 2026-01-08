@@ -34,6 +34,9 @@ define('CASHFREE_API_VERSION', '2023-08-01');
 // CORS Settings
 define('CORS_ALLOWED_ORIGINS', '*');
 
+// Base URL for the API and resources
+define('BASE_URL', 'https://api.miniclickcrm.com');
+
 // File Upload Settings
 define('MAX_FILE_SIZE', 50 * 1024 * 1024); // 50 MB
 define('ALLOWED_FILE_TYPES', ['audio/mpeg', 'audio/wav', 'audio/mp3', 'audio/ogg']);
