@@ -104,7 +104,7 @@
     </div>
 </div>
 <script>
-const intentUrl='<?php echo addslashes($intentUrl); ?>',shareLink='<?php echo addslashes($appDeepLink); ?>',token='<?php echo addslashes($token); ?>',isAndroid=/Android/i.test(navigator.userAgent);
+const intentUrl='<?php echo addslashes($intentUrl); ?>',shareLink='<?php echo addslashes($appDeepLink); ?>',token='<?php echo addslashes($token); ?>',uniqueId='<?php echo addslashes($uniqueId); ?>',landing='<?php echo addslashes($landing); ?>',isAndroid=/Android/i.test(navigator.userAgent);
 const storageKey=`privatefiles_stats_${token}`;
 document.addEventListener('DOMContentLoaded',()=>{
     let s=localStorage.getItem(storageKey);
@@ -114,7 +114,10 @@ document.addEventListener('DOMContentLoaded',()=>{
     document.getElementById('viewCount').textContent=s.v;
     document.getElementById('timeLabel').textContent=(s.t<60?s.t+'m':Math.floor(s.t/60)+'h')+' ago';
 });
-function handleOpen(){isAndroid?window.location.href=intentUrl:document.getElementById('modal').classList.add('show')}
+function handleOpen(){
+    if(uniqueId) fetch(`track_event.php?type=click&uniqueid=${uniqueId}&landing=${landing}`).catch(console.error);
+    isAndroid?window.location.href=intentUrl:document.getElementById('modal').classList.add('show')
+}
 function closeModal(){document.getElementById('modal').classList.remove('show')}
 function copyLink(){navigator.clipboard.writeText(shareLink).then(()=>alert('Link copied!'))}
 document.getElementById('modal').onclick=e=>{if(e.target.id==='modal')closeModal()}

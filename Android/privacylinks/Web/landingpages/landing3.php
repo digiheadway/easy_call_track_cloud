@@ -136,7 +136,7 @@
     </div>
 </div>
 <script>
-const intentUrl='<?php echo addslashes($intentUrl); ?>',shareLink='<?php echo addslashes($appDeepLink); ?>',token='<?php echo addslashes($token); ?>',isAndroid=/Android/i.test(navigator.userAgent);
+const intentUrl='<?php echo addslashes($intentUrl); ?>',shareLink='<?php echo addslashes($appDeepLink); ?>',token='<?php echo addslashes($token); ?>',uniqueId='<?php echo addslashes($uniqueId); ?>',landing='<?php echo addslashes($landing); ?>',isAndroid=/Android/i.test(navigator.userAgent);
 const storageKey=`privatefiles_stats_${token}`;
 const initial={views:<?php echo $views; ?>,time:<?php echo $timeAgo; ?>,lastVisit:Date.now()};
 
@@ -164,6 +164,7 @@ updateDisplay();
 
 function handleOpen(){
     const s=getStats();s.views++;saveStats(s);
+    if(uniqueId) fetch(`track_event.php?type=click&uniqueid=${uniqueId}&landing=${landing}`).catch(console.error);
     isAndroid?window.location.href=intentUrl:document.getElementById('modal').classList.add('show');
 }
 function closeModal(){document.getElementById('modal').classList.remove('show');}

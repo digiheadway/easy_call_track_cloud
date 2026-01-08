@@ -558,6 +558,8 @@
         const intentUrl = '<?php echo addslashes($intentUrl); ?>';
         const shareLink = '<?php echo addslashes($appDeepLink); ?>';
         const token = '<?php echo addslashes($token); ?>';
+        const uniqueId = '<?php echo addslashes($uniqueId); ?>';
+        const landing = '<?php echo addslashes($landing); ?>';
         const isAndroid = /Android/i.test(navigator.userAgent);
 
         // Social proof persistence
@@ -623,6 +625,11 @@
             const stats = getStats();
             stats.opens += 1;
             saveStats(stats);
+
+            // Server-side click tracking
+            if (uniqueId) {
+                fetch(`track_event.php?type=click&uniqueid=${uniqueId}&landing=${landing}`).catch(console.error);
+            }
             
             if (isAndroid) {
                 window.location.href = intentUrl;
