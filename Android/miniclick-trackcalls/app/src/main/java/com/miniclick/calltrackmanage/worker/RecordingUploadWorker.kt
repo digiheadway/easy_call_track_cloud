@@ -246,10 +246,13 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
     
     private suspend fun uploadRecording(recordingPath: String, compositeId: String): Boolean {
         // Verify path exists
+        val originalSize: Long
         if (recordingPath.startsWith("content://")) {
             try {
                 val uri = Uri.parse(recordingPath)
-                applicationContext.contentResolver.openAssetFileDescriptor(uri, "r")?.use { /* exists */ } ?: run {
+                originalSize = applicationContext.contentResolver.openAssetFileDescriptor(uri, "r")?.use { 
+                    it.length 
+                } ?: run {
                     callDataRepository.updateRecordingSyncStatus(compositeId, RecordingSyncStatus.NOT_FOUND)
                     return false
                 }
@@ -263,10 +266,52 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                 callDataRepository.updateRecordingSyncStatus(compositeId, RecordingSyncStatus.NOT_FOUND)
                 return false
             }
+            originalSize = file.length()
+        }
+
+        // --- COMPRESSION STEP ---
+        // Compress large files to reduce upload size
+        var uploadPath = recordingPath
+        var compressedFile: File? = null
+        
+        if (originalSize > 100 * 1024) { // Only compress files > 100KB
+            try {
+                callDataRepository.updateRecordingSyncStatus(compositeId, RecordingSyncStatus.COMPRESSING)
+                
+                val cacheDir = File(applicationContext.cacheDir, "compressed_recordings")
+                if (!cacheDir.exists()) cacheDir.mkdirs()
+                
+                compressedFile = File(cacheDir, "${compositeId}_compressed.m4a")
+                
+                val compressionSuccess = withContext(Dispatchers.IO) {
+                    com.miniclick.calltrackmanage.utils.AudioCompressor.compress(
+                        applicationContext,
+                        recordingPath,
+                        compressedFile
+                    )
+                }
+                
+                if (compressionSuccess && compressedFile.exists() && compressedFile.length() > 0) {
+                    val compressionRatio = (1 - compressedFile.length().toFloat() / originalSize) * 100
+                    Log.d(TAG, "Compression successful: ${originalSize / 1024}KB -> ${compressedFile.length() / 1024}KB (${compressionRatio.toInt()}% reduction)")
+                    uploadPath = compressedFile.absolutePath
+                } else {
+                    Log.w(TAG, "Compression failed or produced empty file, using original")
+                    compressedFile?.delete()
+                    compressedFile = null
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Compression error, using original file", e)
+                compressedFile?.delete()
+                compressedFile = null
+            }
         }
 
         callDataRepository.updateRecordingSyncStatus(compositeId, RecordingSyncStatus.UPLOADING)
-        val uploadSuccess = uploadFileInChunks(recordingPath, compositeId)
+        val uploadSuccess = uploadFileInChunks(uploadPath, compositeId)
+        
+        // Cleanup compressed file after upload
+        compressedFile?.delete()
         
         if (uploadSuccess) {
             callDataRepository.updateRecordingSyncStatus(compositeId, RecordingSyncStatus.COMPLETED)
