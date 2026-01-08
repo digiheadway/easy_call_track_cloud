@@ -581,6 +581,12 @@ fun PermissionDisclosureStepContent(
             title = "Storage",
             description = "Needed if you choose to attach and manage recording files."
         )
+
+        PermissionDisclosureItem(
+            icon = Icons.Default.SettingsPhone,
+            title = "Default Phone App",
+            description = "As a Smart Dialer, MiniClick can handle your calls directly, providing a rich in-call experience and better call tracking."
+        )
         
         Spacer(Modifier.height(32.dp))
         

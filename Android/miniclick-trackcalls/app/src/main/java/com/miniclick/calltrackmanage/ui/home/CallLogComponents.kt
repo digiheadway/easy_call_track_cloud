@@ -322,14 +322,7 @@ fun CallLogList(
                     onCallNoteClick = { callNoteTarget = log },
                     onPersonNoteClick = { personNoteTarget = log },
                     onCallClick = {
-                        try {
-                             val cleaned = cleanNumber(log.phoneNumber)
-                             val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$cleaned"))
-                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                             context.startActivity(intent)
-                        } catch (e: Exception) {
-                             e.printStackTrace()
-                        }
+                        viewModel.initiateCall(log.phoneNumber)
                     },
                     onCopyClick = {
                         val cleaned = cleanNumber(log.phoneNumber)

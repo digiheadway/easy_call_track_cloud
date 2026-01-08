@@ -59,6 +59,17 @@ fun SetupGuide(
     val isDismissed by mainViewModel.isSessionOnboardingDismissed.collectAsState()
     
     val uiState by settingsViewModel.uiState.collectAsState()
+
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    
+    var isDefaultDialer by remember { 
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as android.telecom.TelecomManager
+                telecomManager.defaultDialerPackage == context.packageName
+            } else true
+        )
+    }
     
     // --- State for Permissions (initialized with actual values to prevent flash) ---
     fun checkPermission(permission: String): Boolean {
@@ -90,9 +101,6 @@ fun SetupGuide(
         ) 
     }
     
-    // Modals State
-    var showDatePicker by remember { mutableStateOf(false) }
-    
     // Helpers / Launchers
     fun checkPermissions() {
         hasCallLog = checkPermission(Manifest.permission.READ_CALL_LOG)
@@ -101,6 +109,25 @@ fun SetupGuide(
         hasSimInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) checkPermission(Manifest.permission.READ_PHONE_NUMBERS) else true
         hasNotifications = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) checkPermission(Manifest.permission.POST_NOTIFICATIONS) else true
         hasStorage = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) checkPermission(Manifest.permission.READ_MEDIA_AUDIO) else checkPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as android.telecom.TelecomManager
+            isDefaultDialer = telecomManager.defaultDialerPackage == context.packageName
+        }
+    }
+
+    // Modals State
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    // Lifecycle observer to re-check permissions and default dialer when returning to app
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                checkPermissions()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     val singlePermissionLauncher = rememberLauncherForActivityResult(
@@ -124,6 +151,12 @@ fun SetupGuide(
         if (permissions.containsValue(true)) {
             com.miniclick.calltrackmanage.service.SyncService.start(context)
         }
+    }
+
+    val roleLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { _ ->
+        checkPermissions()
     }
     
     // Initial check
@@ -154,9 +187,40 @@ fun SetupGuide(
         uiState.simSelection, uiState.callerPhoneSim1, uiState.callerPhoneSim2,
         uiState.sim1SubId, uiState.sim2SubId, uiState.availableSims,
         uiState.callRecordEnabled, uiState.userDeclinedRecording,
-        uiState.skippedSteps.size
+        uiState.skippedSteps, isDefaultDialer
     ) {
         mutableListOf<GuideStep>().apply {
+            // 0. Default Dialer (CRITICAL: Must precede runtime permissions for Play Store Approval)
+            if (!isDefaultDialer && !uiState.skippedSteps.contains("DEFAULT_DIALER")) {
+                add(GuideStep(
+                    type = "DEFAULT_DIALER",
+                    title = "Set as Default Dialer",
+                    description = "To track and archive calls reliably for CRM syncing, MiniClick should be your default phone app.",
+                    icon = Icons.Default.Dialpad,
+                    actionLabel = "Set as Default",
+                    onAction = {
+                        try {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                val roleManager = context.getSystemService(Context.ROLE_SERVICE) as android.app.role.RoleManager
+                                if (roleManager.isRoleAvailable(android.app.role.RoleManager.ROLE_DIALER)) {
+                                    val intent = roleManager.createRequestRoleIntent(android.app.role.RoleManager.ROLE_DIALER)
+                                    roleLauncher.launch(intent)
+                                }
+                            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                val intent = android.content.Intent(android.telecom.TelecomManager.ACTION_CHANGE_DEFAULT_DIALER).apply {
+                                    putExtra(android.telecom.TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME, context.packageName)
+                                }
+                                context.startActivity(intent)
+                            }
+                        } catch (e: Exception) {
+                            android.widget.Toast.makeText(context, "Error: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    secondaryActionLabel = "Skip",
+                    onSecondaryAction = { settingsViewModel.setStepSkipped("DEFAULT_DIALER") }
+                ))
+            }
+
             if (!hasCallLog && !uiState.skippedSteps.contains("CALL_LOG")) {
                 add(GuideStep("CALL_LOG", "Allow Call Log", "Required to track and organize your calls automatically.", Icons.Default.Call, "Allow Access", onAction = { 
                     singlePermissionLauncher.launch(Manifest.permission.READ_CALL_LOG) 

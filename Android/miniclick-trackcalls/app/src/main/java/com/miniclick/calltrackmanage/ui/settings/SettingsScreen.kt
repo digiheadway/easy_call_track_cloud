@@ -557,12 +557,9 @@ fun SettingsScreen(
 
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 
-                // Caller ID Overlay Toggle
-                
-                
-                // Caller ID Overlay Toggle
+                // In-Call Notes Overlay Toggle
                 ListItem(
-                    headlineContent = { Text("Caller ID Overlay") },
+                    headlineContent = { Text("In-Call Notes Overlay") },
                     supportingContent = { 
                         if (!uiState.isOverlayPermissionGranted && uiState.callerIdEnabled) {
                             Text(
@@ -570,7 +567,7 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.error
                             )
                         } else {
-                            Text("Show contact info during calls")
+                            Text("Show your notes and labels during calls")
                         }
                     },
                     leadingContent = { 
@@ -588,7 +585,7 @@ fun SettingsScreen(
                                         Uri.parse("package:${context.packageName}")
                                     )
                                     context.startActivity(intent)
-                                    Toast.makeText(context, "Please grant overlay permission, then return and enable Caller ID", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, "Please grant overlay permission, then return and enable In-Call Notes", Toast.LENGTH_LONG).show()
                                 }
                             }
                         )

@@ -699,6 +699,29 @@ class CallDataRepository private constructor(private val context: Context) {
     // SYNC WITH SYSTEM CALL LOG
     // ============================================
     
+    private fun getLatestSystemCallDate(): Long {
+        if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_CALL_LOG) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+             return 0L
+        }
+        try {
+            val cursor = context.contentResolver.query(
+                CallLog.Calls.CONTENT_URI,
+                arrayOf(CallLog.Calls.DATE),
+                 null, null,
+                "${CallLog.Calls.DATE} DESC LIMIT 1"
+            )
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val dateIdx = it.getColumnIndex(CallLog.Calls.DATE)
+                    if (dateIdx != -1) return it.getLong(dateIdx)
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to query latest system call date", e)
+        }
+        return 0L
+    }
+
     /**
      * Sync new calls from system call log to Room database.
      * This runs in background and updates Room with any new calls.
@@ -706,24 +729,43 @@ class CallDataRepository private constructor(private val context: Context) {
      */
     suspend fun syncFromSystemCallLog() = withContext(Dispatchers.IO) {
         try {
-            ProcessMonitor.startProcess("Importing Data from System...", isIndeterminate = true)
-            Log.d(TAG, "Starting sync from system call log...")
-            
-            val filterDate = settingsRepository.getTrackStartDate()
-            val deviceId = android.provider.Settings.Secure.getString(context.contentResolver, android.provider.Settings.Secure.ANDROID_ID)
+            // 1. Initial Checks (Permissions, Settings)
+            if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_CALL_LOG) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                return@withContext
+            }
+
             val simSelection = settingsRepository.getSimSelection()
-            
-            // Skip if tracking is Off
             if (simSelection == "Off") {
                 Log.d(TAG, "Call tracking is OFF, skipping sync")
                 return@withContext
             }
 
-            // Optimize: Only fetch calls since the latest call in our DB (with a 2-day safety buffer)
-            // unless the filter date has been moved earlier than our current data.
+            val filterDate = settingsRepository.getTrackStartDate()
+            
+            // 2. Local Data State
             val latestCallDate = callDataDao.getMaxCallDate() ?: 0L
             val minCallDate = callDataDao.getMinCallDate() ?: Long.MAX_VALUE
             
+            // 3. SMART IMPORT CHECK 🧠
+            // If the start date window hasn't expanded backwards (requiring older calls),
+            // check if the system actually has any NEW calls since our last sync.
+            // If DB is empty (minCallDate = MAX), this check is skipped (condition is false).
+            if (filterDate >= minCallDate) {
+                 val systemLatest = getLatestSystemCallDate()
+                 // Allow tiny buffer (1s) for timestamp differences
+                 if (systemLatest <= latestCallDate + 1000) {
+                      Log.d(TAG, "Smart Sync: No new calls detected (System: $systemLatest, Local: $latestCallDate). Skipping full import.")
+                      return@withContext
+                 }
+            }
+
+            ProcessMonitor.startProcess("Importing Data from System...", isIndeterminate = true)
+            Log.d(TAG, "Starting sync from system call log...")
+            
+            val deviceId = android.provider.Settings.Secure.getString(context.contentResolver, android.provider.Settings.Secure.ANDROID_ID)
+
+            // Optimize: Only fetch calls since the latest call in our DB (with a 2-day safety buffer)
+            // unless the filter date has been moved earlier than our current data.
             val fetchStartDate = if (filterDate < minCallDate) {
                 // Window expanded backwards - fetch from new start date
                 filterDate
@@ -836,32 +878,37 @@ class CallDataRepository private constructor(private val context: Context) {
         
         for ((phoneNumber, calls) in personCalls) {
             val sortedCalls = calls.sortedByDescending { it.callDate }
-            val lastCall = sortedCalls.firstOrNull() ?: continue
+            val incomingNew = sortedCalls.firstOrNull() ?: continue
             
-            // Robust lookup to match existing person data (notes, labels, etc.)
+            // Robust lookup to match existing person data
             val existing = existingPersons[phoneNumber] ?: getPersonRobust(phoneNumber)
             
-            val totalIncoming = calls.count { it.callType == CallLog.Calls.INCOMING_TYPE }
-            val totalOutgoing = calls.count { it.callType == CallLog.Calls.OUTGOING_TYPE }
-            val totalMissed = calls.count { it.callType == CallLog.Calls.MISSED_TYPE }
-            val totalDuration = calls.sumOf { it.duration }
+            // Incremental Stats Optimization: Add new window stats to existing ones
+            val newTotalCalls = (existing?.totalCalls ?: 0) + calls.size
+            val newTotalIncoming = (existing?.totalIncoming ?: 0) + calls.count { it.callType == CallLog.Calls.INCOMING_TYPE }
+            val newTotalOutgoing = (existing?.totalOutgoing ?: 0) + calls.count { it.callType == CallLog.Calls.OUTGOING_TYPE }
+            val newTotalMissed = (existing?.totalMissed ?: 0) + calls.count { it.callType == CallLog.Calls.MISSED_TYPE || it.callType == CallLog.Calls.REJECTED_TYPE || it.callType == 5 }
+            val newTotalDuration = (existing?.totalDuration ?: 0L) + calls.sumOf { it.duration }
+            
+            // Only update "Last Call" info if the latest call in this batch is newer than existing
+            val isNewer = incomingNew.callDate > (existing?.lastCallDate ?: 0L)
             
             val personEntity = PersonDataEntity(
                 phoneNumber = phoneNumber,
-                contactName = lastCall.contactName ?: existing?.contactName,
-                photoUri = lastCall.photoUri ?: existing?.photoUri,
+                contactName = if (isNewer) (incomingNew.contactName ?: existing?.contactName) else existing?.contactName,
+                photoUri = if (isNewer) (incomingNew.photoUri ?: existing?.photoUri) else existing?.photoUri,
                 personNote = existing?.personNote,  // Preserve existing note
                 label = existing?.label, // Preserve existing label
-                lastCallType = lastCall.callType,
-                lastCallDuration = lastCall.duration,
-                lastCallDate = lastCall.callDate,
-                lastRecordingPath = lastCall.localRecordingPath,
-                lastCallCompositeId = lastCall.compositeId,
-                totalCalls = calls.size,
-                totalIncoming = totalIncoming,
-                totalOutgoing = totalOutgoing,
-                totalMissed = totalMissed,
-                totalDuration = totalDuration,
+                lastCallType = if (isNewer) incomingNew.callType else (existing?.lastCallType ?: incomingNew.callType),
+                lastCallDuration = if (isNewer) incomingNew.duration else (existing?.lastCallDuration ?: incomingNew.duration),
+                lastCallDate = if (isNewer) incomingNew.callDate else (existing?.lastCallDate ?: incomingNew.callDate),
+                lastRecordingPath = if (isNewer) incomingNew.localRecordingPath else (existing?.lastRecordingPath ?: incomingNew.localRecordingPath),
+                lastCallCompositeId = if (isNewer) incomingNew.compositeId else (existing?.lastCallCompositeId ?: incomingNew.compositeId),
+                totalCalls = newTotalCalls,
+                totalIncoming = newTotalIncoming,
+                totalOutgoing = newTotalOutgoing,
+                totalMissed = newTotalMissed,
+                totalDuration = newTotalDuration,
                 createdAt = existing?.createdAt ?: System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis(),
                 isExcluded = existing?.isExcluded ?: false,

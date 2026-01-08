@@ -270,14 +270,7 @@ fun PersonsList(
                     longPressTarget = person
                 },
                 onCallClick = {
-                    try {
-                        val cleaned = cleanNumber(person.number)
-                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$cleaned"))
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                    viewModel.initiateCall(person.number)
                 },
                 onCopyClick = {
                     val cleaned = cleanNumber(person.number)

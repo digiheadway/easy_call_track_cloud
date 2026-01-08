@@ -108,7 +108,7 @@ android.provider.CallLog.Calls.REJECTED_TYPE = 5
 android.provider.CallLog.Calls.BLOCKED_TYPE = 6
 ```
 
-### Detailed Query Logic (from `applyFiltersInternal`)
+### Detailed Query Logic (from `processCallFilters`)
 ```kotlin
 // 1. Always hide "No Tracking" persons (complete exclusion)
 if (person?.isNoTracking == true) return false
@@ -162,7 +162,7 @@ The Persons view uses `PersonTabFilter` enum for primary categorization.
 | **Never Responded** | `NEVER_RESPONDED` | `all outgoing calls have duration <= 0` | Never answered any of our calls |
 | **Ignored** | `IGNORED` | `hasAnyExclusion == true` | Excluded persons only |
 
-### Detailed Query Logic (from `applyPersonFiltersInternal`)
+### Detailed Query Logic (from `processPersonFilters`)
 ```kotlin
 // Get all calls for this person
 val pCalls = logsByPhone[normPhone] ?: emptyList()

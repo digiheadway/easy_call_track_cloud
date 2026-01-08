@@ -258,6 +258,8 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
     val personDetailsPhone by viewModel.personDetailsPhone.collectAsState()
     val settingsViewModel: SettingsViewModel = viewModel()
     val settingsState by settingsViewModel.uiState.collectAsState()
+    val homeViewModel: HomeViewModel = viewModel()
+    val homeState by homeViewModel.uiState.collectAsState()
     
     // Default to Calls tab since Dialer is now a modal
     var selectedTab by remember { mutableStateOf(AppTab.CALLS) }
@@ -467,6 +469,15 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                         uiState = settingsState,
                         viewModel = settingsViewModel,
                         onDismiss = { settingsViewModel.toggleTrackSimModal(false) }
+                    )
+                }
+                
+                if (homeState.showCallSimPicker && homeState.callFlowNumber != null) {
+                    CallSimPickerModal(
+                        number = homeState.callFlowNumber!!,
+                        availableSims = homeState.availableSims,
+                        onSimSelected = { subId -> homeViewModel.executeCall(subId) },
+                        onDismiss = { homeViewModel.cancelCallFlow() }
                     )
                 }
 

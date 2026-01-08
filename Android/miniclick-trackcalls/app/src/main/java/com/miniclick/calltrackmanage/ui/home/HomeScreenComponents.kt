@@ -108,7 +108,8 @@ fun PersonsHeader(
     isFilterActive: Boolean,
     filterCount: Int,
     dateRange: DateRange,
-    onDateRangeChange: (DateRange, Long?, Long?) -> Unit
+    onDateRangeChange: (DateRange, Long?, Long?) -> Unit,
+    totalPersonsCount: Int = 0
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
@@ -122,13 +123,30 @@ fun PersonsHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Title
-            Text(
-                text = "Persons",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            // Title with Count Chip
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Persons",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (totalPersonsCount > 0) {
+                    Spacer(Modifier.width(8.dp))
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = totalPersonsCount.toString(),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            }
             
             // Action Icons
             Row(verticalAlignment = Alignment.CenterVertically) {

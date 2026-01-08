@@ -117,28 +117,8 @@ fun CallsScreen(
         uiState.persons.associateBy { it.phoneNumber }
     }
 
-    // Map of phone number to person group with FULL history (independent of filters)
-    val allPersonGroupsMap = remember(uiState.callLogs, personsMap) {
-        uiState.callLogs
-            .groupBy { it.phoneNumber }
-            .mapValues { (number, calls) ->
-                val sortedCalls = calls.sortedByDescending { it.callDate }
-                val person = personsMap[number] ?: personsMap[viewModel.normalizePhoneNumber(number)]
-                PersonGroup(
-                    number = number,
-                    name = person?.contactName ?: calls.firstOrNull { !it.contactName.isNullOrEmpty() }?.contactName,
-                    photoUri = person?.photoUri ?: calls.firstOrNull { !it.photoUri.isNullOrEmpty() }?.photoUri,
-                    calls = sortedCalls,
-                    lastCallDate = sortedCalls.first().callDate,
-                    totalDuration = calls.sumOf { it.duration },
-                    incomingCount = calls.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE },
-                    outgoingCount = calls.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE },
-                    missedCount = calls.count { it.callType == android.provider.CallLog.Calls.MISSED_TYPE },
-                    personNote = person?.personNote,
-                    label = person?.label
-                )
-            }
-    }
+    // Use pre-calculated person groups from ViewModel for better performance
+    val allPersonGroupsMap = uiState.personGroups
 
     var selectedPersonForDetails by remember { mutableStateOf<PersonGroup?>(null) }
     
@@ -207,7 +187,7 @@ fun CallsScreen(
                 filterCount = uiState.activeFilterCount,
                 dateRange = uiState.dateRange,
                 onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) },
-                totalCallsCount = uiState.filteredLogs.size
+                totalCallsCount = uiState.tabFilteredLogs[CallTabFilter.ALL]?.size ?: 0
             )
             
             val pagerState = rememberPagerState(pageCount = { CallTabFilter.entries.size })
@@ -247,13 +227,7 @@ fun CallsScreen(
             
             // Removed FilterChipsRow as it's now integrated into the Modal
             
-            // Grouped persons logic needed by both views
-            val displayedPersonGroups = remember(uiState.filteredLogs, allPersonGroupsMap) {
-                val filteredNumbers = uiState.filteredLogs.map { it.phoneNumber }.toSet()
-                allPersonGroupsMap.filterKeys { it in filteredNumbers }
-                    .values
-                    .sortedByDescending { it.lastCallDate }
-            }
+            // Removed unused displayedPersonGroups calculation to save UI thread cycles
             
             // Content
             SetupGuide(
@@ -267,8 +241,12 @@ fun CallsScreen(
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize(),
-                    userScrollEnabled = true
+                    userScrollEnabled = true,
+                    beyondViewportPageCount = 1
                 ) { page ->
+                    val tab = CallTabFilter.entries[page]
+                    val tabLogs = uiState.tabFilteredLogs[tab] ?: emptyList()
+                    
                     Box(Modifier.fillMaxSize()) {
                         when {
                             uiState.isLoading -> {
@@ -277,6 +255,7 @@ fun CallsScreen(
                                 }
                             }
                             uiState.simSelection == "Off" -> {
+                                // ...
                                 EmptyState(
                                     icon = Icons.Default.SimCard,
                                     title = "SIM Tracking is Off",
@@ -293,7 +272,7 @@ fun CallsScreen(
                                     }
                                 )
                             }
-                            uiState.filteredLogs.isEmpty() -> {
+                            tabLogs.isEmpty() -> {
                                 val isFiltered = uiState.activeFilterCount > 0 || uiState.searchQuery.isNotEmpty()
                                 when {
                                     isFiltered -> {
@@ -331,7 +310,7 @@ fun CallsScreen(
                             }
                             else -> {
                                 CallLogList(
-                                    logs = uiState.filteredLogs,
+                                    logs = tabLogs,
                                     recordings = uiState.recordings,
                                     personGroupsMap = allPersonGroupsMap,
                                     modifier = Modifier.fillMaxSize(),
@@ -409,47 +388,8 @@ fun PersonsScreen(
         uiState.persons.associateBy { it.phoneNumber }
     }
 
-    // Map of ALL phone numbers to their FULL history groups
-    val allPersonGroupsMap = remember(uiState.callLogs, personsMap) {
-        uiState.callLogs
-            .groupBy { it.phoneNumber }
-            .mapValues { (number, calls) ->
-                val sortedCalls = calls.sortedByDescending { it.callDate }
-                val person = personsMap[number] ?: personsMap[viewModel.normalizePhoneNumber(number)]
-                PersonGroup(
-                    number = number,
-                    name = person?.contactName ?: calls.firstOrNull { !it.contactName.isNullOrEmpty() }?.contactName,
-                    photoUri = person?.photoUri ?: calls.firstOrNull { !it.photoUri.isNullOrEmpty() }?.photoUri,
-                    calls = sortedCalls,
-                    lastCallDate = sortedCalls.first().callDate,
-                    totalDuration = calls.sumOf { it.duration },
-                    incomingCount = calls.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE },
-                    outgoingCount = calls.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE },
-                    missedCount = calls.count { it.callType == android.provider.CallLog.Calls.MISSED_TYPE },
-                    personNote = person?.personNote,
-                    label = person?.label
-                )
-            }
-    }
-
-    // Filtered list of persons to display based on UI filters
-    val filteredPersons = remember(uiState.filteredPersons, allPersonGroupsMap) {
-        uiState.filteredPersons.map { person ->
-            allPersonGroupsMap[person.phoneNumber] ?: PersonGroup(
-                number = person.phoneNumber,
-                name = person.contactName,
-                photoUri = person.photoUri,
-                calls = emptyList(),
-                lastCallDate = person.lastCallDate ?: 0L,
-                totalDuration = person.totalDuration,
-                incomingCount = person.totalIncoming,
-                outgoingCount = person.totalOutgoing,
-                missedCount = person.totalMissed,
-                personNote = person.personNote,
-                label = person.label
-            )
-        }
-    }
+    // Use pre-calculated person groups
+    val allPersonGroupsMap = uiState.personGroups
 
     var selectedPersonForDetails by remember { mutableStateOf<PersonGroup?>(null) }
     
@@ -488,7 +428,8 @@ fun PersonsScreen(
             isFilterActive = showFilterModal,
             filterCount = uiState.activeFilterCount,
             dateRange = uiState.dateRange,
-            onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) }
+            onDateRangeChange = { range, start, end -> viewModel.setDateRange(range, start, end) },
+            totalPersonsCount = uiState.tabFilteredPersons[PersonTabFilter.ALL]?.size ?: 0
         )
         
         val pagerState = rememberPagerState(pageCount = { PersonTabFilter.entries.size })
@@ -543,8 +484,12 @@ fun PersonsScreen(
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
-                userScrollEnabled = true
-            ) {
+                userScrollEnabled = true,
+                beyondViewportPageCount = 1
+            ) { page ->
+                val tab = PersonTabFilter.entries[page]
+                val tabPersons = uiState.tabFilteredPersons[tab]?.mapNotNull { allPersonGroupsMap[it.phoneNumber] } ?: emptyList()
+
                 Box(Modifier.fillMaxSize()) {
                     if (uiState.isLoading) {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -567,7 +512,7 @@ fun PersonsScreen(
                                 }
                             }
                         )
-                    } else if (filteredPersons.isEmpty()) {
+                    } else if (tabPersons.isEmpty()) {
                         val isFiltered = uiState.activeFilterCount > 0 || uiState.searchQuery.isNotEmpty()
                         if (isFiltered) {
                             EmptyState(
@@ -584,7 +529,7 @@ fun PersonsScreen(
                         }
                     } else {
                         PersonsList(
-                            persons = filteredPersons,
+                            persons = tabPersons,
                             recordings = uiState.recordings,
                             audioPlayer = audioPlayer,
                             context = context,

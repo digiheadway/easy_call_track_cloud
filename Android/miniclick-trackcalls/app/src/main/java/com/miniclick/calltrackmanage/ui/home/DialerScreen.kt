@@ -36,7 +36,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.filled.Close
 
 @Composable
-fun DialerScreen(onIdentifyCallHistory: () -> Unit, onClose: () -> Unit = {}) {
+fun DialerScreen(
+    onIdentifyCallHistory: () -> Unit, 
+    onClose: () -> Unit = {},
+    viewModel: HomeViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+) {
     var phoneNumber by remember { mutableStateOf("") }
     val context = LocalContext.current
     
@@ -247,31 +251,7 @@ fun DialerScreen(onIdentifyCallHistory: () -> Unit, onClose: () -> Unit = {}) {
             FloatingActionButton(
                 onClick = {
                     if (phoneNumber.isNotEmpty()) {
-                        val hasCallPermission = androidx.core.content.ContextCompat.checkSelfPermission(
-                            context, android.Manifest.permission.CALL_PHONE
-                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                        
-                        if (hasCallPermission) {
-                            if (isDefaultDialer && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                                try {
-                                    val telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as android.telecom.TelecomManager
-                                    val uri = Uri.fromParts("tel", phoneNumber, null)
-                                    val extras = Bundle()
-                                    telecomManager.placeCall(uri, extras)
-                                } catch (e: SecurityException) {
-                                    Toast.makeText(context, "Permission error: ${e.message}", Toast.LENGTH_SHORT).show()
-                                } catch (e: Exception) {
-                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                                }
-                            } else {
-                                val intent = Intent(Intent.ACTION_CALL).apply {
-                                    data = Uri.parse("tel:$phoneNumber")
-                                }
-                                context.startActivity(intent)
-                            }
-                        } else {
-                            callPermissionLauncher.launch(android.Manifest.permission.CALL_PHONE)
-                        }
+                        viewModel.initiateCall(phoneNumber)
                     }
                 },
                 containerColor = Color(0xFF4CAF50),

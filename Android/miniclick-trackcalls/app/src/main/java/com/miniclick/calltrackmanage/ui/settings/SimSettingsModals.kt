@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
 import java.util.*
@@ -637,6 +638,106 @@ fun SimSelectionChip(
                 color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer 
                        else MaterialTheme.colorScheme.onSurface
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CallSimPickerModal(
+    number: String,
+    availableSims: List<SimInfo>,
+    onSimSelected: (Int?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 40.dp)
+        ) {
+            Text(
+                "Call $number",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "Pick a SIM to place this call",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Spacer(Modifier.height(24.dp))
+            
+            availableSims.forEach { sim ->
+                SimPickerLine(
+                    sim = sim,
+                    onClick = { onSimSelected(sim.subscriptionId) }
+                )
+                Spacer(Modifier.height(10.dp))
+            }
+            
+            // System Default Option
+            SimPickerLine(
+                label = "System Default",
+                subLabel = "Device preference",
+                icon = Icons.Default.Settings,
+                onClick = { onSimSelected(null) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun SimPickerLine(
+    sim: SimInfo,
+    onClick: () -> Unit
+) {
+    SimPickerLine(
+        label = "SIM ${sim.slotIndex + 1}: ${sim.displayName}",
+        subLabel = sim.carrierName,
+        icon = Icons.Default.SimCard,
+        onClick = onClick
+    )
+}
+
+@Composable
+private fun SimPickerLine(
+    label: String,
+    subLabel: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                modifier = Modifier.size(40.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                }
+            }
+            Spacer(Modifier.width(16.dp))
+            Column {
+                Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(subLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }
