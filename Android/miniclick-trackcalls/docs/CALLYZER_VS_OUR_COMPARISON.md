@@ -32,9 +32,9 @@
 |--------|--------------|---------------------|--------|
 | **Primary Detection** | MediaStore Query + File Scan | ✅ MediaStore Query + File Scan | ✅ IMPLEMENTED |
 | **Matching Strategy** | Tiered (MediaStore → Path Scan → Full Scan) | ✅ 5-Tier (CallCloud → Learned → MediaStore → FileScan → Wider) | ✅ IMPLEMENTED |
-| **History Back-Scan** | "Zipper" Algorithm (sorted merge) | Not Explicitly Implemented | ❌ Gap |
-| **Confidence Scoring** | Weight-based (100/80/50/30 etc.) | Score-based (40/30/25/10 etc.) | ✅ Good |
-| **Fallback Layers** | 6 layers (Manual as final) | ✅ 5 layers (No manual fallback) | ✅ IMPLEMENTED |
+| **History Back-Scan** | "Zipper" Algorithm (sorted merge) | ✅ Chronological sort + file deduplication | ✅ IMPLEMENTED |
+| **Confidence Scoring** | Weight-based (100/80/50/30 etc.) | ✅ Weight-based (100/80/60/50 etc.) | ✅ MATCHING |
+| **Fallback Layers** | 6 layers (Manual as final) | ✅ 5 layers + Manual attachment | ✅ IMPLEMENTED |
 | **Storage Handling** | SAF + MediaStore + MANAGE_EXTERNAL_STORAGE | ✅ SAF + MediaStore | ✅ IMPLEMENTED |
 | **Compression** | Built-in with configurable levels | Not Implemented | ❌ Gap |
 | **Background Work** | WorkManager with detailed constraints | WorkManager (basic implementation) | ✅ Good |

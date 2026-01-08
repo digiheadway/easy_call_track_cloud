@@ -34,19 +34,21 @@ class ReattachRecordingsWorker(context: Context, params: WorkerParameters) : Cor
             val DAY_MS = 24 * 60 * 60 * 1000L
             val filesByDay = allFiles.groupBy { it.lastModified / DAY_MS }
             
-            allLogs.forEach { log ->
+            // ZIPPER-STYLE: Sort calls chronologically and track matched files
+            // This prevents the same recording from being matched to multiple calls
+            val sortedLogs = allLogs
+                .filter { it.duration > 0 && it.callType < 3 } // Only Incoming(1) and Outgoing(2) with duration
+                .sortedBy { it.callDate }
+            
+            val matchedFilePaths = mutableSetOf<String>()
+            
+            Log.d(TAG, "Processing ${sortedLogs.size} valid calls (sorted chronologically)")
+            
+            sortedLogs.forEach { log ->
                  if (isStopped) return@forEach
                  processed++
                  if (processed % 40 == 0) { // Update less frequently to save UI overhead
-                     setForeground(createForegroundInfo("Scanning recordings $processed / $total"))
-                 }
-                 
-                 // SKIP INVALID CALLS:
-                 // 1. Duration is 0 (No talk time = No recording)
-                 // 2. Call Type is Missed(3), Voicemail(4), Rejected(5), Blocked(6)
-                 // Keeping only Incoming(1) and Outgoing(2)
-                 if (log.duration <= 0 || log.callType >= 3) {
-                     return@forEach
+                     setForeground(createForegroundInfo("Scanning recordings $processed / ${sortedLogs.size}"))
                  }
                  
                  val callDay = log.callDate / DAY_MS
@@ -56,11 +58,14 @@ class ReattachRecordingsWorker(context: Context, params: WorkerParameters) : Cor
                  filesByDay[callDay - 1]?.let { relevantFiles.addAll(it) }
                  filesByDay[callDay + 1]?.let { relevantFiles.addAll(it) }
                  
+                 // ZIPPER-STYLE: Filter out already matched files to prevent double-matching
+                 val availableFiles = relevantFiles.filter { it.absolutePath !in matchedFilePaths }
+                 
                  // Skip if no files nearby (huge speedup for old history)
-                 if (relevantFiles.isEmpty()) return@forEach
+                 if (availableFiles.isEmpty()) return@forEach
 
                  val bestMatch = recordingRepository.findRecordingInList(
-                     files = relevantFiles,
+                     files = availableFiles,
                      callDate = log.callDate,
                      durationSec = log.duration,
                      phoneNumber = log.phoneNumber,
@@ -69,13 +74,15 @@ class ReattachRecordingsWorker(context: Context, params: WorkerParameters) : Cor
                  
                  if (bestMatch != null && bestMatch != log.localRecordingPath) {
                      callDataRepository.updateRecordingPath(log.compositeId, bestMatch)
+                     matchedFilePaths.add(bestMatch) // Mark this file as used
                      updatedCount++
+                     Log.d(TAG, "Matched: ${log.phoneNumber} -> ${bestMatch.substringAfterLast("/")}")
                  }
                  
                  if (isStopped) return@forEach
             }
             
-            Log.d(TAG, "Re-attach complete. Updated $updatedCount recordings.")
+            Log.d(TAG, "Re-attach complete. Updated $updatedCount recordings. ${matchedFilePaths.size} unique files matched.")
             
             Result.success(workDataOf("updated_count" to updatedCount))
             
