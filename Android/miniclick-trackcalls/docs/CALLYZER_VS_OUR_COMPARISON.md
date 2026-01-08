@@ -1,8 +1,35 @@
 # Callyzer vs Our App: Recording Attachment & System Comparison
 
 > **Created:** 2026-01-09  
-> **Last Updated:** 2026-01-09 (Implemented MediaStore query & 5-tier fallback)  
-> **Purpose:** Comprehensive comparison analysis for learning and improvement planning
+> **Last Updated:** 2026-01-09 05:20  
+> **Purpose:** Comprehensive comparison analysis for learning and improvement planning  
+> **Status:** 🏆 **FEATURE PARITY ACHIEVED** - All critical features implemented!
+
+---
+
+## 🎯 Implementation Status Summary
+
+### ✅ Completed (2026-01-09)
+
+| Feature | Implementation |
+|---------|----------------|
+| **MediaStore Query** | `findRecordingViaMediaStore()` - Tier 3 & 5 |
+| **5-Tier Fallback** | CallCloud → Learned → MediaStore → FileScan → Wider |
+| **Callyzer-Style Weights** | 100/80/60/50/40/30/20/10 scoring |
+| **100-Point Threshold** | Matching Callyzer's strictness |
+| **Folder Context Bonus** | +30 for known recorder folders |
+| **Learning System** | `KEY_LEARNED_FOLDER` saves successful paths |
+| **Zipper Deduplication** | Chronological sort + matched file tracking |
+| **Manual Attachment UI** | SAF picker with `ActivityResultContracts.OpenDocument` |
+| **Expanded Device Paths** | 48+ device paths, 21+ third-party paths |
+| **Android 10+ Compatibility** | MediaStore works on all versions |
+
+### ❌ Remaining Gaps
+
+| Feature | Priority | Notes |
+|---------|----------|-------|
+| **Audio Compression** | Medium | Reduce upload size before sync |
+| **Device Permission Guides** | Low | UI for Xiaomi/Oppo autostart |
 
 ---
 
@@ -41,9 +68,17 @@
 | **Learning System** | Saves successful folders | ✅ Saves learned folder paths | ✅ IMPLEMENTED |
 
 ### Key Insight
-~~**Callyzer uses a multi-layered detection strategy with MediaStore as the PRIMARY method**, while we rely primarily on direct file system scanning which is increasingly broken on Android 10+.~~
 
-**✅ UPDATE (2026-01-09):** We now have **feature parity** with Callyzer's core detection system! Our 5-tier approach with MediaStore as primary now works on Android 10+ just like theirs.
+**🏆 UPDATE (2026-01-09):** We now have **complete feature parity** with Callyzer's core detection system!
+
+**Implemented:**
+- ✅ MediaStore as primary detection (Android 10+)
+- ✅ Callyzer-style weight scoring (100+ threshold)
+- ✅ Zipper-style bulk attach with deduplication
+- ✅ Folder context bonus (+30)
+- ✅ Learning system for successful paths
+- ✅ 5-tier fallback strategy
+- ✅ Manual attachment via SAF picker
 
 ---
 
@@ -546,27 +581,36 @@ Callyzer sends webhooks for:
 ### 12.2 ~~Next Week (High Priority)~~ ✅ ALL DONE
 
 ```markdown
-All items completed! See 12.1 above.
+7. [x] Callyzer-Style Weight Scoring ✅ DONE
+   - Timestamp ≤5s: +100, ≤30s: +80, ≤60s: +60
+   - Phone number: +50, Folder context: +30
+   - Duration match: +40
+   - Threshold raised to 100 (from 30)
+
+8. [x] Zipper-Style Deduplication ✅ DONE
+   - Sort calls chronologically
+   - Track matched files in Set
+   - Prevent same file matching multiple calls
+
+9. [x] Folder Context Bonus ✅ DONE
+   - +30 for files in known recorder folders
+   - Keywords: call, recording, miui, callcloud, acr, cube, truecaller
 ```
 
 ### 12.3 This Month (Improvements)
 
 ```markdown
-7. [ ] Audio Compression
-   - Use MediaCodec for AAC encoding
-   - Target: 32kbps, 16000Hz, Mono
-   - Compress before upload
+10. [ ] Audio Compression
+    - Use MediaCodec for AAC encoding
+    - Target: 32kbps, 16000Hz, Mono
+    - Compress before upload
 
-8. [ ] Device-Specific Permission Guides
-   - Detect device manufacturer
-   - Show tailored instructions for:
-     - Xiaomi: Autostart + Battery
-     - Oppo: Battery optimization
-     - Samsung: Background restrictions
-
-9. [ ] Higher Confidence Threshold
-   - Consider raising minimum score from 30 to 50
-   - Or add "confidence level" indicator in UI
+11. [ ] Device-Specific Permission Guides
+    - Detect device manufacturer
+    - Show tailored instructions for:
+      - Xiaomi: Autostart + Battery
+      - Oppo: Battery optimization
+      - Samsung: Background restrictions
 ```
 
 ---
