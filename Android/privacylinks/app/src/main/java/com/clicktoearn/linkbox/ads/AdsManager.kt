@@ -50,7 +50,7 @@ object AdsManager {
     // ==================== CONFIGURATION ====================
     
     // AdMob Ad Unit IDs (Provided by USER)
-    private const val ADMOB_APP_OPEN_ID = "" // Disabled - no unit in new panel
+    private const val ADMOB_APP_OPEN_ID = "/22649815059/linkbox_app/interstitial" // Using Interstitial as App Open replacement
     private const val ADMOB_BANNER_ID = "/22649815059/linkbox_app/banner"
     private const val ADMOB_INTERSTITIAL_ID = "/22649815059/linkbox_app/interstitial"
     private const val ADMOB_NATIVE_ID = "/22649815059/linkbox_app/native"
@@ -221,7 +221,7 @@ object AdsManager {
         remoteConfig.setConfigSettingsAsync(configSettings)
         
         val defaults = mapOf(
-            KEY_SHOW_APP_OPEN to false,
+            KEY_SHOW_APP_OPEN to true,
             KEY_SHOW_INTERSTITIAL to true,
             KEY_SHOW_BANNER to true,
             KEY_SHOW_ADAPTIVE_BANNER to true,
@@ -501,42 +501,14 @@ object AdsManager {
 
     fun loadAndShowAppOpenAd(activity: Activity) {
         if (!isAdEnabled(KEY_SHOW_APP_OPEN)) {
-            Log.d(TAG, "App Open Ad is disabled in Remote Config.")
+            Log.d(TAG, "App Open (Interstitial replacement) is disabled.")
             return
         }
 
-        if (appOpenAd != null) {
-            Log.d(TAG, "App Open Ad already loaded, showing it.")
-            showAppOpenAd(activity)
-            return
+        Log.d(TAG, "Showing Interstitial as App Open replacement on splash...")
+        showInterstitialAd(activity, "splash_start") {
+            Log.d(TAG, "Splash Interstitial dismissed, proceeding to app.")
         }
-
-        if (isLoadingAppOpen) {
-            Log.d(TAG, "App Open Ad is already loading.")
-            return
-        }
-
-        isLoadingAppOpen = true
-        val adUnitId = getAdUnitId(KEY_ID_APP_OPEN, ADMOB_APP_OPEN_ID, TEST_APP_OPEN)
-        Log.d(TAG, "Loading and showing App Open Ad with ID: $adUnitId")
-        
-        AppOpenAd.load(
-            activity,
-            adUnitId,
-            AdRequest.Builder().build(),
-            object : AppOpenAd.AppOpenAdLoadCallback() {
-                override fun onAdLoaded(ad: AppOpenAd) {
-                    isLoadingAppOpen = false
-                    appOpenAd = ad
-                    Log.d(TAG, "App Open Ad loaded successfully, now showing.")
-                    showAppOpenAd(activity)
-                }
-                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
-                    isLoadingAppOpen = false
-                    Log.e(TAG, "loadAndShowAppOpenAd failed: ${loadAdError.message} (Code: ${loadAdError.code})")
-                }
-            }
-        )
     }
 
     private var pendingInterstitialCallback: (() -> Unit)? = null

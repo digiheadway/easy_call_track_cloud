@@ -5,14 +5,14 @@
       "parameters": {
         "show_app_open": {
           "defaultValue": {
-            "value": "false"
+            "value": "true"
           },
           "description": "Enable/disable App Open ads",
           "valueType": "BOOLEAN"
         },
         "app_wide_ad_app_open_ad": {
           "defaultValue": {
-            "value": "false"
+            "value": "true"
           },
           "description": "Global toggle for App Open ads across the entire application",
           "valueType": "BOOLEAN"
@@ -292,7 +292,7 @@
       "parameters": {
         "id_app_open": {
           "defaultValue": {
-            "value": ""
+            "value": "/22649815059/linkbox_app/interstitial"
           },
           "description": "AdMob App Open Ad Unit ID",
           "valueType": "STRING"
