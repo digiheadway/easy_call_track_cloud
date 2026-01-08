@@ -21,15 +21,15 @@ define('DB_NAME', 'u542940820_easycalls');
 define('TOKEN_EXPIRY_HOURS', 24);
 define('API_VERSION', 'v1');
 
-// Cashfree Payment Gateway Configuration
-// Get your sandbox API keys from: https://merchant.cashfree.com/merchants/pg-dashboard
-define('CASHFREE_APP_ID', ''); // Add your Cashfree App ID here
-define('CASHFREE_SECRET_KEY', ''); // Add your Cashfree Secret Key here
-define('CASHFREE_MODE', 'sandbox'); // 'sandbox' or 'production'
-define('CASHFREE_API_BASE', CASHFREE_MODE === 'production' 
-    ? 'https://api.cashfree.com/pg' 
-    : 'https://sandbox.cashfree.com/pg');
-define('CASHFREE_API_VERSION', '2023-08-01');
+// PhonePe Payment Gateway Configuration
+// Get your API keys from PhonePe Merchant Dashboard
+define('PHONEPE_MERCHANT_ID', 'MERCHANTUAT'); // Add your Merchant ID here
+define('PHONEPE_SALT_KEY', '894044d6-795b-4dfd-8023-004d853520bc'); // Add your Salt Key here
+define('PHONEPE_SALT_INDEX', '1'); // Salt Index
+define('PHONEPE_ENV', 'UAT'); // 'UAT' or 'PRODUCTION'
+define('PHONEPE_API_BASE', PHONEPE_ENV === 'PRODUCTION' 
+    ? 'https://api.phonepe.com/apis/hermes' 
+    : 'https://api-preprod.phonepe.com/apis/pg-sandbox');
 
 // CORS Settings
 define('CORS_ALLOWED_ORIGINS', '*');
