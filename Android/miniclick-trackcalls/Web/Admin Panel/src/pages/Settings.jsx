@@ -25,6 +25,7 @@ export default function Settings() {
     const [formData, setFormData] = useState({
         name: '',
         org_name: '',
+        phone: '',
         billing_address: '',
         gst_number: '',
         state: ''
@@ -35,6 +36,7 @@ export default function Settings() {
             setFormData({
                 name: user.name || '',
                 org_name: user.org_name || '',
+                phone: user.phone || '',
                 billing_address: user.billing_address || '',
                 gst_number: user.gst_number || '',
                 state: user.state || ''
@@ -124,17 +126,27 @@ export default function Settings() {
                                     </div>
 
                                     <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-2">Organization Unique ID</label>
-                                        <div className="relative">
-                                            <input type="text" value={user?.org_id || ''} disabled className="input bg-gray-50 dark:bg-gray-900 cursor-not-allowed text-gray-500 dark:text-gray-500 pr-10" />
-                                            <Lock size={14} className="absolute right-3 top-3 text-gray-400" />
-                                        </div>
+                                        <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-2">Phone Number</label>
+                                        <input
+                                            type="tel"
+                                            className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+                                            value={formData.phone}
+                                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                        />
                                     </div>
 
                                     <div>
                                         <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-2">Email Address</label>
                                         <div className="relative">
                                             <input type="email" value={user?.email || ''} disabled className="input bg-gray-50 dark:bg-gray-900 cursor-not-allowed text-gray-500 dark:text-gray-500 pr-10" />
+                                            <Lock size={14} className="absolute right-3 top-3 text-gray-400" />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-2">Organization Unique ID</label>
+                                        <div className="relative">
+                                            <input type="text" value={user?.org_id || ''} disabled className="input bg-gray-50 dark:bg-gray-900 cursor-not-allowed text-gray-500 dark:text-gray-500 pr-10" />
                                             <Lock size={14} className="absolute right-3 top-3 text-gray-400" />
                                         </div>
                                     </div>

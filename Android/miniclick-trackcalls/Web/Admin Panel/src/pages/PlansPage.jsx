@@ -155,28 +155,10 @@ export default function PlansPage() {
                     fetchUsage();
                     setTimeout(() => setSuccess(''), 3000);
                 } else {
-
-                    // Payment required - Initiate PhonePe Payment
-                    try {
-                        const orderPayload = {
-                            ...payload,
-                            action: 'create_order',
-                            amount: res.data.amount
-                        };
-
-                        // Call PhonePe API
-                        const payRes = await api.post('/phonepe.php', orderPayload);
-
-                        if (payRes.status && payRes.data.payment_url) {
-                            // Redirect to PhonePe
-                            window.location.href = payRes.data.payment_url;
-                        } else {
-                            setError(payRes.message || 'Payment initialization failed');
-                        }
-                    } catch (payErr) {
-                        console.error('Payment Error:', payErr);
-                        setError('Failed to initiate payment. Please try again.');
-                    }
+                    // Payment required - show UPI modal
+                    setPendingPaymentAmount(res.data.amount);
+                    setPendingOrderDetails(payload);
+                    setShowUpiModal(true);
                 }
             } else {
                 setError(res.message || 'Checkout failed');
@@ -756,7 +738,7 @@ export default function PlansPage() {
                                                     ) : (
                                                         <>
                                                             <CreditCard size={22} />
-                                                            <span>Pay Securely</span>
+                                                            <span>Pay via UPI</span>
                                                             <ChevronRight className="group-hover:translate-x-1 transition-transform" />
                                                         </>
                                                     )}

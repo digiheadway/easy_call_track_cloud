@@ -26,10 +26,11 @@ switch ($action) {
     /* ===== SIGNUP ===== */
     case 'signup':
         // Validate required fields
-        Validator::required($data, ['email', 'password']);
+        Validator::required($data, ['email', 'password', 'phone']);
         Validator::email($data['email']);
         
         $email = Database::escape($data['email']);
+        $phone = Database::escape($data['phone']);
         $password = Auth::hashPassword($data['password']);
         
         // Generate Org ID (random 6 char alphanumeric)
@@ -48,8 +49,8 @@ switch ($action) {
         $otpExpiry = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
         // Create user (User is the Organization)
-        $userSql = "INSERT INTO users (org_id, org_name, name, email, password_hash, role, status, plan_info, otp, otp_expiry, is_verified) 
-                    VALUES ('$orgId', '$orgName', '$adminName', '$email', '$password', 'admin', 'active', '', '$otp', '$otpExpiry', 0)";
+        $userSql = "INSERT INTO users (org_id, org_name, name, email, phone, password_hash, role, status, plan_info, otp, otp_expiry, is_verified) 
+                    VALUES ('$orgId', '$orgName', '$adminName', '$email', '$phone', '$password', 'admin', 'active', '', '$otp', '$otpExpiry', 0)";
         $userId = Database::insert($userSql);
         
         if (!$userId) {

@@ -41,6 +41,9 @@ if ($method === 'PUT') {
             if (isset($data['org_name'])) {
                 $fields[] = "org_name = '" . Database::escape($data['org_name']) . "'";
             }
+            if (isset($data['phone'])) {
+                $fields[] = "phone = '" . Database::escape($data['phone']) . "'";
+            }
             if (isset($data['billing_address'])) {
                 $fields[] = "billing_address = '" . Database::escape($data['billing_address']) . "'";
             }
