@@ -78,7 +78,7 @@
 5. Duration Matching (Quinary)
    └── Compare file duration vs call duration
 
-6. Manual Attachment (Final)      ← WE DON'T HAVE THIS YET
+6. Manual Attachment (Final)      ✅ WE HAVE THIS!
    └── User browses and selects
 ```
 
@@ -224,7 +224,7 @@
 | Wider Time Window Retry | ✅ Yes | ✅ Tier 5 (±30 min) | ✅ IMPLEMENTED |
 | Learning System | ✅ Saves folders | ✅ `KEY_LEARNED_FOLDER` | ✅ IMPLEMENTED |
 | Full Storage Scan | ✅ Yes | ❌ No | 🟢 Low priority (expensive) |
-| Manual Attachment UI | ✅ Yes | ❌ No | 🟡 Future enhancement |
+| Manual Attachment UI | ✅ Yes | ✅ Yes (SAF picker) | ✅ IMPLEMENTED |
 
 ---
 
@@ -413,7 +413,7 @@ Callyzer sends webhooks for:
 | **Multi-Layer Fallback** | ✅ IMPLEMENTED | 5-tier approach (was 2) |
 | **Wider Time Window Retry** | ✅ IMPLEMENTED | Tier 5 uses ±30 min window |
 | **Learning System** | ✅ IMPLEMENTED | `KEY_LEARNED_FOLDER` |
-| **Manual Attachment UI** | ❌ Still missing | Future enhancement |
+| **Manual Attachment UI** | ✅ IMPLEMENTED | SAF-based file picker in UI |
 | **Compression** | ❌ Still missing | Future enhancement |
 | **Device-Specific Fixes** | ✅ PARTIAL | Expanded paths, but no UI guides |
 
@@ -473,14 +473,14 @@ Callyzer sends webhooks for:
 | ~~**Learning System**~~ | ✅ DONE | `KEY_LEARNED_FOLDER` |
 | ~~**Expanded Paths**~~ | ✅ DONE | 48+ device, 21+ third-party |
 
-### 11.2 Priority 2: High (Should Add Next)
+### 11.2 ~~Priority 2: High (Should Add Next)~~ ✅ MOSTLY DONE
 
-| Feature | Reason | Effort |
-|---------|--------|--------|
-| **Manual Attachment UI** | User can fix when auto fails | 2 days |
-| **"Learning" System** | Optimize for user's specific device | 1 day |
-| **Compression Before Upload** | Huge UX improvement for uploads | 3 days |
-| **Device Permission Guides** | Reduce support tickets | 2 days |
+| Feature | Status | Notes |
+|---------|--------|-------|
+| ~~**Manual Attachment UI**~~ | ✅ ALREADY HAD | SAF picker via `ActivityResultContracts.OpenDocument` |
+| ~~**"Learning" System**~~ | ✅ DONE | `KEY_LEARNED_FOLDER` in preferences |
+| **Compression Before Upload** | ❌ Not done | Future enhancement |
+| **Device Permission Guides** | ❌ Not done | Future enhancement |
 
 ### 11.3 Priority 3: Medium (Nice to Have)
 
@@ -494,7 +494,7 @@ Callyzer sends webhooks for:
 
 ## 12. Immediate Action Items
 
-> **Updated 2026-01-09**: Items 1-4 have been implemented!
+> **Updated 2026-01-09**: ALL critical items are now implemented!
 
 ### 12.1 This Week (Critical Fixes) ✅ COMPLETED
 
@@ -526,20 +526,17 @@ Callyzer sends webhooks for:
    - Added Huawei backup paths
    - Added ColorOS 12+ hidden paths
    - Added Blackbox, IntCall, ACR variants
+   
+6. [x] Manual Attachment UI ✅ ALREADY HAD
+   - Uses ActivityResultContracts.OpenDocument() in HomeScreen.kt
+   - Imports selected file to CallCloud folder
+   - Triggers immediate upload via RecordingUploadWorker.runNow()
 ```
 
-### 12.2 Next Week (High Priority)
+### 12.2 ~~Next Week (High Priority)~~ ✅ ALL DONE
 
 ```markdown
-5. [ ] Add Manual Attachment UI
-   - "Recording not found? Tap to browse"
-   - Use SAF file picker (ACTION_OPEN_DOCUMENT)
-   - Save selection to CallCloud folder
-
-6. [ ] Add Retry with Wider Window ✅ PARTIALLY DONE
-   - First attempt: ±5 minutes ✅
-   - Retry: ±30 minutes (if first fails) ✅
-   - Final: ±60 minutes (if still failing) - Optional
+All items completed! See 12.1 above.
 ```
 
 ### 12.3 This Month (Improvements)
