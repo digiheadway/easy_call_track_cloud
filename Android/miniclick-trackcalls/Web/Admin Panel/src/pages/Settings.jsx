@@ -31,6 +31,21 @@ export default function Settings() {
         state: ''
     });
 
+    const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState('');
+    const [error, setError] = useState('');
+
+    // Password Change State
+    const [passwords, setPasswords] = useState({
+        current: '',
+        new: '',
+        confirm: ''
+    });
+
+    // Export State
+    const [exportLoading, setExportLoading] = useState({ calls: false, callers: false });
+    const [exportDateRange, setExportDateRange] = useState('all');
+
     useEffect(() => {
         if (user) {
             setFormData({

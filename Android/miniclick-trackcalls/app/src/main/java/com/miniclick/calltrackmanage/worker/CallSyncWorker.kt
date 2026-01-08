@@ -208,7 +208,7 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     // Process call updates from DTOs
                     val callUpdates = data.callUpdates?.map { update ->
                         CallRemoteUpdate(
-                            uniqueId = update.uniqueId,
+                            compositeId = update.uniqueId,
                             reviewed = false, // Server DTO for CallUpdateDto only has unique_id and note currently
                             note = update.note,
                             callerName = null,
