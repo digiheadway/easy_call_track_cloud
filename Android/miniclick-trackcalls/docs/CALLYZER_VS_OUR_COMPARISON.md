@@ -154,7 +154,7 @@
 | Duration exact (≤1s diff) | +50 | |
 | Duration close (≤5s diff) | +30 | |
 | Duration decent (≤10s diff) | +10 | |
-| Duration mismatch (>1 min) | -20 | Penalty |
+| ~~Duration mismatch (>1 min)~~ | ~~-20~~ | Removed (merged calls support) |
 
 **Threshold**: Files scoring at least 30 are attached.
 
@@ -166,15 +166,17 @@
 | Time Weight Priority | Strongest (100) | Strong but equal (40/30) | 🏆 Callyzer (more accurate) |
 | Duration Verification | Secondary (40) | Primary (50) | 🟡 Depends on use case |
 | Folder Context | Uses (+30) | Doesn't use | 🏆 Callyzer |
-| Rejection Logic | Implicit via threshold | Explicit (4h/24h rules) | 🏆 Our App (more robust) |
+| Rejection Logic | Implicit via threshold | Score-based (no hard rejections) | 🟡 Flexible for merged calls |
 
-### 3.3 Our Unique Strengths
-- **Explicit Rejection Rules**: We have specific rules like:
-  - "No identity match + >5 min time diff → REJECT"
-  - "Identity match but >4 hours + no date in filename → REJECT"
-  - These prevent many false positives that a pure scoring system might miss.
+### 3.3 Our Approach
+- **Flexible Matching**: Removed explicit rejection rules to support:
+  - Merged calls (conference calls, call waiting)
+  - Recordings with different durations (multiple calls in one file)
+  - Recordings with different filenames (recorder's own naming conventions)
 
 - **Filename Date Extraction**: We parse `yyMMddHHmm` (OnePlus) and `yyyyMMdd_HHmmss` patterns, preferring them over `lastModified` metadata.
+
+- **Score-Based Safety**: Minimum score of 30 required prevents random matches while allowing flexibility.
 
 ---
 

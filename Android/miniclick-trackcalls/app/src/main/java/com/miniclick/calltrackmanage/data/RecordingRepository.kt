@@ -562,11 +562,8 @@ class RecordingRepository private constructor(private val context: Context) {
                      timeDiff = diff
                      true
                 } else {
-                     // CRITICAL: If filename has an explicit date (e.g. 2024-01-01) 
-                     // and it's > 2 hours away from call date, REJECT IT IMMEDIATELY.
-                     // This fixes "Different date recording matched" issues where file metadata is recent
-                     // (e.g. copied/restored files) but filename clearly indicates an old date.
-                     if (diff > 2 * 60 * 60 * 1000L) return null
+                     // Date in filename doesn't match call date
+                     // Don't hard-reject - merged calls may have different filenames
                      false
                 }
             } else {
@@ -587,24 +584,12 @@ class RecordingRepository private constructor(private val context: Context) {
                 }
             }
 
-            // REJECTION RULES:
-            
-            // 1. Stricter Time Window for files without Number/Name match:
-            // Must be within 5 minutes (was 15). This prevents attaching a random file 
-            // from 10 mins ago just because duration matches.
-            if (!hasIdentityMatch && timeDiff > 5 * 60 * 1000L) return null
-            
-            // 2. Safeguard for Same Person, Same Duration, Different Time (e.g. 3PM vs 9PM):
-            // If we matched the Name/Phone, BUT the time is way off (> 4 hours), 
-            // AND we didn't find the date in the filename -> Reject it.
-            // This forces the system to look for the *other* file that is closer in time.
-            // We use 4 hours to be safe against timezone issues, but 3PM vs 9PM is 6 hours, so this catches it.
-            if (hasIdentityMatch && timeDiff > 4 * 60 * 60 * 1000L && !isFilenameDateMatch) return null
-            
-            // 3. General sanity check (24h rule)
-            if (hasIdentityMatch && timeDiff > 24 * 60 * 60 * 1000L && !isFilenameDateMatch) return null
+            // NOTE: Removed strict rejection rules to allow more flexible matching.
+            // Merged calls (conference calls, call waiting) may have:
+            // - Different durations (file contains multiple calls merged)
+            // - Different filenames (recorder may use different naming for merged calls)
+            // The scoring system will still prefer better matches, but we don't hard-reject.
 
-            
             // --- 3. Duration Match (Lazy Fetch) ---
             // Only check duration if we already have a decent candidate (score > 10)
             if (totalScore > 10) {
@@ -619,13 +604,8 @@ class RecordingRepository private constructor(private val context: Context) {
                         totalScore += 30
                     } else if (durDiff < 10000) { // < 10 sec diff
                         totalScore += 10
-                    } else if (durDiff > 60000) { // > 1 min diff (checking logic)
-                         // If we had a perfect time match score (30-40) but duration is WAY off, punish harder.
-                         // But for long calls, 1 min might be drift. 
-                         // Let's rely on Relative Difference for longer calls?
-                         // For now, simple penalty is safe.
-                        totalScore -= 20 
                     }
+                    // Removed: Duration mismatch penalty (-20) since merged calls may have longer durations
                 }
             }
 
