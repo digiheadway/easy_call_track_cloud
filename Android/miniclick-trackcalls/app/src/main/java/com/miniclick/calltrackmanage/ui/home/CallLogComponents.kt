@@ -13,6 +13,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -34,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.miniclick.calltrackmanage.data.db.CallDataEntity
 import com.miniclick.calltrackmanage.data.db.MetadataSyncStatus
@@ -43,6 +45,7 @@ import com.miniclick.calltrackmanage.ui.utils.*
 import java.text.SimpleDateFormat
 import java.util.*
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CallLogList(
     logs: List<CallDataEntity>,
@@ -60,7 +63,8 @@ fun CallLogList(
     canExclude: Boolean = true,
     onCustomLookup: (String) -> Unit,
     lazyListState: LazyListState = rememberLazyListState(),
-    showDialButton: Boolean = true
+    showDialButton: Boolean = true,
+    onJumpClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     // Note Dialog States
@@ -159,14 +163,37 @@ fun CallLogList(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ManageSearch,
+                            Icons.Default.Search,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Custom Lookup", 
+                            modifier = Modifier.weight(1f), 
+                            textAlign = TextAlign.Start,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    
+                    // Re-attach Recordings Option
+                    TextButton(
+                        onClick = {
+                            longPressTarget?.let { viewModel.reAttachRecordingsForPhone(it.phoneNumber) }
+                            longPressTarget = null
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            Icons.Default.Refresh,
                             contentDescription = null,
                             modifier = Modifier.size(20.dp),
                             tint = MaterialTheme.colorScheme.primary
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "Custom Lookup", 
+                            "Re-scan Recordings", 
                             modifier = Modifier.weight(1f), 
                             textAlign = TextAlign.Start,
                             color = MaterialTheme.colorScheme.primary
@@ -269,11 +296,12 @@ fun CallLogList(
             contentPadding = PaddingValues(top = 8.dp, bottom = 240.dp)
         ) {
             groupedLogs.forEach { (header, headerLogs) ->
-                item {
+                stickyHeader {
                     DateSectionHeader(
                         dateLabel = header,
                         totalCalls = headerLogs.size,
-                        uniqueCalls = headerLogs.distinctBy { it.phoneNumber }.size
+                        uniqueCalls = headerLogs.distinctBy { it.phoneNumber }.size,
+                        onJumpClick = onJumpClick
                     )
                 }
                 items(headerLogs, key = { it.compositeId }) { log ->
@@ -494,7 +522,10 @@ fun CallLogItem(
                             text = personGroup?.name ?: log.contactName ?: cleanNumber(log.phoneNumber),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = if (isExpanded) 10 else 1,
+                            overflow = if (isExpanded) TextOverflow.Clip else TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                         if (log.reviewed) {
                             Icon(
@@ -506,55 +537,80 @@ fun CallLogItem(
                         }
                     }
 
-                    // Row 2: Duration, Notes (Optional, Multiline wrapping)
-                    FlowRow(
-                        modifier = Modifier.padding(top = 2.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        // Duration with Timer Icon
-                        if (log.duration > 0) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    Icons.Outlined.Timer,
-                                    null,
-                                    modifier = Modifier.size(12.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    text = formatDuration(log.duration),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    // Row 2: Duration, Notes, Labels
+                    if (isExpanded) {
+                        FlowRow(
+                            modifier = Modifier.padding(top = 2.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            DurationInfo(log.duration)
+                            
+                            val hasCallNote = !log.callNote.isNullOrEmpty()
+                            val hasPersonNote = personGroup?.personNote?.isNotEmpty() == true
+                            
+                            if (hasCallNote) {
+                                NoteChip(
+                                    note = log.callNote!!,
+                                    icon = Icons.AutoMirrored.Filled.StickyNote2,
+                                    onClick = onCallNoteClick,
+                                    maxLines = 10
                                 )
                             }
+                            
+                            if (hasPersonNote) {
+                                NoteChip(
+                                    note = personGroup!!.personNote,
+                                    icon = Icons.Default.Person,
+                                    onClick = onPersonNoteClick,
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    maxLines = 10
+                                )
+                            }
+                            
+                            if (!personGroup?.label.isNullOrEmpty()) {
+                                personGroup!!.label!!.split(",").map { it.trim() }.filter { it.isNotBlank() }.forEach { label ->
+                                    LabelChip(label = label, onClick = onLabelClick, maxLines = 10)
+                                }
+                            }
                         }
+                    } else {
+                        Row(
+                            modifier = Modifier.padding(top = 2.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            DurationInfo(log.duration)
 
-                        val hasCallNote = !log.callNote.isNullOrEmpty()
-                        val hasPersonNote = personGroup?.personNote?.isNotEmpty() == true
-                        
-                        if (hasCallNote) {
-                            NoteChip(
-                                note = log.callNote!!,
-                                icon = Icons.AutoMirrored.Filled.StickyNote2,
-                                onClick = onCallNoteClick
-                            )
-                        }
-                        
-                        if (hasPersonNote) {
-                            NoteChip(
-                                note = personGroup!!.personNote,
-                                icon = Icons.Default.Person,
-                                onClick = onPersonNoteClick,
-                                color = MaterialTheme.colorScheme.primaryContainer
-                            )
-                        }
-                        
-                        // Label Chip
-                        if (!personGroup?.label.isNullOrEmpty()) {
-                            personGroup!!.label!!.split(",").forEach { label ->
-                                if (label.isNotBlank()) {
-                                    LabelChip(label = label.trim(), onClick = onLabelClick)
+                            val hasCallNote = !log.callNote.isNullOrEmpty()
+                            val hasPersonNote = personGroup?.personNote?.isNotEmpty() == true
+                            
+                            if (hasCallNote) {
+                                NoteChip(
+                                    note = log.callNote!!,
+                                    icon = Icons.AutoMirrored.Filled.StickyNote2,
+                                    onClick = onCallNoteClick
+                                )
+                            }
+                            
+                            if (hasPersonNote) {
+                                NoteChip(
+                                    note = personGroup!!.personNote,
+                                    icon = Icons.Default.Person,
+                                    onClick = onPersonNoteClick,
+                                    color = MaterialTheme.colorScheme.primaryContainer
+                                )
+                            }
+                            
+                            if (!personGroup?.label.isNullOrEmpty()) {
+                                val labels = personGroup!!.label!!.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                                if (labels.isNotEmpty()) {
+                                    val displayLabel = if (labels.size > 1) {
+                                        "${labels.first()} +${labels.size - 1}"
+                                    } else {
+                                        labels.first()
+                                    }
+                                    LabelChip(label = displayLabel, onClick = onLabelClick)
                                 }
                             }
                         }
@@ -569,8 +625,8 @@ fun CallLogItem(
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Call Count Chip (like Persons screen) OR Status
-                    if (personGroup != null && personGroup.calls.size > 1) {
+                    // Always show Call Count Chip if personGroup exists
+                    if (personGroup != null) {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.primaryContainer,
@@ -597,15 +653,19 @@ fun CallLogItem(
                                 )
                             }
                         }
-                    } else {
-                        StatusIndicator(log.metadataSyncStatus, log.recordingSyncStatus) 
                     }
 
-                    Text(
-                        text = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(log.callDate)),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        StatusIndicator(log.metadataSyncStatus, log.recordingSyncStatus)
+                        Text(
+                            text = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(log.callDate)),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
             
@@ -621,7 +681,6 @@ fun CallLogItem(
 
             // Expanded Section
             if (isExpanded) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 
                 // Action Icons Row - Horizontal Scroll
                 Row(
@@ -772,60 +831,84 @@ fun CallLogItem(
 fun DateSectionHeader(
     dateLabel: String,
     totalCalls: Int,
-    uniqueCalls: Int
+    uniqueCalls: Int,
+    onJumpClick: () -> Unit = {}
 ) {
-    Row(
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .clickable { onJumpClick() }
     ) {
-        // Left: Date Label
-        Text(
-            text = dateLabel,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary
-        )
-        
-        // Right: Call Counts
         Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Call,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            // Left: Date Label + Calendar Chip
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "$totalCalls",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = dateLabel,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
                 )
+                Spacer(Modifier.width(8.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CalendarToday,
+                        contentDescription = "Jump to Date",
+                        modifier = Modifier
+                            .padding(4.dp)
+                            .size(14.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
             
+            // Right: Call Counts
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "$uniqueCalls",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Call,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "$totalCalls",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "$uniqueCalls",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
@@ -1012,23 +1095,6 @@ fun PlaybackControls(
     }
 }
 
-fun getDateHeader(dateMillis: Long): String {
-    val calendar = Calendar.getInstance()
-    val today = calendar.get(Calendar.DAY_OF_YEAR)
-    val year = calendar.get(Calendar.YEAR)
-    
-    calendar.timeInMillis = dateMillis
-    val logDay = calendar.get(Calendar.DAY_OF_YEAR)
-    val logYear = calendar.get(Calendar.YEAR)
-    
-    val diff = System.currentTimeMillis() - dateMillis
-    
-    return when {
-        year == logYear && today == logDay -> "Today"
-        year == logYear && today == logDay + 1 -> "Yesterday"
-        else -> SimpleDateFormat("MMM dd", Locale.getDefault()).format(Date(dateMillis))
-    }
-}
 
 @Composable
 fun InteractionRow(
@@ -1222,6 +1288,26 @@ fun InteractionRow(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun DurationInfo(duration: Long) {
+    if (duration > 0) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Outlined.Timer,
+                null,
+                modifier = Modifier.size(10.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.width(2.dp))
+            Text(
+                text = formatDuration(duration),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

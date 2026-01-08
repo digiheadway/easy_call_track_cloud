@@ -10,6 +10,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -34,8 +35,11 @@ import com.miniclick.calltrackmanage.data.db.CallDataEntity
 import com.miniclick.calltrackmanage.ui.common.*
 import com.miniclick.calltrackmanage.ui.utils.AudioPlayer
 import com.miniclick.calltrackmanage.ui.utils.cleanNumber
-import com.miniclick.calltrackmanage.ui.utils.getRelativeTime
+import com.miniclick.calltrackmanage.ui.utils.getDateHeader
+import java.text.SimpleDateFormat
+import java.util.*
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PersonsList(
     persons: List<PersonGroup>,
@@ -50,13 +54,15 @@ fun PersonsList(
     onAttachRecording: (CallDataEntity) -> Unit,
     canExclude: Boolean = true,
     onCustomLookup: (String) -> Unit,
-    lazyListState: androidx.compose.foundation.lazy.LazyListState = androidx.compose.foundation.lazy.rememberLazyListState()
+    lazyListState: androidx.compose.foundation.lazy.LazyListState = androidx.compose.foundation.lazy.rememberLazyListState(),
+    onJumpClick: () -> Unit = {}
 ) {
     var expandedNumber by remember { mutableStateOf<String?>(null) }
-    var excludeTarget by remember { mutableStateOf<PersonGroup?>(null) }
-    var longPressTarget by remember { mutableStateOf<PersonGroup?>(null) }
+    val uiState by viewModel.uiState.collectAsState()
     
-    // Note Dialog States
+    // State variables
+    var longPressTarget by remember { mutableStateOf<PersonGroup?>(null) }
+    var excludeTarget by remember { mutableStateOf<PersonGroup?>(null) }
     var personNoteTarget by remember { mutableStateOf<PersonGroup?>(null) }
     var callNoteTarget by remember { mutableStateOf<CallDataEntity?>(null) }
     var labelTarget by remember { mutableStateOf<PersonGroup?>(null) }
@@ -153,14 +159,37 @@ fun PersonsList(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ManageSearch,
+                            Icons.Default.Search,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Custom Lookup", 
+                            modifier = Modifier.weight(1f), 
+                            textAlign = TextAlign.Start,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    // Re-attach Recordings Option
+                    TextButton(
+                        onClick = {
+                            longPressTarget?.let { viewModel.reAttachRecordingsForPhone(it.number) }
+                            longPressTarget = null
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            Icons.Default.Refresh,
                             contentDescription = null,
                             modifier = Modifier.size(20.dp),
                             tint = MaterialTheme.colorScheme.primary
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "Custom Lookup", 
+                            "Re-scan Recordings", 
                             modifier = Modifier.weight(1f), 
                             textAlign = TextAlign.Start,
                             color = MaterialTheme.colorScheme.primary
@@ -249,86 +278,104 @@ fun PersonsList(
     }
     
     Box(modifier = Modifier.fillMaxSize()) {
+        // Group persons by last call date
+        val dateGroupedPersons: Map<String, List<PersonGroup>> = remember(persons) {
+            persons.groupBy { getDateHeader(it.lastCallDate) }
+        }
+
         LazyColumn(
             state = lazyListState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(top = 8.dp, bottom = 240.dp)
         ) {
-            items(persons, key = { it.number }) { person ->
-                val isExpanded = expandedNumber == person.number
-                val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            dateGroupedPersons.forEach { (header, headerPersons) ->
+                stickyHeader {
+                    PersonDateSectionHeader(
+                        dateLabel = header,
+                        uniquePersons = headerPersons.size,
+                        totalCalls = headerPersons.sumOf { it.calls.size },
+                        onJumpClick = onJumpClick
+                    )
+                }
+                items(headerPersons, key = { it.number }) { p ->
+                    val isExpanded = expandedNumber == p.number
+                    val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
 
-                PersonCard(
-                    person = person,
-                    isExpanded = isExpanded,
-                    recordings = recordings,
-                    audioPlayer = audioPlayer,
-                    viewModel = viewModel,
-                    onCardClick = {
-                        expandedNumber = if (isExpanded) null else person.number
-                    },
-                    onLongClick = {
-                        longPressTarget = person
-                    },
-                    onCallClick = {
-                        viewModel.initiateCall(person.number)
-                    },
-                    onCopyClick = {
-                        val cleaned = cleanNumber(person.number)
-                        val clip = android.content.ClipData.newPlainText("Phone Number", cleaned)
-                        clipboardManager.setPrimaryClip(clip)
-                        android.widget.Toast.makeText(context, "Copied: $cleaned", android.widget.Toast.LENGTH_SHORT).show()
-                    },
-                    onWhatsAppClick = {
-                        viewModel.onWhatsAppClick(person.number)
-                    },
-                    onPersonNoteClick = { personNoteTarget = person },
-                    onCallNoteClick = { callNoteTarget = it },
-                    onAddContactClick = {
-                        try {
-                            val cleaned = cleanNumber(person.number)
-                            val intent = Intent(Intent.ACTION_INSERT_OR_EDIT).apply {
-                                type = android.provider.ContactsContract.Contacts.CONTENT_ITEM_TYPE
-                                putExtra(android.provider.ContactsContract.Intents.Insert.PHONE, cleaned)
+                    PersonCard(
+                        person = p,
+                        isExpanded = isExpanded,
+                        recordings = recordings,
+                        audioPlayer = audioPlayer,
+                        viewModel = viewModel,
+                        onCardClick = {
+                            expandedNumber = if (isExpanded) null else p.number
+                        },
+                        onLongClick = {
+                            longPressTarget = p
+                        },
+                        onCallClick = {
+                            viewModel.initiateCall(p.number)
+                        },
+                        onCopyClick = {
+                            val cleaned = cleanNumber(p.number)
+                            val clip = android.content.ClipData.newPlainText("Phone Number", cleaned)
+                            clipboardManager.setPrimaryClip(clip)
+                            android.widget.Toast.makeText(context, "Copied: $cleaned", android.widget.Toast.LENGTH_SHORT).show()
+                        },
+                        onWhatsAppClick = {
+                            viewModel.onWhatsAppClick(p.number)
+                        },
+                        onPersonNoteClick = { personNoteTarget = p },
+                        onCallNoteClick = { callNoteTarget = it },
+                        onAddContactClick = {
+                            try {
+                                val cleaned = cleanNumber(p.number)
+                                val intent = Intent(Intent.ACTION_INSERT_OR_EDIT).apply {
+                                    type = android.provider.ContactsContract.Contacts.CONTENT_ITEM_TYPE
+                                    putExtra(android.provider.ContactsContract.Intents.Insert.PHONE, cleaned)
+                                }
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
                             }
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    },
-                    onAddToCrmClick = {
-                        try {
-                            val intent = Intent("com.example.salescrm.ACTION_ADD_LEAD").apply {
-                                putExtra("lead_name", person.name ?: "")
-                                putExtra("lead_phone", person.number)
+                        },
+                        onAddToCrmClick = {
+                            try {
+                                val intent = Intent("com.example.salescrm.ACTION_ADD_LEAD").apply {
+                                    putExtra("lead_name", p.name ?: "")
+                                    putExtra("lead_phone", p.number)
+                                }
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                context.startActivity(intent)
+                            } catch (e: android.content.ActivityNotFoundException) {
+                                android.widget.Toast.makeText(context, "SalesCRM app not installed", android.widget.Toast.LENGTH_SHORT).show()
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                android.widget.Toast.makeText(context, "Failed to open CRM", android.widget.Toast.LENGTH_SHORT).show()
                             }
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            context.startActivity(intent)
-                        } catch (e: android.content.ActivityNotFoundException) {
-                            android.widget.Toast.makeText(context, "SalesCRM app not installed", android.widget.Toast.LENGTH_SHORT).show()
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                            android.widget.Toast.makeText(context, "Failed to open CRM", android.widget.Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    onViewMoreClick = { onViewMoreClick(person) },
-                    onLabelClick = { labelTarget = person },
-                    onAttachRecording = onAttachRecording,
-                    onMarkAllReviewed = { viewModel.markAllCallsReviewed(person.number) }
-                )
+                        },
+                        onViewMoreClick = { onViewMoreClick(p) },
+                        onLabelClick = { labelTarget = p },
+                        onAttachRecording = onAttachRecording,
+                        onMarkAllReviewed = { viewModel.markAllCallsReviewed(p.number) }
+                    )
+                }
             }
         }
 
+        val mapSize: Int = dateGroupedPersons.size
+        val listSize: Int = persons.size
+        val totalCount = listSize + mapSize
         VerticalScrollbar(
             lazyListState = lazyListState,
-            itemCount = persons.size,
+            itemCount = totalCount,
             modifier = Modifier.align(Alignment.CenterEnd)
         )
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun PersonCard(
     person: PersonGroup,
@@ -425,8 +472,8 @@ fun PersonCard(
                                 text = person.name ?: cleanNumber(person.number),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                maxLines = if (isExpanded) 10 else 1,
+                                overflow = if (isExpanded) TextOverflow.Clip else TextOverflow.Ellipsis
                             )
                             if (allReviewed) {
                                 Icon(
@@ -467,18 +514,60 @@ fun PersonCard(
                         }
                     }
                     
-                    if (!person.personNote.isNullOrEmpty()) {
-                        NoteChip(
-                            note = person.personNote,
-                            icon = Icons.AutoMirrored.Filled.StickyNote2,
-                            onClick = onPersonNoteClick,
-                            color = MaterialTheme.colorScheme.primaryContainer
-                        )
-                    }
+                    // Note and Labels row
+                    val hasPersonNote = !person.personNote.isNullOrEmpty()
+                    val hasLabel = !person.label.isNullOrEmpty()
+                    if (hasPersonNote || hasLabel) {
+                        if (isExpanded) {
+                            FlowRow(
+                                modifier = Modifier.padding(top = 2.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                if (hasPersonNote) {
+                                    NoteChip(
+                                        note = person.personNote,
+                                        icon = Icons.AutoMirrored.Filled.StickyNote2,
+                                        onClick = onPersonNoteClick,
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        maxLines = 10
+                                    )
+                                }
 
-                    if (!person.label.isNullOrEmpty()) {
-                        Spacer(Modifier.height(4.dp))
-                        LabelChip(label = person.label, onClick = onLabelClick)
+                                if (hasLabel) {
+                                    person.label!!.split(",").map { it.trim() }.filter { it.isNotBlank() }.forEach { label ->
+                                        LabelChip(label = label, onClick = onLabelClick, maxLines = 10)
+                                    }
+                                }
+                            }
+                        } else {
+                            Row(
+                                modifier = Modifier.padding(top = 2.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                if (hasPersonNote) {
+                                    NoteChip(
+                                        note = person.personNote,
+                                        icon = Icons.AutoMirrored.Filled.StickyNote2,
+                                        onClick = onPersonNoteClick,
+                                        color = MaterialTheme.colorScheme.primaryContainer
+                                    )
+                                }
+
+                                if (hasLabel) {
+                                    val labels = person.label!!.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                                    if (labels.isNotEmpty()) {
+                                        val displayLabel = if (labels.size > 1) {
+                                            "${labels.first()} +${labels.size - 1}"
+                                        } else {
+                                            labels.first()
+                                        }
+                                        LabelChip(label = displayLabel, onClick = onLabelClick)
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     Spacer(Modifier.height(4.dp))
@@ -496,7 +585,7 @@ fun PersonCard(
                         }
                         
                         Text(
-                            text = getRelativeTime(person.lastCallDate),
+                            text = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(person.lastCallDate)),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -506,7 +595,6 @@ fun PersonCard(
 
             // Expanded Section
             if (isExpanded) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 
                 // Action Icons Row
                 Row(
@@ -607,5 +695,94 @@ fun CallTypeSmallBadge(icon: ImageVector, count: Int, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         Icon(icon, null, modifier = Modifier.size(10.dp), tint = color)
         Text(count.toString(), style = MaterialTheme.typography.labelSmall, color = color)
+    }
+}
+
+// Helper function to get date header for persons (based on lastCallDate)
+
+@Composable
+fun PersonDateSectionHeader(
+    dateLabel: String,
+    uniquePersons: Int,
+    totalCalls: Int,
+    onJumpClick: () -> Unit = {}
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onJumpClick() }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Left: Date Label + Calendar Chip
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = dateLabel,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.width(8.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CalendarToday,
+                        contentDescription = "Jump to Date",
+                        modifier = Modifier
+                            .padding(4.dp)
+                            .size(14.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            
+            // Right: Person and Call Counts
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "$uniquePersons",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Call,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "$totalCalls",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
     }
 }

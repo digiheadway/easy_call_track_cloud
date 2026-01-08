@@ -92,3 +92,19 @@ fun getFileNameFromUri(context: Context, uri: Uri): String? {
     }
     return result
 }
+
+fun getDateHeader(dateMillis: Long): String {
+    val calendar = Calendar.getInstance()
+    val today = calendar.get(Calendar.DAY_OF_YEAR)
+    val year = calendar.get(Calendar.YEAR)
+    
+    calendar.timeInMillis = dateMillis
+    val logDay = calendar.get(Calendar.DAY_OF_YEAR)
+    val logYear = calendar.get(Calendar.YEAR)
+    
+    return when {
+        year == logYear && today == logDay -> "Today"
+        year == logYear && today == logDay + 1 -> "Yesterday"
+        else -> SimpleDateFormat("MMM dd", Locale.getDefault()).format(Date(dateMillis))
+    }
+}

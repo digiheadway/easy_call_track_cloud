@@ -97,7 +97,6 @@ class SyncService : Service() {
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
-            .setSilent(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
     }

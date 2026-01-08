@@ -29,7 +29,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _isSessionOnboardingDismissed = MutableStateFlow(false)
     val isSessionOnboardingDismissed: StateFlow<Boolean> = _isSessionOnboardingDismissed.asStateFlow()
 
-    private val _selectedTab = MutableStateFlow(AppTab.valueOf(settingsRepository.getSelectedTab()))
+    private val _selectedTab = MutableStateFlow(
+        try {
+            AppTab.valueOf(settingsRepository.getSelectedTab())
+        } catch (e: Exception) {
+            AppTab.CALLS
+        }
+    )
     val selectedTab: StateFlow<AppTab> = _selectedTab.asStateFlow()
     // Observe onboarding completion status
     val onboardingCompleted: StateFlow<Boolean> = settingsRepository.getOnboardingCompletedFlow()

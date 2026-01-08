@@ -1,5 +1,6 @@
 package com.miniclick.calltrackmanage.ui.common
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -13,11 +14,13 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import com.miniclick.calltrackmanage.ui.home.*
@@ -118,77 +121,53 @@ fun CallFilterModal(
                 }
             }
 
-            // Label Filter
+            // Labels Header
             if (availableLabels.isNotEmpty() || uiState.labelFilter.isNotEmpty()) {
+                val isLabelApplied = uiState.labelFilter.isNotEmpty()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Label,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "Filter by Labels",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    if (isLabelApplied) {
+                        TextButton(
+                            onClick = { viewModel.setLabelFilter("") },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Text("Clear", style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+                }
+
                 FilterSection(
-                    title = "Label",
+                    title = "",
                     icon = Icons.AutoMirrored.Filled.Label,
                     currentValue = uiState.labelFilter.ifEmpty { "All" },
                     options = listOf("All") + availableLabels,
                     onSelect = { viewModel.setLabelFilter(if (it == "All") "" else it ) },
-                    onClear = { viewModel.setLabelFilter("") }
+                    onClear = { viewModel.setLabelFilter("") },
+                    showTitle = false
                 )
             }
 
-            // Connection Filter
-            FilterSection(
-                title = "Connection",
-                icon = Icons.Default.Link,
-                currentValue = uiState.connectedFilter.name,
-                options = ConnectedFilter.entries.map { it.name },
-                onSelect = { viewModel.setConnectedFilter(ConnectedFilter.valueOf(it)) },
-                onClear = { viewModel.setConnectedFilter(ConnectedFilter.ALL) }
-            )
-
-            // Call Note Filter
-            FilterSection(
-                title = "Call Note",
-                icon = Icons.AutoMirrored.Filled.StickyNote2,
-                currentValue = uiState.notesFilter.name,
-                options = NotesFilter.entries.map { it.name },
-                onSelect = { viewModel.setNotesFilter(NotesFilter.valueOf(it)) },
-                onClear = { viewModel.setNotesFilter(NotesFilter.ALL) }
-            )
-
-            // Person Note Filter
-            FilterSection(
-                title = "Person Note",
-                icon = Icons.Default.Person,
-                currentValue = uiState.personNotesFilter.name,
-                options = PersonNotesFilter.entries.map { it.name },
-                onSelect = { viewModel.setPersonNotesFilter(PersonNotesFilter.valueOf(it)) },
-                onClear = { viewModel.setPersonNotesFilter(PersonNotesFilter.ALL) }
-            )
-
-            // Contacts Filter
-            FilterSection(
-                title = "Contacts",
-                icon = Icons.Default.Contacts,
-                currentValue = uiState.contactsFilter.name,
-                options = ContactsFilter.entries.map { it.name },
-                onSelect = { viewModel.setContactsFilter(ContactsFilter.valueOf(it)) },
-                onClear = { viewModel.setContactsFilter(ContactsFilter.ALL) }
-            )
-
-            // Reviewed Filter
-            FilterSection(
-                title = "Reviewed Status",
-                icon = Icons.Default.CheckCircle,
-                currentValue = uiState.reviewedFilter.name,
-                options = ReviewedFilter.entries.map { it.name },
-                onSelect = { viewModel.setReviewedFilter(ReviewedFilter.valueOf(it)) },
-                onClear = { viewModel.setReviewedFilter(ReviewedFilter.ALL) }
-            )
-
-            // Custom Name Filter
-            FilterSection(
-                title = "Custom Name",
-                icon = Icons.Default.Badge,
-                currentValue = uiState.customNameFilter.name,
-                options = CustomNameFilter.entries.map { it.name },
-                onSelect = { viewModel.setCustomNameFilter(CustomNameFilter.valueOf(it)) },
-                onClear = { viewModel.setCustomNameFilter(CustomNameFilter.ALL) }
-            )
+            // Boolean Toggles Table
+            ToggleFilterTable(uiState = uiState, viewModel = viewModel)
 
             if (uiState.viewMode == ViewMode.PERSONS) {
                 FilterSection(
@@ -210,54 +189,6 @@ fun CallFilterModal(
                 )
             }
 
-            // Sorting Section
-            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-            Text(
-                text = "Sorting",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            if (uiState.viewMode == ViewMode.CALLS) {
-                FilterSection(
-                    title = "Sort By",
-                    icon = Icons.Default.Sort,
-                    currentValue = uiState.callSortBy.name,
-                    options = CallSortBy.entries.map { it.name },
-                    onSelect = { viewModel.setCallSortBy(CallSortBy.valueOf(it)) },
-                    onClear = { viewModel.setCallSortBy(CallSortBy.DATE) }
-                )
-                
-                FilterSection(
-                    title = "Order",
-                    icon = if (uiState.callSortDirection == SortDirection.DESCENDING) Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
-                    currentValue = uiState.callSortDirection.name,
-                    options = SortDirection.entries.map { it.name },
-                    onSelect = { viewModel.toggleCallSortDirection() },
-                    onClear = {}
-                )
-            } else {
-                FilterSection(
-                    title = "Sort By",
-                    icon = Icons.Default.Sort,
-                    currentValue = uiState.personSortBy.name,
-                    options = PersonSortBy.entries.map { it.name },
-                    onSelect = { viewModel.setPersonSortBy(PersonSortBy.valueOf(it)) },
-                    onClear = { viewModel.setPersonSortBy(PersonSortBy.LAST_CALL) }
-                )
-                
-                FilterSection(
-                    title = "Order",
-                    icon = if (uiState.personSortDirection == SortDirection.DESCENDING) Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
-                    currentValue = uiState.personSortDirection.name,
-                    options = SortDirection.entries.map { it.name },
-                    onSelect = { viewModel.togglePersonSortDirection() },
-                    onClear = {}
-                )
-            }
-            
-            Spacer(Modifier.height(16.dp))
             Button(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth(),
@@ -265,6 +196,8 @@ fun CallFilterModal(
             ) {
                 Text("Show Results", modifier = Modifier.padding(vertical = 4.dp))
             }
+
+            Spacer(Modifier.height(32.dp))
         }
     }
 }
@@ -273,6 +206,7 @@ fun CallFilterModal(
 fun CallTypeTabs(
     selectedFilter: CallTabFilter,
     onFilterSelected: (CallTabFilter) -> Unit,
+    onFilterLongClick: (CallTabFilter) -> Unit = {},
     counts: Map<CallTabFilter, Int> = emptyMap()
 ) {
     ScrollableTabRow(
@@ -291,16 +225,19 @@ fun CallTypeTabs(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.primary
     ) {
-        CallTabFilter.entries.forEach { filter ->
+        // Filter out IGNORED - it will be accessible via three-dot menu toggle
+        CallTabFilter.entries.filter { it != CallTabFilter.IGNORED }.forEach { filter ->
             val count = counts[filter] ?: 0
             val isSelected = selectedFilter == filter
             
             val icon = when (filter) {
                 CallTabFilter.ALL -> Icons.Default.AllInclusive
-                CallTabFilter.ATTENDED -> Icons.Default.CallReceived
-                CallTabFilter.NOT_ATTENDED -> Icons.Default.CallMissed
-                CallTabFilter.RESPONDED -> Icons.Default.CallMade
-                CallTabFilter.NOT_RESPONDED -> Icons.AutoMirrored.Filled.CallMissedOutgoing
+                CallTabFilter.ANSWERED -> Icons.Default.CallReceived
+                CallTabFilter.NOT_ANSWERED -> Icons.Default.CallMissed
+                CallTabFilter.OUTGOING -> Icons.Default.CallMade
+                CallTabFilter.OUTGOING_NOT_CONNECTED -> Icons.AutoMirrored.Filled.CallMissedOutgoing
+                CallTabFilter.NEVER_CONNECTED -> Icons.Default.LinkOff
+                CallTabFilter.MAY_FAILED -> Icons.Default.Warning
                 CallTabFilter.IGNORED -> Icons.Default.Block
             }
 
@@ -309,8 +246,15 @@ fun CallTypeTabs(
                 onClick = { onFilterSelected(filter) },
                 text = {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(vertical = 8.dp)
+                        modifier = Modifier
+                            .pointerInput(filter) {
+                                detectTapGestures(
+                                    onLongPress = { onFilterLongClick(filter) },
+                                    onTap = { onFilterSelected(filter) }
+                                )
+                            }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = icon,
@@ -320,7 +264,12 @@ fun CallTypeTabs(
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            text = filter.name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() },
+                            text = when(filter) {
+                                CallTabFilter.NEVER_CONNECTED -> "Never Connected"
+                                CallTabFilter.MAY_FAILED -> "Failed Calls"
+                                CallTabFilter.OUTGOING_NOT_CONNECTED -> "Outgoing Not Connected"
+                                else -> filter.name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
+                            },
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
@@ -357,6 +306,7 @@ fun CallTypeTabs(
 fun PersonTypeTabs(
     selectedFilter: PersonTabFilter,
     onFilterSelected: (PersonTabFilter) -> Unit,
+    onFilterLongClick: (PersonTabFilter) -> Unit = {},
     counts: Map<PersonTabFilter, Int> = emptyMap()
 ) {
     ScrollableTabRow(
@@ -375,17 +325,20 @@ fun PersonTypeTabs(
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.primary
     ) {
-        PersonTabFilter.entries.forEach { filter ->
+        // Filter out IGNORED - it will be accessible via three-dot menu toggle
+        PersonTabFilter.entries.filter { it != PersonTabFilter.IGNORED }.forEach { filter ->
             val count = counts[filter] ?: 0
             val isSelected = selectedFilter == filter
             
             val icon = when (filter) {
                 PersonTabFilter.ALL -> Icons.Default.Group
-                PersonTabFilter.ATTENDED -> Icons.Default.RecordVoiceOver
-                PersonTabFilter.RESPONDED -> Icons.Default.Quickreply
-                PersonTabFilter.NOT_ATTENDED -> Icons.Default.PhoneCallback
-                PersonTabFilter.NOT_RESPONDED -> Icons.Default.PhoneForwarded
-                PersonTabFilter.IGNORED -> Icons.Default.PersonOff
+                PersonTabFilter.ANSWERED -> Icons.Default.CallReceived
+                PersonTabFilter.NOT_ANSWERED -> Icons.Default.CallMissed
+                PersonTabFilter.OUTGOING -> Icons.Default.CallMade
+                PersonTabFilter.OUTGOING_NOT_CONNECTED -> Icons.AutoMirrored.Filled.CallMissedOutgoing
+                PersonTabFilter.NEVER_CONNECTED -> Icons.Default.LinkOff
+                PersonTabFilter.MAY_FAILED -> Icons.Default.Warning
+                PersonTabFilter.IGNORED -> Icons.Default.Block
             }
 
             Tab(
@@ -393,8 +346,15 @@ fun PersonTypeTabs(
                 onClick = { onFilterSelected(filter) },
                 text = {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(vertical = 8.dp)
+                        modifier = Modifier
+                            .pointerInput(filter) {
+                                detectTapGestures(
+                                    onLongPress = { onFilterLongClick(filter) },
+                                    onTap = { onFilterSelected(filter) }
+                                )
+                            }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = icon,
@@ -404,7 +364,12 @@ fun PersonTypeTabs(
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            text = filter.name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() },
+                            text = when(filter) {
+                                PersonTabFilter.NEVER_CONNECTED -> "Never Connected"
+                                PersonTabFilter.MAY_FAILED -> "Failed Calls"
+                                PersonTabFilter.OUTGOING_NOT_CONNECTED -> "Outgoing Not Connected"
+                                else -> filter.name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
+                            },
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
@@ -437,6 +402,136 @@ fun PersonTypeTabs(
     }
 }
 
+@Composable
+fun ToggleFilterTable(
+    uiState: HomeUiState,
+    viewModel: HomeViewModel
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        // Table Header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Property",
+                modifier = Modifier.weight(1.5f),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
+            )
+            listOf("Not Applied (Default)", "True", "False").forEach { label ->
+                Text(
+                    text = label,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = androidx.compose.ui.unit.TextUnit.Unspecified
+                )
+            }
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+
+        // is Reviewed
+        ToggleFilterRow(
+            label = "is Reviewed",
+            currentValue = uiState.reviewedFilter.name,
+            onSelect = { viewModel.setReviewedFilter(ReviewedFilter.valueOf(it)) },
+            options = Triple(ReviewedFilter.ALL.name, ReviewedFilter.REVIEWED.name, ReviewedFilter.NOT_REVIEWED.name)
+        )
+
+        // Connected
+        ToggleFilterRow(
+            label = "Connected",
+            currentValue = uiState.connectedFilter.name,
+            onSelect = { viewModel.setConnectedFilter(ConnectedFilter.valueOf(it)) },
+            options = Triple(ConnectedFilter.ALL.name, ConnectedFilter.CONNECTED.name, ConnectedFilter.NOT_CONNECTED.name)
+        )
+
+        // Call Note
+        ToggleFilterRow(
+            label = "Call Note",
+            currentValue = uiState.notesFilter.name,
+            onSelect = { viewModel.setNotesFilter(NotesFilter.valueOf(it)) },
+            options = Triple(NotesFilter.ALL.name, NotesFilter.WITH_NOTE.name, NotesFilter.WITHOUT_NOTE.name)
+        )
+
+        // Person Note
+        ToggleFilterRow(
+            label = "Person Note",
+            currentValue = uiState.personNotesFilter.name,
+            onSelect = { viewModel.setPersonNotesFilter(PersonNotesFilter.valueOf(it)) },
+            options = Triple(PersonNotesFilter.ALL.name, PersonNotesFilter.WITH_NOTE.name, PersonNotesFilter.WITHOUT_NOTE.name)
+        )
+
+        // In My Phonebook
+        ToggleFilterRow(
+            label = "In My Phonebook",
+            currentValue = uiState.contactsFilter.name,
+            onSelect = { viewModel.setContactsFilter(ContactsFilter.valueOf(it)) },
+            options = Triple(ContactsFilter.ALL.name, ContactsFilter.IN_CONTACTS.name, ContactsFilter.NOT_IN_CONTACTS.name)
+        )
+
+        // Custom Name Added
+        ToggleFilterRow(
+            label = "Custom Name Added",
+            currentValue = uiState.customNameFilter.name,
+            onSelect = { viewModel.setCustomNameFilter(CustomNameFilter.valueOf(it)) },
+            options = Triple(CustomNameFilter.ALL.name, CustomNameFilter.WITH_NAME.name, CustomNameFilter.WITHOUT_NAME.name)
+        )
+    }
+}
+
+@Composable
+fun ToggleFilterRow(
+    label: String,
+    currentValue: String,
+    onSelect: (String) -> Unit,
+    options: Triple<String, String, String>
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.weight(1.5f),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium
+        )
+        
+        // Options: Not Applied, True, False
+        listOf(options.first, options.second, options.third).forEach { option ->
+            val isSelected = currentValue == option
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                RadioButton(
+                    selected = isSelected,
+                    onClick = { onSelect(option) },
+                    colors = RadioButtonDefaults.colors(
+                        selectedColor = MaterialTheme.colorScheme.primary,
+                        unselectedColor = MaterialTheme.colorScheme.outline
+                    )
+                )
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun FilterSection(
@@ -445,11 +540,13 @@ private fun FilterSection(
     currentValue: String,
     options: List<String>,
     onSelect: (String) -> Unit,
-    onClear: () -> Unit
+    onClear: () -> Unit,
+    showTitle: Boolean = true
 ) {
     val isFilterApplied = currentValue != "ALL" && currentValue != "All"
     
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    if (showTitle) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -481,6 +578,7 @@ private fun FilterSection(
                 }
             }
         }
+    }
         
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
@@ -509,8 +607,8 @@ private fun FilterSection(
                     "DESCENDING" -> "Descending"
                     "REVIEWED" -> "Reviewed"
                     "NOT_REVIEWED" -> "Not Reviewed"
-                    "ATTENDED" -> "Attended"
-                    "RESPONDED" -> "Responded"
+                    "ANSWERED" -> "Answered"
+                    "OUTGOING" -> "Outgoing"
                     else -> option.lowercase().replaceFirstChar { it.uppercase() }.replace("_", " ")
                 }
                 

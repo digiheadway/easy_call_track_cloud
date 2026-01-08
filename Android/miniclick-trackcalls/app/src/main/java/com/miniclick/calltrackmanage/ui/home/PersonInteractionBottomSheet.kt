@@ -39,7 +39,8 @@ fun PersonInteractionBottomSheet(
     viewModel: HomeViewModel,
     onDismiss: () -> Unit,
     onAttachRecording: (CallDataEntity) -> Unit,
-    onCustomLookup: (String) -> Unit
+    onCustomLookup: (String) -> Unit,
+    customLookupEnabled: Boolean = false
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -122,21 +123,44 @@ fun PersonInteractionBottomSheet(
                     .padding(bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Avatar with optional Custom Lookup overlay
                 Box(
                     modifier = Modifier
-                        .size(56.dp)
+                        .size(48.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .then(
+                            if (customLookupEnabled) Modifier.clickable { onCustomLookup(person.number) }
+                            else Modifier
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
-                    val initial = (person.name?.firstOrNull() ?: person.number.lastOrNull() ?: '?')
-                        .uppercaseChar()
-                    Text(
-                        text = initial.toString(),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                    if (customLookupEnabled) {
+                        // Show search icon overlay when custom lookup is enabled
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Custom Lookup",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    } else {
+                        // Show initial letter when custom lookup is disabled
+                        val initial = (person.name?.firstOrNull() ?: person.number.lastOrNull() ?: '?')
+                            .uppercaseChar()
+                        Text(
+                            text = initial.toString(),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
                 }
                 
                 Spacer(modifier = Modifier.width(16.dp))
@@ -162,65 +186,45 @@ fun PersonInteractionBottomSheet(
                         )
                     }
                 }
-
-                IconButton(onClick = { onCustomLookup(person.number) }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ManageSearch,
-                        contentDescription = "Custom Lookup",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
             }
 
             // Sub-header for Label and Person Note
-            if (!person.label.isNullOrEmpty() || !person.personNote.isNullOrEmpty()) {
-                FlowRow(
-                    modifier = Modifier.padding(bottom = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (!person.label.isNullOrEmpty()) {
-                        LabelChip(label = person.label, onClick = { showLabelDialog = true })
-                    } else {
-                         AssistChip(
-                            onClick = { showLabelDialog = true },
-                            label = { Text("Add Label", style = MaterialTheme.typography.labelSmall) },
-                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.Label, null, modifier = Modifier.size(14.dp)) }
-                        )
-                    }
-
-                    if (!person.personNote.isNullOrEmpty()) {
-                        AssistChip(
-                            onClick = { showPersonNoteDialog = true },
-                            label = { Text(person.personNote, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.StickyNote2, null, modifier = Modifier.size(14.dp)) },
-                            colors = AssistChipDefaults.assistChipColors(
-                                labelColor = MaterialTheme.colorScheme.primary,
-                                leadingIconContentColor = MaterialTheme.colorScheme.primary
-                            )
-                        )
-                    } else {
-                        AssistChip(
-                            onClick = { showPersonNoteDialog = true },
-                            label = { Text("Add Person Note", style = MaterialTheme.typography.labelSmall) },
-                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.NoteAdd, null, modifier = Modifier.size(14.dp)) }
-                        )
-                    }
-                }
-            } else {
-                 Row(
-                    modifier = Modifier.padding(bottom = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    AssistChip(
-                        onClick = { showLabelDialog = true },
-                        label = { Text("Add Label", style = MaterialTheme.typography.labelSmall) },
-                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.Label, null, modifier = Modifier.size(14.dp)) }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Label Section
+                if (!person.label.isNullOrEmpty()) {
+                    LabelChip(
+                        label = person.label, 
+                        onClick = { showLabelDialog = true }
                     )
-                    AssistChip(
+                } else {
+                    NoteChip(
+                        note = "Add Label",
+                        icon = Icons.AutoMirrored.Filled.Label,
+                        onClick = { showLabelDialog = true },
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
+                }
+
+                // Person Note Section
+                if (!person.personNote.isNullOrEmpty()) {
+                    NoteChip(
+                        note = person.personNote,
+                        icon = Icons.AutoMirrored.Filled.StickyNote2,
                         onClick = { showPersonNoteDialog = true },
-                        label = { Text("Add Person Note", style = MaterialTheme.typography.labelSmall) },
-                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.NoteAdd, null, modifier = Modifier.size(14.dp)) }
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    )
+                } else {
+                    NoteChip(
+                        note = "Add Person Note",
+                        icon = Icons.AutoMirrored.Filled.NoteAdd,
+                        onClick = { showPersonNoteDialog = true },
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                     )
                 }
             }

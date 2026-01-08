@@ -82,6 +82,13 @@ class CallDataRepository private constructor(private val context: Context) {
     suspend fun getCallByCompositeId(compositeId: String): CallDataEntity? = withContext(Dispatchers.IO) {
         callDataDao.getByCompositeId(compositeId)
     }
+
+    /**
+     * Get all calls for a specific number.
+     */
+    suspend fun getLogsForPhone(phoneNumber: String): List<CallDataEntity> = withContext(Dispatchers.IO) {
+        callDataDao.getCallsForNumber(phoneNumber)
+    }
     
     /**
      * Get calls missing local recording paths (to trigger a find)

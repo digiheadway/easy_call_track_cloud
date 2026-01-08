@@ -53,7 +53,6 @@ function trackView($uniqueId, $landing) {
             (:uid, 1, :landing, :today, :now, :now)
             ON DUPLICATE KEY UPDATE 
             views = views + 1,
-            landingpage = :landing,
             updated_at = :now";
 
     try {
@@ -106,7 +105,6 @@ function trackClick($uniqueId, $landing) {
             ON DUPLICATE KEY UPDATE 
             clicks = clicks + 1,
             last_click = :now,
-            landingpage = :landing,
             updated_at = :now";
 
     try {
@@ -131,9 +129,10 @@ function trackClick($uniqueId, $landing) {
 /**
  * Tracks an installation event
  * @param string $uniqueId The campaign/ref ID
+ * @param string $landing The landing page ID/name
  * @param bool $isNewInstall True if first open, False if already installed (re-open)
  */
-function trackInstall($uniqueId, $isNewInstall) {
+function trackInstall($uniqueId, $landing, $isNewInstall) {
     global $pdo;
     if (!$pdo || empty($uniqueId)) return;
 
@@ -147,9 +146,9 @@ function trackInstall($uniqueId, $isNewInstall) {
     // Upsert logic: Insert (with 0 clicks if created here) or Update
     // Note: Usually a record exists from the Click event, but we handle the edge case where it doesn't
     $sql = "INSERT INTO tracking_stats 
-            (uniqueId, $counterField, last_install, date, created_at, updated_at) 
+            (uniqueId, landingpage, $counterField, last_install, date, created_at, updated_at) 
             VALUES 
-            (:uid, 1, :now, :today, :now, :now)
+            (:uid, :landing, 1, :now, :today, :now, :now)
             ON DUPLICATE KEY UPDATE 
             $counterField = $counterField + 1,
             last_install = :now,
@@ -159,6 +158,7 @@ function trackInstall($uniqueId, $isNewInstall) {
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             ':uid' => $uniqueId,
+            ':landing' => $landing ?: 'unknown',
             ':now' => $now,
             ':today' => $today
         ]);

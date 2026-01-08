@@ -24,18 +24,22 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * Bottom Sheet Modal for Tracking Settings.
+ * Full screen for Tracking Settings.
  * Displays all tracking-related configuration options.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TrackingSettingsModal(
+fun TrackingSettingsScreen(
     uiState: SettingsUiState,
     viewModel: SettingsViewModel,
-    onDismiss: () -> Unit
+    onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    
+    // Handle back button
+    androidx.activity.compose.BackHandler {
+        onBack()
+    }
     
     // Storage permission state
     val hasStoragePermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
@@ -88,43 +92,36 @@ fun TrackingSettingsModal(
             icon = Icons.Default.Warning,
             onConfirm = {
                 showPathWarningDialog = false
-                folderLauncher.launch(null)
+                val initialUri = try { Uri.parse(uiState.recordingPath) } catch (e: Exception) { null }
+                folderLauncher.launch(initialUri)
             },
             onDismiss = { showPathWarningDialog = false }
         )
     }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        dragHandle = { BottomSheetDefaults.DragHandle() }
-    ) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { 
+                    Text(
+                        "Tracking Settings",
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .fillMaxSize()
+                .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.TrackChanges,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(32.dp)
-                )
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    text = "Tracking Settings",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(Modifier.height(24.dp))
 
             // ===================================================================
             // CALL TRACKING SECTION
@@ -412,7 +409,8 @@ fun TrackingSettingsModal(
                                     if (uiState.isRecordingPathVerified && uiState.recordingCount > 0) {
                                         showPathWarningDialog = true
                                     } else {
-                                        folderLauncher.launch(null)
+                                        val initialUri = try { Uri.parse(uiState.recordingPath) } catch (e: Exception) { null }
+                                        folderLauncher.launch(initialUri)
                                     }
                                 }
                         )

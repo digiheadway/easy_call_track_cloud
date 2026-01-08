@@ -14,10 +14,14 @@ $referrer = isset($_GET['referrer']) ? $_GET['referrer'] : '';
 
 // Parse referrer to get uniqueID (and other params)
 $uniqueId = null;
+$landing = null;
 if ($referrer) {
     parse_str(urldecode($referrer), $params);
     if (isset($params['uniqueid'])) {
         $uniqueId = $params['uniqueid'];
+    }
+    if (isset($params['landing'])) {
+        $landing = $params['landing'];
     }
 }
 
@@ -27,7 +31,7 @@ if ($action === 'install' && $uniqueId) {
     // You could pass another param &is_new=false if you want to track re-opens
     $isNew = true; // Default to true for 'install' action
     
-    trackInstall($uniqueId, $isNew);
+    trackInstall($uniqueId, $landing ?: 'unknown', $isNew);
     
     echo json_encode(['status' => 'success', 'message' => 'Install tracked']);
 } else {

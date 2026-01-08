@@ -22,6 +22,7 @@ import android.net.Uri
 import java.io.OutputStreamWriter
 import java.io.InputStreamReader
 import kotlinx.coroutines.withContext
+import com.miniclick.calltrackmanage.ui.utils.WhatsAppUtils
 
 data class PermissionState(
     val name: String,
@@ -104,6 +105,8 @@ data class SettingsUiState(
     val showDialButton: Boolean = true,
     val callActionBehavior: String = "Direct",
     val isSystemDefaultDialer: Boolean = false,
+    val isReattaching: Boolean = false,
+    val reAttachProgress: String? = null,
     
     // Unified Modal States
     val showPermissionsModal: Boolean = false,
@@ -436,121 +439,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun fetchWhatsappApps() {
         viewModelScope.launch(Dispatchers.IO) {
             val ctx = getApplication<Application>()
-            val packageManager = ctx.packageManager
+            val uniqueApps = WhatsAppUtils.fetchAvailableWhatsappApps(ctx)
             
-            // Known WhatsApp package names (including common clones)
-            val knownWhatsappPackages = listOf(
-                "com.whatsapp",                    // Regular WhatsApp
-                "com.whatsapp.w4b",                // WhatsApp Business
-                "com.whatsapp.w4b.clone",          // Cloned Business
-                "com.whatsapp.clone",              // Cloned WhatsApp
-                "com.gbwhatsapp",                  // GB WhatsApp
-                "com.whatsapp1",                   // Dual WhatsApp
-                "com.whatsapp2",                   // Dual WhatsApp 2
-                "com.dual.whatsapp",               // Dual Space WhatsApp
-                "com.parallel.space.pro",          // Parallel Space
-                "com.lbe.parallel.intl",           // Parallel Space International
-                "com.ludashi.dualspace",           // Dual Space
-                // OnePlus Parallel Apps patterns
-                "com.oneplus.clone.whatsapp",
-                "com.oneplus.clone.com.whatsapp",
-                "com.oneplus.clone.com.whatsapp.w4b",
-                // Xiaomi Second Space / Dual Apps
-                "com.miui.securitycore.whatsapp",
-                "com.miui.clone.whatsapp",
-                // Samsung Dual Messenger
-                "com.samsung.android.game.cloudgame.whatsapp",
-                // Huawei App Twin
-                "com.huawei.clone.whatsapp"
-            )
-            
-            val apps = mutableListOf<AppInfo>()
-            
-            // Method 1: Query by intent with MATCH_ALL to get all handlers
-            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                data = android.net.Uri.parse("https://wa.me/")
-            }
-            
-            try {
-                packageManager.queryIntentActivities(intent, android.content.pm.PackageManager.MATCH_ALL)
-                    .forEach { resolveInfo ->
-                        val packageName = resolveInfo.activityInfo.packageName
-                        // Filter out browsers (like Chrome) that catch generic wa.me links
-                        if (packageName.contains("whatsapp", ignoreCase = true) || 
-                            packageName.contains("com.whatsapp", ignoreCase = true)) {
-                            val label = resolveInfo.loadLabel(packageManager).toString()
-                            apps.add(AppInfo(label, packageName))
-                        }
-                    }
-            } catch (e: Exception) { e.printStackTrace() }
-            
-            // Method 2: Query with MATCH_UNINSTALLED_PACKAGES to catch clones in other profiles
-            try {
-                packageManager.queryIntentActivities(intent, 
-                    android.content.pm.PackageManager.MATCH_ALL or 
-                    android.content.pm.PackageManager.MATCH_UNINSTALLED_PACKAGES
-                ).forEach { resolveInfo ->
-                    val packageName = resolveInfo.activityInfo.packageName
-                    if (packageName.contains("whatsapp", ignoreCase = true) || 
-                        packageName.contains("com.whatsapp", ignoreCase = true)) {
-                        val label = resolveInfo.loadLabel(packageManager).toString()
-                        if (apps.none { it.packageName == packageName }) {
-                            apps.add(AppInfo(label, packageName))
-                        }
-                    }
-                }
-            } catch (e: Exception) { e.printStackTrace() }
-            
-            // Method 3: Check known package names directly
-            knownWhatsappPackages.forEach { packageName ->
-                try {
-                    val appInfo = packageManager.getApplicationInfo(packageName, 0)
-                    val label = packageManager.getApplicationLabel(appInfo).toString()
-                    apps.add(AppInfo(label, packageName))
-                } catch (e: android.content.pm.PackageManager.NameNotFoundException) {
-                    // Package not installed, skip
-                }
-            }
-            
-            // Method 4: Search ALL installed apps for WhatsApp (catches OnePlus clones)
-            @Suppress("DEPRECATION")
-            try {
-                packageManager.getInstalledApplications(
-                    android.content.pm.PackageManager.GET_META_DATA or
-                    android.content.pm.PackageManager.MATCH_UNINSTALLED_PACKAGES
-                ).filter { 
-                    it.packageName.contains("whatsapp", ignoreCase = true) ||
-                    (it.packageName.contains("clone", ignoreCase = true) && 
-                     packageManager.getApplicationLabel(it).toString().contains("whatsapp", ignoreCase = true))
-                }.forEach { appInfo ->
-                    val label = packageManager.getApplicationLabel(appInfo).toString()
-                    apps.add(AppInfo(label, appInfo.packageName))
-                }
-            } catch (e: Exception) { e.printStackTrace() }
-            
-            // Method 5: Check for apps in work profile / managed profiles
-            try {
-                val userManager = androidx.core.content.ContextCompat.getSystemService(ctx, android.os.UserManager::class.java)
-                val launcherApps = androidx.core.content.ContextCompat.getSystemService(ctx, android.content.pm.LauncherApps::class.java)
-                
-                userManager?.userProfiles?.forEach { userHandle ->
-                    listOf("com.whatsapp", "com.whatsapp.w4b").forEach { pkg ->
-                        try {
-                            val activityList = launcherApps?.getActivityList(pkg, userHandle)
-                            activityList?.forEach { launcherActivity ->
-                                val label = launcherActivity.label.toString()
-                                val suffix = if (userHandle != android.os.Process.myUserHandle()) " (Clone)" else ""
-                                apps.add(AppInfo("$label$suffix", "${pkg}#${userHandle.hashCode()}"))
-                            }
-                        } catch (e: Exception) { /* Skip */ }
-                    }
-                }
-            } catch (e: Exception) { e.printStackTrace() }
-            
-            val uniqueApps = apps
-                .distinctBy { it.packageName }
-                .sortedBy { it.label }
-
             android.util.Log.d("SettingsViewModel", "Found WhatsApp apps: ${uniqueApps.map { "${it.label} (${it.packageName})" }}")
             _uiState.update { it.copy(availableWhatsappApps = uniqueApps) }
         }
@@ -660,13 +550,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _uiState.update { it.copy(trackStartDate = date) }
         
         // Trigger data refresh to load calls according to new start date
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                callDataRepository.syncFromSystemCallLog()
-            } catch (e: Exception) {
-                android.util.Log.e("SettingsViewModel", "Failed to refresh data after date change", e)
-            }
-        }
+        CallSyncWorker.runNow(getApplication())
     }
 
     fun isTrackStartDateSet(): Boolean = settingsRepository.isTrackStartDateSet()
@@ -695,9 +579,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     callDataRepository.resetSkippedRecordings()
                     
                     // Trigger a system log sync to find any missing recording paths for these reset items
-                    withContext(Dispatchers.IO) {
-                        callDataRepository.syncFromSystemCallLog()
-                    }
+                    CallSyncWorker.runNow(getApplication())
                     
                     android.widget.Toast.makeText(getApplication(), "Scanning all past calls for recordings...", android.widget.Toast.LENGTH_SHORT).show()
                 } else {
@@ -801,6 +683,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         recordingRepository.setCustomPath(path)
         refreshRecordingPathInfo()
         _uiState.update { it.copy(recordingPath = path) }
+        
+        // After path change, re-scan for recordings that don't have a path
+        CallSyncWorker.runNow(getApplication())
     }
 
     fun clearCustomRecordingPath() {
@@ -1593,6 +1478,50 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun exportDataCsv(uri: Uri) {
+        viewModelScope.launch {
+            try {
+                val calls = callDataRepository.getAllCalls()
+                val sb = StringBuilder()
+                // Header
+                sb.append("Date,Number,Name,Type,Duration,Note,Tag\n")
+                
+                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+                
+                calls.forEach { call ->
+                    val date = sdf.format(java.util.Date(call.callDate))
+                    val type = when(call.callType) {
+                        android.provider.CallLog.Calls.INCOMING_TYPE -> "Incoming"
+                        android.provider.CallLog.Calls.OUTGOING_TYPE -> "Outgoing"
+                        android.provider.CallLog.Calls.MISSED_TYPE -> "Missed"
+                        android.provider.CallLog.Calls.REJECTED_TYPE -> "Rejected"
+                        android.provider.CallLog.Calls.BLOCKED_TYPE -> "Blocked"
+                        else -> "Unknown"
+                    }
+                    
+                    // Escape CSV fields
+                    val name = (call.contactName ?: "").replace("\"", "\"\"")
+                    val note = (call.callNote ?: "").replace("\"", "\"\"")
+                    val tag = "" // Tag is not available in CallDataEntity
+                    
+                    sb.append("$date,${call.phoneNumber},\"$name\",$type,${call.duration},\"$note\",\"$tag\"\n")
+                }
+                
+                withContext(Dispatchers.IO) {
+                    getApplication<Application>().contentResolver.openOutputStream(uri)?.use { outputStream ->
+                        OutputStreamWriter(outputStream).use { writer ->
+                            writer.write(sb.toString())
+                        }
+                    }
+                }
+                Toast.makeText(getApplication(), "CSV exported successfully", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Log.e("SettingsViewModel", "Failed to export CSV", e)
+                Toast.makeText(getApplication(), "Failed to export: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     fun importData(uri: Uri) {
         viewModelScope.launch {
             try {
@@ -1662,6 +1591,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 Toast.makeText(getApplication(), "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    /**
+     * Re-attach recordings for ALL calls using the advanced matching logic.
+     * This iterates through all existing logs in the app database and tries to find a matching recording file.
+     */
+    fun reAttachAllRecordings() {
+        // Trigger background worker
+        com.miniclick.calltrackmanage.worker.ReattachRecordingsWorker.runNow(getApplication())
+        Toast.makeText(getApplication(), "Started background recording scan. Check notification for progress.", Toast.LENGTH_LONG).show()
+        // We don't need to manually update state here as the worker handles it separately
+        // But if we want to show loading specifically for this button, we'd need to observe the worker info.
+        // For now, simple "Started" message is sufficient given user request for background processing.
     }
 
     fun recheckRecordings() {

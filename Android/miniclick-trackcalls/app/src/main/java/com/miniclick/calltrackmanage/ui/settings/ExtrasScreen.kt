@@ -20,56 +20,148 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 /**
- * Bottom Sheet Modal for Extra/Utility settings.
+ * Full Screen for Extra/Utility settings.
  * Contains privacy, account, data management, and troubleshooting options.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExtrasModal(
+fun ExtrasScreen(
     uiState: SettingsUiState,
     viewModel: SettingsViewModel,
     onResetOnboarding: () -> Unit,
-    onDismiss: () -> Unit
+    onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var showReAttachInfo by remember { mutableStateOf(false) }
+    
+    // Handle back button
+    androidx.activity.compose.BackHandler {
+        onBack()
+    }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        dragHandle = { BottomSheetDefaults.DragHandle() }
-    ) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { 
+                    Text(
+                        "Extras",
+                        fontWeight = FontWeight.Bold
+                    ) 
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .fillMaxSize()
+                .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.Extension,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(32.dp)
-                )
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    text = "Extras",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
+            Spacer(Modifier.height(16.dp))
+            
+            // Re-attach Progress Dialog
+            if (uiState.isReattaching) {
+                AlertDialog(
+                    onDismissRequest = { /* Prevent dismiss */ },
+                    title = { Text("Attaching Recordings") },
+                    text = {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            CircularProgressIndicator()
+                            Spacer(Modifier.height(16.dp))
+                            Text(uiState.reAttachProgress ?: "Scanning...")
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "This may take a while depending on your call history size.",
+                                style = MaterialTheme.typography.bodySmall,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                    },
+                    confirmButton = {}
                 )
             }
-
-            Spacer(Modifier.height(24.dp))
 
             // ===================================================================
             // TROUBLESHOOTING
             // ===================================================================
             SettingsSection(title = "Troubleshooting") {
+                ListItem(
+                    headlineContent = { Text("Re-attach Recordings") },
+                    supportingContent = { 
+                        Text("Re-scan file system to attach recordings to existing call logs (Slow)")
+                    },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.AudioFile, MaterialTheme.colorScheme.primary) 
+                    },
+                    trailingContent = {
+                        Icon(Icons.Default.ChevronRight, contentDescription = null)
+                    },
+                    modifier = Modifier.clickable { 
+                        showReAttachInfo = true 
+                    }
+                )
+                
+                if (showReAttachInfo) {
+                    AlertDialog(
+                        onDismissRequest = { showReAttachInfo = false },
+                        title = { Text("Re-attach Configuration") },
+                        text = {
+                            Column(Modifier.verticalScroll(rememberScrollState())) {
+                                Text("This process will scan your storage to find matching recordings for your call logs.", style = MaterialTheme.typography.bodyMedium)
+                                Spacer(Modifier.height(16.dp))
+                                
+                                Text("Active Matching Rules:", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                Spacer(Modifier.height(8.dp))
+                                
+                                val rules = listOf(
+                                    "✓ Skip Missed/Rejected Calls (0s duration ignored)",
+                                    "✓ Prioritize Exact Phone/Name Match",
+                                    "✓ Trust Filename Date (rejects if >2h different)",
+                                    "✓ Strict Duration Matching (higher score)",
+                                    "✓ Separates Duplicate Calls (Same day, diff time)",
+                                    "✓ Optimized Bucketed Search (High speed)"
+                                )
+                                
+                                rules.forEach { rule ->
+                                    Row(Modifier.padding(vertical = 4.dp)) {
+                                        Text(rule, style = MaterialTheme.typography.bodySmall)
+                                    }
+                                }
+                                
+                                Spacer(Modifier.height(16.dp))
+                                Text("Scan Scope:", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                Text("System Detected Recording Folders + Subdirectories", style = MaterialTheme.typography.bodySmall)
+                            }
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    showReAttachInfo = false
+                                    viewModel.reAttachAllRecordings()
+                                    Toast.makeText(context, "Scanning started...", Toast.LENGTH_SHORT).show()
+                                }
+                            ) {
+                                Text("Start Scan")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showReAttachInfo = false }) {
+                                Text("Cancel")
+                            }
+                        }
+                    )
+                }
+                
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
                 ListItem(
                     headlineContent = { Text("Recheck Recordings") },
                     supportingContent = { 
@@ -233,6 +325,24 @@ fun ExtrasModal(
                         onResetOnboarding()
                         viewModel.resetOnboarding()
                         Toast.makeText(context, "Onboarding reset. Restart app to see it.", Toast.LENGTH_SHORT).show()
+                    }
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                ListItem(
+                    headlineContent = { Text("Data Backup & Restore") },
+                    supportingContent = { 
+                        Text("Import, export, and manage your app data")
+                    },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.Storage, MaterialTheme.colorScheme.tertiary) 
+                    },
+                    trailingContent = {
+                        Icon(Icons.Default.ChevronRight, contentDescription = null)
+                    },
+                    modifier = Modifier.clickable { 
+                        viewModel.toggleDataManagementScreen(true)
                     }
                 )
             }

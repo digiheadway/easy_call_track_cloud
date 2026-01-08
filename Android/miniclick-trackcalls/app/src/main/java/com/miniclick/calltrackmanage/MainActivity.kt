@@ -52,7 +52,6 @@ enum class AppTab(
 ) {
     DIALER("Dialer", Icons.Default.Dialpad, Icons.Filled.Dialpad),
     CALLS("Calls", Icons.Default.Call, Icons.Filled.Call),
-    PERSONS("Persons", Icons.Default.People, Icons.Filled.People),
     REPORTS("Reports", Icons.Default.Assessment, Icons.Filled.Assessment),
     SETTINGS("More", Icons.Default.Settings, Icons.Filled.Settings)
 }
@@ -190,7 +189,14 @@ class MainActivity : ComponentActivity() {
                         for (i in checkedCount until limit) {
                             val call = allRecentCalls[i]
                             val isMatch = recordingRepo.findRecordingInList(
-                                arrayOf(importedFile),
+                                listOf(
+                                    RecordingRepository.RecordingSourceFile(
+                                        name = importedFile.name,
+                                        lastModified = importedFile.lastModified(),
+                                        absolutePath = importedFile.absolutePath,
+                                        isLocal = true
+                                    )
+                                ),
                                 call.callDate,
                                 call.duration,
                                 call.phoneNumber,
@@ -311,8 +317,9 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             bottomBar = {
-            Column {
-                NavigationBar {
+                if (!settingsState.showTrackingSettings && !settingsState.showExtrasScreen && !settingsState.showDataManagementScreen) {
+                    Column {
+                        NavigationBar {
                     tabs.forEach { tab ->
                         NavigationBarItem(
                             selected = selectedTab == tab,
@@ -334,6 +341,7 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                 }
             }
         }
+    }
     ) { innerPadding ->
         // Only apply bottom padding from scaffold, let screens handle status bar
         Column(
@@ -371,276 +379,310 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                         isDialerEnabled = settingsState.isDialerEnabled,
                         showDialButton = settingsState.showDialButton
                     )
-                    AppTab.PERSONS -> PersonsScreen(
-                        audioPlayer = audioPlayer,
-                        syncStatusBar = syncStatusBar
-                    )
                     AppTab.REPORTS -> ReportsScreen(
                         syncStatusBar = syncStatusBar,
                         onNavigateToTab = { tabIndex ->
-                            viewModel.setSelectedTab(when(tabIndex) {
-                                0 -> AppTab.CALLS
-                                1 -> AppTab.PERSONS
-                                else -> AppTab.CALLS
-                            })
+                            viewModel.setSelectedTab(AppTab.CALLS)
                         }
                     )
                     AppTab.SETTINGS -> SettingsScreen(
                         syncStatusBar = syncStatusBar
                     )
                 }
-
-                if (settingsState.lookupPhoneNumber != null) {
-                    PhoneLookupResultModal(
-                        phoneNumber = settingsState.lookupPhoneNumber!!,
-                        uiState = settingsState,
-                        viewModel = settingsViewModel,
-                        onDismiss = { settingsViewModel.showPhoneLookup(null) }
-                    )
-                }
-
-                // Sync Queue Modals
-                if (showSyncQueue) {
-                    SyncQueueModal(
-                        pendingNewCalls = settingsState.pendingNewCallsCount,
-                        pendingRelatedData = settingsState.pendingMetadataUpdatesCount + settingsState.pendingPersonUpdatesCount,
-                        pendingRecordings = settingsState.pendingRecordingCount,
-                        isSyncSetup = settingsState.isSyncSetup,
-                        isNetworkAvailable = settingsState.isNetworkAvailable,
-                        onSyncAll = { settingsViewModel.syncCallManually() },
-                        onDismiss = { settingsViewModel.toggleSyncQueue(false) },
-                        onRecordingClick = {
-                            settingsViewModel.toggleSyncQueue(false)
-                            settingsViewModel.toggleRecordingQueue(true)
-                        }
-                    )
-                }
-
-                if (showRecordingQueue) {
-                    RecordingQueueModal(
-                        activeRecordings = settingsState.activeRecordings,
-                        onDismiss = { settingsViewModel.toggleRecordingQueue(false) },
-                        onRetry = { settingsViewModel.retryRecordingUpload(it) }
-                    )
-                }
-
-                // --- Unified Settings Modals ---
-                
-                if (settingsState.showPermissionsModal) {
-                    PermissionsModal(
-                        permissions = settingsState.permissions,
-                        onDismiss = { settingsViewModel.togglePermissionsModal(false) }
-                    )
-                }
-
-                if (settingsState.showCloudSyncModal) {
-                    CloudSyncModal(
-                        uiState = settingsState,
-                        viewModel = settingsViewModel,
-                        onDismiss = { settingsViewModel.toggleCloudSyncModal(false) },
-                        onOpenAccountInfo = { field -> 
-                            settingsViewModel.toggleAccountInfoModal(true, field)
-                        },
-                        onCreateOrg = {
-                            settingsViewModel.toggleCreateOrgModal(true)
-                        },
-                        onJoinOrg = {
-                            settingsViewModel.toggleJoinOrgModal(true)
-                        },
-                        onKeepOffline = {
-                            settingsViewModel.toggleCloudSyncModal(false)
-                            viewModel.dismissOnboardingSession() 
-                        }
-                    )
-                }
-
-                if (settingsState.showAccountInfoModal) {
-                    AccountInfoModal(
-                        uiState = settingsState,
-                        viewModel = settingsViewModel,
-                        editField = settingsState.accountEditField,
-                        onDismiss = { settingsViewModel.toggleAccountInfoModal(false) }
-                    )
-                }
-
-                if (settingsState.showCreateOrgModal) {
-                    CreateOrgModal(
-                        onDismiss = { settingsViewModel.toggleCreateOrgModal(false) }
-                    )
-                }
-
-                if (settingsState.showJoinOrgModal) {
-                    JoinOrgModal(
-                        viewModel = settingsViewModel,
-                        onDismiss = { settingsViewModel.toggleJoinOrgModal(false) }
-                    )
-                }
-
-                if (settingsState.showTrackingSettings) {
-                    TrackingSettingsModal(
-                        uiState = settingsState,
-                        viewModel = settingsViewModel,
-                        onDismiss = { settingsViewModel.toggleTrackingSettings(false) }
-                    )
-                }
-
-                if (settingsState.showExtrasScreen) {
-                    ExtrasModal(
-                        uiState = settingsState,
-                        viewModel = settingsViewModel,
-                        onResetOnboarding = { viewModel.resetOnboardingSession() },
-                        onDismiss = { settingsViewModel.toggleExtrasScreen(false) }
-                    )
-                }
-
-                if (settingsState.showDataManagementScreen) {
-                    DataManagementModal(
-                        uiState = settingsState,
-                        viewModel = settingsViewModel,
-                        onDismiss = { settingsViewModel.toggleDataManagementScreen(false) }
-                    )
-                }
-
-                if (settingsState.showTrackSimModal) {
-                    TrackSimModal(
-                        uiState = settingsState,
-                        viewModel = settingsViewModel,
-                        onDismiss = { settingsViewModel.toggleTrackSimModal(false) }
-                    )
-                }
-                
-                if (homeState.showCallSimPicker && homeState.callFlowNumber != null) {
-                    CallSimPickerModal(
-                        number = homeState.callFlowNumber!!,
-                        availableSims = homeState.availableSims,
-                        onSimSelected = { subId -> homeViewModel.executeCall(subId) },
-                        onDismiss = { homeViewModel.cancelCallFlow() }
-                    )
-                }
-
-                if (settingsState.showCustomLookupModal) {
-                    CustomLookupModal(
-                        uiState = settingsState,
-                        viewModel = settingsViewModel,
-                        onDismiss = { settingsViewModel.toggleCustomLookupModal(false) }
-                    )
-                }
-
-                if (settingsState.showContactModal) {
-                    ContactModal(
-                        subject = settingsState.contactSubject,
-                        onDismiss = { settingsViewModel.toggleContactModal(false) }
-                    )
-                }
-
-                if (settingsState.showExcludedModal) {
-                    ExcludedContactsModal(
-                        excludedPersons = settingsState.excludedPersons,
-                        onAddNumbers = { settingsViewModel.addExcludedNumbers(it) },
-                        onRemoveNumber = { settingsViewModel.unexcludeNumber(it) },
-                        onDismiss = { settingsViewModel.toggleExcludedModal(false) },
-                        canAddNew = settingsState.allowPersonalExclusion || settingsState.pairingCode.isEmpty(),
-                        onAddNumbersWithType = { numbers, isNoTracking -> 
-                            settingsViewModel.addExcludedNumbersWithType(numbers, isNoTracking) 
-                        },
-                        onUpdateExclusionType = { phone, isNoTracking ->
-                            settingsViewModel.updateExclusionType(phone, isNoTracking)
-                        }
-                    )
-                }
-
-                if (settingsState.showWhatsappModal) {
-                    WhatsAppSelectionModal(
-                        currentSelection = settingsState.whatsappPreference,
-                        availableApps = settingsState.availableWhatsappApps,
-                        onSelect = { selection, _ ->
-                            settingsViewModel.updateWhatsappPreference(selection)
-                            settingsViewModel.toggleWhatsappModal(false)
-                        },
-                        onDismiss = { settingsViewModel.toggleWhatsappModal(false) }
-                    )
-                }
-
-                if (settingsState.showResetConfirmDialog) {
-                    ConfirmationModal(
-                        title = "Reset Sync Data Status",
-                        message = "This will reset the sync status of all logs. They will be re-synced in the next cycle.",
-                        confirmText = "Confirm Reset",
-                        onConfirm = {
-                            settingsViewModel.resetSyncStatus()
-                            settingsViewModel.toggleResetConfirmDialog(false)
-                        },
-                        onDismiss = { settingsViewModel.toggleResetConfirmDialog(false) },
-                        icon = Icons.Default.Restore
-                    )
-                }
-
-                if (settingsState.showClearDataDialog) {
-                    ConfirmationModal(
-                        title = "Clear All App Data",
-                        message = "This will permanently delete all logs, notes, and settings. This cannot be undone.",
-                        confirmText = "Clear All Data",
-                        isDestructive = true,
-                        icon = Icons.Default.DeleteForever,
-                        onConfirm = {
-                            settingsViewModel.clearAllAppData {
-                                settingsViewModel.toggleClearDataDialog(false)
-                            }
-                        },
-                        onDismiss = { settingsViewModel.toggleClearDataDialog(false) }
-                    )
-                }
-                
-                if (settingsState.showRecordingEnablementDialog) {
-                    RecordingActionModal(
-                        isEnable = true,
-                        onConfirm = { scanOld ->
-                            settingsViewModel.updateCallRecordEnabled(enabled = true, scanOld = scanOld)
-                        },
-                        onDismiss = { settingsViewModel.toggleRecordingDialog(false) }
-                    )
-                }
-
-                if (settingsState.showRecordingDisablementDialog) {
-                    RecordingActionModal(
-                        isEnable = false,
-                        onConfirm = {
-                            settingsViewModel.updateCallRecordEnabled(enabled = false)
-                        },
-                        onDismiss = { settingsViewModel.toggleRecordingDisableDialog(false) }
-                    )
-                }
             }
         }
     }
 
-        // Dialer Full Screen Overlay
-        androidx.compose.animation.AnimatedVisibility(
-            visible = showDialerSheet,
-            enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) + androidx.compose.animation.fadeIn(),
-            exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) + androidx.compose.animation.fadeOut()
+    // --- Full Screen Overlays (Outside Scaffold to cover BottomBar) ---
+
+    // Tracking Settings
+    androidx.compose.animation.AnimatedVisibility(
+        visible = settingsState.showTrackingSettings,
+        enter = androidx.compose.animation.slideInHorizontally(initialOffsetX = { it }) + androidx.compose.animation.fadeIn(),
+        exit = androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it }) + androidx.compose.animation.fadeOut()
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.surface
         ) {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 0.dp
-            ) {
-                Box(modifier = Modifier.fillMaxSize().systemBarsPadding()) {
-                    DialerScreen(
-                        initialNumber = dialerInitialNumber ?: "",
-                        onIdentifyCallHistory = { 
-                            showDialerSheet = false
-                        },
-                        onClose = { showDialerSheet = false }
-                    )
-                }
-            }
-        }
-
-        // --- Back Navigation Flow Enhancement ---
-        // If not on CALLS, first back press returns to CALLS (unless Dialer is open)
-        androidx.activity.compose.BackHandler(enabled = selectedTab != AppTab.CALLS && !showDialerSheet) {
-            viewModel.setSelectedTab(AppTab.CALLS)
+            TrackingSettingsScreen(
+                uiState = settingsState,
+                viewModel = settingsViewModel,
+                onBack = { settingsViewModel.toggleTrackingSettings(false) }
+            )
         }
     }
+
+    // Extras
+    androidx.compose.animation.AnimatedVisibility(
+        visible = settingsState.showExtrasScreen,
+        enter = androidx.compose.animation.slideInHorizontally(initialOffsetX = { it }) + androidx.compose.animation.fadeIn(),
+        exit = androidx.compose.animation.slideOutHorizontally(targetOffsetX = { it }) + androidx.compose.animation.fadeOut()
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            ExtrasScreen(
+                uiState = settingsState,
+                viewModel = settingsViewModel,
+                onResetOnboarding = { viewModel.resetOnboardingSession() },
+                onBack = { settingsViewModel.toggleExtrasScreen(false) }
+            )
+        }
+    }
+
+    // Data Management Bottom Sheet (Modal)
+    if (settingsState.showDataManagementScreen) {
+        DataManagementBottomSheet(
+            uiState = settingsState,
+            viewModel = settingsViewModel,
+            onDismiss = { settingsViewModel.toggleDataManagementScreen(false) }
+        )
+    }
+
+    // Dialer Overlay
+    androidx.compose.animation.AnimatedVisibility(
+        visible = showDialerSheet,
+        enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) + androidx.compose.animation.fadeIn(),
+        exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) + androidx.compose.animation.fadeOut()
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 0.dp
+        ) {
+            Box(modifier = Modifier.fillMaxSize().systemBarsPadding()) {
+                DialerScreen(
+                    initialNumber = dialerInitialNumber ?: "",
+                    onIdentifyCallHistory = { 
+                        showDialerSheet = false
+                    },
+                    onClose = { showDialerSheet = false }
+                )
+            }
+        }
+    }
+
+
+    // --- Unified Modals (Always on Top) ---
+
+    if (settingsState.lookupPhoneNumber != null) {
+        PhoneLookupResultModal(
+            phoneNumber = settingsState.lookupPhoneNumber!!,
+            uiState = settingsState,
+            viewModel = settingsViewModel,
+            onDismiss = { settingsViewModel.showPhoneLookup(null) }
+        )
+    }
+
+    // Sync Queue Modals
+    if (showSyncQueue) {
+        SyncQueueModal(
+            pendingNewCalls = settingsState.pendingNewCallsCount,
+            pendingRelatedData = settingsState.pendingMetadataUpdatesCount + settingsState.pendingPersonUpdatesCount,
+            pendingRecordings = settingsState.pendingRecordingCount,
+            isSyncSetup = settingsState.isSyncSetup,
+            isNetworkAvailable = settingsState.isNetworkAvailable,
+            onSyncAll = { settingsViewModel.syncCallManually() },
+            onDismiss = { settingsViewModel.toggleSyncQueue(false) },
+            onRecordingClick = {
+                settingsViewModel.toggleSyncQueue(false)
+                settingsViewModel.toggleRecordingQueue(true)
+            }
+        )
+    }
+
+    if (showRecordingQueue) {
+        RecordingQueueModal(
+            activeRecordings = settingsState.activeRecordings,
+            onDismiss = { settingsViewModel.toggleRecordingQueue(false) },
+            onRetry = { settingsViewModel.retryRecordingUpload(it) }
+        )
+    }
+
+    // Unified Settings Modals
+    if (settingsState.showPermissionsModal) {
+        PermissionsModal(
+            permissions = settingsState.permissions,
+            onDismiss = { settingsViewModel.togglePermissionsModal(false) }
+        )
+    }
+
+    if (settingsState.showCloudSyncModal) {
+        CloudSyncModal(
+            uiState = settingsState,
+            viewModel = settingsViewModel,
+            onDismiss = { settingsViewModel.toggleCloudSyncModal(false) },
+            onOpenAccountInfo = { field -> 
+                settingsViewModel.toggleAccountInfoModal(true, field)
+            },
+            onCreateOrg = {
+                settingsViewModel.toggleCreateOrgModal(true)
+            },
+            onJoinOrg = {
+                settingsViewModel.toggleJoinOrgModal(true)
+            },
+            onKeepOffline = {
+                settingsViewModel.toggleCloudSyncModal(false)
+                viewModel.dismissOnboardingSession() 
+            }
+        )
+    }
+
+    if (settingsState.showAccountInfoModal) {
+        AccountInfoModal(
+            uiState = settingsState,
+            viewModel = settingsViewModel,
+            editField = settingsState.accountEditField,
+            onDismiss = { settingsViewModel.toggleAccountInfoModal(false) }
+        )
+    }
+
+    if (settingsState.showCreateOrgModal) {
+        CreateOrgModal(
+            onDismiss = { settingsViewModel.toggleCreateOrgModal(false) }
+        )
+    }
+
+    if (settingsState.showJoinOrgModal) {
+        JoinOrgModal(
+            viewModel = settingsViewModel,
+            onDismiss = { settingsViewModel.toggleJoinOrgModal(false) }
+        )
+    }
+
+    if (settingsState.showTrackSimModal) {
+        TrackSimModal(
+            uiState = settingsState,
+            viewModel = settingsViewModel,
+            onDismiss = { settingsViewModel.toggleTrackSimModal(false) }
+        )
+    }
+    
+    if (homeState.showCallSimPicker && homeState.callFlowNumber != null) {
+        CallSimPickerModal(
+            number = homeState.callFlowNumber!!,
+            availableSims = homeState.availableSims,
+            onSimSelected = { subId -> homeViewModel.executeCall(subId) },
+            onDismiss = { homeViewModel.cancelCallFlow() }
+        )
+    }
+
+    if (settingsState.showCustomLookupModal) {
+        CustomLookupModal(
+            uiState = settingsState,
+            viewModel = settingsViewModel,
+            onDismiss = { settingsViewModel.toggleCustomLookupModal(false) }
+        )
+    }
+
+    if (settingsState.showContactModal) {
+        ContactModal(
+            subject = settingsState.contactSubject,
+            onDismiss = { settingsViewModel.toggleContactModal(false) }
+        )
+    }
+
+    if (settingsState.showExcludedModal) {
+        ExcludedContactsModal(
+            excludedPersons = settingsState.excludedPersons,
+            onAddNumbers = { settingsViewModel.addExcludedNumbers(it) },
+            onRemoveNumber = { settingsViewModel.unexcludeNumber(it) },
+            onDismiss = { settingsViewModel.toggleExcludedModal(false) },
+            canAddNew = settingsState.allowPersonalExclusion || settingsState.pairingCode.isEmpty(),
+            onAddNumbersWithType = { numbers, isNoTracking -> 
+                settingsViewModel.addExcludedNumbersWithType(numbers, isNoTracking) 
+            },
+            onUpdateExclusionType = { phone, isNoTracking ->
+                settingsViewModel.updateExclusionType(phone, isNoTracking)
+            }
+        )
+    }
+
+    if (settingsState.showWhatsappModal) {
+        WhatsAppSelectionModal(
+            currentSelection = settingsState.whatsappPreference,
+            availableApps = settingsState.availableWhatsappApps,
+            onSelect = { selection, _ ->
+                settingsViewModel.updateWhatsappPreference(selection)
+                settingsViewModel.toggleWhatsappModal(false)
+            },
+            onDismiss = { settingsViewModel.toggleWhatsappModal(false) }
+        )
+    }
+
+    if (settingsState.showResetConfirmDialog) {
+        ConfirmationModal(
+            title = "Reset Sync Data Status",
+            message = "This will reset the sync status of all logs. They will be re-synced in the next cycle.",
+            confirmText = "Confirm Reset",
+            onConfirm = {
+                settingsViewModel.resetSyncStatus()
+                settingsViewModel.toggleResetConfirmDialog(false)
+            },
+            onDismiss = { settingsViewModel.toggleResetConfirmDialog(false) },
+            icon = Icons.Default.Restore
+        )
+    }
+
+    if (settingsState.showClearDataDialog) {
+        ConfirmationModal(
+            title = "Clear All App Data",
+            message = "This will permanently delete all logs, notes, and settings. This cannot be undone.",
+            confirmText = "Clear All Data",
+            isDestructive = true,
+            icon = Icons.Default.DeleteForever,
+            onConfirm = {
+                settingsViewModel.clearAllAppData {
+                    settingsViewModel.toggleClearDataDialog(false)
+                }
+            },
+            onDismiss = { settingsViewModel.toggleClearDataDialog(false) }
+        )
+    }
+    
+    if (settingsState.showRecordingEnablementDialog) {
+        RecordingActionModal(
+            isEnable = true,
+            onConfirm = { scanOld ->
+                settingsViewModel.updateCallRecordEnabled(enabled = true, scanOld = scanOld)
+            },
+            onDismiss = { settingsViewModel.toggleRecordingDialog(false) }
+        )
+    }
+
+    if (settingsState.showRecordingDisablementDialog) {
+        RecordingActionModal(
+            isEnable = false,
+            onConfirm = {
+                settingsViewModel.updateCallRecordEnabled(enabled = false)
+            },
+            onDismiss = { settingsViewModel.toggleRecordingDisableDialog(false) }
+        )
+    }
+
+    // --- Back Handlers ---
+
+    // 1. If any full-screen overlay is open, close it (HIGHEST PRIORITY)
+    // NOTE: DataManagementBottomSheet handles its own dismiss via ModalBottomSheet
+    androidx.activity.compose.BackHandler(enabled = settingsState.showTrackingSettings || settingsState.showExtrasScreen) {
+        when {
+            settingsState.showTrackingSettings -> settingsViewModel.toggleTrackingSettings(false)
+            settingsState.showExtrasScreen -> settingsViewModel.toggleExtrasScreen(false)
+        }
+    }
+
+    // 2. If Dialer is open, handle it
+    androidx.activity.compose.BackHandler(enabled = showDialerSheet) {
+        showDialerSheet = false
+    }
+
+    // 3. Return to CALLS tab if not already there
+    // NOTE: Don't block back press if only DataManagement is open, as the BottomSheet will handle it
+    val anyFullscreenOpen = settingsState.showTrackingSettings || settingsState.showExtrasScreen
+    androidx.activity.compose.BackHandler(enabled = selectedTab != AppTab.CALLS && !showDialerSheet && !anyFullscreenOpen && !settingsState.showDataManagementScreen) {
+        viewModel.setSelectedTab(AppTab.CALLS)
+    }
+}
 }

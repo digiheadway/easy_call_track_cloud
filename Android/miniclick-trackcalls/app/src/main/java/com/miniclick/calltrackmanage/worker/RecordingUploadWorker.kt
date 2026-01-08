@@ -15,7 +15,9 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
+import android.net.Uri
 import java.io.FileInputStream
+import java.io.InputStream
 import java.util.concurrent.TimeUnit
 import com.google.gson.Gson
 
@@ -191,39 +193,21 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                             if (alreadyCompletedSet.contains(call.compositeId)) continue
     
                             try {
-                                // Find recording path if not already set
-                                var recordingPath = call.localRecordingPath
+                                val recordingPath = call.localRecordingPath
                                 if (recordingPath.isNullOrEmpty()) {
-                                    recordingPath = recordingRepository.findRecording(call.callDate, call.duration, call.phoneNumber, call.contactName)
-                                    if (recordingPath != null) {
-                                        callDataRepository.updateRecordingPath(call.compositeId, recordingPath)
+                                    val foundPath = recordingRepository.findRecording(call.callDate, call.duration, call.phoneNumber, call.contactName)
+                                    if (foundPath != null) {
+                                        callDataRepository.updateRecordingPath(call.compositeId, foundPath)
+                                        // Use the newly found path
+                                        uploadRecording(foundPath, call.compositeId)
+                                    } else {
+                                        val hoursSinceCall = (System.currentTimeMillis() - call.callDate) / (1000 * 60 * 60)
+                                        if (hoursSinceCall > 3) {
+                                            callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.NOT_FOUND)
+                                        }
                                     }
-                                }
-                                
-                                if (recordingPath == null) {
-                                    val hoursSinceCall = (System.currentTimeMillis() - call.callDate) / (1000 * 60 * 60)
-                                    if (hoursSinceCall > 3) {
-                                        callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.NOT_FOUND)
-                                    }
-                                    continue
-                                }
-                                
-                                val originalFile = File(recordingPath)
-                                if (!originalFile.exists()) {
-                                    callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.NOT_FOUND)
-                                    continue
-                                }
-                                
-                                callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.UPLOADING)
-                                val uploadSuccess = uploadFileInChunks(originalFile, call.compositeId)
-                                
-                                if (uploadSuccess) {
-                                    callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.COMPLETED)
-                                    callDataRepository.updateSyncError(call.compositeId, null)
-                                    uploadedCount++
                                 } else {
-                                    callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.FAILED)
-                                    callDataRepository.updateSyncError(call.compositeId, "Upload failed")
+                                    uploadRecording(recordingPath, call.compositeId)
                                 }
                             } catch (e: kotlinx.coroutines.CancellationException) {
                                 callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.PENDING)
@@ -260,23 +244,58 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
         }
     }
     
-    private suspend fun uploadFileInChunks(file: File, uniqueId: String): Boolean {
+    private suspend fun uploadRecording(recordingPath: String, compositeId: String): Boolean {
+        // Verify path exists
+        if (recordingPath.startsWith("content://")) {
+            try {
+                val uri = Uri.parse(recordingPath)
+                applicationContext.contentResolver.openAssetFileDescriptor(uri, "r")?.use { /* exists */ } ?: run {
+                    callDataRepository.updateRecordingSyncStatus(compositeId, RecordingSyncStatus.NOT_FOUND)
+                    return false
+                }
+            } catch (e: Exception) {
+                callDataRepository.updateRecordingSyncStatus(compositeId, RecordingSyncStatus.NOT_FOUND)
+                return false
+            }
+        } else {
+            val file = File(recordingPath)
+            if (!file.exists()) {
+                callDataRepository.updateRecordingSyncStatus(compositeId, RecordingSyncStatus.NOT_FOUND)
+                return false
+            }
+        }
+
+        callDataRepository.updateRecordingSyncStatus(compositeId, RecordingSyncStatus.UPLOADING)
+        val uploadSuccess = uploadFileInChunks(recordingPath, compositeId)
+        
+        if (uploadSuccess) {
+            callDataRepository.updateRecordingSyncStatus(compositeId, RecordingSyncStatus.COMPLETED)
+            callDataRepository.updateSyncError(compositeId, null)
+            return true
+        } else {
+            callDataRepository.updateRecordingSyncStatus(compositeId, RecordingSyncStatus.FAILED)
+            callDataRepository.updateSyncError(compositeId, "Upload failed")
+            return false
+        }
+    }
+
+    private suspend fun uploadFileInChunks(recordingPath: String, uniqueId: String): Boolean {
         val chunkSize = 1024 * 1024 // 1MB chunks
-        val totalSize = file.length()
-        val totalChunks = ((totalSize + chunkSize - 1) / chunkSize).toInt()
+        val totalSize = getFileLength(recordingPath)
+        val totalChunks = if (totalSize > 0) ((totalSize + chunkSize - 1) / chunkSize).toInt() else 0
         
         if (totalChunks == 0) {
-            Log.w(TAG, "File is empty, nothing to upload: $uniqueId")
+            Log.w(TAG, "File is empty or not found, nothing to upload: $uniqueId")
             return false
         }
 
-        // Use 'use' block to ensure FileInputStream is always closed properly
+        // Use 'use' block to ensure InputStream is always closed properly
         val uploadSuccess = try {
-            FileInputStream(file).use { fis ->
+            getFileStream(recordingPath)?.use { inputStream ->
                 val buffer = ByteArray(chunkSize)
                 
                 for (i in 0 until totalChunks) {
-                    val bytesRead = withContext(Dispatchers.IO) { fis.read(buffer) }
+                    val bytesRead = withContext(Dispatchers.IO) { inputStream.read(buffer) }
                     if (bytesRead == -1) break
 
                     val chunkData = if (bytesRead < chunkSize) buffer.copyOf(bytesRead) else buffer
@@ -310,10 +329,10 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                     Log.d(TAG, "Uploaded chunk ${i + 1}/$totalChunks for $uniqueId")
                 }
                 true // All chunks uploaded successfully
-            }
+            } ?: false
         } catch (e: Exception) {
             Log.e(TAG, "Error reading file for upload: $uniqueId", e)
-            return false
+            false
         }
         
         if (!uploadSuccess) return false
@@ -332,6 +351,34 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
         } catch (e: Exception) {
             Log.e(TAG, "Error finalizing upload: $uniqueId", e)
             false
+        }
+    }
+
+    private fun getFileStream(path: String): InputStream? {
+        return try {
+            if (path.startsWith("content://")) {
+                applicationContext.contentResolver.openInputStream(Uri.parse(path))
+            } else {
+                FileInputStream(path)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to open stream for: $path", e)
+            null
+        }
+    }
+
+    private fun getFileLength(path: String): Long {
+        return try {
+            if (path.startsWith("content://")) {
+                applicationContext.contentResolver.openAssetFileDescriptor(Uri.parse(path), "r")?.use { 
+                    it.length 
+                } ?: 0L
+            } else {
+                File(path).length()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get length for: $path", e)
+            0L
         }
     }
     

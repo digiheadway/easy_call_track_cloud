@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.miniclick.calltrackmanage.ui.common.*
@@ -233,57 +234,58 @@ fun ReportsScreen(
                 if (category == ReportCategory.OVERVIEW) {
                     item {
                         OverviewCard(
-                            totalCalls = stats.totalCalls,
-                            uniqueContacts = stats.uniqueContacts,
-                            totalDuration = stats.totalDuration,
+                            stats = stats,
                             onClick = {
                                 viewModel.setCallTypeFilter(CallTabFilter.ALL)
-                                onNavigateToTab?.invoke(0) // Navigate to Calls
+                                onNavigateToTab?.invoke(0)
                             }
                         )
                     }
                     
                     item {
-                        CallTypesCard(
+                        CallStatsTableCard(
                             stats = stats,
+                            dateRange = uiState.dateRange,
                             onTypeClick = { filter ->
                                 viewModel.setCallTypeFilter(filter)
-                                onNavigateToTab?.invoke(0) // Navigate to Calls
+                                onNavigateToTab?.invoke(0)
                             }
                         )
                     }
                     
                     item {
-                        ConnectionStatsCard(stats = stats)
+                        DurationStatsCard(stats = stats, onNavigateToTab = onNavigateToTab)
                     }
                     
                     item {
-                        DurationStatsCard(stats = stats)
+                        NotesActivityCard(stats = stats, onNavigateToTab = onNavigateToTab)
                     }
-
-                    if (uiState.showComparisons) {
+                    
+                    item {
+                        EngagementTableCard(stats = stats)
+                    }
+                    
+                    if (stats.mostTalked.isNotEmpty()) {
                         item {
-                            ComparisonsCard(stats = stats)
+                            TopCallersCard(
+                                title = "Longest Calls",
+                                subtitle = "By total talk time",
+                                callers = stats.mostTalked,
+                                showDuration = true,
+                                onNavigateToTab = onNavigateToTab
+                            )
                         }
                     }
 
-                    item {
-                        ContactsBreakdownCard(
-                            stats = stats,
-                            onTypeClick = { filter ->
-                                viewModel.setContactsFilter(filter)
-                                onNavigateToTab?.invoke(0) // Navigate to Calls
-                            }
-                        )
-                    }
-                    
-                    item {
-                        NotesActivityCard(stats = stats)
-                    }
-                    
-                    if (stats.labelDistribution.isNotEmpty()) {
+                    if (stats.topCallers.isNotEmpty()) {
                         item {
-                            LabelDistributionCard(labels = stats.labelDistribution)
+                            TopCallersCard(
+                                title = "Most Calls",
+                                subtitle = "By number of calls",
+                                callers = stats.topCallers,
+                                showDuration = false,
+                                onNavigateToTab = onNavigateToTab
+                            )
                         }
                     }
                 }
@@ -454,51 +456,57 @@ fun ReportCardHeader(
 
 @Composable
 fun OverviewCard(
-    totalCalls: Int,
-    uniqueContacts: Int,
-    totalDuration: Long,
+    stats: ReportStats,
     onClick: () -> Unit
 ) {
     ElevatedCard(
         shape = RoundedCornerShape(16.dp),
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             ReportCardHeader(
                 title = "Overview",
                 onDrillDown = onClick,
-                exportData = """
-                    Total Calls: $totalCalls
-                    Contacts: $uniqueContacts
-                    Talk Time: ${formatDurationShort(totalDuration)}
-                """.trimIndent()
+                exportData = "Total: ${stats.totalCalls}, Unique: ${stats.uniqueContacts}, Talk Time: ${formatDurationShort(stats.totalDuration)}"
             )
             Spacer(Modifier.height(16.dp))
             
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 StatItem(
-                    value = totalCalls.toString(),
+                    value = stats.totalCalls.toString(),
                     label = "Total Calls",
                     icon = Icons.Default.Call,
                     color = MaterialTheme.colorScheme.primary,
                     onClick = onClick
                 )
                 StatItem(
-                    value = uniqueContacts.toString(),
-                    label = "Contacts",
+                    value = stats.uniqueContacts.toString(), // Approximating "Unique Calls" as Unique Contacts
+                    label = "Unique Calls",
                     icon = Icons.Default.People,
                     color = MaterialTheme.colorScheme.secondary,
                     onClick = onClick
                 )
+            }
+            Spacer(Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 StatItem(
-                    value = formatDurationShort(totalDuration),
+                    value = formatDurationShort(stats.totalDuration),
                     label = "Talk Time",
                     icon = Icons.Default.Timer,
                     color = MaterialTheme.colorScheme.tertiary,
+                    onClick = onClick
+                )
+                StatItem(
+                    value = formatDurationShort(stats.avgDuration),
+                    label = "Avg Talk Time",
+                    icon = Icons.Default.AvTimer,
+                    color = MaterialTheme.colorScheme.error, // or any color
                     onClick = onClick
                 )
             }
@@ -507,8 +515,9 @@ fun OverviewCard(
 }
 
 @Composable
-fun CallTypesCard(
+fun CallStatsTableCard(
     stats: ReportStats,
+    dateRange: DateRange,
     onTypeClick: (CallTabFilter) -> Unit
 ) {
     ElevatedCard(
@@ -516,54 +525,138 @@ fun CallTypesCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            ReportCardHeader(
-                title = "Call Types",
-                onDrillDown = { onTypeClick(CallTabFilter.ALL) },
-                exportData = """
-                    Attended: ${stats.connectedIncoming}
-                    Responded: ${stats.connectedOutgoing}
-                    Not Attended: ${stats.incomingCalls - stats.connectedIncoming}
-                    Not Responded: ${stats.outgoingCalls - stats.connectedOutgoing}
-                """.trimIndent()
-            )
+            ReportCardHeader(title = "Calls Stats")
+            Spacer(Modifier.height(8.dp))
+            
+            // Header
+            Row(Modifier.fillMaxWidth()) {
+                Text("Type", Modifier.weight(2f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                Text("Total", Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                Text("Unique", Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                Text("Trend", Modifier.weight(0.5f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+            }
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            
+            // Rows
+            CallStatTableRow("Connected", stats.connectedCalls, stats.connectedUnique, stats.comparisonAverages["connected"], dateRange)
+            CallStatTableRow("Outgoings", stats.outgoingCalls, -1, stats.comparisonAverages["outgoing"], dateRange) // Unique outgoing not standard, can use outgoingUnique if needed
+            CallStatTableRow("Answered", stats.connectedIncoming, stats.connectedIncomingUnique, stats.comparisonAverages["answered"], dateRange) // Incoming Answered
+            CallStatTableRow("Out Not Conn", stats.outgoingNotConnected, stats.outgoingNotConnectedUnique, stats.comparisonAverages["outgoingNotConnected"], dateRange)
+            CallStatTableRow("Not Answered", stats.notAnsweredIncoming, stats.notAnsweredIncomingUnique, stats.comparisonAverages["notAnswered"], dateRange)
+            CallStatTableRow("May be Failed", stats.mayFailedCount, stats.mayFailedUnique, stats.comparisonAverages["mayFailed"], dateRange)
+            
             Spacer(Modifier.height(16.dp))
             
-            ClickableStatRow(
-                label = "Attended (Incoming >3s)",
-                value = stats.connectedIncoming.toString(),
-                icon = Icons.AutoMirrored.Filled.CallReceived,
-                color = Color(0xFF4CAF50),
-                onClick = { onTypeClick(CallTabFilter.ATTENDED) }
-            )
-            ClickableStatRow(
-                label = "Responded (Outgoing >3s)",
-                value = stats.connectedOutgoing.toString(),
-                icon = Icons.AutoMirrored.Filled.CallMade,
-                color = Color(0xFF2196F3),
-                onClick = { onTypeClick(CallTabFilter.RESPONDED) }
-            )
-            ClickableStatRow(
-                label = "NOT ATTENDED (Incoming <=3s)",
-                value = (stats.incomingCalls - stats.connectedIncoming).toString(),
-                icon = Icons.AutoMirrored.Filled.CallMissed,
-                color = Color(0xFFF44336),
-                onClick = { onTypeClick(CallTabFilter.NOT_ATTENDED) }
-            )
-            ClickableStatRow(
-                label = "Not Responded (Outgoing <=3s)",
-                value = (stats.outgoingCalls - stats.connectedOutgoing).toString(),
-                icon = Icons.AutoMirrored.Filled.PhoneMissed,
-                color = Color(0xFFFF9800),
-                onClick = { onTypeClick(CallTabFilter.NOT_RESPONDED) }
-            )
-            if (stats.rejectedCalls > 0) {
-                ClickableStatRow(
-                    label = "Rejected / Blocked",
-                    value = stats.rejectedCalls.toString(),
-                    icon = Icons.Default.Block,
-                    color = Color(0xFF9E9E9E),
-                    onClick = { onTypeClick(CallTabFilter.IGNORED) }
+            // Rates
+            RateRow("Outgoing Connection Rate", stats.connectedOutgoing, stats.outgoingCalls)
+            RateRow("Answer Rate (Calls)", stats.connectedIncoming, stats.incomingCalls)
+            
+            Spacer(Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+fun CallStatTableRow(
+    label: String,
+    total: Int,
+    unique: Int,
+    avg: Float?,
+    range: DateRange
+) {
+    val showTrend = avg != null && avg > 0
+    val trendUp = if (showTrend) total >= (avg!! * getDaysMultiplier(range)) else false
+    // Simple logic: if total is greater than daily avg * 1 (for Today) -> Up.
+    // Actually, user said "based on total calls of last 7 days average".
+    // We treat 'avg' as Daily Average of last 7 days.
+    // We compare 'total' (of current selection) vs 'avg'.
+    // If current selection is multiple days, typically we compare daily avg vs daily avg.
+    // But let's assume "Today" view for specific iconography request.
+    
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, Modifier.weight(2f), style = MaterialTheme.typography.bodyMedium)
+        Text(total.toString(), Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium)
+        Text(if (unique >= 0) unique.toString() else "-", Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium)
+        Box(Modifier.weight(0.5f), contentAlignment = Alignment.Center) {
+             if (showTrend) {
+                Icon(
+                    imageVector = if (trendUp) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                    contentDescription = null,
+                    tint = if (trendUp) Color(0xFF4CAF50) else Color(0xFFF44336),
+                    modifier = Modifier.size(16.dp)
                 )
+             }
+        }
+    }
+}
+
+private fun getDaysMultiplier(range: DateRange): Float {
+    return when(range) {
+        DateRange.TODAY -> 1f
+        DateRange.LAST_3_DAYS -> 3f
+        DateRange.LAST_7_DAYS -> 7f
+        else -> 1f // Default to 1 to compare Total vs Daily Avg (which works for Today)
+    }
+}
+
+
+@Composable
+fun RateRow(label: String, numerator: Int, denominator: Int) {
+    val rate = if (denominator > 0) (numerator * 100 / denominator) else 0
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+        Text("$rate%", fontWeight = FontWeight.Bold)
+    }
+    LinearProgressIndicator(
+        progress = { rate / 100f },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(4.dp)
+            .clip(RoundedCornerShape(2.dp)),
+        color = if (rate > 50) Color(0xFF4CAF50) else Color(0xFFFF9800),
+    )
+}
+
+@Composable
+fun EngagementTableCard(stats: ReportStats) {
+    ElevatedCard(
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            ReportCardHeader(title = "Engagement")
+            Spacer(Modifier.height(8.dp))
+            
+            Row(Modifier.fillMaxWidth()) {
+                Text("Duration", Modifier.weight(2f), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                Text("Total", Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                Text("Out", Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                Text("In", Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+            }
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            
+            stats.durationBuckets.forEach { bucket ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(bucket.label, Modifier.weight(2f), style = MaterialTheme.typography.bodySmall)
+                    Text(bucket.total.toString(), Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold)
+                    Text(bucket.outCount.toString(), Modifier.weight(1f), textAlign = TextAlign.Center, color = Color(0xFF2196F3))
+                    Text(bucket.inCount.toString(), Modifier.weight(1f), textAlign = TextAlign.Center, color = Color(0xFF4CAF50))
+                }
             }
         }
     }
@@ -984,27 +1077,19 @@ fun NotesActivityCard(
             ReportCardHeader(
                 title = "Notes & Activity",
                 onDrillDown = { onNavigateToTab?.invoke(0) },
-                exportData = """
-                    Calls with Notes: ${stats.callsWithNotes}
-                    Reviewed Calls: ${stats.reviewedCalls}
-                    Calls with Recordings: ${stats.callsWithRecordings}
-                """.trimIndent()
+                exportData = ""
             )
             Spacer(Modifier.height(16.dp))
             
-            ClickableStatRow(
-                label = "Calls with Notes",
-                value = stats.callsWithNotes.toString(),
-                icon = Icons.AutoMirrored.Filled.StickyNote2,
-                color = MaterialTheme.colorScheme.secondary,
-                onClick = {
-                    viewModel.setNotesFilter(NotesFilter.WITH_NOTE)
-                    onNavigateToTab?.invoke(0)
-                }
-            )
+            // Format: 100% (77/84)
+            fun formatPercent(count: Int, total: Int): String {
+                val p = if (total > 0) (count * 100 / total) else 0
+                return "$p% ($count/$total)"
+            }
+
             ClickableStatRow(
                 label = "Reviewed Calls",
-                value = stats.reviewedCalls.toString(),
+                value = formatPercent(stats.reviewedCalls, stats.totalCalls),
                 icon = Icons.Default.CheckCircle,
                 color = Color(0xFF4CAF50),
                 onClick = {
@@ -1013,43 +1098,51 @@ fun NotesActivityCard(
                 }
             )
             ClickableStatRow(
-                label = "Calls with Recordings",
-                value = stats.callsWithRecordings.toString(),
-                icon = Icons.Default.Mic,
-                color = Color(0xFFF44336),
-                onClick = {
-                    // Filter needed for recordings?
-                    onNavigateToTab?.invoke(0)
-                }
-            )
-            if (stats.shortCalls > 0) {
-                ClickableStatRow(
-                    label = "Short Calls (<10s)",
-                    value = stats.shortCalls.toString(),
-                    icon = Icons.Default.Warning,
-                    color = Color(0xFFFF9800),
-                    onClick = { onNavigateToTab?.invoke(0) }
-                )
-            }
-            ClickableStatRow(
-                label = "Persons with Notes",
-                value = stats.personsWithNotes.toString(),
+                label = "Person with Notes",
+                value = formatPercent(stats.personsWithNotes, stats.totalPersons),
                 icon = Icons.Default.PersonPin,
                 color = MaterialTheme.colorScheme.tertiary,
                 onClick = {
                     viewModel.setPersonNotesFilter(PersonNotesFilter.WITH_NOTE)
-                    onNavigateToTab?.invoke(1) // Persons tab
+                    onNavigateToTab?.invoke(1)
                 }
             )
             ClickableStatRow(
-                label = "Persons with Labels",
-                value = stats.personsWithLabels.toString(),
+                label = "Person with Labels",
+                value = formatPercent(stats.personsWithLabels, stats.totalPersons),
                 icon = Icons.AutoMirrored.Filled.Label,
                 color = Color(0xFF9C27B0),
                 onClick = {
-                    onNavigateToTab?.invoke(1) // Persons tab
+                    onNavigateToTab?.invoke(1)
                 }
             )
+            ClickableStatRow(
+                label = "Calls with Notes",
+                value = formatPercent(stats.callsWithNotes, stats.totalCalls),
+                icon = Icons.AutoMirrored.Filled.StickyNote2,
+                color = MaterialTheme.colorScheme.secondary,
+                onClick = {
+                    viewModel.setNotesFilter(NotesFilter.WITH_NOTE)
+                    onNavigateToTab?.invoke(0)
+                }
+            )
+            ClickableStatRow(
+                label = "Calls with Recordings",
+                value = formatPercent(stats.callsWithRecordings, stats.totalCalls),
+                icon = Icons.Default.Mic,
+                color = Color(0xFFF44336),
+                onClick = { onNavigateToTab?.invoke(0) }
+            )
+            
+            if (stats.callsWithRecordings > 0) {
+                 ClickableStatRow(
+                    label = "Call With Recording",
+                    value = formatPercent(stats.callsWithRecordings, stats.totalCalls),
+                    icon = Icons.Default.GraphicEq, // Alternative icon
+                    color = Color(0xFFE91E63),
+                    onClick = { onNavigateToTab?.invoke(0) }
+                )
+            }
         }
     }
 }

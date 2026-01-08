@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -728,7 +729,10 @@ fun CustomLookupModal(
                 }
                 
                 OutlinedButton(
-                    onClick = { viewModel.updateCustomLookupUrl(urlInput) },
+                    onClick = { 
+                        viewModel.updateCustomLookupUrl(urlInput)
+                        onDismiss()
+                    },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -824,35 +828,7 @@ fun WhatsAppSelectionModal(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             
-            Spacer(Modifier.height(16.dp))
-            
-            if (showSetDefault) {
-                Surface(
-                    onClick = { setAsDefault = !setAsDefault },
-                    shape = RoundedCornerShape(12.dp),
-                    color = if (setAsDefault) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = setAsDefault, 
-                            onCheckedChange = { setAsDefault = it },
-                            colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "Always use this app (Make Default)",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-                Spacer(Modifier.height(16.dp))
-            }
+            Spacer(Modifier.height(24.dp))
             
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -881,6 +857,36 @@ fun WhatsAppSelectionModal(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                }
+            }
+
+            if (showSetDefault) {
+                Spacer(Modifier.height(24.dp))
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+                Spacer(Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { setAsDefault = !setAsDefault }
+                        .padding(vertical = 8.dp, horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = setAsDefault,
+                        onCheckedChange = { setAsDefault = it },
+                        colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        "Set as default (Always use this choice)",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }

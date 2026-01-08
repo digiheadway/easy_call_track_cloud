@@ -116,38 +116,40 @@ object WhatsAppUtils {
     fun openWhatsApp(context: Context, phoneNumber: String, packageName: String?) {
         try {
             val cleaned = phoneNumber.replace("[^\\d]".toRegex(), "")
-            // Use 91 as prefix if not present for Indian numbers, or assume user provides full number
-            // Standardize: if starts with 10 digits and no prefix, add 91
             val formatted = if (cleaned.length == 10) "91$cleaned" else cleaned
             
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$formatted"))
+            // Try WhatsApp-specific URI first as it's more direct fortargeting
+            val uris = listOf(
+                Uri.parse("whatsapp://send?phone=$formatted"),
+                Uri.parse("https://api.whatsapp.com/send?phone=$formatted"),
+                Uri.parse("https://wa.me/$formatted")
+            )
             
-            if (packageName != null && packageName != "Always Ask") {
-                if (packageName.contains("#")) {
-                    // It's a profile-specific app (e.g. Work Profile)
-                    // Unfortunately, we can't easily setPackage to a specific profile's app via Uri intent
-                    // unless we use LauncherApps to start it. But wa.me URLs are usually handled by browsers too.
-                    // For now, strip the # and try to set package.
-                    intent.setPackage(packageName.split("#")[0])
-                } else {
-                    intent.setPackage(packageName)
+            var started = false
+            for (uri in uris) {
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW, uri)
+                    if (packageName != null && packageName != "Always Ask") {
+                        val realPkg = if (packageName.contains("#")) packageName.split("#")[0] else packageName
+                        intent.setPackage(realPkg)
+                    }
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(intent)
+                    started = true
+                    break
+                } catch (e: Exception) {
+                    continue
                 }
             }
             
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            // Fallback: try without package
-            try {
-                val cleaned = phoneNumber.replace("[^\\d]".toRegex(), "")
-                val formatted = if (cleaned.length == 10) "91$cleaned" else cleaned
+            if (!started) {
+                // Fallback: try default without package
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$formatted"))
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
-            } catch (e2: Exception) {
-                e2.printStackTrace()
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }

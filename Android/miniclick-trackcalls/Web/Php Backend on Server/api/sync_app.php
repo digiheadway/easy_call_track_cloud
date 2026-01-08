@@ -13,11 +13,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 /* ============================
-   ERRORS (DEV MODE)
+   ERRORS (PRODUCTION MODE)
 ============================ */
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
+error_reporting(0);
 
 /* ============================
    CONFIG
@@ -135,6 +135,9 @@ if ($action === "verify_pairing_code") {
         WHERE e.id = ? AND e.org_id = ?
         LIMIT 1
     ");
+    if (!$stmt) {
+        errorOut("DB Error (Select Employee): " . $conn->error, 500);
+    }
     $stmt->bind_param("is", $employee_id, $org_id);
     $stmt->execute();
     $res = $stmt->get_result();
@@ -150,6 +153,7 @@ if ($action === "verify_pairing_code") {
         // Device not yet linked to this employee.
         // If this device is already linked to ANOTHER employee, unlink them first (Takeover)
         $unlink = $conn->prepare("UPDATE employees SET device_id = NULL WHERE org_id = ? AND device_id = ? AND id != ?");
+        if (!$unlink) errorOut("DB Error (Unlink Previous): " . $conn->error, 500);
         $unlink->bind_param("ssi", $org_id, $device_id, $employee_id);
         $unlink->execute();
 
@@ -208,6 +212,7 @@ if ($action === "verify_pairing_code") {
             if (strtolower($org_id) === 'uptown' && $employee_id == 5) {
                 // Tester account - allow device switch
                 $upd = $conn->prepare("UPDATE employees SET device_id = ?, device_model = ?, os_version = ?, battery_level = ?, updated_at = NOW() WHERE id = ?");
+                if (!$upd) errorOut("DB Error (Tester Switch): " . $conn->error, 500);
                 $upd->bind_param("sssii", $device_id, $device_model, $os_version, $battery_level, $employee_id);
                 $upd->execute();
                 out([
@@ -1119,4 +1124,3 @@ if ($action === "add_demo_call") {
    INVALID ACTION
 ============================ */
 errorOut("Invalid action");
-?>

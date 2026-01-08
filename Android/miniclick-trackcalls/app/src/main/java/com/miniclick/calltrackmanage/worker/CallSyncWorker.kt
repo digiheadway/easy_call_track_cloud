@@ -46,12 +46,13 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             val skipSystemImport = inputData.getBoolean(KEY_SKIP_SYSTEM_IMPORT, false)
             
             Log.d(TAG, "Starting sync pass... (skipSystemImport=$skipSystemImport)")
-            setForeground(createForegroundInfo("Syncing Calls with Server.."))
             
             // PHASE 0: Sync from system call log to local Room DB (OFFLINE-FIRST)
             // Skip this phase for quick syncs (e.g., after note edit) to avoid showing
             // "Importing Data" / "Finding Recordings" status for minor operations
             if (!skipSystemImport) {
+                // Update notification for local import
+                setForeground(createForegroundInfo("Importing call history..."))
                 try {
                     callDataRepository.syncFromSystemCallLog()
                     Log.d(TAG, "Local call import completed")
@@ -61,6 +62,9 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             } else {
                 Log.d(TAG, "Skipping system call log import (quick sync mode)")
             }
+            
+            // Update notification for network sync
+            setForeground(createForegroundInfo("Syncing with cloud..."))
             
             // Check if server sync is configured
             val orgId = settingsRepository.getOrganisationId()
