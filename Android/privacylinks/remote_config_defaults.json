@@ -1,4 +1,5 @@
 {
+  "conditions": [],
   "parameters": {
     "show_app_open": {
       "defaultValue": {
@@ -239,11 +240,7 @@
       "defaultValue": {
         "value": "5"
       }
-    },
-    "home_layout_config": {
-      "defaultValue": {
-        "value": "[\n  {\"type\": \"ad_native_video\", \"id\": \"hero_video\", \"visible\": true},\n  {\"type\": \"section\", \"id\": \"supers\", \"visible\": true},\n  {\"type\": \"ad_native\", \"id\": \"mid_native\", \"visible\": true},\n  {\"type\": \"section\", \"id\": \"apps\", \"visible\": true},\n  {\"type\": \"section\", \"id\": \"games\", \"visible\": true},\n  {\"type\": \"ad_banner\", \"id\": \"bottom_banner\", \"visible\": true},\n  {\"type\": \"section\", \"id\": \"content\", \"visible\": true}\n]"
-      }
     }
-  }
+  },
+  "parameterGroups": {}
 }
