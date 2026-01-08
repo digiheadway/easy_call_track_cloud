@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import PersonDetailDrawer from './PersonDetailDrawer';
-import { Menu } from 'lucide-react';
+import { Menu, AlertTriangle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Layout({ children }) {
+    const { user } = useAuth();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -53,6 +55,16 @@ export default function Layout({ children }) {
                     ${!isMobile && isCollapsed ? 'ml-20' : 'lg:ml-64'}
                 `}
             >
+                {/* Verification Warning Strip */}
+                {user && (Number(user.is_verified) === 0) && (
+                    <div className="mb-6 p-4 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center gap-3 animate-in slide-in-from-top-2">
+                        <AlertTriangle size={20} className="flex-shrink-0" />
+                        <div className="flex-1 text-sm font-medium">
+                            Your email address is not verified. Please check your inbox to verify your account.
+                        </div>
+                    </div>
+                )}
+
                 {children}
             </main>
 

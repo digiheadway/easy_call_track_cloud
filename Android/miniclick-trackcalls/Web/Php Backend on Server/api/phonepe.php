@@ -44,11 +44,17 @@ class PhonePe {
         }
         
         $result = json_decode($response, true);
+        
+        $msg = $result['message'] ?? '';
+        if (empty($msg) && $httpCode >= 400) {
+            $msg = 'request failed with status ' . $httpCode;
+        }
+
         return [
             'success' => $result['success'] ?? false,
             'data' => $result['data'] ?? [],
-            'code' => $result['code'] ?? '',
-            'message' => $result['message'] ?? '',
+            'code' => $result['code'] ?? (string)$httpCode,
+            'message' => $msg,
             'http_code' => $httpCode
         ];
     }
@@ -228,7 +234,8 @@ if ($action === 'create_order') {
     
     if (!$ppResult['success']) {
         Database::execute("UPDATE payment_orders SET order_status = 'FAILED' WHERE order_id = '" . Database::escape($orderId) . "'");
-        Response::error($ppResult['message'] ?? 'Failed to initiate payment', 400, $ppResult);
+        $errorMsg = !empty($ppResult['message']) ? $ppResult['message'] : 'Failed to initiate payment (' . $ppResult['http_code'] . ')';
+        Response::error($errorMsg, 400, $ppResult);
     }
     
     $redirectUrl = $ppResult['data']['instrumentResponse']['redirectInfo']['url'] ?? '';

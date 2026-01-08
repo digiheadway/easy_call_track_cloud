@@ -155,10 +155,28 @@ export default function PlansPage() {
                     fetchUsage();
                     setTimeout(() => setSuccess(''), 3000);
                 } else {
-                    // Payment required - show UPI modal
-                    setPendingPaymentAmount(res.data.amount);
-                    setPendingOrderDetails(payload);
-                    setShowUpiModal(true);
+
+                    // Payment required - Initiate PhonePe Payment
+                    try {
+                        const orderPayload = {
+                            ...payload,
+                            action: 'create_order',
+                            amount: res.data.amount
+                        };
+
+                        // Call PhonePe API
+                        const payRes = await api.post('/phonepe.php', orderPayload);
+
+                        if (payRes.status && payRes.data.payment_url) {
+                            // Redirect to PhonePe
+                            window.location.href = payRes.data.payment_url;
+                        } else {
+                            setError(payRes.message || 'Payment initialization failed');
+                        }
+                    } catch (payErr) {
+                        console.error('Payment Error:', payErr);
+                        setError('Failed to initiate payment. Please try again.');
+                    }
                 }
             } else {
                 setError(res.message || 'Checkout failed');
@@ -509,8 +527,8 @@ export default function PlansPage() {
                                                         <div className="flex flex-col">
                                                             <span className="font-black text-gray-900 dark:text-white">{isRenewing ? 'Total Storage Limit' : 'Extra Storage'}</span>
                                                             <span className="text-xs text-gray-400 dark:text-gray-500 font-bold tracking-tighter">
-                                                                {isRenewing 
-                                                                    ? `Current: ${usage?.allowed_storage_gb || 0} GB → New Total: ${(usage?.allowed_storage_gb || 0) + addStorage} GB` 
+                                                                {isRenewing
+                                                                    ? `Current: ${usage?.allowed_storage_gb || 0} GB → New Total: ${(usage?.allowed_storage_gb || 0) + addStorage} GB`
                                                                     : `+${addStorage} GB @ Rs ${unitPrices.price_per_gb}/GB/month`}
                                                             </span>
                                                             {!isRenewing && addStorage > 0 && (
@@ -738,7 +756,7 @@ export default function PlansPage() {
                                                     ) : (
                                                         <>
                                                             <CreditCard size={22} />
-                                                            <span>Pay via UPI</span>
+                                                            <span>Pay Securely</span>
                                                             <ChevronRight className="group-hover:translate-x-1 transition-transform" />
                                                         </>
                                                     )}
