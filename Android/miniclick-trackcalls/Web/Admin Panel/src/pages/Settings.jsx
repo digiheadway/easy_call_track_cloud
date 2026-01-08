@@ -84,7 +84,78 @@ export default function Settings() {
         }
     };
 
-    // ... (handleChangePassword and handleExportCalls remain same)
+    const handleChangePassword = async (e) => {
+        e.preventDefault();
+        if (passwords.new !== passwords.confirm) {
+            setError('New passwords do not match');
+            return;
+        }
+        setLoading(true);
+        setSuccess('');
+        setError('');
+        try {
+            await api.put('/settings.php', {
+                action: 'change_password',
+                current_password: passwords.current,
+                new_password: passwords.new
+            });
+            setSuccess('Password changed successfully!');
+            setPasswords({ current: '', new: '', confirm: '' });
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to change password');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleExportCalls = async () => {
+        setExportLoading(prev => ({ ...prev, calls: true }));
+        try {
+            const params = new URLSearchParams({ action: 'export', type: 'calls', dateRange: exportDateRange });
+            const response = await fetch(`https://api.miniclickcrm.com/api/export.php?${params.toString()}`, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('cc_token')}` }
+            });
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `calls_export_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            setSuccess('Calls exported successfully!');
+        } catch (err) {
+            setError('Export failed');
+        } finally {
+            setExportLoading(prev => ({ ...prev, calls: false }));
+        }
+    };
+
+    const handleExportCallers = async () => {
+        setExportLoading(prev => ({ ...prev, callers: true }));
+        try {
+            const params = new URLSearchParams({ action: 'export', type: 'callers' });
+            const response = await fetch(`https://api.miniclickcrm.com/api/export.php?${params.toString()}`, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('cc_token')}` }
+            });
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `callers_export_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            setSuccess('Callers exported successfully!');
+        } catch (err) {
+            setError('Export failed');
+        } finally {
+            setExportLoading(prev => ({ ...prev, callers: false }));
+        }
+    };
 
     const tabs = [
         { id: 'profile', label: 'Profile', icon: Users },
@@ -92,7 +163,12 @@ export default function Settings() {
         { id: 'exports', label: 'Data Export', icon: Download },
     ];
 
-    // ... (formatBytes remains same)
+    const formatBytes = (bytes) => {
+        if (!+bytes) return '0 Bytes';
+        const k = 1024, dm = 2, sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    };
 
     return (
         <div className="max-w-6xl mx-auto space-y-8">

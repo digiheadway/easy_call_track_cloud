@@ -69,6 +69,7 @@ class SettingsRepository private constructor(private val context: Context) {
     private val KEY_CUSTOM_END_DATE = "filter_custom_end_date"
     private val KEY_SEARCH_HISTORY = "search_history"
     private val KEY_REPORT_CATEGORY = "report_category"
+    private val KEY_SELECTED_TAB = "selected_tab"
     private val MAX_SEARCH_HISTORY = 10
 
     private val prefs by lazy {
@@ -462,4 +463,7 @@ class SettingsRepository private constructor(private val context: Context) {
     // Short Call Alert Threshold (default 10 seconds)
     fun getShortCallThresholdSeconds(): Int = prefs.getInt(KEY_SHORT_CALL_THRESHOLD_SECONDS, 10)
     fun setShortCallThresholdSeconds(seconds: Int) = prefs.edit().putInt(KEY_SHORT_CALL_THRESHOLD_SECONDS, seconds).apply()
+
+    fun getSelectedTab(): String = prefs.getString(KEY_SELECTED_TAB, "CALLS") ?: "CALLS"
+    fun setSelectedTab(tab: String) = prefs.edit().putString(KEY_SELECTED_TAB, tab).apply()
 }

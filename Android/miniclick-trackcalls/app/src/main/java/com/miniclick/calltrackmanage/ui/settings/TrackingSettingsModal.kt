@@ -24,23 +24,18 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * Full-screen page for Tracking Settings.
+ * Bottom Sheet Modal for Tracking Settings.
  * Displays all tracking-related configuration options.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TrackingSettingsScreen(
+fun TrackingSettingsModal(
     uiState: SettingsUiState,
     viewModel: SettingsViewModel,
-    onBack: () -> Unit
+    onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    
-    // Handle system back button
-    androidx.activity.compose.BackHandler {
-        onBack()
-    }
-    
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     
     // Storage permission state
     val hasStoragePermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
@@ -84,71 +79,53 @@ fun TrackingSettingsScreen(
     // Warning dialog state for changing recording path
     var showPathWarningDialog by remember { mutableStateOf(false) }
 
-    // Track Sim Modal
-    if (uiState.showTrackSimModal) {
-        TrackSimModal(
-            uiState = uiState,
-            viewModel = viewModel,
-            onDismiss = { viewModel.toggleTrackSimModal(false) }
-        )
-    }
-
-    // Recording path warning dialog
+    // Recording path warning modal
     if (showPathWarningDialog) {
-        AlertDialog(
-            onDismissRequest = { showPathWarningDialog = false },
-            icon = { Icon(Icons.Default.Warning, null, tint = Color(0xFFEAB308)) },
-            title = { Text("Change Recording Path?") },
-            text = {
-                Column {
-                    Text(
-                        "Current path is verified with ${uiState.recordingCount} recordings found.",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Changing this may break recording detection. Only change if recordings are not being found correctly.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+        ConfirmationModal(
+            title = "Change Recording Path?",
+            message = "Current path is verified with ${uiState.recordingCount} recordings found. Changing this may break recording detection. Only change if recordings are not being found correctly.",
+            confirmText = "Change Anyway",
+            icon = Icons.Default.Warning,
+            onConfirm = {
+                showPathWarningDialog = false
+                folderLauncher.launch(null)
             },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showPathWarningDialog = false
-                        folderLauncher.launch(null)
-                    }
-                ) {
-                    Text("Change Anyway")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPathWarningDialog = false }) {
-                    Text("Cancel")
-                }
-            }
+            onDismiss = { showPathWarningDialog = false }
         )
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Tracking Settings") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        }
-    ) { padding ->
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
         Column(
             modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.TrackChanges,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = "Tracking Settings",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(Modifier.height(24.dp))
+
             // ===================================================================
             // CALL TRACKING SECTION
             // ===================================================================
@@ -262,9 +239,8 @@ fun TrackingSettingsScreen(
             // ===================================================================
             // IGNORED NUMBERS SECTION
             // ===================================================================
-            SettingsSection(title = "Ignored Numbers") {
+            SettingsSection(title = "Privacy & Exclusions") {
                 val excludedCount = uiState.excludedPersons.size
-                val isExclusionLocked = !uiState.allowPersonalExclusion && uiState.pairingCode.isNotEmpty()
                 
                 ListItem(
                     headlineContent = { Text("Excluded Numbers") },
@@ -275,7 +251,7 @@ fun TrackingSettingsScreen(
                                 else "$excludedCount number${if (excludedCount > 1) "s" else ""} excluded"
                             )
                             Text(
-                                "Calls from these numbers won't be tracked or synced",
+                                "Manage numbers to stop tracking or hide from list",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -285,18 +261,7 @@ fun TrackingSettingsScreen(
                         SettingsIcon(Icons.Default.PersonOff, MaterialTheme.colorScheme.error) 
                     },
                     trailingContent = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (isExclusionLocked) {
-                                Icon(
-                                    Icons.Default.Lock, 
-                                    contentDescription = "Adding locked", 
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant, 
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(Modifier.width(4.dp))
-                            }
-                            Icon(Icons.Default.ChevronRight, contentDescription = null)
-                        }
+                        Icon(Icons.Default.ChevronRight, contentDescription = null)
                     },
                     modifier = Modifier.clickable { viewModel.toggleExcludedModal(true) }
                 )
@@ -524,24 +489,9 @@ fun TrackingSettingsScreen(
                         ) 
                     }
                 )
-
-                // Show synced org info if paired
-                if (uiState.pairingCode.isNotEmpty()) {
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                    
-                    ListItem(
-                        headlineContent = { Text("Syncing to Organisation") },
-                        supportingContent = { 
-                            Text(uiState.verifiedOrgName ?: "Connected")
-                        },
-                        leadingContent = { 
-                            SettingsIcon(Icons.Default.Business, MaterialTheme.colorScheme.primary) 
-                        }
-                    )
-                }
             }
 
-            Spacer(Modifier.height(100.dp))
+            Spacer(Modifier.height(48.dp))
         }
     }
 }

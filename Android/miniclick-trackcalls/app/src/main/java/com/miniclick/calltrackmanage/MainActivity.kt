@@ -271,8 +271,8 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
     val homeViewModel: HomeViewModel = viewModel()
     val homeState by homeViewModel.uiState.collectAsState()
     
-    // Default to Calls tab since Dialer is now a modal
-    var selectedTab by remember { mutableStateOf(AppTab.CALLS) }
+    // Use persisted tab from ViewModel
+    val selectedTab by viewModel.selectedTab.collectAsState()
     
     // Explicitly exclude DIALER from tabs
     val tabs = remember {
@@ -307,38 +307,6 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
         Log.d("MainScreen", "Sync Setup: ${settingsState.isSyncSetup}, Active: ${activeProcess?.title}, Pending: NewCalls=${settingsState.pendingNewCallsCount}, Meta=${settingsState.pendingMetadataUpdatesCount}, Person=${settingsState.pendingPersonUpdatesCount}, Rec=${settingsState.pendingRecordingCount}")
     }
 
-    // Modals are handled inside the content Box to ensure proper layering
-
-    // Full-screen Tracking Settings Page
-    if (settingsState.showTrackingSettings) {
-        TrackingSettingsScreen(
-            uiState = settingsState,
-            viewModel = settingsViewModel,
-            onBack = { settingsViewModel.toggleTrackingSettings(false) }
-        )
-        return
-    }
-
-    // Full-screen Extras Page
-    if (settingsState.showExtrasScreen) {
-        ExtrasScreen(
-            uiState = settingsState,
-            viewModel = settingsViewModel,
-            onResetOnboarding = { viewModel.resetOnboardingSession() },
-            onBack = { settingsViewModel.toggleExtrasScreen(false) }
-        )
-        return
-    }
-
-    // Full-screen Data Management Page
-    if (settingsState.showDataManagementScreen) {
-        DataManagementScreen(
-            uiState = settingsState,
-            viewModel = settingsViewModel,
-            onBack = { settingsViewModel.toggleDataManagementScreen(false) }
-        )
-        return
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -348,7 +316,7 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                     tabs.forEach { tab ->
                         NavigationBarItem(
                             selected = selectedTab == tab,
-                            onClick = { selectedTab = tab },
+                            onClick = { viewModel.setSelectedTab(tab) },
                             icon = {
                                 Icon(
                                     imageVector = if (selectedTab == tab) tab.selectedIcon else tab.icon,
@@ -410,11 +378,11 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                     AppTab.REPORTS -> ReportsScreen(
                         syncStatusBar = syncStatusBar,
                         onNavigateToTab = { tabIndex ->
-                            selectedTab = when(tabIndex) {
+                            viewModel.setSelectedTab(when(tabIndex) {
                                 0 -> AppTab.CALLS
                                 1 -> AppTab.PERSONS
                                 else -> AppTab.CALLS
-                            }
+                            })
                         }
                     )
                     AppTab.SETTINGS -> SettingsScreen(
@@ -508,6 +476,31 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                     )
                 }
 
+                if (settingsState.showTrackingSettings) {
+                    TrackingSettingsModal(
+                        uiState = settingsState,
+                        viewModel = settingsViewModel,
+                        onDismiss = { settingsViewModel.toggleTrackingSettings(false) }
+                    )
+                }
+
+                if (settingsState.showExtrasScreen) {
+                    ExtrasModal(
+                        uiState = settingsState,
+                        viewModel = settingsViewModel,
+                        onResetOnboarding = { viewModel.resetOnboardingSession() },
+                        onDismiss = { settingsViewModel.toggleExtrasScreen(false) }
+                    )
+                }
+
+                if (settingsState.showDataManagementScreen) {
+                    DataManagementModal(
+                        uiState = settingsState,
+                        viewModel = settingsViewModel,
+                        onDismiss = { settingsViewModel.toggleDataManagementScreen(false) }
+                    )
+                }
+
                 if (settingsState.showTrackSimModal) {
                     TrackSimModal(
                         uiState = settingsState,
@@ -569,72 +562,52 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                 }
 
                 if (settingsState.showResetConfirmDialog) {
-                    AlertDialog(
-                        onDismissRequest = { settingsViewModel.toggleResetConfirmDialog(false) },
-                        title = { Text("Reset Sync Data Status") },
-                        text = { Text("This will reset the sync status of all logs. They will be re-synced in the next cycle.") },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                settingsViewModel.resetSyncStatus()
-                                settingsViewModel.toggleResetConfirmDialog(false)
-                            }) { Text("Confirm") }
+                    ConfirmationModal(
+                        title = "Reset Sync Data Status",
+                        message = "This will reset the sync status of all logs. They will be re-synced in the next cycle.",
+                        confirmText = "Confirm Reset",
+                        onConfirm = {
+                            settingsViewModel.resetSyncStatus()
+                            settingsViewModel.toggleResetConfirmDialog(false)
                         },
-                        dismissButton = {
-                            TextButton(onClick = { settingsViewModel.toggleResetConfirmDialog(false) }) { Text("Cancel") }
-                        }
+                        onDismiss = { settingsViewModel.toggleResetConfirmDialog(false) },
+                        icon = Icons.Default.Restore
                     )
                 }
 
                 if (settingsState.showClearDataDialog) {
-                    AlertDialog(
-                        onDismissRequest = { settingsViewModel.toggleClearDataDialog(false) },
-                        icon = { Icon(Icons.Default.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
-                        title = { Text("Clear All App Data") },
-                        text = { Text("This will permanently delete all logs, notes, and settings. This cannot be undone.") },
-                        confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    settingsViewModel.clearAllAppData {
-                                        settingsViewModel.toggleClearDataDialog(false)
-                                    }
-                                },
-                                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                            ) { Text("Clear All Data") }
+                    ConfirmationModal(
+                        title = "Clear All App Data",
+                        message = "This will permanently delete all logs, notes, and settings. This cannot be undone.",
+                        confirmText = "Clear All Data",
+                        isDestructive = true,
+                        icon = Icons.Default.DeleteForever,
+                        onConfirm = {
+                            settingsViewModel.clearAllAppData {
+                                settingsViewModel.toggleClearDataDialog(false)
+                            }
                         },
-                        dismissButton = {
-                            TextButton(onClick = { settingsViewModel.toggleClearDataDialog(false) }) { Text("Cancel") }
-                        }
+                        onDismiss = { settingsViewModel.toggleClearDataDialog(false) }
                     )
                 }
                 
                 if (settingsState.showRecordingEnablementDialog) {
-                    AlertDialog(
-                        onDismissRequest = { settingsViewModel.toggleRecordingDialog(false) },
-                        title = { Text("Enable Recording Sync") },
-                        text = { Text("Would you like to scan recordings for previous calls as well?") },
-                        confirmButton = {
-                            Button(onClick = { settingsViewModel.updateCallRecordEnabled(enabled = true, scanOld = true) }) { Text("Scan All") }
+                    RecordingActionModal(
+                        isEnable = true,
+                        onConfirm = { scanOld ->
+                            settingsViewModel.updateCallRecordEnabled(enabled = true, scanOld = scanOld)
                         },
-                        dismissButton = {
-                            TextButton(onClick = { settingsViewModel.updateCallRecordEnabled(enabled = true, scanOld = false) }) { Text("New Only") }
-                        }
+                        onDismiss = { settingsViewModel.toggleRecordingDialog(false) }
                     )
                 }
 
                 if (settingsState.showRecordingDisablementDialog) {
-                    AlertDialog(
-                        onDismissRequest = { settingsViewModel.toggleRecordingDisableDialog(false) },
-                        title = { Text("Disable Recording Sync?") },
-                        text = { Text("Recording sync will be stopped. Pending uploads will be cancelled.") },
-                        confirmButton = {
-                            Button(
-                                onClick = { settingsViewModel.updateCallRecordEnabled(enabled = false) },
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                            ) { Text("Disable") }
+                    RecordingActionModal(
+                        isEnable = false,
+                        onConfirm = {
+                            settingsViewModel.updateCallRecordEnabled(enabled = false)
                         },
-                        dismissButton = {
-                            TextButton(onClick = { settingsViewModel.toggleRecordingDisableDialog(false) }) { Text("Cancel") }
-                        }
+                        onDismiss = { settingsViewModel.toggleRecordingDisableDialog(false) }
                     )
                 }
             }
@@ -662,6 +635,12 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                     )
                 }
             }
+        }
+
+        // --- Back Navigation Flow Enhancement ---
+        // If not on CALLS, first back press returns to CALLS (unless Dialer is open)
+        androidx.activity.compose.BackHandler(enabled = selectedTab != AppTab.CALLS && !showDialerSheet) {
+            viewModel.setSelectedTab(AppTab.CALLS)
         }
     }
 }

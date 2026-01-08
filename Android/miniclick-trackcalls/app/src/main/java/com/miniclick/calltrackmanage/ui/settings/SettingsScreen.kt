@@ -978,77 +978,17 @@ fun ExcludedContactsModal(
     val currentList = if (selectedTab == 0) noTrackingPersons else excludedFromListOnlyPersons
 
     if (showAddDialog) {
-        AlertDialog(
-            onDismissRequest = { showAddDialog = false },
-            icon = { Icon(Icons.Default.PersonAdd, null, tint = MaterialTheme.colorScheme.primary) },
-            title = { Text("Add Numbers to Exclude") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        "Enter phone numbers. Separate with commas or new lines.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    OutlinedTextField(
-                        value = numberInput,
-                        onValueChange = { numberInput = it },
-                        label = { Text("Phone Numbers") },
-                        placeholder = { Text("+1234567890") },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 3,
-                        maxLines = 5
-                    )
-                    
-                    Spacer(Modifier.height(8.dp))
-                    
-                    Text("Exclusion Type", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium)
-                    
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(
-                            selected = addAsNoTracking,
-                            onClick = { addAsNoTracking = true },
-                            label = { 
-                                Column {
-                                    Text("No Tracking", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
-                                    Text("Stop recording", style = MaterialTheme.typography.labelSmall)
-                                }
-                            },
-                            leadingIcon = if (addAsNoTracking) { { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) } } else null,
-                            modifier = Modifier.weight(1f)
-                        )
-                        
-                        FilterChip(
-                            selected = !addAsNoTracking,
-                            onClick = { addAsNoTracking = false },
-                            label = { 
-                                Column {
-                                    Text("Hide Only", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
-                                    Text("Keep recording", style = MaterialTheme.typography.labelSmall)
-                                }
-                            },
-                            leadingIcon = if (!addAsNoTracking) { { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) } } else null,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+        AddNumbersModal(
+            onAdd = { numbers, isNoTracking ->
+                if (onAddNumbersWithType != null) {
+                    onAddNumbersWithType(numbers, isNoTracking)
+                } else {
+                    onAddNumbers(numbers)
                 }
+                selectedTab = if (isNoTracking) 0 else 1
+                showAddDialog = false
             },
-            confirmButton = {
-                Button(onClick = {
-                    if (onAddNumbersWithType != null) {
-                        onAddNumbersWithType(numberInput, addAsNoTracking)
-                    } else {
-                        onAddNumbers(numberInput)
-                    }
-                    // Switch to the relevant tab so the user sees the new entry
-                    selectedTab = if (addAsNoTracking) 0 else 1
-                    
-                    numberInput = ""
-                    showAddDialog = false
-                }) { Text("Add") }
-            },
-            dismissButton = {
-                TextButton(onClick = { numberInput = ""; showAddDialog = false }) { Text("Cancel") }
-            }
+            onDismiss = { showAddDialog = false }
         )
     }
     

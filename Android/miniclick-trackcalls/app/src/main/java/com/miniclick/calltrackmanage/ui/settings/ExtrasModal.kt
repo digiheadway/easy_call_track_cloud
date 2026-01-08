@@ -12,48 +12,60 @@ import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 /**
- * Full-screen page for Extra/Utility settings.
+ * Bottom Sheet Modal for Extra/Utility settings.
  * Contains privacy, account, data management, and troubleshooting options.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExtrasScreen(
+fun ExtrasModal(
     uiState: SettingsUiState,
     viewModel: SettingsViewModel,
     onResetOnboarding: () -> Unit,
-    onBack: () -> Unit
+    onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    
-    // Handle system back button
-    androidx.activity.compose.BackHandler {
-        onBack()
-    }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Extras") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        }
-    ) { padding ->
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
         Column(
             modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.Extension,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = "Extras",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(Modifier.height(24.dp))
+
             // ===================================================================
             // TROUBLESHOOTING
             // ===================================================================
@@ -311,7 +323,7 @@ fun ExtrasScreen(
                 )
             }
 
-            Spacer(Modifier.height(100.dp))
+            Spacer(Modifier.height(48.dp))
         }
     }
 }

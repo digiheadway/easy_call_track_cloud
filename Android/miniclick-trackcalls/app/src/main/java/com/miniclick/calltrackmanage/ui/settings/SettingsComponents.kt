@@ -1011,3 +1011,306 @@ fun SelectionChip(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RecordingActionModal(
+    isEnable: Boolean,
+    onConfirm: (Boolean) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 48.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (isEnable) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            if (isEnable) Icons.Default.CloudUpload else Icons.Default.CloudOff,
+                            contentDescription = null,
+                            tint = if (isEnable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+                Spacer(Modifier.width(16.dp))
+                Text(
+                    text = if (isEnable) "Enable Recording Sync" else "Disable Recording Sync",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            
+            Spacer(Modifier.height(16.dp))
+            
+            Text(
+                text = if (isEnable) 
+                    "Would you like to scan and sync recordings for previous calls as well, or only for new calls from now on?" 
+                else 
+                    "Recording sync will be stopped. Pending uploads will be cancelled and no further recordings will be tracked.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(Modifier.height(32.dp))
+
+            if (isEnable) {
+                Button(
+                    onClick = { onConfirm(true) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(16.dp)
+                ) {
+                    Icon(Icons.Default.ManageSearch, null)
+                    Spacer(Modifier.width(12.dp))
+                    Text("Scan All Previous Recordings")
+                }
+                
+                Spacer(Modifier.height(12.dp))
+                
+                OutlinedButton(
+                    onClick = { onConfirm(false) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(16.dp)
+                ) {
+                    Icon(Icons.Default.AddCircleOutline, null)
+                    Spacer(Modifier.width(12.dp))
+                    Text("New Recordings Only")
+                }
+            } else {
+                Button(
+                    onClick = { onConfirm(false) }, // scanOld is ignore for disable
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(16.dp)
+                ) {
+                    Text("Confirm Disable")
+                }
+                
+                Spacer(Modifier.height(12.dp))
+                
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Keep Active")
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ConfirmationModal(
+    title: String,
+    message: String,
+    confirmText: String,
+    cancelText: String = "Cancel",
+    isDestructive: Boolean = false,
+    icon: ImageVector? = null,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 48.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (icon != null) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (isDestructive) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                icon,
+                                contentDescription = null,
+                                tint = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(16.dp))
+                }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            
+            Spacer(Modifier.height(16.dp))
+            
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(Modifier.height(32.dp))
+
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier.fillMaxWidth(),
+                colors = if (isDestructive) ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error) else ButtonDefaults.buttonColors(),
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(16.dp)
+            ) {
+                Text(confirmText)
+            }
+            
+            Spacer(Modifier.height(12.dp))
+            
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(cancelText)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddNumbersModal(
+    onAdd: (String, Boolean) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var numberInput by remember { mutableStateOf("") }
+    var addAsNoTracking by remember { mutableStateOf(true) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 48.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.PersonAdd, null, tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
+                Spacer(Modifier.width(16.dp))
+                Text("Add Numbers to Exclude", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            Text(
+                "Enter phone numbers. Separate with commas or new lines.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Spacer(Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = numberInput,
+                onValueChange = { numberInput = it },
+                label = { Text("Phone Numbers") },
+                placeholder = { Text("+1234567890") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3,
+                maxLines = 5,
+                shape = RoundedCornerShape(12.dp)
+            )
+            
+            Spacer(Modifier.height(24.dp))
+            
+            Text("Exclusion Type", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
+            
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Surface(
+                    onClick = { addAsNoTracking = true },
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (addAsNoTracking) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                    border = if (addAsNoTracking) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.CloudOff, null, modifier = Modifier.size(16.dp), tint = if (addAsNoTracking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(Modifier.width(8.dp))
+                            Text("No Tracking", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                        }
+                        Text("Stop recording and syncing completely", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                
+                Surface(
+                    onClick = { addAsNoTracking = false },
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (!addAsNoTracking) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                    border = if (!addAsNoTracking) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.VisibilityOff, null, modifier = Modifier.size(16.dp), tint = if (!addAsNoTracking) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Hide Only", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                        }
+                        Text("Keep recording but hide from the list", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(32.dp))
+
+            Button(
+                onClick = { onAdd(numberInput, addAsNoTracking) },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = numberInput.isNotBlank(),
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(16.dp)
+            ) {
+                Text("Add Numbers")
+            }
+            
+            Spacer(Modifier.height(12.dp))
+            
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Cancel")
+            }
+        }
+    }
+}
+

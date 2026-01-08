@@ -28,6 +28,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _isSessionOnboardingDismissed = MutableStateFlow(false)
     val isSessionOnboardingDismissed: StateFlow<Boolean> = _isSessionOnboardingDismissed.asStateFlow()
+
+    private val _selectedTab = MutableStateFlow(AppTab.valueOf(settingsRepository.getSelectedTab()))
+    val selectedTab: StateFlow<AppTab> = _selectedTab.asStateFlow()
     // Observe onboarding completion status
     val onboardingCompleted: StateFlow<Boolean> = settingsRepository.getOnboardingCompletedFlow()
         .stateIn(
@@ -105,5 +108,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun resetOnboardingSession() {
         _isSessionOnboardingDismissed.value = false
         settingsRepository.setOnboardingOffline(false)
+    }
+
+    fun setSelectedTab(tab: AppTab) {
+        _selectedTab.value = tab
+        settingsRepository.setSelectedTab(tab.name)
     }
 }
