@@ -545,43 +545,43 @@ class RecordingRepository private constructor(private val context: Context) {
             if (!contactName.isNullOrBlank()) {
                  val nameParts = contactName.lowercase().split(" ").filter { it.length > 2 }
                  if (nameParts.isNotEmpty() && nameParts.any { fileName.contains(it) }) {
-                     totalScore += 25 // Name match is significant
+                     totalScore += 20 // Name match (Callyzer: +20)
                      hasIdentityMatch = true
                  }
             }
 
-            // --- 2. Time Match ---
+            // --- 2. Time Match (Callyzer-style weights) ---
             var timeDiff = kotlin.math.abs(file.lastModified - callDate)
             
             // Try explicit Date in Filename (Highest Trust) - overrides lastModified if valid
             val extractedDate = extractDateFromFilename(fileName)
-            val isFilenameDateMatch = if (extractedDate != null) {
+            if (extractedDate != null) {
                 val diff = kotlin.math.abs(extractedDate - callDate)
                 if (diff <= 5 * 60 * 1000L) {
                      // Recalculate timeDiff using extracted date for fairness in sorting
                      timeDiff = diff
-                     true
-                } else {
-                     // Date in filename doesn't match call date
-                     // Don't hard-reject - merged calls may have different filenames
-                     false
                 }
-            } else {
-                // Fallback to substring matching as before (for simple formats)
-                dateStrings.any { fileName.contains(it) }
             }
 
-            if (isFilenameDateMatch) {
-                totalScore += 40
-            } else {
-                // B. Timestamp Check (if no filename match)
-                if (timeDiff <= 2 * 60 * 1000L) { // 2 mins (Perfect)
-                    totalScore += 30
-                } else if (timeDiff <= 15 * 60 * 1000L) { // 15 mins (Good)
-                    totalScore += 15
-                } else if (timeDiff <= 60 * 60 * 1000L) { // 1 hour (Acceptable)
-                    totalScore += 5
-                }
+            // Callyzer-style time scoring (highest weight factor)
+            when {
+                timeDiff <= 5 * 1000L -> totalScore += 100     // ≤5 seconds: +100 (almost certain match)
+                timeDiff <= 30 * 1000L -> totalScore += 80     // ≤30 seconds: +80
+                timeDiff <= 60 * 1000L -> totalScore += 60     // ≤1 minute: +60
+                timeDiff <= 2 * 60 * 1000L -> totalScore += 40 // ≤2 minutes: +40
+                timeDiff <= 5 * 60 * 1000L -> totalScore += 20 // ≤5 minutes: +20
+                timeDiff <= 15 * 60 * 1000L -> totalScore += 10 // ≤15 minutes: +10
+            }
+
+            // --- 3. Folder Context Bonus (Callyzer: +30) ---
+            // Files from known recording folders are more likely to be actual call recordings
+            val knownFolderKeywords = listOf(
+                "call", "recording", "recorder", "miui/sound", "phonerecord",
+                "voicerecorder", "callcloud", "acr", "cube", "truecaller"
+            )
+            val filePath = file.absolutePath.lowercase()
+            if (knownFolderKeywords.any { filePath.contains(it) }) {
+                totalScore += 30 // Known recorder folder bonus
             }
 
             // NOTE: Removed strict rejection rules to allow more flexible matching.
@@ -590,35 +590,30 @@ class RecordingRepository private constructor(private val context: Context) {
             // - Different filenames (recorder may use different naming for merged calls)
             // The scoring system will still prefer better matches, but we don't hard-reject.
 
-            // --- 3. Duration Match (Lazy Fetch) ---
-            // Only check duration if we already have a decent candidate (score > 10)
-            if (totalScore > 10) {
-                val fileDurationMs = getAudioDuration(file.absolutePath)
-                if (fileDurationMs > 0) {
-                    val callDurationMs = durationSec * 1000
-                    val durDiff = kotlin.math.abs(fileDurationMs - callDurationMs)
-                    
-                    if (durDiff < 1000) { // < 1 sec diff
-                        totalScore += 50 // HUGE Bonus for exact duration match (overrides slight time diffs)
-                    } else if (durDiff < 5000) { // < 5 sec diff
-                        totalScore += 30
-                    } else if (durDiff < 10000) { // < 10 sec diff
-                        totalScore += 10
-                    }
-                    // Removed: Duration mismatch penalty (-20) since merged calls may have longer durations
+            // --- 4. Duration Match (Callyzer: +40) ---
+            // Check duration for all candidates (important signal)
+            val fileDurationMs = getAudioDuration(file.absolutePath)
+            if (fileDurationMs > 0) {
+                val callDurationMs = durationSec * 1000
+                val durDiff = kotlin.math.abs(fileDurationMs - callDurationMs)
+                
+                when {
+                    durDiff < 1000 -> totalScore += 40   // <1 sec diff: +40 (exact match)
+                    durDiff < 3000 -> totalScore += 30   // <3 sec diff: +30
+                    durDiff < 5000 -> totalScore += 20   // <5 sec diff: +20 (Callyzer threshold)
+                    durDiff < 10000 -> totalScore += 10  // <10 sec diff: +10
                 }
             }
 
             
-            // FINAL SAFEGUARD: Minimum acceptable score to consider this a "match"
-            // We need at least 30 points. Examples:
-            // - Exact Phone (40) -> PASS
-            // - Date in filename (40) -> PASS
-            // - Perfect Time (30) -> PASS
-            // - Name (25) + Good Duration (10+) -> PASS
-            // - Name (25) + Weak Time (5) -> PASS
-            // - Just Weak Time (5) or Good Time (15) -> FAIL (Too risky)
-            if (totalScore < 30) return null
+            // FINAL SAFEGUARD: Callyzer-style threshold of 100
+            // A match should have either:
+            // - Timestamp within 5s (100) -> PASS
+            // - Timestamp within 30s (80) + name (20) -> PASS
+            // - Timestamp within 60s (60) + phone (50) -> PASS (110)
+            // - Timestamp within 60s (60) + folder (30) + duration (20+) -> PASS (110+)
+            // - Just good timing alone might not be enough without other signals
+            if (totalScore < 100) return null
 
             return MatchCandidate(file, totalScore, timeDiff)
         }

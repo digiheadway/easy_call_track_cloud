@@ -144,39 +144,47 @@
 #### Our App's Weights
 | Factor | Weight | Notes |
 |--------|--------|-------|
-| Exact phone match | +40 | |
-| Partial phone match (9 digits) | +20 | |
-| Contact name match | +25 | |
-| Date in filename match | +40 | |
-| Perfect time (≤2 min) | +30 | |
-| Good time (≤15 min) | +15 | |
-| Acceptable time (≤1 hour) | +5 | |
-| Duration exact (≤1s diff) | +50 | |
-| Duration close (≤5s diff) | +30 | |
-| Duration decent (≤10s diff) | +10 | |
-| ~~Duration mismatch (>1 min)~~ | ~~-20~~ | Removed (merged calls support) |
+| Timestamp ≤5 seconds | **+100** | Callyzer-style (highest weight) |
+| Timestamp ≤30 seconds | **+80** | |
+| Timestamp ≤1 minute | **+60** | |
+| Timestamp ≤2 minutes | **+40** | |
+| Timestamp ≤5 minutes | **+20** | |
+| Timestamp ≤15 minutes | **+10** | |
+| Phone number in filename | **+50** | |
+| Partial phone (9 digits) | **+30** | |
+| Known recorder folder | **+30** | NEW! Folder context bonus |
+| Duration match (≤1s diff) | **+40** | |
+| Duration close (≤3s diff) | **+30** | |
+| Duration decent (≤5s diff) | **+20** | Callyzer threshold |
+| Duration acceptable (≤10s) | **+10** | |
+| Contact name in filename | **+20** | |
 
-**Threshold**: Files scoring at least 30 are attached.
+**Threshold**: Files scoring at least **100** are attached (Callyzer-style).
 
-### 3.2 Comparison Analysis
+### 3.2 Comparison Analysis ✅ UPDATED
 
-| Aspect | Callyzer | Our App | Winner |
+| Aspect | Callyzer | Our App | Status |
 |--------|----------|---------|--------|
-| Threshold Strictness | 100+ | 30+ | 🏆 Callyzer (less false positives) |
-| Time Weight Priority | Strongest (100) | Strong but equal (40/30) | 🏆 Callyzer (more accurate) |
-| Duration Verification | Secondary (40) | Primary (50) | 🟡 Depends on use case |
-| Folder Context | Uses (+30) | Doesn't use | 🏆 Callyzer |
+| Threshold Strictness | 100+ | ✅ 100+ | ✅ MATCHING |
+| Time Weight Priority | Strongest (100) | ✅ Strongest (100) | ✅ MATCHING |
+| Duration Verification | +40 | ✅ +40 | ✅ MATCHING |
+| Folder Context | Uses (+30) | ✅ Uses (+30) | ✅ IMPLEMENTED |
 | Rejection Logic | Implicit via threshold | Score-based (no hard rejections) | 🟡 Flexible for merged calls |
 
 ### 3.3 Our Approach
-- **Flexible Matching**: Removed explicit rejection rules to support:
+- **Callyzer-Style Weights**: Now using same weight system as Callyzer:
+  - Timestamp within 5s: +100 (highest priority)
+  - Folder context: +30 (new!)
+  - Duration match: +40
+  - Phone number: +50
+  - Threshold: 100+ required
+
+- **Flexible Matching**: No explicit rejection rules to support:
   - Merged calls (conference calls, call waiting)
   - Recordings with different durations (multiple calls in one file)
   - Recordings with different filenames (recorder's own naming conventions)
 
 - **Filename Date Extraction**: We parse `yyMMddHHmm` (OnePlus) and `yyyyMMdd_HHmmss` patterns, preferring them over `lastModified` metadata.
-
-- **Score-Based Safety**: Minimum score of 30 required prevents random matches while allowing flexibility.
 
 ---
 
