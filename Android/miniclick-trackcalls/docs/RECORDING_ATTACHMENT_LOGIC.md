@@ -30,102 +30,91 @@ The repository maintains a list of `DEVICE_DEFAULT_PATHS` and `THIRD_PARTY_PATHS
 
 ---
 
-## 3. Proposed Solutions & Improvements
+## 3. Implemented Solutions ✅
 
-To resolve these bugs and "future-proof" the app, we must shift from a "File System Scanner" approach to a "Media Query" approach.
+> **Last Updated:** 2026-01-09 - MediaStore query and tiered approach implemented
 
-### 3.1 Solution: Implement `MediaStore` Query (Primary Method)
-Instead of guessing file paths, we should ask the Android OS for "Audio files created around this time."
+### 3.1 ✅ Solution: MediaStore Query (Primary Method) — IMPLEMENTED
 
-**Mechanism:**
-1.  Query `MediaStore.Audio.Media.EXTERNAL_CONTENT_URI`.
-2.  Filter by `DATE_ADDED` or `DATE_MODIFIED` within the call start/end window.
-3.  The OS returns a `content://` URI (e.g., `content://media/external/audio/media/1054`) which we can read directly, regardless of where the file is actually stored (as long as it's in a shared collection).
+Instead of guessing file paths, we now ask the Android OS for "Audio files created around this time."
 
-**Advantages:**
-*   Works on all Android versions (10, 11, 12, 13+).
-*   No need to know the specific folder path (e.g., "MIUI/sound_recorder").
-*   Respects Scoped Storage permissions naturally.
+**Implementation:**
+- Added `findRecordingViaMediaStore()` method in `RecordingRepository.kt`
+- Queries `MediaStore.Audio.Media.EXTERNAL_CONTENT_URI` with `DATE_ADDED` filter
+- Works on Android 10+ regardless of where the file is stored
+- Returns `content://` URIs that can be read directly
 
-### 3.2 Solution: Robust Storage Access Framework (SAF)
-For users who save recordings in non-standard folders or folders the MediaStore doesn't index effectively.
+### 3.2 ✅ Solution: Tiered Fallback Approach — IMPLEMENTED
 
-**Mechanism:**
-1.  Enhance the "Custom Path" feature to force the use of `ACTION_OPEN_DOCUMENT_TREE`.
-2.  Persist access permissions (already partially implemented).
-3.  Use `DocumentFile` traversal instead of `File` traversal for these custom paths (already partially implemented but needs to be the standard).
+The `findRecording()` method now uses a 5-tier approach:
 
-### 3.3 Solution: "Accessibility Service" Path Sniffer (Advanced)
-*Use only if `MediaStore` fails.*
-If the user uses a third-party recorder that saves to a private directory, we can't read the file. However, if we identify the recorder app, we could potentially guide the user to "Share" the recording to our app immediately after the call.
+```
+Tier 1: CallCloud Backup Folder (fastest, our managed folder)
+Tier 2: Learned Folder (previous successful match location)
+Tier 3: MediaStore Query ±5 min window (works on Android 10+)
+Tier 4: Traditional File Path Scan (legacy fallback)
+Tier 5: MediaStore Query ±30 min window (last resort)
+```
 
-### 3.4 Logic Improvement Plan (Step-by-Step)
+### 3.3 ✅ Solution: Learning System — IMPLEMENTED
 
-#### Step 1: Refactor `RecordingRepository.kt`
-*   Add a `findRecordingViaMediaStore()` method.
-*   Update `findRecording()` to chain strategies:
-    1.  **Strategy A:** Check `CallCloud` public folder (internal backup).
-    2.  **Strategy B:** Query `MediaStore` for audio files in the time window (New Standard).
-    3.  **Strategy C:** Scan "Custom Path" using `DocumentFile` (User-defined).
-    4.  **Strategy D:** Legacy `File` scan (Keep for Android 9 and below only).
+- When a match is found, we save the parent folder to preferences
+- Next time, we check this "learned folder" first for faster matching
+- Key: `KEY_LEARNED_FOLDER` in SharedPreferences
 
-#### Step 2: Update `RecordingUploadWorker.kt`
-*   Ensure it can handle `content://` URIs natively without trying to convert them to `File` paths unless necessary for upload libraries. (Current code has some support, but needs verification).
+### 3.4 ✅ Solution: Expanded Device Path Coverage — IMPLEMENTED
 
-#### Step 3: Improve Matching Heuristics
-*   **Duration Matching:** If metadata is available, compare the file's duration with the call log duration. An exact match (or within 1-2 seconds) is a very strong signal.
-*   **Smart Filename Parsers:** Add regex parsers for common recorder filename patterns (e.g., `Call_with_[NUMBER]_[DATE]`).
+Added paths for:
+- Samsung OneUI 4+ (`Recordings/Call/`, `DCIM/Call/`)
+- Vivo FuntouchOS (`VoiceRecorder/Calls/`)
+- Huawei backup (`HuaweiBackup/CallRecord/`)
+- ColorOS 12+ hidden (`Android/media/com.coloros.soundrecorder/`)
+- Additional third-party recorders (Blackbox, IntCall, ACR variants)
 
 ---
 
-## 4. Implementation Details (Code Snippet)
+## 4. Implementation Details
 
-**New `MediaStore` Query Logic:**
+**MediaStore Query Logic (from RecordingRepository.kt):**
 
 ```kotlin
-fun findRecordingViaMediaStore(callDate: Long, durationSec: Long): List<RecordingSourceFile> {
-    val windowSeconds = 300 // 5 minutes
-    val startWindow = (callDate / 1000) - windowSeconds
-    val endWindow = (callDate / 1000) + durationSec + windowSeconds
-
+private fun findRecordingViaMediaStore(
+    callDate: Long, 
+    durationSec: Long,
+    bufferSeconds: Int = 300
+): List<RecordingSourceFile> {
+    val callDateSeconds = callDate / 1000
+    val startWindow = callDateSeconds - bufferSeconds
+    val endWindow = callDateSeconds + durationSec + bufferSeconds
+    
     val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
     } else {
         MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
     }
-
-    val projection = arrayOf(
-        MediaStore.Audio.Media._ID,
-        MediaStore.Audio.Media.DISPLAY_NAME,
-        MediaStore.Audio.Media.DATE_ADDED,
-        MediaStore.Audio.Media.DURATION,
-        MediaStore.Audio.Media.DATA // Deprecated in Q, but still useful for debug/legacy
-    )
-
+    
     val selection = "${MediaStore.Audio.Media.DATE_ADDED} >= ? AND ${MediaStore.Audio.Media.DATE_ADDED} <= ?"
     val selectionArgs = arrayOf(startWindow.toString(), endWindow.toString())
-
-    val results = mutableListOf<RecordingSourceFile>()
     
-    context.contentResolver.query(collection, projection, selection, selectionArgs, null)?.use { cursor ->
-        val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
-        val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME)
-        val dateColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED)
-        
-        while (cursor.moveToNext()) {
-            val id = cursor.getLong(idColumn)
-            val name = cursor.getString(nameColumn)
-            val dateAdded = cursor.getLong(dateColumn)
-            val contentUri = ContentUris.withAppendedId(collection, id)
-            
-            results.add(RecordingSourceFile(
-                name = name,
-                lastModified = dateAdded * 1000,
-                absolutePath = contentUri.toString(), // Store URI as path
-                isLocal = false // It's a content URI
-            ))
-        }
-    }
-    return results
+    // Query and return results...
 }
 ```
+
+---
+
+## 5. Remaining To-Do
+
+| Task | Status | Priority |
+|------|--------|----------|
+| MediaStore Query | ✅ Done | Critical |
+| Tiered Fallback | ✅ Done | Critical |
+| Learning System | ✅ Done | High |
+| Expanded Paths | ✅ Done | Medium |
+| Manual Attachment UI | ❌ Not Done | Medium |
+| Compression Before Upload | ❌ Not Done | Medium |
+| Device Permission Guides | ❌ Not Done | Low |
+
+---
+
+*Document Updated: 2026-01-09*
+

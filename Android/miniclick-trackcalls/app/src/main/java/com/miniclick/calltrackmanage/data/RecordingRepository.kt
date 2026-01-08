@@ -1,8 +1,11 @@
 package com.miniclick.calltrackmanage.data
 
+import android.content.ContentUris
 import android.content.Context
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import java.io.File
@@ -13,6 +16,7 @@ class RecordingRepository private constructor(private val context: Context) {
     private val KEY_RECORDING_PATH = "recording_path"
     private val KEY_DETECTED_PATH = "detected_recording_path"
     private val KEY_PATH_VERIFIED = "recording_path_verified"
+    private val KEY_LEARNED_FOLDER = "learned_recording_folder"
     
     companion object {
         private const val TAG = "RecordingRepository"
@@ -36,53 +40,74 @@ class RecordingRepository private constructor(private val context: Context) {
             "Recordings/Call recordings",
             "Recordings/CallCloud",              // Our imported recordings
             "Recordings",
+            "Download",                          // Some Pixel versions
             
-            // Samsung
-            "Call",
+            // Samsung (OneUI)
+            "Recordings/Call",                   // Samsung newer (OneUI 4+)
+            "Call",                              // Samsung older
+            "DCIM/Call",                         // Some Samsung variants
             "Recordings/Voice Recorder",
             "Voice Recorder",
             
-            // Xiaomi/MIUI / Redmi
+            // Xiaomi/MIUI/Redmi/Poco
             "MIUI/sound_recorder/call_rec",
             "Recordings/MIUI/sound_recorder/call_rec",
             "SoundRecorder/call_rec",
             "MIUI/sound_recorder",
+            "Recorder",
             
-            // OnePlus
+            // OnePlus (OxygenOS)
             "Record/Call",
             "Record/PhoneRecord",
+            "Recordings/PhoneRecord",
             
             // Oppo/Realme/ColorOS
             "Music/Recordings/Call Recordings",
             "Recordings/Call Recordings",
             "ColorOS/PhoneRecord",
+            "ColorOS/Recordings",
+            "DCIM/Recorder",                     // Some ColorOS variants
+            "Android/media/com.coloros.soundrecorder", // ColorOS 12+ hidden
             
-            // Vivo
+            // Vivo (FuntouchOS)
             "Record/Call",
+            "VoiceRecorder/Calls",               // Vivo specific
+            "VoiceRecorder",
             
-            // Huawei/Honor
+            // Huawei/Honor (EMUI/HarmonyOS)
             "Sounds/CallRecord",
+            "Record",
+            "HuaweiBackup/CallRecord",           // Huawei backup path
             "record",
             
-            // LG
-            "Recordings"
+            // Motorola/LG/Asus
+            "Recordings",
+            "Recordings/Call",
+            "Record/Call"
         )
         
         // Third-party app paths - searched AFTER device defaults
         private val THIRD_PARTY_PATHS = listOf(
+            "ACR",                               // ACR Phone (Callyzer path)
             "ACRCalls",                          // ACR Call Recorder
             "CubeCallRecorder/All",              // Cube ACR
             "CubeCallRecorder/Recordings",       // Cube ACR alternate
-            "Truecaller/recordings",             // Truecaller
+            "Truecaller/Recording",              // Truecaller (case-sensitive fix)
+            "Truecaller/recordings",             // Truecaller alternate
             "CallU/Recordings",                  // CallU
-            "Boldbeast",                         // Boldbeast Recorder
+            "BoldBeast",                         // Boldbeast Recorder (case fix)
+            "Boldbeast",                         // Boldbeast alternate
             "NLL/CallRecorder",                  // NLL Call Recorder
             "RMC/CallRecordings",                // RMC Android Call Recorder
             "callrecorder",                      // Generic
             "Automatic Call Recorder",           // Auto Call Recorder
+            "AutomaticCallRecorder",             // Auto Call Recorder alternate
             "Call Recorder - ACR/recordings",    // ACR Pro
             "CallRecorder",                      // Generic
-            "Call Recordings"                    // Generic
+            "Call Recordings",                   // Generic
+            "IntCall",                           // Call Recorder - IntCall
+            ".blackbox",                         // Blackbox Call Recorder (hidden)
+            "SpyCaller"                          // Some spy/auto recorders
         )
         
         private val AUDIO_EXTENSIONS = listOf("mp3", "amr", "wav", "aac", "m4a", "ogg", "3gp", "opus")
@@ -645,8 +670,159 @@ class RecordingRepository private constructor(private val context: Context) {
 
     private data class MatchCandidate(val file: RecordingSourceFile, val score: Int, val timeDiff: Long)
 
+    // ==================== MEDIASTORE QUERY (Android 10+) ====================
+    
     /**
-     * Find a recording
+     * Query MediaStore for audio files within a time window.
+     * This is the PRIMARY detection method for Android 10+ as it works regardless of file path.
+     * 
+     * @param callDate The timestamp when the call started (milliseconds)
+     * @param durationSec The call duration in seconds
+     * @param bufferSeconds How much buffer around the call time to search (default 5 minutes)
+     * @return List of potential recording files from MediaStore
+     */
+    private fun findRecordingViaMediaStore(
+        callDate: Long, 
+        durationSec: Long,
+        bufferSeconds: Int = 300
+    ): List<RecordingSourceFile> {
+        val results = mutableListOf<RecordingSourceFile>()
+        
+        try {
+            // Calculate time window in SECONDS (MediaStore uses seconds for DATE_ADDED)
+            val callDateSeconds = callDate / 1000
+            val startWindow = callDateSeconds - bufferSeconds
+            val endWindow = callDateSeconds + durationSec + bufferSeconds
+            
+            // Get the appropriate content URI based on Android version
+            val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
+            } else {
+                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+            }
+            
+            val projection = arrayOf(
+                MediaStore.Audio.Media._ID,
+                MediaStore.Audio.Media.DISPLAY_NAME,
+                MediaStore.Audio.Media.DATE_ADDED,
+                MediaStore.Audio.Media.DURATION,
+                MediaStore.Audio.Media.SIZE
+            )
+            
+            // Query for audio files added within our time window
+            val selection = "${MediaStore.Audio.Media.DATE_ADDED} >= ? AND ${MediaStore.Audio.Media.DATE_ADDED} <= ?"
+            val selectionArgs = arrayOf(startWindow.toString(), endWindow.toString())
+            val sortOrder = "${MediaStore.Audio.Media.DATE_ADDED} DESC"
+            
+            context.contentResolver.query(collection, projection, selection, selectionArgs, sortOrder)?.use { cursor ->
+                val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
+                val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME)
+                val dateColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED)
+                
+                while (cursor.moveToNext()) {
+                    val id = cursor.getLong(idColumn)
+                    val name = cursor.getString(nameColumn) ?: "Unknown"
+                    val dateAdded = cursor.getLong(dateColumn) // in seconds
+                    val contentUri = ContentUris.withAppendedId(collection, id)
+                    
+                    // Only include audio files with recognized extensions
+                    val extension = name.substringAfterLast('.', "").lowercase()
+                    if (extension in AUDIO_EXTENSIONS) {
+                        results.add(RecordingSourceFile(
+                            name = name,
+                            lastModified = dateAdded * 1000, // Convert to milliseconds
+                            absolutePath = contentUri.toString(),
+                            isLocal = false
+                        ))
+                    }
+                }
+            }
+            
+            Log.d(TAG, "MediaStore query (±${bufferSeconds}s) found ${results.size} audio files")
+        } catch (e: Exception) {
+            Log.e(TAG, "MediaStore query failed", e)
+        }
+        
+        return results
+    }
+    
+    // ==================== LEARNING SYSTEM ====================
+    
+    /**
+     * Save the folder where a successful match was found.
+     * This folder will be prioritized in future searches.
+     */
+    private fun saveLearnedFolder(filePath: String) {
+        val folder = if (filePath.startsWith("content://")) {
+            // For content URIs, we can't easily extract folder, skip learning
+            return
+        } else {
+            File(filePath).parent ?: return
+        }
+        
+        prefs.edit().putString(KEY_LEARNED_FOLDER, folder).apply()
+        Log.d(TAG, "Learned folder saved: $folder")
+    }
+    
+    /**
+     * Get files from the learned folder (where previous matches were found).
+     */
+    private fun getLearnedFolderFiles(): List<RecordingSourceFile> {
+        val learnedPath = prefs.getString(KEY_LEARNED_FOLDER, null) ?: return emptyList()
+        val folder = File(learnedPath)
+        
+        if (!folder.exists() || !folder.isDirectory) {
+            return emptyList()
+        }
+        
+        return folder.listFiles()?.filter { 
+            it.isFile && it.extension.lowercase() in AUDIO_EXTENSIONS 
+        }?.map { file ->
+            RecordingSourceFile(
+                name = file.name,
+                lastModified = file.lastModified(),
+                absolutePath = file.absolutePath,
+                isLocal = true
+            )
+        } ?: emptyList()
+    }
+    
+    /**
+     * Get files from CallCloud backup folder only.
+     */
+    private fun getCallCloudFiles(): List<RecordingSourceFile> {
+        val storage = Environment.getExternalStorageDirectory()
+        val callCloudDir = File(storage, "Recordings/CallCloud")
+        
+        if (!callCloudDir.exists() || !callCloudDir.isDirectory) {
+            return emptyList()
+        }
+        
+        return callCloudDir.listFiles()?.filter { 
+            it.isFile && it.extension.lowercase() in AUDIO_EXTENSIONS 
+        }?.map { file ->
+            RecordingSourceFile(
+                name = file.name,
+                lastModified = file.lastModified(),
+                absolutePath = file.absolutePath,
+                isLocal = true
+            )
+        } ?: emptyList()
+    }
+
+    // ==================== TIERED RECORDING FINDER ====================
+    
+    /**
+     * Find a recording using a multi-tiered approach:
+     * 
+     * Tier 1: CallCloud backup folder (fastest, our managed folder)
+     * Tier 2: Learned folder (previous successful match location)
+     * Tier 3: MediaStore query with ±5 min window (works on Android 10+)
+     * Tier 4: Traditional file path scan (legacy fallback)
+     * Tier 5: MediaStore with wider ±30 min window (last resort)
+     * 
+     * This tiered approach ensures maximum compatibility across Android versions
+     * and device manufacturers while optimizing for speed.
      */
     fun findRecording(
         callDate: Long, 
@@ -654,13 +830,67 @@ class RecordingRepository private constructor(private val context: Context) {
         phoneNumber: String,
         contactName: String? = null
     ): String? {
-        val files = getRecordingFiles()
-        if (files.isEmpty()) {
-            Log.d(TAG, "No recording files found in: ${getRecordingPath()}")
-            return null
+        Log.d(TAG, "Starting tiered recording search for call: phone=$phoneNumber, duration=${durationSec}s")
+        
+        // ===== TIER 1: CallCloud Backup Folder (Fastest) =====
+        // These are recordings we imported from Google Dialer or user shares
+        val callCloudFiles = getCallCloudFiles()
+        if (callCloudFiles.isNotEmpty()) {
+            findRecordingInList(callCloudFiles, callDate, durationSec, phoneNumber, contactName)?.let { path ->
+                Log.d(TAG, "✓ Found via Tier 1 (CallCloud): $path")
+                return path
+            }
         }
-        Log.d(TAG, "Searching ${files.size} files for recording match")
-        return findRecordingInList(files, callDate, durationSec, phoneNumber, contactName)
+        
+        // ===== TIER 2: Learned Folder (Previous Success) =====
+        // Check the folder where we previously found successful matches
+        val learnedFiles = getLearnedFolderFiles()
+        if (learnedFiles.isNotEmpty()) {
+            findRecordingInList(learnedFiles, callDate, durationSec, phoneNumber, contactName)?.let { path ->
+                Log.d(TAG, "✓ Found via Tier 2 (Learned Folder): $path")
+                return path
+            }
+        }
+        
+        // ===== TIER 3: MediaStore Query - Standard Window (±5 min) =====
+        // This is the PRIMARY method for Android 10+ as it works regardless of file path
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val mediaStoreFiles = findRecordingViaMediaStore(callDate, durationSec, bufferSeconds = 300)
+            if (mediaStoreFiles.isNotEmpty()) {
+                findRecordingInList(mediaStoreFiles, callDate, durationSec, phoneNumber, contactName)?.let { path ->
+                    Log.d(TAG, "✓ Found via Tier 3 (MediaStore ±5min): $path")
+                    saveLearnedFolder(path) // Remember this location
+                    return path
+                }
+            }
+        }
+        
+        // ===== TIER 4: Traditional File Path Scan =====
+        // Fallback for Android 9 and below, or when MediaStore doesn't find it
+        val pathFiles = getRecordingFiles()
+        if (pathFiles.isNotEmpty()) {
+            findRecordingInList(pathFiles, callDate, durationSec, phoneNumber, contactName)?.let { path ->
+                Log.d(TAG, "✓ Found via Tier 4 (File Scan): $path")
+                saveLearnedFolder(path) // Remember this location
+                return path
+            }
+        }
+        
+        // ===== TIER 5: MediaStore Query - Wider Window (±30 min) =====
+        // Last resort with expanded time window for edge cases
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val widerMediaStoreFiles = findRecordingViaMediaStore(callDate, durationSec, bufferSeconds = 1800)
+            if (widerMediaStoreFiles.isNotEmpty()) {
+                findRecordingInList(widerMediaStoreFiles, callDate, durationSec, phoneNumber, contactName)?.let { path ->
+                    Log.d(TAG, "✓ Found via Tier 5 (MediaStore ±30min): $path")
+                    saveLearnedFolder(path)
+                    return path
+                }
+            }
+        }
+        
+        Log.d(TAG, "✗ Recording not found after all tiers")
+        return null
     }
 
     /**

@@ -447,42 +447,52 @@ Callyzer sends webhooks for:
 
 ## 12. Immediate Action Items
 
-### 12.1 This Week (Critical Fixes)
+> **Updated 2026-01-09**: Items 1-4 have been implemented!
+
+### 12.1 This Week (Critical Fixes) ✅ COMPLETED
 
 ```markdown
-1. [ ] Add MediaStore Query Method
+1. [x] Add MediaStore Query Method ✅ DONE
    - File: RecordingRepository.kt
    - Function: findRecordingViaMediaStore()
    - Query: MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
    - Filter: DATE_ADDED within ±5 min of callDate
 
-2. [ ] Update findRecording() to use tiered approach:
-   a. Try CallCloud folder first (fastest)
-   b. Try MediaStore query (works on Android 10+)
-   c. Try current file scan (fallback for old devices)
-   d. Try SAF/custom path (user-configured)
+2. [x] Update findRecording() to use tiered approach: ✅ DONE
+   a. Try CallCloud folder first (fastest) ✅
+   b. Try Learned folder (previous success) ✅
+   c. Try MediaStore query (works on Android 10+) ✅
+   d. Try current file scan (fallback for old devices) ✅
+   e. Try MediaStore wider window ±30 min (last resort) ✅
 
-3. [ ] Add READ_MEDIA_AUDIO permission for Android 13+
-   - Update AndroidManifest.xml
-   - Update permission request flow
+3. [x] READ_MEDIA_AUDIO permission for Android 13+ ✅ ALREADY EXISTS
+   - Was already in AndroidManifest.xml (line 146)
+
+4. [x] Implement "Learning" System ✅ DONE
+   - When match found, save parent folder to preferences
+   - On next search, check learned folder first
+   - Key: KEY_LEARNED_FOLDER
+
+5. [x] Expanded Device Paths ✅ DONE
+   - Added Samsung OneUI 4+ paths
+   - Added Vivo VoiceRecorder paths
+   - Added Huawei backup paths
+   - Added ColorOS 12+ hidden paths
+   - Added Blackbox, IntCall, ACR variants
 ```
 
 ### 12.2 Next Week (High Priority)
 
 ```markdown
-4. [ ] Implement "Learning" System
-   - When match found, save parent folder to preferences
-   - On next search, check learned folder first
-
 5. [ ] Add Manual Attachment UI
    - "Recording not found? Tap to browse"
    - Use SAF file picker (ACTION_OPEN_DOCUMENT)
    - Save selection to CallCloud folder
 
-6. [ ] Add Retry with Wider Window
-   - First attempt: ±5 minutes
-   - Retry: ±30 minutes (if first fails)
-   - Final: ±60 minutes (if still failing)
+6. [ ] Add Retry with Wider Window ✅ PARTIALLY DONE
+   - First attempt: ±5 minutes ✅
+   - Retry: ±30 minutes (if first fails) ✅
+   - Final: ±60 minutes (if still failing) - Optional
 ```
 
 ### 12.3 This Month (Improvements)
