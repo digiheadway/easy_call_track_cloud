@@ -96,8 +96,8 @@ switch ($method) {
                 Response::error('Employee not found', 404);
             }
             
-            // Delete calls (without recordings - those are handled separately)
-            $callsDeleted = Database::execute("DELETE FROM calls WHERE employee_id = '$id' AND org_id = '$orgId' AND (recording_url IS NULL OR recording_url = '')");
+            // Delete ALL calls for this employee (recordings should be deleted first via delete_recordings action)
+            $callsDeleted = Database::execute("DELETE FROM calls WHERE employee_id = '$id' AND org_id = '$orgId'");
             
             // Delete contacts linked to this employee
             $contactsDeleted = Database::execute("DELETE FROM contacts WHERE employee_id = $id AND org_id = '$orgId'");
@@ -136,8 +136,8 @@ switch ($method) {
                 }
             }
             
-            // Now clear the recording URL from calls instead of deleting the call log
-            Database::execute("UPDATE calls SET recording_url = NULL WHERE employee_id = '$id' AND org_id = '$orgId' AND recording_url IS NOT NULL AND recording_url != ''");
+            // Delete the call records that had recordings (after files are deleted)
+            Database::execute("DELETE FROM calls WHERE employee_id = '$id' AND org_id = '$orgId' AND recording_url IS NOT NULL AND recording_url != ''");
             
             Response::success([
                 'recordings_deleted' => $deletedCount,
