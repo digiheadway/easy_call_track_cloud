@@ -512,6 +512,20 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             notificationManager.createNotificationChannel(channel)
         }
 
+        // Create intent to open sync queue when notification is tapped
+        val contentIntent = android.content.Intent(applicationContext, com.miniclick.calltrackmanage.MainActivity::class.java).apply {
+            flags = android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("OPEN_SYNC_QUEUE", true)
+        }
+        val pendingIntentFlags = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT
+        } else {
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT
+        }
+        val pendingIntent = android.app.PendingIntent.getActivity(
+            applicationContext, 1003, contentIntent, pendingIntentFlags
+        )
+
         val notification = androidx.core.app.NotificationCompat.Builder(applicationContext, channelId)
             .setContentTitle(title)
             .setTicker(title)
@@ -519,6 +533,7 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             .setSmallIcon(com.miniclick.calltrackmanage.R.drawable.ic_launcher_foreground)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
+            .setContentIntent(pendingIntent)
             .build()
             
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {

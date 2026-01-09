@@ -98,6 +98,18 @@ class CallDataRepository private constructor(private val context: Context) {
     }
     
     /**
+     * Get count of items pending sync as a flow.
+     */
+    fun getSyncQueueCountFlow(): Flow<Int> {
+        return combine(
+            callDataDao.getPendingSyncCountFlow(),
+            personDataDao.getPendingSyncCountFlow()
+        ) { callCount, personCount ->
+            callCount + personCount
+        }
+    }
+    
+    /**
      * Get pending calls as Flow
      */
     fun getPendingCallsFlow(): Flow<List<CallDataEntity>> = callDataDao.getPendingCallsFlow()
@@ -625,14 +637,14 @@ class CallDataRepository private constructor(private val context: Context) {
                 
                 if (existing != null) {
                     val key = existing.phoneNumber
-                    if (update.name != null) personDataDao.updateNameFromRemote(key, update.name)
+                    if (!update.name.isNullOrBlank()) personDataDao.updateNameFromRemote(key, update.name)
                     if (update.personNote != null) personDataDao.updatePersonNoteFromRemote(key, update.personNote)
                     if (update.label != null) personDataDao.updateLabelFromRemote(key, update.label)
                 } else {
                     Log.d(TAG, "Inserting new person entry for $normalized")
                     personDataDao.insert(PersonDataEntity(
                         phoneNumber = normalized,
-                        contactName = update.name,
+                        contactName = update.name?.takeIf { it.isNotBlank() },
                         personNote = update.personNote,
                         label = update.label
                     ))
@@ -766,7 +778,7 @@ class CallDataRepository private constructor(private val context: Context) {
                  }
             }
 
-            ProcessMonitor.startProcess("Checking for new calls...", isIndeterminate = true)
+            ProcessMonitor.startProcess(ProcessMonitor.ProcessIds.IMPORT_CALL_LOG, "Checking for new calls...", isIndeterminate = true)
             Log.d(TAG, "Starting sync from system call log...")
             
             val deviceId = android.provider.Settings.Secure.getString(context.contentResolver, android.provider.Settings.Secure.ANDROID_ID)
@@ -808,11 +820,11 @@ class CallDataRepository private constructor(private val context: Context) {
             
             // Batch insert new calls
             if (newCalls.isNotEmpty()) {
-                ProcessMonitor.updateProgress(0.6f, "Found ${newCalls.size} new call${if (newCalls.size == 1) "" else "s"}")
+                ProcessMonitor.updateProgress(ProcessMonitor.ProcessIds.IMPORT_CALL_LOG, 0.6f, "Found ${newCalls.size} new call${if (newCalls.size == 1) "" else "s"}")
                 callDataDao.insertAll(newCalls)
                 Log.d(TAG, "Inserted ${newCalls.size} new calls")
             } else {
-                ProcessMonitor.updateProgress(0.6f, "All calls up to date")
+                ProcessMonitor.updateProgress(ProcessMonitor.ProcessIds.IMPORT_CALL_LOG, 0.6f, "All calls up to date")
                 Log.d(TAG, "No new calls to insert")
             }
             
@@ -821,7 +833,7 @@ class CallDataRepository private constructor(private val context: Context) {
             val unsyncedWithNoPath = callDataDao.getCallsMissingRecordings().filter { it.localRecordingPath == null }
             if (unsyncedWithNoPath.isNotEmpty()) {
                 val total = unsyncedWithNoPath.size
-                ProcessMonitor.startProcess("Matching $total call${if (total == 1) "" else "s"} with recordings...")
+                ProcessMonitor.startProcess(ProcessMonitor.ProcessIds.FIND_RECORDINGS, "Matching $total call${if (total == 1) "" else "s"} with recordings...")
                 val recordingFiles = recordingRepository.getRecordingFiles()
                 
                 val updates = mutableMapOf<String, String>()
@@ -832,7 +844,7 @@ class CallDataRepository private constructor(private val context: Context) {
                     if (index % updateFrequency == 0 || index == total - 1) {
                         val progress = (index + 1).toFloat() / total
                         val foundSoFar = updates.size
-                        ProcessMonitor.updateProgress(progress, "Found $foundSoFar recording${if (foundSoFar == 1) "" else "s"} (${index + 1}/$total)")
+                        ProcessMonitor.updateProgress(ProcessMonitor.ProcessIds.FIND_RECORDINGS, progress, "Found $foundSoFar recording${if (foundSoFar == 1) "" else "s"} (${index + 1}/$total)")
                     }
 
                     if (call.duration > 0) {
@@ -851,11 +863,11 @@ class CallDataRepository private constructor(private val context: Context) {
 
                 // Batch update in DB
                 if (updates.isNotEmpty()) {
-                    ProcessMonitor.updateProgress(1f, "Linked ${updates.size} recording${if (updates.size == 1) "" else "s"}")
+                    ProcessMonitor.updateProgress(ProcessMonitor.ProcessIds.FIND_RECORDINGS, 1f, "Linked ${updates.size} recording${if (updates.size == 1) "" else "s"}")
                     Log.d(TAG, "Found ${updates.size} recordings to link. applying batch updates...")
                     callDataDao.updateRecordingPaths(updates)
                 } else {
-                    ProcessMonitor.updateProgress(1f, "No new recordings found")
+                    ProcessMonitor.updateProgress(ProcessMonitor.ProcessIds.FIND_RECORDINGS, 1f, "No new recordings found")
                     Log.d(TAG, "No new recordings matched")
                 }
             }
@@ -873,7 +885,8 @@ class CallDataRepository private constructor(private val context: Context) {
         } catch (e: Exception) {
             Log.e(TAG, "Sync failed", e)
         } finally {
-            ProcessMonitor.endProcess()
+            ProcessMonitor.endProcess(ProcessMonitor.ProcessIds.IMPORT_CALL_LOG)
+            ProcessMonitor.endProcess(ProcessMonitor.ProcessIds.FIND_RECORDINGS)
         }
     }
         
@@ -909,7 +922,11 @@ class CallDataRepository private constructor(private val context: Context) {
             
             val personEntity = PersonDataEntity(
                 phoneNumber = phoneNumber,
-                contactName = if (isNewer) (incomingNew.contactName ?: existing?.contactName) else existing?.contactName,
+                contactName = if (isNewer) {
+                    incomingNew.contactName?.takeIf { it.isNotBlank() } ?: existing?.contactName?.takeIf { it.isNotBlank() }
+                } else {
+                    existing?.contactName?.takeIf { it.isNotBlank() } ?: incomingNew.contactName?.takeIf { it.isNotBlank() }
+                },
                 photoUri = if (isNewer) (incomingNew.photoUri ?: existing?.photoUri) else existing?.photoUri,
                 personNote = existing?.personNote,  // Preserve existing note
                 label = existing?.label, // Preserve existing label
@@ -1013,7 +1030,7 @@ class CallDataRepository private constructor(private val context: Context) {
                         compositeId = compositeId,
                         systemId = systemId,
                         phoneNumber = number,
-                        contactName = name,
+                        contactName = name?.takeIf { it.isNotBlank() },
                         callType = type,
                         callDate = date,
                         duration = duration,

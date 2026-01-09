@@ -126,9 +126,10 @@ object ProcessMonitor {
                 ))
             } else processes
         }
-        // Remove from legacy if it was the active one
+        // If this was the active process, pick another one from allProcesses or set to null
         if (_activeProcess.value?.id == id) {
-            _activeProcess.value = null
+            val otherProcess = _allProcesses.value.values.find { it.id != id && it.status == ProcessStatus.RUNNING }
+            _activeProcess.value = otherProcess
         }
         // Auto-remove completed process after short delay
         CoroutineHelper.launch {
@@ -151,8 +152,10 @@ object ProcessMonitor {
                 ))
             } else processes
         }
+        // Pick another if this was active
         if (_activeProcess.value?.id == id) {
-            _activeProcess.value = null
+            val otherProcess = _allProcesses.value.values.find { it.id != id && it.status == ProcessStatus.RUNNING }
+            _activeProcess.value = otherProcess
         }
     }
 
@@ -163,7 +166,8 @@ object ProcessMonitor {
         android.util.Log.d("ProcessMonitor", "Ending process: $id")
         _allProcesses.update { it - id }
         if (_activeProcess.value?.id == id) {
-            _activeProcess.value = null
+            val otherProcess = _allProcesses.value.values.find { it.id != id && it.status == ProcessStatus.RUNNING }
+            _activeProcess.value = otherProcess
         }
     }
     
@@ -173,9 +177,13 @@ object ProcessMonitor {
     fun endProcess() {
         val currentId = _activeProcess.value?.id
         android.util.Log.d("ProcessMonitor", "Ending active process: $currentId")
-        _activeProcess.value = null
         if (currentId != null) {
             _allProcesses.update { it - currentId }
+            // Pick next running process
+            val nextProcess = _allProcesses.value.values.find { it.status == ProcessStatus.RUNNING }
+            _activeProcess.value = nextProcess
+        } else {
+            _activeProcess.value = null
         }
     }
 

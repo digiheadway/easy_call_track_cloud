@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
     alias(libs.plugins.google.services)
     alias(libs.plugins.crashlytics)
 }
@@ -15,7 +16,7 @@ android {
         applicationId = "com.miniclick.calltrackmanage"
         minSdk = 22
         targetSdk = 35
-        versionCode = 5
+        versionCode = 6
         versionName = "Fixes"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -42,6 +43,16 @@ android {
         compose = true
         buildConfig = true  // Enable BuildConfig generation for DEBUG flag access
     }
+    
+    configurations.all {
+        resolutionStrategy {
+            force("com.squareup:javapoet:1.13.0")
+        }
+    }
+}
+
+hilt {
+    enableAggregatingTask = false
 }
 
 dependencies {
@@ -84,4 +95,10 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
+
+    // Hilt Dependency Injection
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    implementation(libs.hilt.navigation.compose)
+    implementation(libs.androidx.datastore.preferences)
 }

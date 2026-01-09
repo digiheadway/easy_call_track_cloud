@@ -551,10 +551,12 @@ fun CallSelectionModal(
                     items(calls) { call ->
                         val dateFormat = SimpleDateFormat("MMM dd, h:mm a", Locale.getDefault())
                         val formattedDate = dateFormat.format(Date(call.date))
+                        val hasName = !call.contactName.isNullOrBlank()
                         
                         Card(
                             onClick = { 
-                                onCallSelected(call.subscriptionId, "${call.number} • $formattedDate") 
+                                val displayName = if (hasName) call.contactName else call.number
+                                onCallSelected(call.subscriptionId, "$displayName • $formattedDate") 
                             },
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(
@@ -570,14 +572,25 @@ fun CallSelectionModal(
                                 Surface(
                                     modifier = Modifier.size(44.dp),
                                     shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.primaryContainer
+                                    color = if (hasName) MaterialTheme.colorScheme.primaryContainer 
+                                           else MaterialTheme.colorScheme.surfaceContainerHighest
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            Icons.Default.Call,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
+                                        if (hasName) {
+                                            // Show first letter of name
+                                            Text(
+                                                call.contactName!!.first().uppercase(),
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        } else {
+                                            Icon(
+                                                Icons.Default.Call,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                     }
                                 }
                                 
@@ -585,12 +598,12 @@ fun CallSelectionModal(
                                 
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        call.number,
+                                        if (hasName) call.contactName!! else call.number,
                                         style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                     Text(
-                                        formattedDate,
+                                        if (hasName) "${call.number} • $formattedDate" else formattedDate,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )

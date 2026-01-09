@@ -1,233 +1,19 @@
 package com.miniclick.calltrackmanage.ui.home
-
+ 
 import android.app.Application
-import android.provider.CallLog
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.miniclick.calltrackmanage.data.CallDataRepository
 import com.miniclick.calltrackmanage.data.RecordingRepository
 import com.miniclick.calltrackmanage.data.db.CallDataEntity
 import com.miniclick.calltrackmanage.data.db.MetadataSyncStatus
-import com.miniclick.calltrackmanage.data.db.PersonDataEntity
 import com.miniclick.calltrackmanage.data.SettingsRepository
-import android.telephony.SubscriptionManager
-import android.content.Context
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.core.content.ContextCompat
-import android.annotation.SuppressLint
 import java.util.*
-import java.text.SimpleDateFormat
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import com.miniclick.calltrackmanage.ui.utils.getDateHeader
-import com.miniclick.calltrackmanage.ui.settings.SimInfo
+import com.miniclick.calltrackmanage.ui.home.viewmodel.*
 
-// Filter enums for chip dropdowns
-enum class CallTabFilter { ALL, ANSWERED, NOT_ANSWERED, OUTGOING, OUTGOING_NOT_CONNECTED, NEVER_CONNECTED, MAY_FAILED, IGNORED }
-enum class PersonTabFilter { ALL, ANSWERED, NOT_ANSWERED, OUTGOING, OUTGOING_NOT_CONNECTED, NEVER_CONNECTED, MAY_FAILED, IGNORED }
-enum class ConnectedFilter { ALL, CONNECTED, NOT_CONNECTED }
-enum class NotesFilter { ALL, WITH_NOTE, WITHOUT_NOTE }
-enum class PersonNotesFilter { ALL, WITH_NOTE, WITHOUT_NOTE }
-enum class ContactsFilter { ALL, IN_CONTACTS, NOT_IN_CONTACTS }
-enum class AttendedFilter { ALL, ATTENDED, NEVER_ATTENDED }
-enum class ReviewedFilter { ALL, REVIEWED, NOT_REVIEWED }
-enum class CustomNameFilter { ALL, WITH_NAME, WITHOUT_NAME }
-enum class ViewMode { CALLS, PERSONS }
-enum class DateRange { TODAY, LAST_3_DAYS, LAST_7_DAYS, LAST_14_DAYS, LAST_30_DAYS, THIS_MONTH, PREVIOUS_MONTH, CUSTOM, ALL }
-enum class PersonSortBy { LAST_CALL, TOTAL_CALLS, TOTAL_DURATION, NAME }
-enum class CallSortBy { DATE, DURATION, NUMBER }
-enum class SortDirection { ASCENDING, DESCENDING }
-enum class ReportCategory { OVERVIEW, DAILY_AVERAGE, DATA_ANALYSIS, FREQUENCY }
 
-data class HomeUiState(
-    val callLogs: List<CallDataEntity> = emptyList(),
-    val filteredLogs: List<CallDataEntity> = emptyList(),
-    val persons: List<PersonDataEntity> = emptyList(),
-    val filteredPersons: List<PersonDataEntity> = emptyList(),
-    val isLoading: Boolean = true,
-    val isSyncing: Boolean = false,
-    val searchQuery: String = "",
-    val selectedTab: Int = 0,
-    val recordings: Map<String, String> = emptyMap(), // compositeId -> Path cache
-    val currentRecordingPath: String = "",
-    
-    // View state
-    val viewMode: ViewMode = ViewMode.CALLS,
-    val isSearchVisible: Boolean = false,
-    val isFiltersVisible: Boolean = false,
-    
-    // Filter states
-    val callTypeFilter: CallTabFilter = CallTabFilter.ALL,
-    val personTabFilter: PersonTabFilter = PersonTabFilter.ALL,
-    val connectedFilter: ConnectedFilter = ConnectedFilter.ALL,
-    val notesFilter: NotesFilter = NotesFilter.ALL,
-    val personNotesFilter: PersonNotesFilter = PersonNotesFilter.ALL,
-    val contactsFilter: ContactsFilter = ContactsFilter.ALL,
-    val minCallCount: Int = 0,
-    val attendedFilter: AttendedFilter = AttendedFilter.ALL,
-    val reviewedFilter: ReviewedFilter = ReviewedFilter.ALL,
-    val customNameFilter: CustomNameFilter = CustomNameFilter.ALL,
-    val labelFilter: String = "",
-
-    val dateRange: DateRange = DateRange.LAST_7_DAYS,
-    val customStartDate: Long? = null,
-    val customEndDate: Long? = null,
-
-    val simSelection: String = "Both",
-    val trackStartDate: Long = 0,
-    val whatsappPreference: String = "Always Ask",
-    
-    // Sync Status
-    val pendingSyncCount: Int = 0,
-    val pendingMetadataCount: Int = 0,
-    val pendingRecordingCount: Int = 0,
-    val pendingNewCallsCount: Int = 0,
-    val pendingMetadataUpdatesCount: Int = 0,
-    val pendingPersonUpdatesCount: Int = 0,
-    val isNetworkAvailable: Boolean = true,
-    val isSyncSetup: Boolean = false,
-    val personSortBy: PersonSortBy = PersonSortBy.LAST_CALL,
-    val personSortDirection: SortDirection = SortDirection.DESCENDING,
-    val callSortBy: CallSortBy = CallSortBy.DATE,
-    val callSortDirection: SortDirection = SortDirection.DESCENDING,
-    val allowPersonalExclusion: Boolean = false,
-    val callRecordEnabled: Boolean = true,
-    val activeRecordings: List<CallDataEntity> = emptyList(),
-    val sim1SubId: Int? = null,
-    val sim2SubId: Int? = null,
-    val callerPhoneSim1: String = "",
-    val callerPhoneSim2: String = "",
-    val activeFilterCount: Int = 0,
-    val callTypeCounts: Map<CallTabFilter, Int> = emptyMap(),
-    val personTypeCounts: Map<PersonTabFilter, Int> = emptyMap(),
-    
-    // Performance: Pre-computed filtered lists for each tab
-    val tabFilteredLogs: Map<CallTabFilter, List<CallDataEntity>> = emptyMap(),
-    val tabFilteredPersons: Map<PersonTabFilter, List<PersonDataEntity>> = emptyMap(),
-    val personGroups: Map<String, PersonGroup> = emptyMap(),
-
-    // Call Flow (SIM Picker)
-    val showCallSimPicker: Boolean = false,
-    val callFlowNumber: String? = null,
-    val availableSims: List<SimInfo> = emptyList(),
-
-    // WhatsApp Flow
-    val showWhatsappSelectionDialog: Boolean = false,
-    val whatsappTargetNumber: String? = null,
-
-    // Reports Stats
-    val reportStats: ReportStats = ReportStats(),
-
-    // Search History
-    val searchHistory: List<String> = emptyList(),
-    
-    // Dialer Settings
-    val callActionBehavior: String = "Direct",
-    val availableWhatsappApps: List<com.miniclick.calltrackmanage.ui.settings.AppInfo> = emptyList(),
-    val reportCategory: ReportCategory = ReportCategory.OVERVIEW,
-    val showComparisons: Boolean = false,
-    val showIgnoredOnly: Boolean = false,
-    val dateSummaries: List<DateSectionSummary> = emptyList()
-)
-
-// Extension to determine if a call status counts as "Attended" or "Responded" based on the new > 3s rule
-fun CallDataEntity.isStatusConnected(): Boolean = duration > 3
-
-data class ReportStats(
-    val totalCalls: Int = 0,
-    val incomingCalls: Int = 0,
-    val outgoingCalls: Int = 0,
-    val missedCalls: Int = 0,
-    val rejectedCalls: Int = 0,
-    
-    // Connected
-    val connectedCalls: Int = 0,
-    val connectedUnique: Int = 0,
-    val notConnectedCalls: Int = 0,
-    val notConnectedUnique: Int = 0,
-    
-    // Specific Types (Total | Unique)
-    val connectedIncoming: Int = 0,
-    val connectedIncomingUnique: Int = 0,
-    val connectedOutgoing: Int = 0,
-    val connectedOutgoingUnique: Int = 0,
-    val notAnsweredIncoming: Int = 0,
-    val notAnsweredIncomingUnique: Int = 0,
-    val outgoingNotConnected: Int = 0,
-    val outgoingNotConnectedUnique: Int = 0,
-    
-    // Durations
-    val totalDuration: Long = 0,
-    val avgDuration: Long = 0, // of connected calls
-    val maxDuration: Long = 0,
-    val incomingDuration: Long = 0,
-    val outgoingDuration: Long = 0,
-    
-    // Contacts
-    val uniqueContacts: Int = 0,
-    val savedContacts: Int = 0,
-    val unsavedContacts: Int = 0,
-    
-    // Notes & Activity
-    val callsWithNotes: Int = 0,
-    val reviewedCalls: Int = 0,
-    val callsWithRecordings: Int = 0,
-    val personsWithNotes: Int = 0,
-    val personsWithLabels: Int = 0,
-    val totalPersons: Int = 0, // For percentages
-    
-    // Special
-    val neverConnectedCount: Int = 0,
-    val neverConnectedUnique: Int = 0,
-    val mayFailedCount: Int = 0,
-    val mayFailedUnique: Int = 0,
-    
-    // Engagement
-    val durationBuckets: List<DurationBucketStat> = emptyList(),
-    
-    // Comparisons (Daily Averages for Last 7 Days)
-    val comparisonAverages: Map<String, Float> = emptyMap(),
-    
-    val topCallers: List<TopCaller> = emptyList(),
-    val mostTalked: List<TopCaller> = emptyList(),
-    val dailyStats: Map<String, DayStat> = emptyMap(),
-    val hourlyStats: Map<Int, Int> = emptyMap(),
-    val labelDistribution: List<Pair<String, Int>> = emptyList()
-)
-
-data class DurationBucketStat(
-    val label: String,
-    val total: Int,
-    val outCount: Int,
-    val inCount: Int,
-    val sortOrder: Int
-)
-
-data class TopCaller(
-    val phoneNumber: String,
-    val displayName: String,
-    val callCount: Int,
-    val totalDuration: Long,
-    val incomingCount: Int,
-    val outgoingCount: Int,
-    val missedCount: Int
-)
-
-data class DayStat(
-    val count: Int,
-    val duration: Long
-)
-
-data class DateSectionSummary(
-    val dateLabel: String,
-    val dayOfWeek: String,
-    val totalCalls: Int,
-    val uniqueCalls: Int,
-    val dateMillis: Long,
-    val month: String,
-    val year: Int
-)
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -237,7 +23,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     
     // Performance: Cache for normalized numbers to avoid repeated heavy library calls
     private val normalizationCache = java.util.concurrent.ConcurrentHashMap<String, String>()
-    private val networkObserver = com.miniclick.calltrackmanage.util.NetworkConnectivityObserver(application)
+    private val networkObserver = com.miniclick.calltrackmanage.util.network.NetworkConnectivityObserver(application)
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -363,7 +149,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch(Dispatchers.IO) {
             val ctx = getApplication<Application>()
-            val apps = com.miniclick.calltrackmanage.ui.utils.WhatsAppUtils.fetchAvailableWhatsappApps(ctx)
+            val apps = com.miniclick.calltrackmanage.util.system.WhatsAppUtils.fetchAvailableWhatsappApps(ctx)
             _uiState.update { it.copy(availableWhatsappApps = apps) }
         }
 
@@ -416,22 +202,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      * Sync new calls from system call log to Room (background operation)
      */
     fun syncFromSystem() {
-
         viewModelScope.launch {
             refreshSettings()
             _uiState.update { it.copy(isSyncing = true) }
-            
             try {
-                // We delegate the actual import to the Worker so it shows a notification
-                syncNow()
+                SyncManager.syncNow(getApplication())
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-            
-            // The worker runs asynchronously, so we can't accurately know when it finishes here unless we observe WorkManager.
-            // But usually isSyncing flag is just for the initial trigger.
-            // Ideally we should observe the worker status, but for now we'll just let it run.
-            // To prevent the spinner from disappearing immediately while worker runs, we could delay or rely on the pending counts.
             _uiState.update { it.copy(isSyncing = false) }
         }
     }
@@ -528,6 +306,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             dateRange = try { DateRange.valueOf(settingsRepository.getDateRangeFilter()) } catch(e: Exception) { DateRange.LAST_7_DAYS },
             customStartDate = settingsRepository.getCustomStartDate().let { if (it == 0L) null else it },
             customEndDate = settingsRepository.getCustomEndDate().let { if (it == 0L) null else it },
+            viewMode = try { ViewMode.valueOf(settingsRepository.getViewMode()) } catch(e: Exception) { ViewMode.PERSONS },
             
             // Critical setup flags for UI consistency
             simSelection = settingsRepository.getSimSelection(),
@@ -536,8 +315,36 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             whatsappPreference = settingsRepository.getWhatsappPreference(),
             callRecordEnabled = settingsRepository.isCallRecordEnabled(),
             callActionBehavior = settingsRepository.getCallActionBehavior(),
-            reportCategory = try { ReportCategory.valueOf(settingsRepository.getReportCategory()) } catch(e: Exception) { ReportCategory.OVERVIEW }
+            reportCategory = try { ReportCategory.valueOf(settingsRepository.getReportCategory()) } catch(e: Exception) { ReportCategory.OVERVIEW },
+            visibleCallFilters = loadVisibleCallFilters(),
+            visiblePersonFilters = loadVisiblePersonFilters()
         ) }
+    }
+
+    private fun loadVisibleCallFilters(): List<CallTabFilter> {
+        val saved = settingsRepository.getCallTabOrder()
+        if (saved.isNullOrEmpty()) return CallTabFilter.entries.filter { it != CallTabFilter.IGNORED }
+        return saved.split(",").mapNotNull { 
+            try { CallTabFilter.valueOf(it) } catch(e: Exception) { null }
+        }.filter { it != CallTabFilter.IGNORED }
+    }
+
+    private fun loadVisiblePersonFilters(): List<PersonTabFilter> {
+        val saved = settingsRepository.getPersonTabOrder()
+        if (saved.isNullOrEmpty()) return PersonTabFilter.entries.filter { it != PersonTabFilter.IGNORED }
+        return saved.split(",").mapNotNull { 
+            try { PersonTabFilter.valueOf(it) } catch(e: Exception) { null }
+        }.filter { it != PersonTabFilter.IGNORED }
+    }
+
+    fun updateCallTabOrder(newOrder: List<CallTabFilter>) {
+        _uiState.update { it.copy(visibleCallFilters = newOrder) }
+        settingsRepository.setCallTabOrder(newOrder.joinToString(",") { it.name })
+    }
+
+    fun updatePersonTabOrder(newOrder: List<PersonTabFilter>) {
+        _uiState.update { it.copy(visiblePersonFilters = newOrder) }
+        settingsRepository.setPersonTabOrder(newOrder.joinToString(",") { it.name })
     }
 
     private fun loadPersistentState() {
@@ -589,6 +396,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     
     fun setViewMode(mode: ViewMode) {
         _uiState.update { it.copy(viewMode = mode) }
+        settingsRepository.setViewMode(mode.name)
         updateDateSummaries()
     }
 
@@ -727,10 +535,17 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             val logsByPhone = currentState.callLogs.groupBy { it.phoneNumber }
             
             // 2. Perform Single-Pass Call Filtering Across ALL Tabs
-            val tabLogs = processCallFilters(currentState, personsMap)
+            val simSel = currentState.simSelection
+            val targetSubId = if (simSel == "Both") null else getSubIdForSim(simSel)
+            val tabLogs = CallLogManager.processCallFilters(
+                currentState, 
+                personsMap, 
+                ::getCachedNormalizedNumber,
+                targetSubId
+            )
             
             // 3. Perform Single-Pass Person Filtering Across ALL Tabs
-            val tabPersons = processPersonFilters(currentState, logsByPhone)
+            val tabPersons = PersonLogManager.processPersonFilters(currentState, logsByPhone)
             
             // 4. Get base logs for reporting (ALL tab)
             val visibleLogs = tabLogs[CallTabFilter.ALL] ?: emptyList()
@@ -745,7 +560,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 val person = personsMap[number] ?: personsMap[getCachedNormalizedNumber(number)]
                 PersonGroup(
                     number = number,
-                    name = person?.contactName ?: calls.firstOrNull { !it.contactName.isNullOrEmpty() }?.contactName,
+                    name = person?.contactName?.takeIf { it.isNotBlank() } ?: calls.firstOrNull { !it.contactName.isNullOrBlank() }?.contactName,
                     photoUri = person?.photoUri ?: calls.firstOrNull { !it.photoUri.isNullOrEmpty() }?.photoUri,
                     calls = sortedCalls,
                     lastCallDate = sortedCalls.firstOrNull()?.callDate ?: 0L,
@@ -759,10 +574,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             // 6. Calculate Report Statistics (Heavy Operation)
-            // Use ALL tab logs for reports so the stats are consistent regardless of which tab you're viewing
-            val reportStats = calculateReportStats(visibleLogs, currentState.persons)
+            val reportStats = StatsManager.calculateReportStats(
+                visibleLogs, 
+                currentState.persons, 
+                currentState.callLogs,
+                settingsRepository
+            )
 
-            val activeFilterCount = calculateFilterCount(currentState)
+            val activeFilterCount = HomeUtils.calculateFilterCount(currentState)
             
             _uiState.update { it.copy(
                 tabFilteredLogs = tabLogs,
@@ -780,243 +599,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun calculateReportStats(logs: List<CallDataEntity>, persons: List<PersonDataEntity>): ReportStats {
-        if (logs.isEmpty()) return ReportStats()
-
-        // Basic counts
-        val totalCalls = logs.size
-        val incomingCalls = logs.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE }
-        val outgoingCalls = logs.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE }
-        val missedCalls = logs.count { it.callType == android.provider.CallLog.Calls.MISSED_TYPE }
-        val rejectedCalls = logs.count { it.callType == android.provider.CallLog.Calls.REJECTED_TYPE || it.callType == 5 || it.callType == 6 }
-        
-        // Connected/Attended (> 3s as per new rule)
-        val connectedCalls = logs.count { it.duration > 3 }
-        val notConnectedCalls = logs.count { it.duration <= 3 }
-        val connectedIncoming = logs.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE && it.duration > 3 }
-        val connectedOutgoing = logs.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE && it.duration > 3 }
-        
-        // Duration stats
-        val totalDuration = logs.sumOf { it.duration }
-        val avgDuration = if (connectedCalls > 0) totalDuration / connectedCalls else 0L
-        val maxDuration = logs.maxOfOrNull { it.duration } ?: 0L
-        val incomingDuration = logs.filter { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE }.sumOf { it.duration }
-        val outgoingDuration = logs.filter { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE }.sumOf { it.duration }
-        
-        // Unique contacts
-        val uniqueContacts = logs.distinctBy { it.phoneNumber }.size
-        val savedContacts = logs.filter { !it.contactName.isNullOrEmpty() }.distinctBy { it.phoneNumber }.size
-        val unsavedContacts = logs.filter { it.contactName.isNullOrEmpty() }.distinctBy { it.phoneNumber }.size
-        
-        // Notes & Reviews
-        val callsWithNotes = logs.count { !it.callNote.isNullOrEmpty() }
-        val reviewedCalls = logs.count { it.reviewed }
-        val personsWithNotes = persons.count { !it.personNote.isNullOrEmpty() }
-        val personsWithLabels = persons.count { !it.label.isNullOrEmpty() }
-        
-        // Recordings
-        val callsWithRecordings = logs.count { !it.localRecordingPath.isNullOrEmpty() }
-
-        // Short Calls (low engagement indicator)
-        val shortCallThreshold = settingsRepository.getShortCallThresholdSeconds()
-        val shortCalls = logs.count { it.duration > 0 && it.duration < shortCallThreshold }
-        
-        // New metrics for renamed tabs
-        val neverConnectedCount = persons.count { it.totalCalls > 1 && it.totalDuration == 0L }
-        val mayFailedCount = logs.count { it.duration > 0 && it.duration <= 4 }
-        
-        // Top callers
-        val topCallers = logs
-            .groupBy { it.phoneNumber }
-            .map { (number, calls) ->
-                val name = calls.firstOrNull { !it.contactName.isNullOrEmpty() }?.contactName
-                TopCaller(
-                    phoneNumber = number,
-                    displayName = name ?: number,
-                    callCount = calls.size,
-                    totalDuration = calls.sumOf { it.duration },
-                    incomingCount = calls.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE },
-                    outgoingCount = calls.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE },
-                    missedCount = calls.count { it.callType == android.provider.CallLog.Calls.MISSED_TYPE }
-                )
-            }
-            .sortedByDescending { it.callCount }
-            .take(5)
-        
-        // Most talked (by duration)
-        val mostTalked = logs
-            .groupBy { it.phoneNumber }
-            .map { (number, calls) ->
-                val name = calls.firstOrNull { !it.contactName.isNullOrEmpty() }?.contactName
-                TopCaller(
-                    phoneNumber = number,
-                    displayName = name ?: number,
-                    callCount = calls.size,
-                    totalDuration = calls.sumOf { it.duration },
-                    incomingCount = calls.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE },
-                    outgoingCount = calls.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE },
-                    missedCount = calls.count { it.callType == android.provider.CallLog.Calls.MISSED_TYPE }
-                )
-            }
-            .filter { it.totalDuration > 0 }
-            .sortedByDescending { it.totalDuration }
-            .take(5)
-        
-        // Daily breakdown
-        val dailyStats = logs
-            .groupBy { 
-                java.text.SimpleDateFormat("EEE", java.util.Locale.getDefault()).format(java.util.Date(it.callDate))
-            }
-            .mapValues { (_, calls) ->
-                DayStat(
-                    count = calls.size,
-                    duration = calls.sumOf { it.duration }
-                )
-            }
-        
-        // Hourly breakdown (0-23)
-        val hourlyStats = logs
-            .groupBy { 
-                java.util.Calendar.getInstance().apply { timeInMillis = it.callDate }.get(java.util.Calendar.HOUR_OF_DAY)
-            }
-            .mapValues { (_, calls) -> calls.size }
-        
-        // Label distribution
-        val labelDistribution = persons
-            .flatMap { person ->
-                person.label?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
-            }
-            .groupingBy { it }
-            .eachCount()
-            .toList()
-            .sortedByDescending { it.second }
-
-        // 7. Engagement Buckets
-        val buckets = listOf(
-            Triple("Over 5 min", 301, Int.MAX_VALUE),
-            Triple("3 to 5 min", 181, 300),
-            Triple("1 to 3 min", 61, 180),
-            Triple("30s to 1 min", 31, 60),
-            Triple("10s to 30s", 11, 30),
-            Triple("5s to 10s", 6, 10),
-            Triple("0s to 5s", 0, 5)
-        )
-        
-        val bucketStats = buckets.mapIndexed { index, (label, min, max) ->
-            val inBucket = logs.filter { it.duration in min..max }
-            DurationBucketStat(
-                label = label,
-                total = inBucket.size,
-                outCount = inBucket.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE },
-                inCount = inBucket.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE },
-                sortOrder = index
-            )
-        }
-
-        // 8. Comparisons (Last 7 Days Daily Average)
-        val last7DaysAvg = calculateLast7DaysAverages(_uiState.value.callLogs)
-
-        // Additional Unique & Detailed Stats needed for Report
-        val connectedUnique = connectedCalls // Approximate if not computed above, but let's recompute or use existing logic if variables available
-        // Wait, 'connectedCalls' above (line 896) is just a Count, not a List.
-        // I need to recompute unique counts because I didn't see them in lines 780-889 in step 17/22.
-        // Wait, Step 22 output didn't show unique counts for "connected", etc.
-        // So I must calculate them HERE.
-        
-        val connectedUniqueCount = logs.filter { it.duration > 3 }.map { it.phoneNumber }.distinct().size
-        val notConnectedUniqueCount = logs.filter { it.duration <= 3 }.map { it.phoneNumber }.distinct().size
-        val connectedIncomingUnique = logs.filter { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE && it.duration > 3 }.map { it.phoneNumber }.distinct().size
-        val connectedOutgoingUnique = logs.filter { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE && it.duration > 3 }.map { it.phoneNumber }.distinct().size
-        val notAnsweredIncomingUnique = logs.filter { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE && it.duration <= 3 }.map { it.phoneNumber }.distinct().size
-        val outgoingNotConnectedUnique = logs.filter { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE && it.duration <= 3 }.map { it.phoneNumber }.distinct().size
-        val mayFailedUnique = logs.filter { it.duration < 4 }.map { it.phoneNumber }.distinct().size
-        
-        // Never Connected Unique
-        val visibleNumbers = logs.map { it.phoneNumber }.toSet()
-        val relevantPersons = persons.filter { it.phoneNumber in visibleNumbers }
-        val neverConnectedUniqueCount = relevantPersons.count { it.totalCalls > 0 && it.totalDuration == 0L }
-
-        return ReportStats(
-            totalCalls = totalCalls,
-            incomingCalls = incomingCalls,
-            outgoingCalls = outgoingCalls,
-            missedCalls = missedCalls,
-            rejectedCalls = rejectedCalls,
-            
-            connectedCalls = connectedCalls,
-            connectedUnique = connectedUniqueCount,
-            notConnectedCalls = notConnectedCalls,
-            notConnectedUnique = notConnectedUniqueCount,
-            
-            connectedIncoming = connectedIncoming, // line 898 variable
-            connectedIncomingUnique = connectedIncomingUnique,
-            connectedOutgoing = connectedOutgoing, // line 899 variable
-            connectedOutgoingUnique = connectedOutgoingUnique,
-            
-            notAnsweredIncoming = incomingCalls - connectedIncoming,
-            notAnsweredIncomingUnique = notAnsweredIncomingUnique,
-            
-            outgoingNotConnected = outgoingCalls - connectedOutgoing,
-            outgoingNotConnectedUnique = outgoingNotConnectedUnique,
-            
-            totalDuration = totalDuration,
-            avgDuration = avgDuration,
-            maxDuration = maxDuration,
-            incomingDuration = incomingDuration,
-            outgoingDuration = outgoingDuration,
-            
-            uniqueContacts = uniqueContacts,
-            savedContacts = savedContacts,
-            unsavedContacts = unsavedContacts,
-            
-            callsWithNotes = callsWithNotes,
-            reviewedCalls = reviewedCalls,
-            callsWithRecordings = callsWithRecordings,
-            personsWithNotes = personsWithNotes,
-            personsWithLabels = personsWithLabels,
-            totalPersons = persons.size, // Approximation
-            
-            neverConnectedCount = neverConnectedCount,
-            neverConnectedUnique = neverConnectedUniqueCount,
-            mayFailedCount = mayFailedCount,
-            mayFailedUnique = mayFailedUnique,
-            
-            durationBuckets = bucketStats,
-            comparisonAverages = last7DaysAvg,
-            
-            topCallers = topCallers,
-            mostTalked = mostTalked,
-            dailyStats = dailyStats, // already computed in lines before
-            hourlyStats = hourlyStats, // already computed
-            labelDistribution = labelDistribution
-        )
+    private fun updateDateSummaries() {
+        val summaries = HomeUtils.computeDateSummaries(_uiState.value)
+        _uiState.update { it.copy(dateSummaries = summaries) }
     }
 
-    private fun calculateLast7DaysAverages(allLogs: List<CallDataEntity>): Map<String, Float> {
-        val cal = Calendar.getInstance()
-        cal.add(Calendar.DAY_OF_YEAR, -7)
-        val sevenDaysAgo = cal.timeInMillis
-        val now = System.currentTimeMillis()
-        
-        val last7DaysLogs = allLogs.filter { it.callDate in sevenDaysAgo..now }
-        val days = 7f
-        
-        val connected = last7DaysLogs.count { it.duration > 3 }
-        val outgoing = last7DaysLogs.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE }
-        val answered = last7DaysLogs.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE && it.duration > 3 }
-        val outgoingNotConn = last7DaysLogs.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE && it.duration <= 3 }
-        val notAnswered = last7DaysLogs.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE && it.duration <= 3 }
-        val mayFailed = last7DaysLogs.count { it.duration > 0 && it.duration <= 4 }
-        
-        return mapOf(
-            "connected" to (connected / days),
-            "outgoing" to (outgoing / days),
-            "answered" to (answered / days),
-            "outgoingNotConnected" to (outgoingNotConn / days),
-            "notAnswered" to (notAnswered / days),
-            "mayFailed" to (mayFailed / days)
-        )
-    }
+
+
+
 
     private fun getCachedNormalizedNumber(number: String): String {
         return normalizationCache.getOrPut(number) {
@@ -1026,370 +616,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun normalizePhoneNumber(number: String) = callDataRepository.normalizePhoneNumber(number)
 
-    private fun processCallFilters(
-        current: HomeUiState,
-        personsMap: Map<String, PersonDataEntity>
-    ): Map<CallTabFilter, List<CallDataEntity>> {
-        if (current.callLogs.isEmpty()) return emptyMap()
 
-        val query = current.searchQuery.trim().lowercase()
-        val hasQuery = query.isNotEmpty()
-        val labelFilter = current.labelFilter
-        val hasLabelFilter = labelFilter.isNotEmpty()
-        
-        val connFilter = current.connectedFilter
-        val nFilter = current.notesFilter
-        val pnFilter = current.personNotesFilter
-        val cFilter = current.contactsFilter
-        val aFilter = current.attendedFilter
-        val rFilter = current.reviewedFilter
-        val cnFilter = current.customNameFilter
-        val dRange = current.dateRange
-        
-        val todayStart = getStartOfDay(0)
-        val threeDaysStart = getStartOfDay(2)
-        val sevenDaysStart = getStartOfDay(6)
-        val fourteenDaysStart = getStartOfDay(13)
-        val thirtyDaysStart = getStartOfDay(29)
-        val thisMonthStart = getStartOfThisMonth()
-        val prevMonthStart = getStartOfPreviousMonth()
-        
-        val cStart = current.customStartDate ?: 0L
-        val cEnd = current.customEndDate ?: Long.MAX_VALUE
-        val tStartDate = current.trackStartDate
-        val simSel = current.simSelection
-        val targetSubId = if (simSel == "Both") null else getSubIdForSim(simSel)
 
-        val tabMaps = java.util.EnumMap<CallTabFilter, ArrayList<CallDataEntity>>(CallTabFilter::class.java)
-        CallTabFilter.entries.forEach { tabMaps[it] = ArrayList<CallDataEntity>() }
 
-        for (call in current.callLogs) {
-            if (tStartDate > 0 && call.callDate < tStartDate) continue
-            if (targetSubId != null && call.subscriptionId != targetSubId) continue
-
-            val matchesDate = when (dRange) {
-                DateRange.TODAY -> call.callDate >= todayStart
-                DateRange.LAST_3_DAYS -> call.callDate >= threeDaysStart
-                DateRange.LAST_7_DAYS -> call.callDate >= sevenDaysStart
-                DateRange.LAST_14_DAYS -> call.callDate >= fourteenDaysStart
-                DateRange.LAST_30_DAYS -> call.callDate >= thirtyDaysStart
-                DateRange.THIS_MONTH -> call.callDate >= thisMonthStart
-                DateRange.PREVIOUS_MONTH -> call.callDate in prevMonthStart until thisMonthStart
-                DateRange.CUSTOM -> call.callDate in cStart..cEnd
-                DateRange.ALL -> true
-            }
-            if (!matchesDate) continue
-
-            var person = personsMap[call.phoneNumber]
-            if (person == null) {
-                val norm = getCachedNormalizedNumber(call.phoneNumber)
-                person = personsMap[norm]
-            }
-
-            if (person?.isNoTracking == true) continue
-            
-            if (hasLabelFilter) {
-                val personLabels = person?.label?.split(",")?.map { it.trim() } ?: emptyList()
-                if (!personLabels.contains(labelFilter)) continue
-            }
-
-            val isConnected = call.duration > 0
-            if (connFilter == ConnectedFilter.CONNECTED && !isConnected) continue
-            if (connFilter == ConnectedFilter.NOT_CONNECTED && isConnected) continue
-            
-            if (nFilter == NotesFilter.WITH_NOTE && call.callNote.isNullOrEmpty()) continue
-            if (nFilter == NotesFilter.WITHOUT_NOTE && !call.callNote.isNullOrEmpty()) continue
-            
-            if (pnFilter == PersonNotesFilter.WITH_NOTE && person?.personNote.isNullOrEmpty()) continue
-            if (pnFilter == PersonNotesFilter.WITHOUT_NOTE && !person?.personNote.isNullOrEmpty()) continue
-
-            if (rFilter == ReviewedFilter.REVIEWED && !call.reviewed) continue
-            if (rFilter == ReviewedFilter.NOT_REVIEWED && call.reviewed) continue
-
-            if (cnFilter == CustomNameFilter.WITH_NAME && person?.contactName.isNullOrEmpty()) continue
-            if (cnFilter == CustomNameFilter.WITHOUT_NAME && !person?.contactName.isNullOrEmpty()) continue
-
-            if (cFilter == ContactsFilter.IN_CONTACTS && call.contactName.isNullOrEmpty()) continue
-            if (cFilter == ContactsFilter.NOT_IN_CONTACTS && !call.contactName.isNullOrEmpty()) continue
-            
-            if (aFilter == AttendedFilter.ATTENDED && !isConnected) continue
-            if (aFilter == AttendedFilter.NEVER_ATTENDED && isConnected) continue
-
-            if (hasQuery) {
-                val matches = call.phoneNumber.contains(query) || 
-                              (call.contactName?.lowercase()?.contains(query) == true) ||
-                              (call.callNote?.lowercase()?.contains(query) == true)
-                if (!matches) continue
-            }
-
-            val isIgnored = person?.hasAnyExclusion == true || call.callType == 6
-
-            // Filter based on showIgnoredOnly toggle
-            // When showIgnoredOnly is true: ONLY show ignored contacts in ALL tabs
-            // When showIgnoredOnly is false: show non-ignored normally, ignored only in IGNORED tab
-            if (current.showIgnoredOnly) {
-                // Only include ignored calls across all tabs
-                if (!isIgnored) continue
-                
-                // Add to ALL and categorize
-                tabMaps[CallTabFilter.ALL]?.add(call)
-                tabMaps[CallTabFilter.IGNORED]?.add(call)
-                
-                // New logic for NEVER_CONNECTED: person has multiple calls but total duration is 0
-                if ((person?.totalCalls ?: 0) > 1 && (person?.totalDuration ?: 0L) == 0L) {
-                    tabMaps[CallTabFilter.NEVER_CONNECTED]?.add(call)
-                }
-                
-                // New logic for MAY_FAILED: call duration > 0 && <= 4 seconds
-                if (call.duration > 0 && call.duration <= 4) {
-                    tabMaps[CallTabFilter.MAY_FAILED]?.add(call)
-                }
-
-                when (call.callType) {
-                    android.provider.CallLog.Calls.INCOMING_TYPE -> {
-                        if (call.duration > 3) {
-                            tabMaps[CallTabFilter.ANSWERED]?.add(call)
-                        } else {
-                            tabMaps[CallTabFilter.NOT_ANSWERED]?.add(call)
-                        }
-                    }
-                    android.provider.CallLog.Calls.OUTGOING_TYPE -> {
-                        if (call.duration > 3) {
-                            tabMaps[CallTabFilter.OUTGOING]?.add(call)
-                        } else {
-                            tabMaps[CallTabFilter.OUTGOING_NOT_CONNECTED]?.add(call)
-                        }
-                    }
-                    android.provider.CallLog.Calls.MISSED_TYPE, 
-                    android.provider.CallLog.Calls.REJECTED_TYPE, 
-                    5 -> { 
-                        tabMaps[CallTabFilter.NOT_ANSWERED]?.add(call)
-                    }
-                }
-            } else {
-                // Normal mode: Ignored goes to IGNORED tab, everything else categorized normally
-                if (isIgnored) {
-                    tabMaps[CallTabFilter.IGNORED]?.add(call)
-                } else {
-                    tabMaps[CallTabFilter.ALL]?.add(call)
-                    
-                    // New logic for NEVER_CONNECTED: person has multiple calls but total duration is 0
-                    if ((person?.totalCalls ?: 0) > 1 && (person?.totalDuration ?: 0L) == 0L) {
-                        tabMaps[CallTabFilter.NEVER_CONNECTED]?.add(call)
-                    }
-                    
-                    // New logic for MAY_FAILED: call duration > 0 && <= 4 seconds
-                    if (call.duration > 0 && call.duration <= 4) {
-                        tabMaps[CallTabFilter.MAY_FAILED]?.add(call)
-                    }
-
-                    when (call.callType) {
-                        android.provider.CallLog.Calls.INCOMING_TYPE -> {
-                            if (call.duration > 3) {
-                                tabMaps[CallTabFilter.ANSWERED]?.add(call)
-                            } else {
-                                tabMaps[CallTabFilter.NOT_ANSWERED]?.add(call)
-                            }
-                        }
-                        android.provider.CallLog.Calls.OUTGOING_TYPE -> {
-                            if (call.duration > 3) {
-                                tabMaps[CallTabFilter.OUTGOING]?.add(call)
-                            } else {
-                                tabMaps[CallTabFilter.OUTGOING_NOT_CONNECTED]?.add(call)
-                            }
-                        }
-                        android.provider.CallLog.Calls.MISSED_TYPE, 
-                        android.provider.CallLog.Calls.REJECTED_TYPE, 
-                        5 -> { 
-                            tabMaps[CallTabFilter.NOT_ANSWERED]?.add(call)
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Final Sorting for all call tabs
-        val isDesc = current.callSortDirection == SortDirection.DESCENDING
-        val sortBy = current.callSortBy
-        
-        tabMaps.values.forEach { list ->
-            if (list.isNotEmpty()) {
-                when (sortBy) {
-                    CallSortBy.DATE -> {
-                        if (isDesc) list.sortByDescending { it.callDate }
-                        else list.sortBy { it.callDate }
-                    }
-                    CallSortBy.DURATION -> {
-                        if (isDesc) list.sortByDescending { it.duration }
-                        else list.sortBy { it.duration }
-                    }
-                    CallSortBy.NUMBER -> {
-                        if (isDesc) list.sortByDescending { it.phoneNumber }
-                        else list.sortBy { it.phoneNumber }
-                    }
-                }
-            }
-        }
-        
-        return tabMaps
-    }
-
-    private fun processPersonFilters(
-        current: HomeUiState,
-        logsByPhone: Map<String, List<CallDataEntity>>
-    ): Map<PersonTabFilter, List<PersonDataEntity>> {
-        if (current.persons.isEmpty()) return emptyMap()
-
-        val query = current.searchQuery.trim().lowercase()
-        val hasQuery = query.isNotEmpty()
-        val labelFilter = current.labelFilter
-        val hasLabelFilter = labelFilter.isNotEmpty()
-        
-        val nFilter = current.notesFilter
-        val pnFilter = current.personNotesFilter
-        val cFilter = current.contactsFilter
-        val minCount = current.minCallCount
-        val rFilter = current.reviewedFilter
-        val cnFilter = current.customNameFilter
-
-        val tabMaps = java.util.EnumMap<PersonTabFilter, ArrayList<PersonDataEntity>>(PersonTabFilter::class.java)
-        PersonTabFilter.entries.forEach { tabMaps[it] = ArrayList<PersonDataEntity>() }
-
-        val dRange = current.dateRange
-        val todayStart = getStartOfDay(0)
-        val threeDaysStart = getStartOfDay(2)
-        val sevenDaysStart = getStartOfDay(6)
-        val fourteenDaysStart = getStartOfDay(13)
-        val thirtyDaysStart = getStartOfDay(29)
-        val thisMonthStart = getStartOfThisMonth()
-        val prevMonthStart = getStartOfPreviousMonth()
-        val cStart = current.customStartDate ?: 0L
-        val cEnd = current.customEndDate ?: Long.MAX_VALUE
-
-        for (person in current.persons) {
-            if (person.isNoTracking) continue
-
-            // Date range filter apply in person based on last call
-            val lastDate = person.lastCallDate ?: 0L
-            val matchesDate = when (dRange) {
-                DateRange.TODAY -> lastDate >= todayStart
-                DateRange.LAST_3_DAYS -> lastDate >= threeDaysStart
-                DateRange.LAST_7_DAYS -> lastDate >= sevenDaysStart
-                DateRange.LAST_14_DAYS -> lastDate >= fourteenDaysStart
-                DateRange.LAST_30_DAYS -> lastDate >= thirtyDaysStart
-                DateRange.THIS_MONTH -> lastDate >= thisMonthStart
-                DateRange.PREVIOUS_MONTH -> lastDate in prevMonthStart until thisMonthStart
-                DateRange.CUSTOM -> lastDate in cStart..cEnd
-                DateRange.ALL -> true
-            }
-            if (!matchesDate) continue
-            
-            if (hasLabelFilter) {
-                val personLabels = person.label?.split(",")?.map { it.trim() } ?: emptyList()
-                if (!personLabels.contains(labelFilter)) continue
-            }
-
-            if (minCount > 0 && person.totalCalls < minCount) continue
-            
-            if (pnFilter == PersonNotesFilter.WITH_NOTE && person.personNote.isNullOrEmpty()) continue
-            if (pnFilter == PersonNotesFilter.WITHOUT_NOTE && !person.personNote.isNullOrEmpty()) continue
-
-            if (cnFilter == CustomNameFilter.WITH_NAME && person.contactName.isNullOrEmpty()) continue
-            if (cnFilter == CustomNameFilter.WITHOUT_NAME && !person.contactName.isNullOrEmpty()) continue
-
-            if (cFilter == ContactsFilter.IN_CONTACTS && person.contactName.isNullOrEmpty()) continue
-            if (cFilter == ContactsFilter.NOT_IN_CONTACTS && !person.contactName.isNullOrEmpty()) continue
-
-            val pCalls = logsByPhone[person.phoneNumber] ?: emptyList()
-            
-            if (nFilter == NotesFilter.WITH_NOTE && pCalls.none { !it.callNote.isNullOrEmpty() }) continue
-            if (nFilter == NotesFilter.WITHOUT_NOTE && pCalls.any { !it.callNote.isNullOrEmpty() }) continue
-
-            if (rFilter == ReviewedFilter.REVIEWED && pCalls.any { !it.reviewed }) continue
-            if (rFilter == ReviewedFilter.NOT_REVIEWED && pCalls.any { it.reviewed }) continue
-
-            if (hasQuery) {
-                val matches = person.phoneNumber.contains(query) || 
-                             (person.contactName?.lowercase()?.contains(query) == true) ||
-                             (person.personNote?.lowercase()?.contains(query) == true)
-                if (!matches) continue
-            }
-
-            val isIgnored = person.hasAnyExclusion
-
-            if (isIgnored) {
-                tabMaps[PersonTabFilter.IGNORED]?.add(person)
-            } else {
-                tabMaps[PersonTabFilter.ALL]?.add(person)
-                
-                // New logic for NEVER_CONNECTED: person has multiple calls but total duration is 0
-                if (person.totalCalls > 1 && person.totalDuration == 0L) {
-                    tabMaps[PersonTabFilter.NEVER_CONNECTED]?.add(person)
-                }
-                
-                // New logic for MAY_FAILED: last call duration in 1..4 OR has any call in 1..4 range (as per user request)
-                val hasShortCall = pCalls.any { it.duration > 0 && it.duration <= 4 }
-                val lastDur = person.lastCallDuration ?: 0L
-                if ((lastDur > 0 && lastDur <= 4) || hasShortCall) {
-                    tabMaps[PersonTabFilter.MAY_FAILED]?.add(person)
-                }
-                // Categorize based on LAST call status (>3s rule as per request)
-                val lastType = person.lastCallType
-                
-                when (lastType) {
-                    android.provider.CallLog.Calls.INCOMING_TYPE -> {
-                        if (lastDur > 3) {
-                            tabMaps[PersonTabFilter.ANSWERED]?.add(person)
-                        } else {
-                            tabMaps[PersonTabFilter.NOT_ANSWERED]?.add(person)
-                        }
-                    }
-                    android.provider.CallLog.Calls.OUTGOING_TYPE -> {
-                        if (lastDur > 3) {
-                            tabMaps[PersonTabFilter.OUTGOING]?.add(person)
-                        } else {
-                            tabMaps[PersonTabFilter.OUTGOING_NOT_CONNECTED]?.add(person)
-                        }
-                    }
-                    android.provider.CallLog.Calls.MISSED_TYPE,
-                    android.provider.CallLog.Calls.REJECTED_TYPE,
-                    5 -> {
-                        tabMaps[PersonTabFilter.NOT_ANSWERED]?.add(person)
-                    }
-                }
-            }
-        }
-        
-        // Final Sorting for all tabs
-        val isDesc = current.personSortDirection == SortDirection.DESCENDING
-        val sortBy = current.personSortBy
-        
-        tabMaps.values.forEach { list ->
-            if (list.isNotEmpty()) {
-                when (sortBy) {
-                    PersonSortBy.LAST_CALL -> {
-                        if (isDesc) list.sortByDescending { it.lastCallDate }
-                        else list.sortBy { it.lastCallDate }
-                    }
-                    PersonSortBy.TOTAL_CALLS -> {
-                        if (isDesc) list.sortByDescending { it.totalCalls }
-                        else list.sortBy { it.totalCalls }
-                    }
-                    PersonSortBy.TOTAL_DURATION -> {
-                        if (isDesc) list.sortByDescending { it.totalDuration }
-                        else list.sortBy { it.totalDuration }
-                    }
-                    PersonSortBy.NAME -> {
-                        val comparator = compareBy<PersonDataEntity> { it.contactName ?: it.phoneNumber }
-                        if (isDesc) list.sortWith(comparator.reversed())
-                        else list.sortWith(comparator)
-                    }
-                }
-            }
-        }
-        
-        return tabMaps
-    }
 
     // ============================================
     // CALL FLOW (MULTI-SIM)
@@ -1400,22 +629,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      * Decides whether to show the SIM picker or dial immediately.
      */
     fun initiateCall(number: String) {
-        if (number.isBlank()) return
-        
-        val currentState = _uiState.value
-        val activeSims = currentState.availableSims
-
-        if (activeSims.size > 1) {
-            // Multiple SIMs - show picker
-            _uiState.update { it.copy(
-                callFlowNumber = number,
-                showCallSimPicker = true
-            )}
-        } else {
-             val subId = activeSims.firstOrNull()?.subscriptionId
-             val forceDialer = currentState.callActionBehavior == "Open in Dialpad"
-             com.miniclick.calltrackmanage.ui.utils.CallUtils.makeCall(getApplication(), number, subId, forceDialer)
-        }
+        CallFlowManager.initiateCall(
+            number = number,
+            availableSims = _uiState.value.availableSims,
+            callActionBehavior = _uiState.value.callActionBehavior,
+            application = getApplication(),
+            onShowSimPicker = { num ->
+                _uiState.update { it.copy(callFlowNumber = num, showCallSimPicker = true) }
+            }
+        )
     }
 
     /**
@@ -1424,50 +646,20 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun reAttachRecordingsForPhone(phoneNumber: String) {
         val app = getApplication<Application>()
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             withContext(Dispatchers.Main) { 
                 android.widget.Toast.makeText(app, "Scanning recordings for $phoneNumber...", android.widget.Toast.LENGTH_SHORT).show() 
             }
             
-            val normalizedNumer = normalizePhoneNumber(phoneNumber)
-            val logs = callDataRepository.getLogsForPhone(normalizedNumer)
-            var updatedCount = 0
+            val updatedCount = RecordingManager.reAttachRecordingsForPhone(
+                phoneNumber = phoneNumber,
+                callDataRepository = callDataRepository,
+                recordingRepository = recordingRepository,
+                normalizePhoneNumber = ::normalizePhoneNumber
+            )
             
-            // OPTIMIZATION: Scan files ONCE
-            val allFiles = recordingRepository.getRecordingFiles()
-            
-            // Re-process each log
-            logs.forEach { log ->
-                 // SKIP INVALID CALLS:
-                 // 1. Duration is 0 (No talk time = No recording)
-                 // 2. Call Type is Missed(3), Voicemail(4), Rejected(5), Blocked(6)
-                 if (log.duration <= 0 || log.callType >= 3) {
-                     return@forEach
-                 }
-            
-                 // 1. Clear existing local path if it's invalid (optional, but safer)
-                 // But better to just try re-finding.
-                 
-                 // 2. Find best match
-                 val bestMatch = recordingRepository.findRecordingInList(
-                     files = allFiles,
-                     callDate = log.callDate,
-                     durationSec = log.duration,
-                     phoneNumber = log.phoneNumber,
-                     contactName = log.contactName
-                 )
-                 
-                 if (bestMatch != null && bestMatch != log.localRecordingPath) {
-                     // Found a better/new match! Update it.
-                     callDataRepository.updateRecordingPath(log.compositeId, bestMatch)
-                     updatedCount++
-                 }
-            }
-            
-            // Refresh UI
             withContext(Dispatchers.Main) {
-                // Toast or snackbar could go here
-                triggerFilter() // Reload lists
+                triggerFilter()
                 android.widget.Toast.makeText(app, "Updated $updatedCount recordings for $phoneNumber", android.widget.Toast.LENGTH_LONG).show()
             }
         }
@@ -1477,26 +669,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      * Re-attach recordings for ALL calls. Heavy operation.
      */
     fun reAttachAllRecordings() {
-         viewModelScope.launch(Dispatchers.IO) {
+         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            
-            val allLogs = callDataRepository.getAllCalls()
-            var updatedCount = 0
-            
-            allLogs.forEach { log ->
-                 val bestMatch = recordingRepository.findRecording(
-                     callDate = log.callDate,
-                     durationSec = log.duration,
-                     phoneNumber = log.phoneNumber,
-                     contactName = log.contactName
-                 )
-                 
-                 if (bestMatch != null && bestMatch != log.localRecordingPath) {
-                     callDataRepository.updateRecordingPath(log.compositeId, bestMatch)
-                     updatedCount++
-                 }
-            }
-            
+            val updatedCount = RecordingManager.reAttachAllRecordings(callDataRepository, recordingRepository)
             withContext(Dispatchers.Main) {
                 _uiState.update { it.copy(isLoading = false) }
                  triggerFilter()
@@ -1514,7 +689,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val ctx = getApplication<Application>()
         val forceDialer = _uiState.value.callActionBehavior == "Open in Dialpad"
         
-        com.miniclick.calltrackmanage.ui.utils.CallUtils.makeCall(ctx, number, subId, forceDialer)
+        com.miniclick.calltrackmanage.util.call.CallUtils.makeCall(ctx, number, subId, forceDialer)
         cancelCallFlow()
     }
 
@@ -1528,18 +703,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         )}
     }
 
-    private fun calculateFilterCount(uiState: HomeUiState): Int {
-        var count = 0
-        if (uiState.connectedFilter != ConnectedFilter.ALL) count++
-        if (uiState.notesFilter != NotesFilter.ALL) count++
-        if (uiState.personNotesFilter != PersonNotesFilter.ALL) count++
-        if (uiState.contactsFilter != ContactsFilter.ALL) count++
-        if (uiState.reviewedFilter != ReviewedFilter.ALL) count++
-        if (uiState.customNameFilter != CustomNameFilter.ALL) count++
-        if (uiState.minCallCount > 0) count++
-        if (uiState.labelFilter.isNotEmpty()) count++
-        return count
-    }
 
     // ============================================
     // NOTES
@@ -1547,42 +710,42 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     
     fun saveCallNote(compositeId: String, note: String) {
         viewModelScope.launch {
-            callDataRepository.updateCallNote(compositeId, note.ifEmpty { null })
-            quickSync()  // Use quick sync - no need to import system calls for note edit
+            ContactManager.saveCallNote(compositeId, note, callDataRepository)
+            quickSync()
         }
     }
 
     fun savePersonNote(phoneNumber: String, note: String) {
         viewModelScope.launch {
-            callDataRepository.updatePersonNote(phoneNumber, note.ifEmpty { null })
+            ContactManager.savePersonNote(phoneNumber, note, callDataRepository)
             quickSync()
         }
     }
     
     fun savePersonLabel(phoneNumber: String, label: String) {
         viewModelScope.launch {
-            callDataRepository.updatePersonLabel(phoneNumber, label.ifEmpty { null })
+            ContactManager.savePersonLabel(phoneNumber, label, callDataRepository)
             quickSync()
         }
     }
 
     fun savePersonName(phoneNumber: String, name: String) {
         viewModelScope.launch {
-            callDataRepository.updatePersonName(phoneNumber, name.ifEmpty { null })
+            ContactManager.savePersonName(phoneNumber, name, callDataRepository)
             quickSync()
         }
     }
     
     fun updateReviewed(compositeId: String, reviewed: Boolean) {
         viewModelScope.launch {
-            callDataRepository.updateReviewed(compositeId, reviewed)
+            ContactManager.updateReviewed(compositeId, reviewed, callDataRepository)
             quickSync()
         }
     }
 
     fun markAllCallsReviewed(phoneNumber: String) {
         viewModelScope.launch {
-            callDataRepository.markAllCallsReviewed(phoneNumber)
+            ContactManager.markAllCallsReviewed(phoneNumber, callDataRepository)
             quickSync()
         }
     }
@@ -1593,48 +756,25 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     
     fun updateCallStatus(compositeId: String, status: MetadataSyncStatus) {
         viewModelScope.launch {
-            callDataRepository.updateMetadataSyncStatus(compositeId, status)
+            ContactManager.updateCallStatus(compositeId, status, callDataRepository)
         }
     }
 
     fun updateRecordingPathForLog(compositeId: String, path: String?) {
         viewModelScope.launch {
             callDataRepository.updateRecordingPath(compositeId, path)
-            quickSync()  // Use quick sync - recording path update doesn't need system import
+            SyncManager.quickSync(getApplication())
         }
     }
 
-    /**
-     * Full sync - imports from system call log + pushes pending changes
-     * Use for: pull-to-refresh, after call ends, app start
-     */
-    fun syncNow() {
-        val application = getApplication<android.app.Application>()
-        com.miniclick.calltrackmanage.worker.CallSyncWorker.runNow(application)
-        com.miniclick.calltrackmanage.worker.RecordingUploadWorker.runNow(application)
-    }
+    fun syncNow() = SyncManager.syncNow(getApplication())
 
-    /**
-     * Quick sync - only pushes pending metadata changes, skips system import
-     * Use for: note edit, label change, reviewed status update
-     * Avoids showing "Importing Data" / "Finding Recordings" in status bar
-     */
-    fun quickSync() {
-        val application = getApplication<android.app.Application>()
-        com.miniclick.calltrackmanage.worker.CallSyncWorker.runQuickSync(application)
-        com.miniclick.calltrackmanage.worker.RecordingUploadWorker.runNow(application)
-    }
+    fun quickSync() = SyncManager.quickSync(getApplication())
 
-    /**
-     * Look for pending sync again and check server for updates
-     * This is a "Force Refresh & Sync"
-     */
     fun fullSync() {
         viewModelScope.launch {
-            // First refresh local scan from system
             callDataRepository.syncFromSystemCallLog()
-            // Then trigger workers
-            syncNow()
+            SyncManager.syncNow(getApplication())
         }
     }
 
@@ -1644,39 +784,26 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun ignoreNumber(phoneNumber: String) {
         viewModelScope.launch {
-            callDataRepository.updateExclusionType(phoneNumber, excludeFromSync = false, excludeFromList = true)
-            // The flow collectors in init will catch this and trigger re-filter
+            ContactManager.updateExclusion(phoneNumber, excludeFromSync = false, excludeFromList = true, callDataRepository)
         }
     }
 
     fun noTrackNumber(phoneNumber: String) {
         viewModelScope.launch {
-            callDataRepository.updateExclusionType(phoneNumber, excludeFromSync = true, excludeFromList = true)
-            // The flow collectors in init will catch this and trigger re-filter
+            ContactManager.updateExclusion(phoneNumber, excludeFromSync = true, excludeFromList = true, callDataRepository)
         }
     }
 
     fun onWhatsAppClick(number: String) {
-        val currentState = _uiState.value
-        
-        // Ensure we have the latest apps if none detected yet
-        if (currentState.availableWhatsappApps.isEmpty()) {
-            val apps = com.miniclick.calltrackmanage.ui.utils.WhatsAppUtils.fetchAvailableWhatsappApps(getApplication())
-            _uiState.update { it.copy(availableWhatsappApps = apps) }
-        }
-
-        if (currentState.whatsappPreference == "Always Ask") {
-            _uiState.update { it.copy(
-                whatsappTargetNumber = number,
-                showWhatsappSelectionDialog = true
-            )}
-        } else {
-            com.miniclick.calltrackmanage.ui.utils.WhatsAppUtils.openWhatsApp(
-                getApplication(),
-                number,
-                currentState.whatsappPreference
-            )
-        }
+        CallFlowManager.handleWhatsAppClick(
+            number = number,
+            whatsappPreference = _uiState.value.whatsappPreference,
+            availableWhatsappApps = _uiState.value.availableWhatsappApps,
+            application = getApplication(),
+            onShowSelectionDialog = { num, apps ->
+                _uiState.update { it.copy(whatsappTargetNumber = num, availableWhatsappApps = apps, showWhatsappSelectionDialog = true) }
+            }
+        )
     }
 
     fun selectWhatsappAndOpen(packageName: String, setAsDefault: Boolean) {
@@ -1686,7 +813,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             _uiState.update { it.copy(whatsappPreference = packageName) }
         }
         
-        com.miniclick.calltrackmanage.ui.utils.WhatsAppUtils.openWhatsApp(
+        com.miniclick.calltrackmanage.util.system.WhatsAppUtils.openWhatsApp(
             getApplication(),
             number,
             packageName
@@ -1713,15 +840,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val callerPhone2 = settingsRepository.getCallerPhoneSim2()
         
         // Detect active SIMs
-        val ctx = getApplication<Application>()
-        val sims = if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
-            val sm = ContextCompat.getSystemService(ctx, SubscriptionManager::class.java)
-            sm?.activeSubscriptionInfoList?.map { 
-                SimInfo(it.simSlotIndex, it.displayName.toString(), it.carrierName.toString(), it.subscriptionId)
-            }?.sortedBy { it.slotIndex } ?: emptyList()
-        } else {
-            emptyList()
-        }
+        val sims = HomeUtils.detectActiveSims(getApplication())
         
         // Check for critical changes that require re-syncing
         val needsSync = simSelection != _uiState.value.simSelection || 
@@ -1732,7 +851,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                         callerPhone1 != _uiState.value.callerPhoneSim1 ||
                         callerPhone2 != _uiState.value.callerPhoneSim2
         
-        val showDialButton = settingsRepository.isShowDialButton()
         val callActionBehavior = settingsRepository.getCallActionBehavior()
 
         _uiState.update { it.copy(
@@ -1747,7 +865,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             callerPhoneSim2 = callerPhone2,
             availableSims = sims,
             callActionBehavior = callActionBehavior,
-            availableWhatsappApps = com.miniclick.calltrackmanage.ui.utils.WhatsAppUtils.fetchAvailableWhatsappApps(getApplication())
+            availableWhatsappApps = HomeUtils.fetchWhatsAppApps(getApplication())
         ) }
 
         if (needsSync) {
@@ -1758,101 +876,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
 
-    @SuppressLint("MissingPermission")
-    private fun getSubIdForSim(simName: String): Int? {
-        try {
-            if (simName == "Both") return null
-            val slotIndex = simName.replace("Sim", "").toIntOrNull()?.minus(1) ?: return null
-            val subManager = getApplication<Application>().getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
-            
-            if (ContextCompat.checkSelfPermission(getApplication(), Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
-               val info = subManager.activeSubscriptionInfoList?.find { it.simSlotIndex == slotIndex }
-               return info?.subscriptionId
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return null
-    }
-
-    private fun getStartOfDay(daysAgo: Int): Long {
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.DAY_OF_YEAR, -daysAgo)
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        return calendar.timeInMillis
-    }
-
-    private fun getStartOfThisMonth(): Long {
-        val calendar = Calendar.getInstance()
-        calendar.set(Calendar.DAY_OF_MONTH, 1)
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        return calendar.timeInMillis
-    }
-
-    private fun getStartOfPreviousMonth(): Long {
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.MONTH, -1)
-        calendar.set(Calendar.DAY_OF_MONTH, 1)
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        return calendar.timeInMillis
-    }
+    private fun getSubIdForSim(simName: String): Int? = HomeUtils.getSubIdForSim(simName, _uiState.value)
 
 
-    private fun updateDateSummaries() {
-        val currentState = _uiState.value
-        val items: List<Any> = if (currentState.viewMode == ViewMode.CALLS) {
-            val filter = currentState.callTypeFilter
-            currentState.tabFilteredLogs[filter] ?: emptyList()
-        } else {
-            val filter = currentState.personTabFilter
-            currentState.tabFilteredPersons[filter]?.mapNotNull { currentState.personGroups[it.phoneNumber] } ?: emptyList()
-        }
 
-        if (items.isEmpty()) {
-            _uiState.update { it.copy(dateSummaries = emptyList()) }
-            return
-        }
 
-        val summaries = if (currentState.viewMode == ViewMode.CALLS) {
-            (items as List<CallDataEntity>).groupBy { getDateHeader(it.callDate) }
-                .map { (label, logs) ->
-                    val firstCall = logs.first()
-                    val calendar = Calendar.getInstance().apply { timeInMillis = firstCall.callDate }
-                    DateSectionSummary(
-                        dateLabel = label,
-                        dayOfWeek = SimpleDateFormat("EEEE", Locale.getDefault()).format(Date(firstCall.callDate)),
-                        totalCalls = logs.size,
-                        uniqueCalls = logs.distinctBy { it.phoneNumber }.size,
-                        dateMillis = firstCall.callDate,
-                        month = SimpleDateFormat("MMM", Locale.getDefault()).format(Date(firstCall.callDate)),
-                        year = calendar.get(Calendar.YEAR)
-                    )
-                }
-        } else {
-            (items as List<PersonGroup>).groupBy { getDateHeader(it.lastCallDate) }
-                .map { (label, groups) ->
-                    val firstGroup = groups.first()
-                    val calendar = Calendar.getInstance().apply { timeInMillis = firstGroup.lastCallDate }
-                    DateSectionSummary(
-                        dateLabel = label,
-                        dayOfWeek = SimpleDateFormat("EEEE", Locale.getDefault()).format(Date(firstGroup.lastCallDate)),
-                        totalCalls = groups.sumOf { it.calls.size },
-                        uniqueCalls = groups.size,
-                        dateMillis = firstGroup.lastCallDate,
-                        month = SimpleDateFormat("MMM", Locale.getDefault()).format(Date(firstGroup.lastCallDate)),
-                        year = calendar.get(Calendar.YEAR)
-                    )
-                }
-        }
-        _uiState.update { it.copy(dateSummaries = summaries) }
-    }
 }

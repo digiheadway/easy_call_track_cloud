@@ -177,7 +177,7 @@ object CallerIdManager {
 
     private fun populateOverlay(view: View, phoneNumber: String, person: PersonDataEntity?, customData: String? = null) {
         // Name
-        view.findViewById<TextView>(R.id.nameText).text = person?.contactName ?: phoneNumber
+        view.findViewById<TextView>(R.id.nameText).text = person?.contactName?.takeIf { it.isNotBlank() } ?: phoneNumber
 
         // Phone number
         view.findViewById<TextView>(R.id.phoneText).text = formatPhoneNumber(phoneNumber)

@@ -5,7 +5,9 @@ import android.util.Log
 import com.miniclick.calltrackmanage.service.SyncService
 import com.miniclick.calltrackmanage.worker.CallSyncWorker
 import com.miniclick.calltrackmanage.worker.RecordingUploadWorker
+import dagger.hilt.android.HiltAndroidApp
 
+@HiltAndroidApp
 class CallTrackerApplication : Application() {
 
     override fun onCreate() {

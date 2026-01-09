@@ -120,4 +120,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _selectedTab.value = tab
         settingsRepository.setSelectedTab(tab.name)
     }
+    
+    // Notification-triggered queue opening
+    private val _openSyncQueue = MutableStateFlow(false)
+    val openSyncQueue: StateFlow<Boolean> = _openSyncQueue.asStateFlow()
+    
+    private val _openRecordingQueue = MutableStateFlow(false)
+    val openRecordingQueue: StateFlow<Boolean> = _openRecordingQueue.asStateFlow()
+    
+    fun setOpenSyncQueue(open: Boolean) {
+        _openSyncQueue.value = open
+    }
+    
+    fun setOpenRecordingQueue(open: Boolean) {
+        _openRecordingQueue.value = open
+    }
 }

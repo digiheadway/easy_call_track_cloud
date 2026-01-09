@@ -10,6 +10,9 @@ import com.miniclick.calltrackmanage.data.SettingsRepository
 import com.miniclick.calltrackmanage.data.db.RecordingSyncStatus
 import com.miniclick.calltrackmanage.network.NetworkClient
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -88,11 +91,7 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
     
             try {
                 // Cleanup stuck recordings (stuck in COMPRESSING or UPLOADING for more than 30 mins)
-                val activeSyncs = callDataRepository.getActiveRecordingSyncsFlow()
-                // Note: Since this is a suspend function in a worker, we can't easily observe a flow here
-                // better to use a one-time fetch or a more direct approach.
-                // Let's use a simpler approach: reset anything stuck in an active state when starting
-                // to ensure fresh start, especially if the worker was killed.
+                // This is now handled by the reset logic below if we find them in needingSync
                 
                 val lastEnabledTime = settingsRepository.getRecordingLastEnabledTimestamp()
                 val allNeedingSync = callDataRepository.getCallsNeedingRecordingSync()
@@ -117,8 +116,11 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                 val stuckCount = needingSync.count { it.recordingSyncStatus == RecordingSyncStatus.COMPRESSING || it.recordingSyncStatus == RecordingSyncStatus.UPLOADING }
                 if (stuckCount > 0) {
                     Log.i(TAG, "Resetting $stuckCount stuck recording syncs to PENDING")
-                    // We don't need to explicitly reset them in DB if we just process them, 
-                    // but resetting PENDING makes the UI look cleaner if we fail later.
+                    for (call in needingSync) {
+                        if (call.recordingSyncStatus == RecordingSyncStatus.COMPRESSING || call.recordingSyncStatus == RecordingSyncStatus.UPLOADING) {
+                            callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.PENDING)
+                        }
+                    }
                 }
                 
                 val pendingCalls = needingSync.sortedByDescending { it.callDate }
@@ -160,13 +162,15 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                 }
     
                 var uploadedCount = 0
+                var failedCount = 0
+                var skippedCount = 0
                 
                 // Process all pending calls in a loop until done or stopped
                 val pendingList = pendingCalls.toMutableList()
                 val initialTotal = pendingList.size
                 var processedCount = 0
                 
-                ProcessMonitor.startProcess("Uploading Call Recordings")
+                ProcessMonitor.startProcess(ProcessMonitor.ProcessIds.UPLOAD_RECORDINGS, "Uploading Call Recordings")
                 Log.d(TAG, "Starting processing of ${initialTotal} recordings")
     
                 try {
@@ -176,50 +180,74 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                             break
                         }
                         
-                        // Process in micro-batches of 5 to keep memory manageable and allow cancellation checks
-                        val currentBatch = pendingList.take(5)
+                        // Process in micro-batches of 2 in parallel to utilize bandwidth
+                        // and keep system responsive.
+                        val currentBatch = pendingList.take(2)
                         pendingList.removeAll(currentBatch)
                         
-                        for (call in currentBatch) {
-                            if (isStopped) break
-                            
-                            processedCount++
-                            val progress = processedCount.toFloat() / initialTotal
-                            ProcessMonitor.updateProgress(progress, "Uploading $processedCount/$initialTotal")
-                            
-                            // Update notification
-                            setForeground(createForegroundInfo("Uploading $processedCount/$initialTotal Recordings.."))
-                            
-                            if (alreadyCompletedSet.contains(call.compositeId)) continue
-    
-                            try {
-                                val recordingPath = call.localRecordingPath
-                                if (recordingPath.isNullOrEmpty()) {
-                                    val foundPath = recordingRepository.findRecording(call.callDate, call.duration, call.phoneNumber, call.contactName)
-                                    if (foundPath != null) {
-                                        callDataRepository.updateRecordingPath(call.compositeId, foundPath)
-                                        // Use the newly found path
-                                        uploadRecording(foundPath, call.compositeId)
-                                    } else {
-                                        val hoursSinceCall = (System.currentTimeMillis() - call.callDate) / (1000 * 60 * 60)
-                                        if (hoursSinceCall > 3) {
-                                            callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.NOT_FOUND)
-                                        }
+                        coroutineScope {
+                            currentBatch.map { call ->
+                                async {
+                                    if (isStopped) return@async
+                                    
+                                    val currentLocalCount = synchronized(this@RecordingUploadWorker) {
+                                        processedCount++
+                                        processedCount
                                     }
-                                } else {
-                                    uploadRecording(recordingPath, call.compositeId)
+                                    
+                                    val progress = currentLocalCount.toFloat() / initialTotal
+                                    ProcessMonitor.updateProgress(ProcessMonitor.ProcessIds.UPLOAD_RECORDINGS, progress, "Uploading $currentLocalCount/$initialTotal")
+                                    
+                                    // Throttle notification updates (every 2 recordings or if it's the last)
+                                    if (currentLocalCount % 2 == 0 || currentLocalCount == initialTotal) {
+                                        setForeground(createForegroundInfo("Uploading $currentLocalCount/$initialTotal Recordings.."))
+                                    }
+                                    
+                                    if (alreadyCompletedSet.contains(call.compositeId)) {
+                                        skippedCount++
+                                        return@async
+                                    }
+
+                                    try {
+                                        val startTime = System.currentTimeMillis()
+                                        val recordingPath = call.localRecordingPath
+                                        val success = if (recordingPath.isNullOrEmpty()) {
+                                            val foundPath = recordingRepository.findRecording(call.callDate, call.duration, call.phoneNumber, call.contactName)
+                                            if (foundPath != null) {
+                                                callDataRepository.updateRecordingPath(call.compositeId, foundPath)
+                                                uploadRecording(foundPath, call.compositeId)
+                                            } else {
+                                                val hoursSinceCall = (System.currentTimeMillis() - call.callDate) / (1000 * 60 * 60)
+                                                if (hoursSinceCall > 3) {
+                                                    callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.NOT_FOUND)
+                                                }
+                                                false
+                                            }
+                                        } else {
+                                            uploadRecording(recordingPath, call.compositeId)
+                                        }
+                                        
+                                        if (success) {
+                                            synchronized(this@RecordingUploadWorker) { uploadedCount++ }
+                                            val duration = System.currentTimeMillis() - startTime
+                                            Log.d(TAG, "Uploaded ${call.compositeId} in ${duration}ms")
+                                        } else {
+                                            failedCount++
+                                        }
+                                    } catch (e: kotlinx.coroutines.CancellationException) {
+                                        callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.PENDING)
+                                        throw e
+                                    } catch (e: Exception) {
+                                        Log.e(TAG, "Error uploading ${call.compositeId}", e)
+                                        callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.FAILED)
+                                        failedCount++
+                                    }
                                 }
-                            } catch (e: kotlinx.coroutines.CancellationException) {
-                                callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.PENDING)
-                                throw e
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Error", e)
-                                callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.FAILED)
-                            }
+                            }.awaitAll()
                         }
                     }
                 } finally {
-                    ProcessMonitor.endProcess()
+                    ProcessMonitor.endProcess(ProcessMonitor.ProcessIds.UPLOAD_RECORDINGS)
                 }
     
                 Log.d(TAG, "Upload pass finished. Uploaded $uploadedCount this session.")
@@ -274,7 +302,7 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
         var uploadPath = recordingPath
         var compressedFile: File? = null
         
-        if (originalSize > 100 * 1024) { // Only compress files > 100KB
+        if (originalSize > 300 * 1024) { // Only compress files > 300KB (saves time on small files)
             try {
                 callDataRepository.updateRecordingSyncStatus(compositeId, RecordingSyncStatus.COMPRESSING)
                 
@@ -284,7 +312,7 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                 compressedFile = File(cacheDir, "${compositeId}_compressed.m4a")
                 
                 val compressionSuccess = withContext(Dispatchers.IO) {
-                    com.miniclick.calltrackmanage.utils.AudioCompressor.compress(
+                    com.miniclick.calltrackmanage.util.audio.AudioCompressor.compress(
                         applicationContext,
                         recordingPath,
                         compressedFile
@@ -325,7 +353,7 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
     }
 
     private suspend fun uploadFileInChunks(recordingPath: String, uniqueId: String): Boolean {
-        val chunkSize = 1024 * 1024 // 1MB chunks
+        val chunkSize = 2 * 1024 * 1024 // 2MB chunks (reduced request overhead)
         val totalSize = getFileLength(recordingPath)
         val totalChunks = if (totalSize > 0) ((totalSize + chunkSize - 1) / chunkSize).toInt() else 0
         
@@ -441,6 +469,20 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
             notificationManager.createNotificationChannel(channel)
         }
 
+        // Create intent to open recording queue when notification is tapped
+        val contentIntent = android.content.Intent(applicationContext, com.miniclick.calltrackmanage.MainActivity::class.java).apply {
+            flags = android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("OPEN_RECORDING_QUEUE", true)
+        }
+        val pendingIntentFlags = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT
+        } else {
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT
+        }
+        val pendingIntent = android.app.PendingIntent.getActivity(
+            applicationContext, 1002, contentIntent, pendingIntentFlags
+        )
+
         val notification = androidx.core.app.NotificationCompat.Builder(applicationContext, channelId)
             .setContentTitle(title)
             .setTicker(title)
@@ -448,6 +490,7 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
             .setSmallIcon(com.miniclick.calltrackmanage.R.drawable.ic_launcher_foreground)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
+            .setContentIntent(pendingIntent)
             .build()
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {

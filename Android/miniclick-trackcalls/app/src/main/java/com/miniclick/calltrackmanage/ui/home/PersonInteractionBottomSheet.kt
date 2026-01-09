@@ -22,11 +22,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.miniclick.calltrackmanage.data.db.CallDataEntity
 import com.miniclick.calltrackmanage.ui.common.*
-import com.miniclick.calltrackmanage.ui.utils.AudioPlayer
-import com.miniclick.calltrackmanage.ui.utils.PlaybackMetadata
-import com.miniclick.calltrackmanage.ui.utils.cleanNumber
-import com.miniclick.calltrackmanage.ui.utils.formatDurationShort
-import com.miniclick.calltrackmanage.ui.utils.formatTime
+import com.miniclick.calltrackmanage.util.audio.AudioPlayer
+import com.miniclick.calltrackmanage.util.audio.PlaybackMetadata
+import com.miniclick.calltrackmanage.util.formatting.cleanNumber
+import com.miniclick.calltrackmanage.util.formatting.formatDurationShort
+import com.miniclick.calltrackmanage.util.formatting.formatTime
 import java.text.SimpleDateFormat
 import java.util.*
 

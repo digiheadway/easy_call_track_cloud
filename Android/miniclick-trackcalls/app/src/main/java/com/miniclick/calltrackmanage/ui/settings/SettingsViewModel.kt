@@ -21,8 +21,9 @@ import com.google.gson.GsonBuilder
 import android.net.Uri
 import java.io.OutputStreamWriter
 import java.io.InputStreamReader
-import kotlinx.coroutines.withContext
-import com.miniclick.calltrackmanage.ui.utils.WhatsAppUtils
+import com.miniclick.calltrackmanage.ui.settings.viewmodel.*
+import com.miniclick.calltrackmanage.util.system.WhatsAppUtils
+import com.miniclick.calltrackmanage.util.system.LogExporter
 
 data class PermissionState(
     val name: String,
@@ -128,15 +129,26 @@ data class SettingsUiState(
     val accountEditField: String? = null,
     val lookupPhoneNumber: String? = null,
     val skippedSteps: Set<String> = emptySet(),
-    val isTrackStartDateSet: Boolean = false
+    val isTrackStartDateSet: Boolean = false,
+    val syncQueueCount: Int = 0
 )
 
-class SettingsViewModel(application: Application) : AndroidViewModel(application) {
+@dagger.hilt.android.lifecycle.HiltViewModel
+class SettingsViewModel @javax.inject.Inject constructor(
+    application: Application,
+    private val settingsRepository: com.miniclick.calltrackmanage.data.SettingsRepository,
+    private val callDataRepository: com.miniclick.calltrackmanage.data.CallDataRepository,
+    private val recordingRepository: com.miniclick.calltrackmanage.data.RecordingRepository,
+    private val networkObserver: com.miniclick.calltrackmanage.util.network.NetworkConnectivityObserver
+) : AndroidViewModel(application) {
 
-    private val settingsRepository = SettingsRepository.getInstance(application)
-    private val callDataRepository = CallDataRepository.getInstance(application)
-    private val recordingRepository = com.miniclick.calltrackmanage.data.RecordingRepository.getInstance(application)
-    private val networkObserver = com.miniclick.calltrackmanage.util.NetworkConnectivityObserver(application)
+    private val permissionManager = PermissionManager(application)
+    private val simManager = SimManager(application, settingsRepository, viewModelScope)
+    private val syncManager = SyncManager(application, settingsRepository, viewModelScope)
+    private val dataManager = DataManager(application, callDataRepository, settingsRepository, recordingRepository, viewModelScope)
+    private val trackingManager = TrackingManager(application, settingsRepository, callDataRepository, recordingRepository, viewModelScope)
+    private val generalSettingsManager = GeneralSettingsManager(application, settingsRepository, viewModelScope)
+    private val lookupManager = LookupManager(settingsRepository, viewModelScope)
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -155,7 +167,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
         viewModelScope.launch(Dispatchers.IO) {
             loadSettings()
-            checkPermissions()
+            permissionManager.checkPermissions()
         }
 
         // Observe Network Status
@@ -164,10 +176,108 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 _uiState.update { it.copy(isNetworkAvailable = isAvailable) }
             }
         }
-        // NOTE: fetchSimInfo() and fetchWhatsappApps() are NOT called here
-        // They are loaded lazily when user accesses those specific features
-        // - fetchSimInfo() called when SIM/Call tracking settings opened
-        // - fetchWhatsappApps() called when WhatsApp preference UI shown
+
+        // Observe Permissions
+        viewModelScope.launch {
+            permissionManager.permissions.collect { perms ->
+                _uiState.update { it.copy(permissions = perms) }
+            }
+        }
+        viewModelScope.launch {
+            permissionManager.isOverlayPermissionGranted.collect { granted: Boolean ->
+                _uiState.update { it.copy(isOverlayPermissionGranted = granted) }
+            }
+        }
+
+        // Observe SIM info
+        viewModelScope.launch {
+            simManager.availableSims.collect { sims: List<SimInfo> ->
+                _uiState.update { it.copy(availableSims = sims) }
+            }
+        }
+        viewModelScope.launch {
+            simManager.sim1SubId.collect { id: Int? ->
+                _uiState.update { it.copy(sim1SubId = id) }
+            }
+        }
+        viewModelScope.launch {
+            simManager.sim2SubId.collect { id: Int? ->
+                _uiState.update { it.copy(sim2SubId = id) }
+            }
+        }
+        viewModelScope.launch {
+            simManager.sim1CalibrationHint.collect { hint: String? ->
+                _uiState.update { it.copy(sim1CalibrationHint = hint) }
+            }
+        }
+        viewModelScope.launch {
+            simManager.sim2CalibrationHint.collect { hint: String? ->
+                _uiState.update { it.copy(sim2CalibrationHint = hint) }
+            }
+        }
+
+        // Observe tracking info
+        viewModelScope.launch {
+            recordingRepository.getRecordingCountFlow().collect { count: Int ->
+                _uiState.update { it.copy(recordingCount = count) }
+            }
+        }
+        viewModelScope.launch {
+            trackingManager.isSyncing.collect { syncing: Boolean ->
+                _uiState.update { it.copy(isSyncing = syncing) }
+            }
+        }
+        viewModelScope.launch {
+            trackingManager.lastSyncStats.collect { stats: String? ->
+                _uiState.update { it.copy(lastSyncStats = stats ?: "") }
+            }
+        }
+        viewModelScope.launch {
+            trackingManager.lastSyncTime.collect { time: Long ->
+                _uiState.update { it.copy(lastSyncTime = time) }
+            }
+        }
+        viewModelScope.launch {
+            trackingManager.syncQueueCount.collect { count: Int ->
+                _uiState.update { it.copy(syncQueueCount = count) }
+            }
+        }
+
+        viewModelScope.launch {
+            trackingManager.recordingPath.collect { path ->
+                _uiState.update { it.copy(recordingPath = path) }
+            }
+        }
+        viewModelScope.launch {
+            trackingManager.isRecordingPathVerified.collect { verified ->
+                _uiState.update { it.copy(isRecordingPathVerified = verified) }
+            }
+        }
+        viewModelScope.launch {
+            trackingManager.isRecordingPathCustom.collect { custom ->
+                _uiState.update { it.copy(isRecordingPathCustom = custom) }
+            }
+        }
+
+        // Observe Lookup info
+        viewModelScope.launch {
+            lookupManager.customLookupResponse.collect { resp: String? ->
+                _uiState.update { it.copy(customLookupResponse = resp) }
+            }
+        }
+        viewModelScope.launch {
+            lookupManager.isFetchingCustomLookup.collect { fetching: Boolean ->
+                _uiState.update { it.copy(isFetchingCustomLookup = fetching) }
+            }
+        }
+
+        // Observe WhatsApp Apps
+        viewModelScope.launch {
+            generalSettingsManager.availableWhatsappApps.collect { apps: List<AppInfo> ->
+                _uiState.update { it.copy(availableWhatsappApps = apps) }
+            }
+        }
+
         observeExcludedPersons()
         observeSyncCounts()
     }
@@ -224,16 +334,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun resetSyncStatus() {
-        viewModelScope.launch {
-            callDataRepository.clearSyncStatus()
+        dataManager.resetSyncStatus {
             _uiState.update { it.copy(lastSyncStats = "History cleared. Click Sync Now to retry.") }
         }
     }
 
     fun onResume() {
-        checkPermissions()
-        fetchSimInfo()
-        fetchWhatsappApps()
+        permissionManager.checkPermissions()
+        simManager.fetchSimInfo()
+        generalSettingsManager.fetchWhatsappApps()
     }
 
     private fun loadSettings() {
@@ -301,17 +410,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun updateShowDialButton(show: Boolean) {
-        settingsRepository.setShowDialButton(show)
+        generalSettingsManager.updateShowDialButton(show)
         _uiState.update { it.copy(showDialButton = show) }
     }
 
     fun updateCallActionBehavior(behavior: String) {
-        settingsRepository.setCallActionBehavior(behavior)
+        generalSettingsManager.updateCallActionBehavior(behavior)
         _uiState.update { it.copy(callActionBehavior = behavior) }
     }
     
     fun updateThemeMode(mode: String) {
-        settingsRepository.setThemeMode(mode)
+        generalSettingsManager.updateThemeMode(mode)
         _uiState.update { it.copy(themeMode = mode) }
     }
 
@@ -355,95 +464,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun fetchSimInfo() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val ctx = getApplication<Application>()
-            if (androidx.core.app.ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_PHONE_STATE) 
-                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                return@launch
-            }
-
-            try {
-                val subscriptionManager = androidx.core.content.ContextCompat.getSystemService(ctx, android.telephony.SubscriptionManager::class.java)
-                val infoList = subscriptionManager?.activeSubscriptionInfoList
-                if (infoList != null) {
-                    val sims = infoList.map { 
-                        SimInfo(
-                            slotIndex = it.simSlotIndex, 
-                            displayName = it.displayName.toString(), 
-                            carrierName = it.carrierName.toString(),
-                            subscriptionId = it.subscriptionId
-                        )
-                    }.sortedBy { it.slotIndex }
-                    
-                    _uiState.update { it.copy(availableSims = sims) }
-                    
-                    // Update UI state with detected IDs, but DON'T save to repository yet
-                    // User must manually "Identify/Calibrate" to confirm the mapping
-                    sims.find { it.slotIndex == 0 }?.let { sim ->
-                        val currentSim1Id = settingsRepository.getSim1SubscriptionId()
-                        _uiState.update { state -> state.copy(sim1SubId = currentSim1Id) }
-                        
-                        // Try to auto-access phone number if not already set (this is safe to auto-populate)
-                        if (settingsRepository.getCallerPhoneSim1().isBlank()) {
-                            val number = getSimNumber(ctx, sim.subscriptionId)
-                            if (!number.isNullOrBlank()) {
-                                settingsRepository.setCallerPhoneSim1(number)
-                                _uiState.update { it.copy(callerPhoneSim1 = number) }
-                            }
-                        }
-                    }
-                    sims.find { it.slotIndex == 1 }?.let { sim ->
-                        val currentSim2Id = settingsRepository.getSim2SubscriptionId()
-                        _uiState.update { state -> state.copy(sim2SubId = currentSim2Id) }
-                        
-                        // Try to auto-access phone number if not already set
-                        if (settingsRepository.getCallerPhoneSim2().isBlank()) {
-                            val number = getSimNumber(ctx, sim.subscriptionId)
-                            if (!number.isNullOrBlank()) {
-                                settingsRepository.setCallerPhoneSim2(number)
-                                _uiState.update { it.copy(callerPhoneSim2 = number) }
-                            }
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    private fun getSimNumber(ctx: Context, subId: Int): String? {
-        // Requires READ_PHONE_NUMBERS or READ_PHONE_STATE depending on OS version
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            if (androidx.core.app.ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_PHONE_NUMBERS) 
-                != android.content.pm.PackageManager.PERMISSION_GRANTED) return null
-        } else if (androidx.core.app.ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_PHONE_STATE) 
-            != android.content.pm.PackageManager.PERMISSION_GRANTED) return null
-
-        return try {
-            val subscriptionManager = androidx.core.content.ContextCompat.getSystemService(ctx, android.telephony.SubscriptionManager::class.java)
-            if (subscriptionManager != null) {
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                    subscriptionManager.getPhoneNumber(subId)
-                } else {
-                    // Best effort for older versions
-                    @Suppress("DEPRECATION")
-                    subscriptionManager.getActiveSubscriptionInfo(subId)?.number
-                }
-            } else null
-        } catch (e: Exception) {
-            null
-        }
+        simManager.fetchSimInfo()
     }
 
     fun fetchWhatsappApps() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val ctx = getApplication<Application>()
-            val uniqueApps = WhatsAppUtils.fetchAvailableWhatsappApps(ctx)
-            
-            android.util.Log.d("SettingsViewModel", "Found WhatsApp apps: ${uniqueApps.map { "${it.label} (${it.packageName})" }}")
-            _uiState.update { it.copy(availableWhatsappApps = uniqueApps) }
-        }
+        generalSettingsManager.fetchWhatsappApps()
     }
 
     /**
@@ -470,17 +495,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun updateCustomLookupUrl(url: String) {
-        settingsRepository.setCustomLookupUrl(url)
+        lookupManager.updateCustomLookupUrl(url)
         _uiState.update { it.copy(customLookupUrl = url) }
     }
 
     fun updateCustomLookupEnabled(enabled: Boolean) {
-        settingsRepository.setCustomLookupEnabled(enabled)
+        lookupManager.updateCustomLookupEnabled(enabled)
         _uiState.update { it.copy(customLookupEnabled = enabled) }
     }
 
     fun updateCustomLookupCallerIdEnabled(enabled: Boolean) {
-        settingsRepository.setCustomLookupCallerIdEnabled(enabled)
+        lookupManager.updateCustomLookupCallerIdEnabled(enabled)
         _uiState.update { it.copy(customLookupCallerIdEnabled = enabled) }
     }
 
@@ -489,54 +514,23 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun fetchCustomLookup(url: String) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isFetchingCustomLookup = true, customLookupResponse = "Fetching...") }
-            try {
-                val response = com.miniclick.calltrackmanage.network.NetworkClient.api.fetchData(url)
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    val json = GsonBuilder().setPrettyPrinting().create().toJson(body)
-                    _uiState.update { it.copy(customLookupResponse = json) }
-                } else {
-                    val error = "Error: ${response.code()} ${response.message()}"
-                    _uiState.update { it.copy(customLookupResponse = error) }
-                }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(customLookupResponse = "Error: ${e.localizedMessage}") }
-            } finally {
-                _uiState.update { it.copy(isFetchingCustomLookup = false) }
-            }
-        }
+        lookupManager.fetchCustomLookup(url)
     }
 
     /**
      * Fetch custom lookup data for a specific phone number using the configured URL template.
      */
     fun fetchCustomLookupForPhone(phoneNumber: String) {
-        val baseUrl = settingsRepository.getCustomLookupUrl().ifEmpty { 
-            "https://prop.digiheadway.in/api/calls/caller_id.php?phone={phone}"
-        }
-        val url = if (baseUrl.contains("{phone}")) {
-            baseUrl.replace("{phone}", phoneNumber)
-        } else if (baseUrl.contains("phone=")) {
-            // If it already has a phone param but not a placeholder, try to replace it or append it
-            // Simple heuristic: if it ends with =, append. Otherwise try to replace the value.
-            if (baseUrl.endsWith("=")) baseUrl + phoneNumber else baseUrl
-        } else {
-            // fallback: append as query param if possible
-            val separator = if (baseUrl.contains("?")) "&" else "?"
-            baseUrl + separator + "phone=" + phoneNumber
-        }
-        fetchCustomLookup(url)
+        lookupManager.fetchCustomLookupForPhone(phoneNumber)
     }
 
     fun clearCustomLookupResponse() {
-        _uiState.update { it.copy(customLookupResponse = null) }
+        lookupManager.clearCustomLookupResponse()
     }
 
 
     fun updateWhatsappPreference(packageName: String) {
-        settingsRepository.setWhatsappPreference(packageName)
+        generalSettingsManager.updateWhatsappPreference(packageName)
         _uiState.update { it.copy(whatsappPreference = packageName) }
     }
 
@@ -546,11 +540,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun updateTrackStartDate(date: Long) {
-        settingsRepository.setTrackStartDate(date)
+        trackingManager.updateTrackStartDate(date)
         _uiState.update { it.copy(trackStartDate = date) }
-        
-        // Trigger data refresh to load calls according to new start date
-        CallSyncWorker.runNow(getApplication())
     }
 
     fun isTrackStartDateSet(): Boolean = settingsRepository.isTrackStartDateSet()
@@ -564,39 +555,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun updateCallRecordEnabled(enabled: Boolean, scanOld: Boolean = false) {
-        viewModelScope.launch {
-            settingsRepository.setCallRecordEnabled(enabled)
-            if (enabled) {
-                // Only automatically enable recording reminder on Google Dialer
-                if (isGoogleDialer()) {
-                    settingsRepository.setShowRecordingReminder(true)
-                }
-                
-                if (scanOld) {
-                    // Start from beginning/track start date
-                    settingsRepository.setRecordingLastEnabledTimestamp(0L)
-                    // Reset statuses in DB so they are picked up again
-                    callDataRepository.resetSkippedRecordings()
-                    
-                    // Trigger a system log sync to find any missing recording paths for these reset items
-                    CallSyncWorker.runNow(getApplication())
-                    
-                    android.widget.Toast.makeText(getApplication(), "Scanning all past calls for recordings...", android.widget.Toast.LENGTH_SHORT).show()
-                } else {
-                    settingsRepository.setRecordingLastEnabledTimestamp(System.currentTimeMillis())
-                }
-            }
-            _uiState.update { it.copy(
-                callRecordEnabled = enabled,
-                showRecordingReminder = if (enabled) true else it.showRecordingReminder,
-                showRecordingEnablementDialog = false,
-                showRecordingDisablementDialog = false
-            ) }
-            
-            if (enabled) {
-                RecordingUploadWorker.runNow(getApplication())
-            }
-        }
+        trackingManager.updateCallRecordEnabled(enabled, scanOld, generalSettingsManager.isGoogleDialer())
+        _uiState.update { it.copy(
+            callRecordEnabled = enabled,
+            showRecordingEnablementDialog = false,
+            showRecordingDisablementDialog = false
+        ) }
     }
 
     fun toggleSyncQueue(show: Boolean) {
@@ -680,17 +644,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
     
     fun updateRecordingPath(path: String) {
-        recordingRepository.setCustomPath(path)
-        refreshRecordingPathInfo()
-        _uiState.update { it.copy(recordingPath = path) }
-        
-        // After path change, re-scan for recordings that don't have a path
-        CallSyncWorker.runNow(getApplication())
+        trackingManager.updateRecordingPath(path)
     }
 
     fun clearCustomRecordingPath() {
-        recordingRepository.clearCustomPath()
-        refreshRecordingPathInfo()
+        trackingManager.clearCustomRecordingPath()
     }
 
     fun updateUserDeclinedRecording(declined: Boolean) {
@@ -758,231 +716,47 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun verifyPairingCodeOnly(pairingCode: String) {
-        val ctx = getApplication<Application>()
         val trimmedCode = pairingCode.trim().uppercase()
         
         // Reset previous verification
-        resetVerificationState()
+        _uiState.update { it.copy(verificationStatus = "") }
         
-        // Client-side validation
-        if (!trimmedCode.contains("-")) {
-            _uiState.update { it.copy(verificationStatus = "failed") }
-            Toast.makeText(ctx, "Invalid format. Use: ORGID-USERID", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val parts = trimmedCode.split("-", limit = 2)
-        if (parts.size != 2) {
-            _uiState.update { it.copy(verificationStatus = "failed") }
-            Toast.makeText(ctx, "Invalid format. Use: ORGID-USERID", Toast.LENGTH_SHORT).show()
-            return
-        }
-        
-        val orgId = parts[0].trim()
-        val userId = parts[1].trim()
-
-        if (orgId.isEmpty() || userId.isEmpty()) {
-            _uiState.update { it.copy(verificationStatus = "failed") }
-            Toast.makeText(ctx, "Both ORGID and USERID are required", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        // Validate ORGID format (letters/numbers only)
-        if (!orgId.matches(Regex("^[A-Z0-9]+$"))) {
-            _uiState.update { it.copy(verificationStatus = "failed") }
-            Toast.makeText(ctx, "ORGID must contain only letters and numbers", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        // Validate USERID format (numbers only)
-        if (!userId.matches(Regex("^[0-9]+$"))) {
-            _uiState.update { it.copy(verificationStatus = "failed") }
-            Toast.makeText(ctx, "USERID must be a number", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        // All client-side validations passed - now verify with backend
         val deviceId = android.provider.Settings.Secure.getString(
-            ctx.contentResolver,
+            getApplication<Application>().contentResolver,
             android.provider.Settings.Secure.ANDROID_ID
         ) ?: "unknown_device"
 
-        viewModelScope.launch {
-            _uiState.update { it.copy(isVerifying = true) }
-            try {
-                Log.d("SettingsViewModel", "Verifying pairing code (check only): $orgId-$userId")
-                
-                val deviceModel = android.os.Build.MODEL
-                val osVersion = android.os.Build.VERSION.RELEASE
-                val batteryPct = getBatteryLevel()
-
-                val response = com.miniclick.calltrackmanage.network.NetworkClient.api.verifyPairingCode(
-                    action = "verify_pairing_code",
-                    orgId = orgId,
-                    userId = userId,
-                    deviceId = deviceId,
-                    deviceModel = deviceModel,
-                    osVersion = osVersion,
-                    batteryLevel = if (batteryPct >= 0) batteryPct else null
-                )
-
-                val apiResponse = response.body()
-                if (response.isSuccessful && apiResponse?.success == true && apiResponse.data != null) {
-                    val data = apiResponse.data
-                    val employeeName = data.employeeName
-                    val settings = data.settings
-                    
-                    val allowChanging = settings.allowChangingTrackingStartDate == 1
-                    val defaultDateStr = settings.defaultTrackingStartingDate
-
-                    settingsRepository.setAllowPersonalExclusion(settings.allowPersonalExclusion == 1)
-                    settingsRepository.setAllowChangingTrackStartDate(allowChanging)
-                    settingsRepository.setAllowUpdatingTrackSims(settings.allowUpdatingTrackingSims == 1)
-                    settingsRepository.setDefaultTrackStartDate(defaultDateStr)
-                    settingsRepository.setCallTrackEnabled(settings.callTrack == 1)
-                    settingsRepository.setCallRecordEnabled(settings.callRecordCrm == 1)
-
-                    if (!allowChanging && !defaultDateStr.isNullOrBlank()) {
-                        try {
-                            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-                            sdf.parse(defaultDateStr)?.let { date ->
-                                settingsRepository.setTrackStartDate(date.time)
-                            }
-                        } catch (e: Exception) {
-                            Log.e("SettingsViewModel", "Failed to parse default date: $defaultDateStr", e)
-                        }
-                    }
-
-                    val planData = data.plan
-                    settingsRepository.setPlanExpiryDate(planData.expiryDate)
-                    settingsRepository.setAllowedStorageGb(planData.allowedStorageGb)
-                    settingsRepository.setStorageUsedBytes(planData.storageUsedBytes)
-
-                    // For now, use ORGID as org name (could be fetched from backend in future)
+        syncManager.verifyPairingCode(
+            pairingCode = trimmedCode,
+            deviceId = deviceId,
+            action = "verify_pairing_code",
+            onProgress = { loading -> _uiState.update { it.copy(isVerifying = loading) } },
+            onResult = { success: Boolean, employeeName: String?, settings: com.miniclick.calltrackmanage.network.EmployeeSettingsDto?, plan: com.miniclick.calltrackmanage.network.PlanInfoDto?, error: String? ->
+                if (success) {
+                    val parts = trimmedCode.split("-")
                     _uiState.update { 
                         it.copy(
                             verificationStatus = "verified",
-                            verifiedOrgName = orgId,
+                            verifiedOrgName = parts[0],
                             verifiedEmployeeName = employeeName,
-                            pairingCode = trimmedCode,
-                            allowPersonalExclusion = settingsRepository.isAllowPersonalExclusion(),
-                            allowChangingTrackingStartDate = settingsRepository.isAllowChangingTrackStartDate(),
-                            allowUpdatingTrackingSims = settingsRepository.isAllowUpdatingTrackSims(),
-                            defaultTrackingStartingDate = settingsRepository.getDefaultTrackStartDate(),
-                            callTrackEnabled = settingsRepository.isCallTrackEnabled(),
-                            callRecordEnabled = settingsRepository.isCallRecordEnabled(),
-                            planExpiryDate = settingsRepository.getPlanExpiryDate(),
-                            allowedStorageGb = settingsRepository.getAllowedStorageGb(),
-                            storageUsedBytes = settingsRepository.getStorageUsedBytes()
+                            pairingCode = trimmedCode
                         )
                     }
-                    
-                    Log.d("SettingsViewModel", "Verification successful: $employeeName from $orgId")
+                    loadSettings()
                 } else {
-                    // Comprehensive error message extraction
-                    val errorBody = response.errorBody()?.string()
-                    val errorMsg = try {
-                        if (errorBody != null) {
-                            val map = com.google.gson.Gson().fromJson(errorBody, Map::class.java)
-                            map["error"]?.toString() ?: map["message"]?.toString()
-                        } else null
-                    } catch (e: Exception) { null }
-
-                    val error = errorMsg 
-                        ?: apiResponse?.error
-                        ?: apiResponse?.message
-                        ?: "Invalid pairing code (Status: ${response.code()})"
-                    
                     _uiState.update { it.copy(verificationStatus = "failed") }
-                    Toast.makeText(ctx, error, Toast.LENGTH_LONG).show()
-                    Log.e("SettingsViewModel", "Verification failed: $error (Code: ${response.code()})")
+                    Toast.makeText(getApplication(), error ?: "Verification failed", Toast.LENGTH_LONG).show()
                 }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(verificationStatus = "failed") }
-                Toast.makeText(ctx, "Network error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-                Log.e("SettingsViewModel", "Verification error", e)
-            } finally {
-                _uiState.update { it.copy(isVerifying = false) }
             }
-        }
+        )
     }
 
     fun retryRecordingUpload(compositeId: String) {
-        viewModelScope.launch {
-            // Reset status to PENDING so the worker will pick it up
-            callDataRepository.updateRecordingSyncStatus(compositeId, com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.PENDING)
-            callDataRepository.updateSyncError(compositeId, null) // Clear error message
-            
-            // Trigger the worker immediately
-            val recordingRequest = OneTimeWorkRequestBuilder<RecordingUploadWorker>().build()
-            WorkManager.getInstance(getApplication()).enqueue(recordingRequest)
-            
-            Toast.makeText(getApplication(), "Retrying upload...", Toast.LENGTH_SHORT).show()
-        }
+        trackingManager.retryRecordingUpload(compositeId)
     }
 
-
     fun syncCallManually() {
-        val ctx = getApplication<Application>()
-        val orgId = settingsRepository.getOrganisationId()
-        val userId = settingsRepository.getUserId()
-        val callerPhone1 = settingsRepository.getCallerPhoneSim1()
-        val callerPhone2 = settingsRepository.getCallerPhoneSim2()
-
-        // Check pairing code first
-        if (orgId.isEmpty() || userId.isEmpty()) {
-            Toast.makeText(ctx, "❌ Pairing Code not set\nPlease join an organisation first", Toast.LENGTH_LONG).show()
-            return
-        }
-        
-        // Then check phone numbers
-        if (callerPhone1.isEmpty() && callerPhone2.isEmpty()) {
-            Toast.makeText(ctx, "❌ Caller Phone not set\nPlease set at least one SIM phone number in Track Calls settings", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        // Start both workers: fast metadata sync first, then recording upload
-        val syncRequest = OneTimeWorkRequestBuilder<CallSyncWorker>().build()
-        val recordingRequest = OneTimeWorkRequestBuilder<RecordingUploadWorker>().build()
-        val workManager = WorkManager.getInstance(ctx)
-        
-        _uiState.update { it.copy(isSyncing = true, lastSyncStats = "Refreshing...") }
-        
-        viewModelScope.launch {
-            // Refresh from system first
-            callDataRepository.syncFromSystemCallLog()
-            
-            // Then enqueue workers
-            workManager.enqueue(syncRequest)
-            workManager.enqueue(recordingRequest)
-        }
-        
-        // Observe the work status
-        viewModelScope.launch {
-            workManager.getWorkInfoByIdFlow(syncRequest.id).collect { workInfo ->
-                if (workInfo != null) {
-                    when (workInfo.state) {
-                        androidx.work.WorkInfo.State.SUCCEEDED -> {
-                            val total = workInfo.outputData.getInt("total_calls", 0)
-                            val synced = workInfo.outputData.getInt("synced_now", 0)
-                            val now = System.currentTimeMillis()
-                            settingsRepository.setLastSyncTime(now)
-                            // Reload settings as sync might have updated config
-                            loadSettings()
-                            _uiState.update { it.copy(
-                                isSyncing = false, 
-                                lastSyncStats = "Success! Found $total calls, uploaded $synced.",
-                                lastSyncTime = now
-                            )}
-                        }
-                        androidx.work.WorkInfo.State.FAILED -> {
-                            _uiState.update { it.copy(isSyncing = false, lastSyncStats = "Failed to sync.") }
-                        }
-                        else -> {}
-                    }
-                }
-            }
-        }
+        trackingManager.syncCallManually()
     }
 
     fun addExcludedNumber(phoneNumber: String) {
@@ -1084,110 +858,46 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun clearAllAppData(onComplete: () -> Unit) {
-        viewModelScope.launch {
-            val ctx = getApplication<Application>()
-            try {
-                // Clear database
-                callDataRepository.deleteAllData()
-                
-                // Clear settings
-                settingsRepository.clearAllSettings()
-                
-                // Clear recording path
-                recordingRepository.clearCustomPath()
-                
-                Toast.makeText(ctx, "All app data cleared successfully", Toast.LENGTH_SHORT).show()
-                
-                // Reload settings to reset UI
-                loadSettings()
-                
-                onComplete()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                Toast.makeText(ctx, "Failed to clear data: ${e.message}", Toast.LENGTH_SHORT).show()
+        _uiState.update { it.copy(isVerifying = true) } // Use isVerifying for general loading
+        dataManager.clearAllData(
+            onProgress = { loading -> _uiState.update { it.copy(isVerifying = loading) } },
+            onComplete = { success ->
+                if (success) {
+                    loadSettings()
+                    onComplete()
+                }
             }
-        }
+        )
     }
 
     fun saveAccountInfo(onSuccess: () -> Unit = {}) {
-        val ctx = getApplication<Application>()
-        val pairingCode = _uiState.value.pairingCode.trim()
         val phone1 = _uiState.value.callerPhoneSim1.trim()
         val phone2 = _uiState.value.callerPhoneSim2.trim()
         
-        // Validate required fields
-        if (pairingCode.isEmpty()) {
-            Toast.makeText(ctx, "Please enter a Pairing Code", Toast.LENGTH_SHORT).show()
-            return
-        }
-        
         if (phone1.isEmpty() && phone2.isEmpty()) {
-            Toast.makeText(ctx, "Please enter at least one phone number", Toast.LENGTH_SHORT).show()
-            return
-        }
-        
-        // Validate pairing code format (must be ORGID-USERID)
-        if (!pairingCode.contains("-")) {
-            Toast.makeText(ctx, "Invalid format. Use: ORGID-USERID (e.g., GOOGLE-123)", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        val parts = pairingCode.split("-", limit = 2)
-        if (parts.size != 2) {
-            Toast.makeText(ctx, "Invalid format. Use: ORGID-USERID (e.g., GOOGLE-123)", Toast.LENGTH_LONG).show()
-            return
-        }
-        
-        val orgId = parts[0].trim()
-        val userId = parts[1].trim()
-
-        // Validate both parts are not empty
-        if (orgId.isEmpty() || userId.isEmpty()) {
-            Toast.makeText(ctx, "Invalid format. Both ORGID and USERID are required", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        // Validate ORGID format (letters/numbers only, no special chars)
-        if (!orgId.matches(Regex("^[A-Z0-9]+$"))) {
-            Toast.makeText(ctx, "ORGID must contain only letters and numbers", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        // Validate USERID format (numbers only)
-        if (!userId.matches(Regex("^[0-9]+$"))) {
-            Toast.makeText(ctx, "USERID must be a number", Toast.LENGTH_LONG).show()
+            Toast.makeText(getApplication(), "Please enter at least one phone number", Toast.LENGTH_SHORT).show()
             return
         }
 
         val deviceId = android.provider.Settings.Secure.getString(
-            ctx.contentResolver,
+            getApplication<Application>().contentResolver,
             android.provider.Settings.Secure.ANDROID_ID
         ) ?: "unknown_device"
 
-        viewModelScope.launch {
-            _uiState.update { it.copy(isVerifying = true) }
-            try {
-                Log.d("SettingsViewModel", "Verifying pairing code: $orgId-$userId with device: $deviceId")
-                
-                val response = com.miniclick.calltrackmanage.network.NetworkClient.api.verifyPairingCode(
-                    action = "verify_pairing_code",
-                    orgId = orgId,
-                    userId = userId,
-                    deviceId = deviceId
-                )
-
-                Log.d("SettingsViewModel", "Verification response: ${response.code()}, body: ${response.body()}")
-
-                val apiResponse = response.body()
-                if (response.isSuccessful && apiResponse?.success == true && apiResponse.data != null) {
-                    val data = apiResponse.data
-                    // SUCCESS! Now save everything to repository
-                    settingsRepository.setOrganisationId(orgId)
-                    settingsRepository.setUserId(userId)
+        syncManager.verifyPairingCode(
+            pairingCode = _uiState.value.pairingCode,
+            deviceId = deviceId,
+            onProgress = { loading -> _uiState.update { it.copy(isVerifying = loading) } },
+            onResult = { success: Boolean, employeeName: String?, settings: com.miniclick.calltrackmanage.network.EmployeeSettingsDto?, plan: com.miniclick.calltrackmanage.network.PlanInfoDto?, error: String? ->
+                if (success) {
+                    val parts = _uiState.value.pairingCode.split("-")
+                    val orgId = parts[0]
+                    val userId = parts[1]
+                    
+                    syncManager.savePairingInfo(orgId, userId)
                     settingsRepository.setCallerPhoneSim1(phone1)
                     settingsRepository.setCallerPhoneSim2(phone2)
                     
-                    // Update UI state with saved values
                     _uiState.update { 
                         it.copy(
                             pairingCode = "$orgId-$userId",
@@ -1196,104 +906,33 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         )
                     }
                     
-                    val employeeName = data.employeeName
-                    val settings = data.settings
-                    
-                    val allowChanging = settings.allowChangingTrackingStartDate == 1
-                    val defaultDateStr = settings.defaultTrackingStartingDate
-
-                    settingsRepository.setAllowPersonalExclusion(settings.allowPersonalExclusion == 1)
-                    settingsRepository.setAllowChangingTrackStartDate(allowChanging)
-                    settingsRepository.setAllowUpdatingTrackSims(settings.allowUpdatingTrackingSims == 1)
-                    settingsRepository.setDefaultTrackStartDate(defaultDateStr)
-                    settingsRepository.setCallTrackEnabled(settings.callTrack == 1)
-                    settingsRepository.setCallRecordEnabled(settings.callRecordCrm == 1)
-
-                    if (!allowChanging && !defaultDateStr.isNullOrBlank()) {
-                        try {
-                            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-                            sdf.parse(defaultDateStr)?.let { date ->
-                                settingsRepository.setTrackStartDate(date.time)
-                            }
-                        } catch (e: Exception) {
-                            Log.e("SettingsViewModel", "Failed to parse default date: $defaultDateStr", e)
-                        }
-                    }
-
-                    val message = apiResponse.message ?: "Pairing successful"
-                    
-                    Toast.makeText(ctx, "✓ $message\nWelcome, $employeeName!", Toast.LENGTH_LONG).show()
-                    Log.d("SettingsViewModel", "Pairing successful for employee: $employeeName")
-                    
-                    // Reload to update UI with new enterprise settings
+                    Toast.makeText(getApplication(), "✓ Welcome, $employeeName!", Toast.LENGTH_LONG).show()
                     loadSettings()
-                    
                     onSuccess()
                 } else {
-                    // FAILED - Don't save anything
-                    val errorBody = response.errorBody()?.string()
-                    val errorMsg = try {
-                        if (errorBody != null) {
-                            val map = com.google.gson.Gson().fromJson(errorBody, Map::class.java)
-                            map["error"]?.toString() ?: map["message"]?.toString()
-                        } else null
-                    } catch (e: Exception) { null }
-
-                    val error = errorMsg 
-                        ?: apiResponse?.error
-                        ?: apiResponse?.message
-                        ?: "Verification failed. (Status: ${response.code()})"
-                    
-                    Log.e("SettingsViewModel", "Verification failed: $error (Code: ${response.code()})")
-                    Toast.makeText(ctx, "✗ $error", Toast.LENGTH_LONG).show()
+                    Toast.makeText(getApplication(), "✗ $error", Toast.LENGTH_LONG).show()
                 }
-            } catch (e: Exception) {
-                Log.e("SettingsViewModel", "Verification error", e)
-                Toast.makeText(ctx, "✗ Network error: ${e.localizedMessage}\nPlease check your internet connection.", Toast.LENGTH_LONG).show()
-            } finally {
-                _uiState.update { it.copy(isVerifying = false) }
             }
-        }
+        )
     }
 
     fun connectVerifiedOrganisation(onSuccess: () -> Unit = {}) {
-        val ctx = getApplication<Application>()
-        val pairingCode = _uiState.value.pairingCode.trim()
-        
-        // Ensure it's already verified
         if (_uiState.value.verificationStatus != "verified") {
-            Toast.makeText(ctx, "Please verify pairing code first", Toast.LENGTH_SHORT).show()
             return
         }
         
-        // Parse the pairing code
-        val parts = pairingCode.split("-", limit = 2)
-        if (parts.size != 2) {
-            Toast.makeText(ctx, "Invalid pairing code format", Toast.LENGTH_SHORT).show()
-            return
+        val parts = _uiState.value.pairingCode.split("-")
+        if (parts.size == 2) {
+            syncManager.savePairingInfo(parts[0], parts[1])
+            _uiState.update { it.copy(pairingCode = "${parts[0]}-${parts[1]}") }
+            Toast.makeText(getApplication(), "✓ Connected to ${_uiState.value.verifiedOrgName}!", Toast.LENGTH_LONG).show()
+            onSuccess()
         }
-        
-        val orgId = parts[0].trim()
-        val userId = parts[1].trim()
-        
-        // Save to repository
-        settingsRepository.setOrganisationId(orgId)
-        settingsRepository.setUserId(userId)
-        
-        // Update UI state
-        _uiState.update {
-            it.copy(pairingCode = "$orgId-$userId")
-        }
-        
-        Toast.makeText(ctx, "✓ Connected to ${_uiState.value.verifiedOrgName}!", Toast.LENGTH_LONG).show()
-        Log.d("SettingsViewModel", "Connected to organization: $orgId as user: $userId")
-        
-        onSuccess()
     }
 
     fun exportLogs() {
         viewModelScope.launch {
-            com.miniclick.calltrackmanage.util.LogExporter.exportAndShareLogs(getApplication())
+            com.miniclick.calltrackmanage.util.system.LogExporter.exportAndShareLogs(getApplication())
         }
     }
     
@@ -1307,22 +946,27 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     data class VerificationCall(
         val number: String,
         val date: Long,
-        val subscriptionId: Int
+        val subscriptionId: Int,
+        val contactName: String? = null
     )
 
     fun fetchRecentSystemCalls(onResult: (List<VerificationCall>) -> Unit) {
         val ctx = getApplication<Application>()
         
         // Log permission status
-        val hasPermission = androidx.core.content.ContextCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_CALL_LOG) == 
+        val hasCallLogPermission = androidx.core.content.ContextCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_CALL_LOG) == 
                            android.content.pm.PackageManager.PERMISSION_GRANTED
-        Log.d("SettingsViewModel", "fetchRecentSystemCalls: has READ_CALL_LOG = $hasPermission")
+        Log.d("SettingsViewModel", "fetchRecentSystemCalls: has READ_CALL_LOG = $hasCallLogPermission")
         
-        if (!hasPermission) {
+        if (!hasCallLogPermission) {
             Log.e("SettingsViewModel", "fetchRecentSystemCalls: Permission denied")
             onResult(emptyList())
             return
         }
+        
+        // Check if we have contacts permission for name lookup fallback
+        val hasContactsPermission = androidx.core.content.ContextCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_CONTACTS) == 
+                           android.content.pm.PackageManager.PERMISSION_GRANTED
 
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             val calls = mutableListOf<VerificationCall>()
@@ -1349,6 +993,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
                     val numberIdx = cursor.getColumnIndex(android.provider.CallLog.Calls.NUMBER)
                     val dateIdx = cursor.getColumnIndex(android.provider.CallLog.Calls.DATE)
+                    val cachedNameIdx = cursor.getColumnIndex(android.provider.CallLog.Calls.CACHED_NAME)
                     
                     var subIdIdx = -1
                     for (col in subIdColumns) {
@@ -1370,6 +1015,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         val number = cursor.getString(numberIdx) ?: "Unknown"
                         val date = cursor.getLong(dateIdx)
                         
+                        // Get cached name from call log first
+                        var contactName: String? = null
+                        if (cachedNameIdx != -1) {
+                            contactName = cursor.getString(cachedNameIdx)
+                        }
+                        
+                        // Fallback: lookup contact name if we have permission and cached name is empty
+                        if (contactName.isNullOrBlank() && hasContactsPermission && number != "Unknown") {
+                            contactName = lookupContactName(ctx, number)
+                        }
+                        
                         var subId = -1
                         if (subIdIdx != -1) {
                             try {
@@ -1385,7 +1041,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                             }
                         }
                         
-                        calls.add(VerificationCall(number, date, subId))
+                        calls.add(VerificationCall(number, date, subId, contactName))
                         count++
                     }
                 } ?: Log.e("SettingsViewModel", "CallLog query returned NULL cursor")
@@ -1403,20 +1059,33 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
     
-    fun setSimCalibration(simIndex: Int, subscriptionId: Int, hint: String) {
-        if (simIndex == 0) { // Sim 1
-            settingsRepository.setSim1SubscriptionId(subscriptionId)
-            settingsRepository.setSim1CalibrationHint(hint)
-            _uiState.update { it.copy(sim1SubId = subscriptionId, sim1CalibrationHint = hint) }
-            Log.d("SettingsViewModel", "Calibrated Sim1 to SubId: $subscriptionId with hint: $hint")
-        } else if (simIndex == 1) { // Sim 2
-            settingsRepository.setSim2SubscriptionId(subscriptionId)
-            settingsRepository.setSim2CalibrationHint(hint)
-            _uiState.update { it.copy(sim2SubId = subscriptionId, sim2CalibrationHint = hint) }
-            Log.d("SettingsViewModel", "Calibrated Sim2 to SubId: $subscriptionId with hint: $hint")
+    /**
+     * Look up contact name from phone number using Contacts provider.
+     * Returns null if not found or error.
+     */
+    private fun lookupContactName(ctx: android.content.Context, phoneNumber: String): String? {
+        return try {
+            val uri = android.net.Uri.withAppendedPath(
+                android.provider.ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+                android.net.Uri.encode(phoneNumber)
+            )
+            ctx.contentResolver.query(
+                uri,
+                arrayOf(android.provider.ContactsContract.PhoneLookup.DISPLAY_NAME),
+                null, null, null
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    cursor.getString(0)
+                } else null
+            }
+        } catch (e: Exception) {
+            Log.w("SettingsViewModel", "Contact lookup failed for $phoneNumber: ${e.message}")
+            null
         }
-        // Refresh SIM info
-        fetchSimInfo()
+    }
+    
+    fun setSimCalibration(simIndex: Int, subscriptionId: Int, hint: String) {
+        simManager.setSimCalibration(simIndex, subscriptionId, hint)
     }
 
     fun resetOnboarding() {

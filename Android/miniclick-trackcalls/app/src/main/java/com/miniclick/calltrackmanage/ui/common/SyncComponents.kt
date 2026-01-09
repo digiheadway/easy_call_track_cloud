@@ -27,7 +27,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import com.miniclick.calltrackmanage.service.CallTrackInCallService
-import com.miniclick.calltrackmanage.ui.utils.AudioPlayer
+import com.miniclick.calltrackmanage.util.audio.AudioPlayer
 import android.telecom.Call
 import kotlinx.coroutines.delay
 
@@ -906,7 +906,7 @@ fun GlobalSyncStatusBar(
                     }
                     // Active uploads
                     activeUploads > 0 -> {
-                        "Uploading $activeUploads recording${if (activeUploads > 1) "s" else ""}..."
+                        "Uploading $pendingRecordings recording${if (pendingRecordings > 1) "s" else ""}..."
                     }
                     // Pending cloud backup
                     totalPending > 0 -> {

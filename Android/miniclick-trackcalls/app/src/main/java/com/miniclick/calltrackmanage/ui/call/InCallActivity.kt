@@ -29,9 +29,9 @@ import com.miniclick.calltrackmanage.service.CallTrackInCallService
 import com.miniclick.calltrackmanage.ui.home.HomeViewModel
 import com.miniclick.calltrackmanage.ui.home.PersonInteractionBottomSheet
 import com.miniclick.calltrackmanage.ui.home.PersonGroup
-import com.miniclick.calltrackmanage.ui.utils.AudioPlayer
-import com.miniclick.calltrackmanage.ui.utils.cleanNumber
-import com.miniclick.calltrackmanage.ui.utils.getRelativeTime
+import com.miniclick.calltrackmanage.util.audio.AudioPlayer
+import com.miniclick.calltrackmanage.util.formatting.cleanNumber
+import com.miniclick.calltrackmanage.util.formatting.getRelativeTime
 import com.miniclick.calltrackmanage.ui.common.LabelChip
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.StickyNote2

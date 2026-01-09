@@ -1,4 +1,4 @@
-package com.miniclick.calltrackmanage.util
+package com.miniclick.calltrackmanage.util.network
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -10,10 +10,20 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
+/**
+ * Unified Network Connectivity Observer.
+ * Provides a Flow-based API to observe network connectivity changes.
+ * 
+ * This is the canonical location - other references should use this class.
+ */
 class NetworkConnectivityObserver(context: Context) {
     private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
+    /**
+     * Observe network connectivity as a Flow of Boolean values.
+     * Emits true when connected, false when disconnected.
+     */
     fun observe(): Flow<Boolean> {
         return callbackFlow {
             val callback = object : ConnectivityManager.NetworkCallback() {
@@ -48,5 +58,18 @@ class NetworkConnectivityObserver(context: Context) {
                 connectivityManager.unregisterNetworkCallback(callback)
             }
         }.distinctUntilChanged()
+    }
+
+    /**
+     * Check current connectivity status synchronously.
+     */
+    fun isConnected(): Boolean {
+        val currentNetwork = connectivityManager.activeNetwork
+        val caps = connectivityManager.getNetworkCapabilities(currentNetwork)
+        return caps != null && (
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+        )
     }
 }

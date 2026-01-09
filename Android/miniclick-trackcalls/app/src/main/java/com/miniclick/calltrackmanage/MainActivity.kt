@@ -21,7 +21,7 @@ import com.miniclick.calltrackmanage.ui.common.*
 import com.miniclick.calltrackmanage.ui.home.*
 import com.miniclick.calltrackmanage.ui.settings.*
 import com.miniclick.calltrackmanage.ui.theme.CallCloudTheme
-import com.miniclick.calltrackmanage.ui.utils.AudioPlayer
+import com.miniclick.calltrackmanage.util.audio.AudioPlayer
 import com.miniclick.calltrackmanage.ui.onboarding.OnboardingScreen
 import com.miniclick.calltrackmanage.ui.onboarding.AgreementScreen
 import com.miniclick.calltrackmanage.data.SettingsRepository
@@ -43,6 +43,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import dagger.hilt.android.AndroidEntryPoint
 
 // Navigation tabs
 enum class AppTab(
@@ -56,6 +57,7 @@ enum class AppTab(
     SETTINGS("More", Icons.Default.Settings, Icons.Filled.Settings)
 }
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private lateinit var audioPlayer: AudioPlayer
@@ -142,6 +144,20 @@ class MainActivity : ComponentActivity() {
         // Handle person details from notifications
         intent.getStringExtra("OPEN_PERSON_DETAILS")?.let { phoneNumber ->
             viewModel.setPersonDetailsPhone(phoneNumber)
+        }
+        
+        // Handle sync queue from notification
+        if (intent.getBooleanExtra("OPEN_SYNC_QUEUE", false)) {
+            viewModel.setOpenSyncQueue(true)
+            // Clear the flag to prevent re-triggering on config change
+            intent.removeExtra("OPEN_SYNC_QUEUE")
+        }
+        
+        // Handle recording queue from notification
+        if (intent.getBooleanExtra("OPEN_RECORDING_QUEUE", false)) {
+            viewModel.setOpenRecordingQueue(true)
+            // Clear the flag to prevent re-triggering on config change
+            intent.removeExtra("OPEN_RECORDING_QUEUE")
         }
 
         // Handle shared recording files
@@ -300,6 +316,24 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
     LaunchedEffect(showDialerSheet) {
         if (!showDialerSheet) {
             viewModel.setDialerNumber(null)
+        }
+    }
+    
+    // Handle notification-triggered queue opening
+    val openSyncQueue by viewModel.openSyncQueue.collectAsState()
+    val openRecordingQueue by viewModel.openRecordingQueue.collectAsState()
+    
+    LaunchedEffect(openSyncQueue) {
+        if (openSyncQueue) {
+            settingsViewModel.toggleSyncQueue(true)
+            viewModel.setOpenSyncQueue(false)
+        }
+    }
+    
+    LaunchedEffect(openRecordingQueue) {
+        if (openRecordingQueue) {
+            settingsViewModel.toggleRecordingQueue(true)
+            viewModel.setOpenRecordingQueue(false)
         }
     }
     

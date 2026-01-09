@@ -28,13 +28,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.miniclick.calltrackmanage.data.RecordingRepository
+import com.miniclick.calltrackmanage.ui.home.viewmodel.*
 import com.miniclick.calltrackmanage.data.db.CallDataEntity
 import com.miniclick.calltrackmanage.ui.common.*
 import com.miniclick.calltrackmanage.ui.settings.SettingsViewModel
 import com.miniclick.calltrackmanage.ui.settings.WhatsAppSelectionModal
-import com.miniclick.calltrackmanage.ui.utils.AudioPlayer
-import com.miniclick.calltrackmanage.ui.utils.getFileNameFromUri
-import com.miniclick.calltrackmanage.ui.utils.getDateHeader
+import com.miniclick.calltrackmanage.util.audio.AudioPlayer
+import com.miniclick.calltrackmanage.util.formatting.getFileNameFromUri
+import com.miniclick.calltrackmanage.util.formatting.getDateHeader
 import com.miniclick.calltrackmanage.worker.RecordingUploadWorker
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -59,9 +60,10 @@ fun CallsScreen(
     var genericInfoTitle by remember { mutableStateOf<String?>(null) }
     var genericInfoDesc by remember { mutableStateOf<String?>(null) }
     var showDateJumpSheet by remember { mutableStateOf(false) }
+    var showReorderModal by remember { mutableStateOf(false) }
     
-    val visibleCallFilters = remember { CallTabFilter.entries.filter { it != CallTabFilter.IGNORED } }
-    val visiblePersonFilters = remember { PersonTabFilter.entries.filter { it != PersonTabFilter.IGNORED } }
+    val visibleCallFilters = uiState.visibleCallFilters
+    val visiblePersonFilters = uiState.visiblePersonFilters
 
     val pagerState = rememberPagerState(
         initialPage = visibleCallFilters.indexOf(uiState.callTypeFilter).coerceAtLeast(0),
@@ -73,12 +75,15 @@ fun CallsScreen(
         pageCount = { visiblePersonFilters.size }
     )
     
-    // Independent scroll states for each tab
-    val scrollStates = remember(visibleCallFilters.size) { 
-        List(visibleCallFilters.size) { LazyListState() } 
+    // Independent scroll states for each tab, keyed by filter to persist across reordering
+    val scrollStatesMap = remember { mutableStateMapOf<CallTabFilter, LazyListState>() }
+    val scrollStates = visibleCallFilters.map { filter ->
+        scrollStatesMap.getOrPut(filter) { LazyListState() }
     }
-    val personScrollStates = remember(visiblePersonFilters.size) {
-        List(visiblePersonFilters.size) { LazyListState() }
+    
+    val personScrollStatesMap = remember { mutableStateMapOf<PersonTabFilter, LazyListState>() }
+    val personScrollStates = visiblePersonFilters.map { filter ->
+        personScrollStatesMap.getOrPut(filter) { LazyListState() }
     }
     
     val isFabVisible by remember {
@@ -184,6 +189,17 @@ fun CallsScreen(
         )
     }
 
+    if (showReorderModal) {
+        TabReorderModal(
+            viewMode = uiState.viewMode,
+            visibleCallFilters = visibleCallFilters,
+            visiblePersonFilters = visiblePersonFilters,
+            onUpdateCallOrder = { viewModel.updateCallTabOrder(it) },
+            onUpdatePersonOrder = { viewModel.updatePersonTabOrder(it) },
+            onDismiss = { showReorderModal = false }
+        )
+    }
+
     if (showFilterModal) {
         CallFilterModal(
             uiState = uiState,
@@ -271,13 +287,19 @@ fun CallsScreen(
             onDateClick = { summary ->
                 showDateJumpSheet = false
                 scope.launch {
+                    val filter = if (uiState.viewMode == ViewMode.CALLS) {
+                        visibleCallFilters.getOrNull(pagerState.currentPage) ?: uiState.callTypeFilter
+                    } else {
+                        visiblePersonFilters.getOrNull(personPagerState.currentPage) ?: uiState.personTabFilter
+                    }
+
                     val targetList: List<Any> = if (uiState.viewMode == ViewMode.CALLS) {
-                         val filter = visibleCallFilters[pagerState.currentPage]
                          uiState.tabFilteredLogs[filter] ?: emptyList()
                     } else {
-                         val filter = visiblePersonFilters[personPagerState.currentPage]
                          uiState.tabFilteredPersons[filter]?.mapNotNull { allPersonGroupsMap[it.phoneNumber] } ?: emptyList()
                     }
+
+                    if (targetList.isEmpty()) return@launch
 
                     var index = 0
                     val grouped = if (uiState.viewMode == ViewMode.CALLS) {
@@ -292,6 +314,7 @@ fun CallsScreen(
                             found = true
                             break
                         }
+                        // +1 for the header item itself
                         index += 1 + items.size
                     }
                     
@@ -301,7 +324,11 @@ fun CallsScreen(
                         } else {
                             personScrollStates.getOrNull(personPagerState.currentPage)
                         }
-                        state?.animateScrollToItem(index)
+                        
+                        if (state != null) {
+                            // First scroll to a safe position if it's very far
+                            state.animateScrollToItem(index)
+                        }
                     }
                 }
             },
@@ -363,7 +390,7 @@ fun CallsScreen(
                             viewModel.setMinCallCount(0)
                         },
                         onReorderTabs = {
-                            // Placeholder for future reorder functionality
+                            showReorderModal = true
                         },
                         isReviewedFilterActive = uiState.reviewedFilter == ReviewedFilter.NOT_REVIEWED,
                         isPersonNotesFilterActive = uiState.personNotesFilter == PersonNotesFilter.WITHOUT_NOTE,
@@ -446,6 +473,7 @@ fun CallsScreen(
                         
                         CallTypeTabs(
                             selectedFilter = if (pagerState.currentPage < visibleCallFilters.size) visibleCallFilters[pagerState.currentPage] else CallTabFilter.ALL,
+                            visibleFilters = visibleCallFilters,
                             onFilterSelected = { filter ->
                                 scope.launch {
                                     val index = visibleCallFilters.indexOf(filter)
@@ -516,6 +544,7 @@ fun CallsScreen(
 
                         PersonTypeTabs(
                             selectedFilter = if (personPagerState.currentPage < visiblePersonFilters.size) visiblePersonFilters[personPagerState.currentPage] else PersonTabFilter.ALL,
+                            visibleFilters = visiblePersonFilters,
                             onFilterSelected = { filter ->
                                 scope.launch {
                                     val index = visiblePersonFilters.indexOf(filter)
@@ -551,7 +580,8 @@ fun CallsScreen(
                         state = pagerState,
                         modifier = Modifier.fillMaxSize(),
                         userScrollEnabled = true,
-                        beyondViewportPageCount = 1
+                        beyondViewportPageCount = 1,
+                        key = { visibleCallFilters[it] }
                     ) { page ->
                         val tab = visibleCallFilters[page]
                         val tabLogs = uiState.tabFilteredLogs[tab] ?: emptyList()
@@ -656,7 +686,8 @@ fun CallsScreen(
                         state = personPagerState,
                         modifier = Modifier.fillMaxSize(),
                         userScrollEnabled = true,
-                        beyondViewportPageCount = 1
+                        beyondViewportPageCount = 1,
+                        key = { visiblePersonFilters[it] }
                     ) { page ->
                         val tab = visiblePersonFilters[page]
                         val tabPersons = uiState.tabFilteredPersons[tab]?.mapNotNull { allPersonGroupsMap[it.phoneNumber] } ?: emptyList()

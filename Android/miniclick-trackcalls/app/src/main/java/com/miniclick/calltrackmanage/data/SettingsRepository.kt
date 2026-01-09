@@ -70,6 +70,9 @@ class SettingsRepository private constructor(private val context: Context) {
     private val KEY_SEARCH_HISTORY = "search_history"
     private val KEY_REPORT_CATEGORY = "report_category"
     private val KEY_SELECTED_TAB = "selected_tab"
+    private val KEY_VIEW_MODE = "view_mode" // "CALLS", "PERSONS"
+    private val KEY_CALL_TAB_ORDER = "call_tab_order"
+    private val KEY_PERSON_TAB_ORDER = "person_tab_order"
     private val MAX_SEARCH_HISTORY = 10
 
     private val prefs by lazy {
@@ -85,6 +88,22 @@ class SettingsRepository private constructor(private val context: Context) {
                 INSTANCE ?: SettingsRepository(context.applicationContext).also { INSTANCE = it }
             }
         }
+    }
+
+    fun getCallTabOrder(): String? {
+        return prefs.getString(KEY_CALL_TAB_ORDER, null)
+    }
+
+    fun setCallTabOrder(order: String) {
+        prefs.edit().putString(KEY_CALL_TAB_ORDER, order).apply()
+    }
+
+    fun getPersonTabOrder(): String? {
+        return prefs.getString(KEY_PERSON_TAB_ORDER, null)
+    }
+
+    fun setPersonTabOrder(order: String) {
+        prefs.edit().putString(KEY_PERSON_TAB_ORDER, order).apply()
     }
 
     fun getSim1SubscriptionId(): Int? {
@@ -466,4 +485,7 @@ class SettingsRepository private constructor(private val context: Context) {
 
     fun getSelectedTab(): String = prefs.getString(KEY_SELECTED_TAB, "CALLS") ?: "CALLS"
     fun setSelectedTab(tab: String) = prefs.edit().putString(KEY_SELECTED_TAB, tab).apply()
+
+    fun getViewMode(): String = prefs.getString(KEY_VIEW_MODE, "PERSONS") ?: "PERSONS"
+    fun setViewMode(mode: String) = prefs.edit().putString(KEY_VIEW_MODE, mode).apply()
 }

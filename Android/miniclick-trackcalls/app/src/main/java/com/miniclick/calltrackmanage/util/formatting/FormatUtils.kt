@@ -1,4 +1,4 @@
-package com.miniclick.calltrackmanage.ui.utils
+package com.miniclick.calltrackmanage.util.formatting
 
 import android.annotation.SuppressLint
 import android.content.Context

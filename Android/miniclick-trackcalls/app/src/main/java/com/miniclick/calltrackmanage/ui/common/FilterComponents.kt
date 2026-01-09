@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import com.miniclick.calltrackmanage.ui.home.*
+import com.miniclick.calltrackmanage.ui.home.viewmodel.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -202,21 +203,171 @@ fun CallFilterModal(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TabReorderModal(
+    viewMode: ViewMode,
+    visibleCallFilters: List<CallTabFilter>,
+    visiblePersonFilters: List<PersonTabFilter>,
+    onUpdateCallOrder: (List<CallTabFilter>) -> Unit,
+    onUpdatePersonOrder: (List<PersonTabFilter>) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val isCallMode = viewMode == ViewMode.CALLS
+    val currentOrder = remember(isCallMode, visibleCallFilters, visiblePersonFilters) {
+        if (isCallMode) visibleCallFilters.toMutableList()
+        else visiblePersonFilters.toMutableList()
+    }
+    
+    // Local state for immediate UI feedback before saving
+    var items by remember(currentOrder) { mutableStateOf(currentOrder) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 40.dp)
+        ) {
+            Text(
+                text = "Reorder Tabs",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Tap arrows to move tabs left or right",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Spacer(Modifier.height(24.dp))
+            
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items.forEachIndexed { index, filter ->
+                    val label = when(filter) {
+                        is CallTabFilter -> when(filter) {
+                            CallTabFilter.NEVER_CONNECTED -> "Never Connected"
+                            CallTabFilter.MAY_FAILED -> "Failed Calls"
+                            CallTabFilter.OUTGOING_NOT_CONNECTED -> "Outgoing Not Connected"
+                            else -> filter.name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
+                        }
+                        is PersonTabFilter -> when(filter) {
+                            PersonTabFilter.NEVER_CONNECTED -> "Never Connected"
+                            PersonTabFilter.MAY_FAILED -> "Failed Calls"
+                            PersonTabFilter.OUTGOING_NOT_CONNECTED -> "Outgoing Not Connected"
+                            else -> filter.name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
+                        }
+                        else -> filter.toString()
+                    }
+
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.weight(1f),
+                                fontWeight = FontWeight.Medium
+                            )
+                            
+                            IconButton(
+                                onClick = {
+                                    if (index > 0) {
+                                        val newList = items.toMutableList()
+                                        val item = newList.removeAt(index)
+                                        newList.add(index - 1, item)
+                                        items = newList
+                                    }
+                                },
+                                enabled = index > 0
+                            ) {
+                                Icon(Icons.Default.ArrowUpward, "Move Up")
+                            }
+                            
+                            IconButton(
+                                onClick = {
+                                    if (index < items.size - 1) {
+                                        val newList = items.toMutableList()
+                                        val item = newList.removeAt(index)
+                                        newList.add(index + 1, item)
+                                        items = newList
+                                    }
+                                },
+                                enabled = index < items.size - 1
+                            ) {
+                                Icon(Icons.Default.ArrowDownward, "Move Down")
+                            }
+                        }
+                    }
+                }
+            }
+            
+            Spacer(Modifier.height(32.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Cancel")
+                }
+                
+                Button(
+                    onClick = {
+                        if (isCallMode) {
+                            onUpdateCallOrder(items.map { it as CallTabFilter })
+                        } else {
+                            onUpdatePersonOrder(items.map { it as PersonTabFilter })
+                        }
+                        onDismiss()
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Save Order")
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun CallTypeTabs(
     selectedFilter: CallTabFilter,
+    visibleFilters: List<CallTabFilter>,
     onFilterSelected: (CallTabFilter) -> Unit,
     onFilterLongClick: (CallTabFilter) -> Unit = {},
     counts: Map<CallTabFilter, Int> = emptyMap()
 ) {
+    val selectedIndex = visibleFilters.indexOf(selectedFilter).coerceAtLeast(0)
     ScrollableTabRow(
-        selectedTabIndex = selectedFilter.ordinal,
+        selectedTabIndex = selectedIndex,
         edgePadding = 16.dp,
         divider = {},
         indicator = { tabPositions ->
-            if (selectedFilter.ordinal < tabPositions.size) {
+            if (selectedIndex < tabPositions.size) {
                 TabRowDefaults.SecondaryIndicator(
-                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedFilter.ordinal]),
+                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedIndex]),
                     color = MaterialTheme.colorScheme.primary,
                     height = 3.dp
                 )
@@ -226,7 +377,7 @@ fun CallTypeTabs(
         contentColor = MaterialTheme.colorScheme.primary
     ) {
         // Filter out IGNORED - it will be accessible via three-dot menu toggle
-        CallTabFilter.entries.filter { it != CallTabFilter.IGNORED }.forEach { filter ->
+        visibleFilters.forEach { filter ->
             val count = counts[filter] ?: 0
             val isSelected = selectedFilter == filter
             
@@ -305,18 +456,20 @@ fun CallTypeTabs(
 @Composable
 fun PersonTypeTabs(
     selectedFilter: PersonTabFilter,
+    visibleFilters: List<PersonTabFilter>,
     onFilterSelected: (PersonTabFilter) -> Unit,
     onFilterLongClick: (PersonTabFilter) -> Unit = {},
     counts: Map<PersonTabFilter, Int> = emptyMap()
 ) {
+    val selectedIndex = visibleFilters.indexOf(selectedFilter).coerceAtLeast(0)
     ScrollableTabRow(
-        selectedTabIndex = selectedFilter.ordinal,
+        selectedTabIndex = selectedIndex,
         edgePadding = 16.dp,
         divider = {},
         indicator = { tabPositions ->
-            if (selectedFilter.ordinal < tabPositions.size) {
+            if (selectedIndex < tabPositions.size) {
                 TabRowDefaults.SecondaryIndicator(
-                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedFilter.ordinal]),
+                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedIndex]),
                     color = MaterialTheme.colorScheme.primary,
                     height = 3.dp
                 )
@@ -326,7 +479,7 @@ fun PersonTypeTabs(
         contentColor = MaterialTheme.colorScheme.primary
     ) {
         // Filter out IGNORED - it will be accessible via three-dot menu toggle
-        PersonTabFilter.entries.filter { it != PersonTabFilter.IGNORED }.forEach { filter ->
+        visibleFilters.forEach { filter ->
             val count = counts[filter] ?: 0
             val isSelected = selectedFilter == filter
             

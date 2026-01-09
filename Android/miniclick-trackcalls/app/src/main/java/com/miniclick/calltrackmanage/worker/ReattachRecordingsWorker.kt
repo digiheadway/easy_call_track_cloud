@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.work.*
 import com.miniclick.calltrackmanage.data.CallDataRepository
 import com.miniclick.calltrackmanage.data.RecordingRepository
+import com.miniclick.calltrackmanage.data.ProcessMonitor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -14,6 +15,7 @@ class ReattachRecordingsWorker(context: Context, params: WorkerParameters) : Cor
     private val recordingRepository = RecordingRepository.getInstance(context)
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        ProcessMonitor.startProcess(ProcessMonitor.ProcessIds.FIND_RECORDINGS, "Scanning Recordings")
         setForeground(createForegroundInfo("Preparing to scan recordings..."))
         
         try {
@@ -48,7 +50,9 @@ class ReattachRecordingsWorker(context: Context, params: WorkerParameters) : Cor
                  if (isStopped) return@forEach
                  processed++
                  if (processed % 40 == 0) { // Update less frequently to save UI overhead
-                     setForeground(createForegroundInfo("Scanning recordings $processed / ${sortedLogs.size}"))
+                     val details = "Scanning recordings $processed / ${sortedLogs.size}"
+                     ProcessMonitor.updateProgress(ProcessMonitor.ProcessIds.FIND_RECORDINGS, processed.toFloat() / sortedLogs.size, details)
+                     setForeground(createForegroundInfo(details))
                  }
                  
                  val callDay = log.callDate / DAY_MS
@@ -84,11 +88,17 @@ class ReattachRecordingsWorker(context: Context, params: WorkerParameters) : Cor
             
             Log.d(TAG, "Re-attach complete. Updated $updatedCount recordings. ${matchedFilePaths.size} unique files matched.")
             
+            if (updatedCount > 0) {
+                RecordingUploadWorker.runNow(applicationContext)
+            }
+            
             Result.success(workDataOf("updated_count" to updatedCount))
             
         } catch (e: Exception) {
             Log.e(TAG, "Re-attach failed", e)
             Result.failure()
+        } finally {
+            ProcessMonitor.endProcess(ProcessMonitor.ProcessIds.FIND_RECORDINGS)
         }
     }
 
@@ -106,6 +116,20 @@ class ReattachRecordingsWorker(context: Context, params: WorkerParameters) : Cor
             notificationManager.createNotificationChannel(channel)
         }
 
+        // Create intent to open sync queue when notification is tapped
+        val contentIntent = android.content.Intent(applicationContext, com.miniclick.calltrackmanage.MainActivity::class.java).apply {
+            flags = android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("OPEN_SYNC_QUEUE", true)
+        }
+        val pendingIntentFlags = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT
+        } else {
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT
+        }
+        val pendingIntent = android.app.PendingIntent.getActivity(
+            applicationContext, 1004, contentIntent, pendingIntentFlags
+        )
+
         val notification = androidx.core.app.NotificationCompat.Builder(applicationContext, channelId)
             .setContentTitle(title)
             .setTicker(title)
@@ -113,6 +137,7 @@ class ReattachRecordingsWorker(context: Context, params: WorkerParameters) : Cor
             .setSmallIcon(com.miniclick.calltrackmanage.R.drawable.ic_launcher_foreground)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
+            .setContentIntent(pendingIntent)
             .setProgress(0, 0, true)
             .build()
             

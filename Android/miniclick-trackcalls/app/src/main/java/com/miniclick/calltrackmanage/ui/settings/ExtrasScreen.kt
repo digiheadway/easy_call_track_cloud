@@ -94,9 +94,9 @@ fun ExtrasScreen(
             // ===================================================================
             SettingsSection(title = "Troubleshooting") {
                 ListItem(
-                    headlineContent = { Text("Re-attach Recordings") },
+                    headlineContent = { Text("Find Missing Recordings") },
                     supportingContent = { 
-                        Text("Re-scan file system to attach recordings to existing call logs (Slow)")
+                        Text("Deep scan storage to match recordings with calls (Slow but thorough)")
                     },
                     leadingContent = { 
                         SettingsIcon(Icons.Default.AudioFile, MaterialTheme.colorScheme.primary) 
@@ -112,22 +112,21 @@ fun ExtrasScreen(
                 if (showReAttachInfo) {
                     AlertDialog(
                         onDismissRequest = { showReAttachInfo = false },
-                        title = { Text("Re-attach Configuration") },
+                        title = { Text("Find Missing Recordings") },
                         text = {
                             Column(Modifier.verticalScroll(rememberScrollState())) {
-                                Text("This process will scan your storage to find matching recordings for your call logs.", style = MaterialTheme.typography.bodyMedium)
+                                Text("This will scan your storage to find and link recording files to your call logs.", style = MaterialTheme.typography.bodyMedium)
                                 Spacer(Modifier.height(16.dp))
                                 
-                                Text("Active Matching Rules:", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                Text("Matching Rules:", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                 Spacer(Modifier.height(8.dp))
                                 
                                 val rules = listOf(
-                                    "✓ Skip Missed/Rejected Calls (0s duration ignored)",
-                                    "✓ Prioritize Exact Phone/Name Match",
-                                    "✓ Trust Filename Date (rejects if >2h different)",
-                                    "✓ Strict Duration Matching (higher score)",
-                                    "✓ Separates Duplicate Calls (Same day, diff time)",
-                                    "✓ Optimized Bucketed Search (High speed)"
+                                    "✓ Skip Missed/Rejected Calls (0s duration)",
+                                    "✓ Match by Phone Number or Contact Name",
+                                    "✓ Validate Filename Date (within 2h of call)",
+                                    "✓ Strict Duration Matching",
+                                    "✓ Smart Duplicate Handling"
                                 )
                                 
                                 rules.forEach { rule ->
@@ -137,8 +136,8 @@ fun ExtrasScreen(
                                 }
                                 
                                 Spacer(Modifier.height(16.dp))
-                                Text("Scan Scope:", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                                Text("System Detected Recording Folders + Subdirectories", style = MaterialTheme.typography.bodySmall)
+                                Text("Note:", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                                Text("This may take several minutes depending on your call history size.", style = MaterialTheme.typography.bodySmall)
                             }
                         },
                         confirmButton = {
@@ -163,28 +162,9 @@ fun ExtrasScreen(
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
                 ListItem(
-                    headlineContent = { Text("Recheck Recordings") },
+                    headlineContent = { Text("Refresh Call History") },
                     supportingContent = { 
-                        Text("Force a re-scan of local folders for call recordings")
-                    },
-                    leadingContent = { 
-                        SettingsIcon(Icons.AutoMirrored.Filled.ManageSearch, MaterialTheme.colorScheme.primary) 
-                    },
-                    trailingContent = {
-                        Icon(Icons.Default.ChevronRight, contentDescription = null)
-                    },
-                    modifier = Modifier.clickable { 
-                        viewModel.recheckRecordings()
-                        Toast.makeText(context, "Rescanning recordings...", Toast.LENGTH_SHORT).show()
-                    }
-                )
-                
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                ListItem(
-                    headlineContent = { Text("Re-import Call History") },
-                    supportingContent = { 
-                        Text("Re-fetch call logs from system and sync them")
+                        Text("Re-sync calls from device call log to app database")
                     },
                     leadingContent = { 
                         SettingsIcon(Icons.Default.History, MaterialTheme.colorScheme.secondary) 
@@ -194,37 +174,37 @@ fun ExtrasScreen(
                     },
                     modifier = Modifier.clickable { 
                         viewModel.reImportCallHistory()
-                        Toast.makeText(context, "Re-importing call history...", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Refreshing call history...", Toast.LENGTH_SHORT).show()
                     }
                 )
 
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                ListItem(
-                    headlineContent = { Text("Re-import Recordings") },
-                    supportingContent = { 
-                        Text("Reset recording sync status and retry all uploads")
-                    },
-                    leadingContent = { 
-                        SettingsIcon(Icons.Default.CloudSync, MaterialTheme.colorScheme.tertiary) 
-                    },
-                    trailingContent = {
-                        Icon(Icons.Default.ChevronRight, contentDescription = null)
-                    },
-                    modifier = Modifier.clickable { 
-                        viewModel.reImportRecordings()
-                        Toast.makeText(context, "Re-importing recordings...", Toast.LENGTH_SHORT).show()
-                    }
-                )
-
-                // Cloud sync reset (if paired)
+                // Cloud sync options (if paired)
                 if (uiState.pairingCode.isNotEmpty()) {
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                    ListItem(
+                        headlineContent = { Text("Retry Failed Uploads") },
+                        supportingContent = { 
+                            Text("Retry uploading recordings that failed to sync to server")
+                        },
+                        leadingContent = { 
+                            SettingsIcon(Icons.Default.CloudSync, MaterialTheme.colorScheme.tertiary) 
+                        },
+                        trailingContent = {
+                            Icon(Icons.Default.ChevronRight, contentDescription = null)
+                        },
+                        modifier = Modifier.clickable { 
+                            viewModel.reImportRecordings()
+                            Toast.makeText(context, "Retrying failed uploads...", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
                     ListItem(
                         headlineContent = { Text("Reset Sync Status") },
                         supportingContent = { 
-                            Text("Reset sync status of all logs - they will re-sync")
+                            Text("Mark all calls as unsynced - they will re-upload to server")
                         },
                         leadingContent = { 
                             SettingsIcon(Icons.Default.Sync, MaterialTheme.colorScheme.primary) 
@@ -242,7 +222,7 @@ fun ExtrasScreen(
                     ListItem(
                         headlineContent = { Text("Force Sync Now") },
                         supportingContent = { 
-                            Text("Manually trigger a sync with the server")
+                            Text("Immediately sync all pending changes with server")
                         },
                         leadingContent = { 
                             SettingsIcon(Icons.Default.CloudUpload, MaterialTheme.colorScheme.secondary) 
@@ -325,24 +305,6 @@ fun ExtrasScreen(
                         onResetOnboarding()
                         viewModel.resetOnboarding()
                         Toast.makeText(context, "Onboarding reset. Restart app to see it.", Toast.LENGTH_SHORT).show()
-                    }
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                ListItem(
-                    headlineContent = { Text("Data Backup & Restore") },
-                    supportingContent = { 
-                        Text("Import, export, and manage your app data")
-                    },
-                    leadingContent = { 
-                        SettingsIcon(Icons.Default.Storage, MaterialTheme.colorScheme.tertiary) 
-                    },
-                    trailingContent = {
-                        Icon(Icons.Default.ChevronRight, contentDescription = null)
-                    },
-                    modifier = Modifier.clickable { 
-                        viewModel.toggleDataManagementScreen(true)
                     }
                 )
             }

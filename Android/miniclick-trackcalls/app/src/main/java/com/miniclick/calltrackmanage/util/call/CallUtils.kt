@@ -1,4 +1,4 @@
-package com.miniclick.calltrackmanage.ui.utils
+package com.miniclick.calltrackmanage.util.call
 
 import android.Manifest
 import android.content.Context

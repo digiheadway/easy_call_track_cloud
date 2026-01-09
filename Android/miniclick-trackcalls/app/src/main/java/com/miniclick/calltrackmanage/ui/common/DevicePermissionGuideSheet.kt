@@ -17,7 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.miniclick.calltrackmanage.utils.DevicePermissionGuide
+import com.miniclick.calltrackmanage.util.permissions.DevicePermissionGuide
 
 /**
  * Bottom Sheet showing device-specific permission instructions

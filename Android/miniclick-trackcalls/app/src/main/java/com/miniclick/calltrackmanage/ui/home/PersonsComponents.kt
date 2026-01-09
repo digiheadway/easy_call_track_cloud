@@ -33,9 +33,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.miniclick.calltrackmanage.data.db.CallDataEntity
 import com.miniclick.calltrackmanage.ui.common.*
-import com.miniclick.calltrackmanage.ui.utils.AudioPlayer
-import com.miniclick.calltrackmanage.ui.utils.cleanNumber
-import com.miniclick.calltrackmanage.ui.utils.getDateHeader
+import com.miniclick.calltrackmanage.util.audio.AudioPlayer
+import com.miniclick.calltrackmanage.util.formatting.cleanNumber
+import com.miniclick.calltrackmanage.util.formatting.getDateHeader
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -469,7 +469,7 @@ fun PersonCard(
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Text(
-                                text = person.name ?: cleanNumber(person.number),
+                                text = person.name?.takeIf { it.isNotBlank() } ?: cleanNumber(person.number),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = if (isExpanded) 10 else 1,

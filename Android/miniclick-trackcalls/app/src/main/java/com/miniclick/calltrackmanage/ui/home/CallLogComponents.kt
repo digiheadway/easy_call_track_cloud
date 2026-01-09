@@ -41,7 +41,14 @@ import com.miniclick.calltrackmanage.data.db.CallDataEntity
 import com.miniclick.calltrackmanage.data.db.MetadataSyncStatus
 import com.miniclick.calltrackmanage.data.db.RecordingSyncStatus
 import com.miniclick.calltrackmanage.ui.common.*
-import com.miniclick.calltrackmanage.ui.utils.*
+import com.miniclick.calltrackmanage.util.audio.AudioPlayer
+import com.miniclick.calltrackmanage.util.audio.PlaybackMetadata
+import com.miniclick.calltrackmanage.util.formatting.cleanNumber
+import com.miniclick.calltrackmanage.util.formatting.getDateHeader
+import com.miniclick.calltrackmanage.util.formatting.formatTime
+import com.miniclick.calltrackmanage.util.formatting.formatDuration
+import com.miniclick.calltrackmanage.util.formatting.formatDurationShort
+import com.miniclick.calltrackmanage.util.formatting.getRelativeTime
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -519,7 +526,9 @@ fun CallLogItem(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = personGroup?.name ?: log.contactName ?: cleanNumber(log.phoneNumber),
+                            text = personGroup?.name?.takeIf { it.isNotBlank() } 
+                                ?: log.contactName?.takeIf { it.isNotBlank() } 
+                                ?: cleanNumber(log.phoneNumber),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,

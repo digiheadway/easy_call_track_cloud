@@ -93,6 +93,9 @@ interface PersonDataDao {
     @Query("SELECT COUNT(*) FROM person_data WHERE needsSync = 1")
     fun getPendingSyncPersonsCountFlow(): Flow<Int>
 
+    @Query("SELECT COUNT(*) FROM person_data WHERE needsSync = 1")
+    fun getPendingSyncCountFlow(): Flow<Int>
+
     @Query("UPDATE person_data SET needsSync = :needsSync WHERE phoneNumber = :phoneNumber")
     suspend fun updateSyncStatus(phoneNumber: String, needsSync: Boolean)
 

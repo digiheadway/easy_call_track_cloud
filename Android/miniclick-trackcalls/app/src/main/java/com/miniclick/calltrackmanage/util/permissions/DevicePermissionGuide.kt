@@ -1,4 +1,4 @@
-package com.miniclick.calltrackmanage.utils
+package com.miniclick.calltrackmanage.util.permissions
 
 import android.content.Context
 import android.content.Intent

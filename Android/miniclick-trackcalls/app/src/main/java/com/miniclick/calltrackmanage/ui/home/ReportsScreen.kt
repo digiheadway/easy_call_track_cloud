@@ -6,6 +6,8 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -28,7 +30,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.miniclick.calltrackmanage.ui.common.*
-import com.miniclick.calltrackmanage.ui.utils.formatDurationShort
+import com.miniclick.calltrackmanage.ui.home.viewmodel.*
+import com.miniclick.calltrackmanage.util.formatting.formatDurationShort
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -472,8 +475,10 @@ fun OverviewCard(
             Spacer(Modifier.height(16.dp))
             
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 StatItem(
                     value = stats.totalCalls.toString(),
@@ -483,18 +488,12 @@ fun OverviewCard(
                     onClick = onClick
                 )
                 StatItem(
-                    value = stats.uniqueContacts.toString(), // Approximating "Unique Calls" as Unique Contacts
+                    value = stats.uniqueContacts.toString(),
                     label = "Unique Calls",
                     icon = Icons.Default.People,
                     color = MaterialTheme.colorScheme.secondary,
                     onClick = onClick
                 )
-            }
-            Spacer(Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
                 StatItem(
                     value = formatDurationShort(stats.totalDuration),
                     label = "Talk Time",
@@ -506,7 +505,7 @@ fun OverviewCard(
                     value = formatDurationShort(stats.avgDuration),
                     label = "Avg Talk Time",
                     icon = Icons.Default.AvTimer,
-                    color = MaterialTheme.colorScheme.error, // or any color
+                    color = MaterialTheme.colorScheme.error,
                     onClick = onClick
                 )
             }

@@ -18,6 +18,15 @@ class RecordingRepository private constructor(private val context: Context) {
     private val KEY_PATH_VERIFIED = "recording_path_verified"
     private val KEY_LEARNED_FOLDER = "learned_recording_folder"
     
+    // --- Performance Optimization: MediaStore Caching ---
+    // Caches the results of the last MediaStore scan to avoid redundant IO
+    // during batch processing (e.g., in RecordingUploadWorker).
+    private var lastMediaStoreScanTime: Long = 0
+    private var lastMediaStoreResults: List<RecordingSourceFile> = emptyList()
+    private var lastScanBuffer: Int = 0
+    private var lastCallDate: Long = 0
+    private val CACHE_EXPIRY_MS = 30_000 // 30 seconds is enough for one sync pass
+
     companion object {
         private const val TAG = "RecordingRepository"
         
@@ -119,6 +128,17 @@ class RecordingRepository private constructor(private val context: Context) {
 
     // Cache for detected path
     private var cachedDetectedPath: String? = null
+
+    /**
+     * Get a flow that emits the current recording count.
+     * Updates whenever called or periodically.
+     */
+    fun getRecordingCountFlow(): kotlinx.coroutines.flow.Flow<Int> = kotlinx.coroutines.flow.flow {
+        while (true) {
+            emit(getPathInfo().recordingCount)
+            kotlinx.coroutines.delay(10000) // Refresh every 10 seconds
+        }
+    }
 
     /**
      * Get the effective recording path (custom if set, otherwise detected)
@@ -661,6 +681,15 @@ class RecordingRepository private constructor(private val context: Context) {
         durationSec: Long,
         bufferSeconds: Int = 300
     ): List<RecordingSourceFile> {
+        // --- Cache Check ---
+        val now = System.currentTimeMillis()
+        if (now - lastMediaStoreScanTime < CACHE_EXPIRY_MS && 
+            bufferSeconds <= lastScanBuffer && 
+            kotlin.math.abs(callDate - lastCallDate) < 30_000) { // Same ~30s window
+            Log.d(TAG, "Reusing cached MediaStore results (${lastMediaStoreResults.size} files)")
+            return lastMediaStoreResults
+        }
+
         val results = mutableListOf<RecordingSourceFile>()
         
         try {
@@ -714,6 +743,13 @@ class RecordingRepository private constructor(private val context: Context) {
             }
             
             Log.d(TAG, "MediaStore query (±${bufferSeconds}s) found ${results.size} audio files")
+            
+            // --- Update Cache ---
+            lastMediaStoreScanTime = now
+            lastMediaStoreResults = results
+            lastScanBuffer = bufferSeconds
+            lastCallDate = callDate
+            
         } catch (e: Exception) {
             Log.e(TAG, "MediaStore query failed", e)
         }
