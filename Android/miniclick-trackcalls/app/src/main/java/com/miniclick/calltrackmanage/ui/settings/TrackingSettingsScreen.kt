@@ -20,6 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.miniclick.calltrackmanage.ui.common.DevicePermissionCard
+import com.miniclick.calltrackmanage.ui.common.DevicePermissionGuideSheet
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -82,6 +84,9 @@ fun TrackingSettingsScreen(
     
     // Warning dialog state for changing recording path
     var showPathWarningDialog by remember { mutableStateOf(false) }
+    
+    // Device permission guide state
+    var showDevicePermissionGuide by remember { mutableStateOf(false) }
 
     // Recording path warning modal
     if (showPathWarningDialog) {
@@ -489,7 +494,24 @@ fun TrackingSettingsScreen(
                 )
             }
 
+            Spacer(Modifier.height(16.dp))
+
+            // ===================================================================
+            // DEVICE-SPECIFIC SETUP (for Xiaomi, Oppo, Vivo, Huawei, Samsung)
+            // ===================================================================
+            DevicePermissionCard(
+                onClick = { showDevicePermissionGuide = true },
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+
             Spacer(Modifier.height(48.dp))
         }
+    }
+    
+    // Device Permission Guide Bottom Sheet
+    if (showDevicePermissionGuide) {
+        DevicePermissionGuideSheet(
+            onDismiss = { showDevicePermissionGuide = false }
+        )
     }
 }

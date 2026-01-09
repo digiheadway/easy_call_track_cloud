@@ -766,7 +766,7 @@ class CallDataRepository private constructor(private val context: Context) {
                  }
             }
 
-            ProcessMonitor.startProcess("Importing Data from System...", isIndeterminate = true)
+            ProcessMonitor.startProcess("Checking for new calls...", isIndeterminate = true)
             Log.d(TAG, "Starting sync from system call log...")
             
             val deviceId = android.provider.Settings.Secure.getString(context.contentResolver, android.provider.Settings.Secure.ANDROID_ID)
@@ -788,8 +788,6 @@ class CallDataRepository private constructor(private val context: Context) {
             // Fetch from system call log with SIM filter  
             val systemCalls = fetchSystemCallLog(fetchStartDate, deviceId, simSelection)
             Log.d(TAG, "System call log returned: ${systemCalls.size} calls (SIM: $simSelection)")
-            
-            ProcessMonitor.updateProgress(0.6f, "Processing ${systemCalls.size} calls")
 
             val newCalls = mutableListOf<CallDataEntity>()
             
@@ -810,17 +808,21 @@ class CallDataRepository private constructor(private val context: Context) {
             
             // Batch insert new calls
             if (newCalls.isNotEmpty()) {
+                ProcessMonitor.updateProgress(0.6f, "Found ${newCalls.size} new call${if (newCalls.size == 1) "" else "s"}")
                 callDataDao.insertAll(newCalls)
                 Log.d(TAG, "Inserted ${newCalls.size} new calls")
+            } else {
+                ProcessMonitor.updateProgress(0.6f, "All calls up to date")
+                Log.d(TAG, "No new calls to insert")
             }
             
             // Update recordings for calls that don't have them yet (including existing ones)
             // We do this after insertion to simplify
             val unsyncedWithNoPath = callDataDao.getCallsMissingRecordings().filter { it.localRecordingPath == null }
             if (unsyncedWithNoPath.isNotEmpty()) {
-                ProcessMonitor.startProcess("Finding Recordings of Calls")
-                val recordingFiles = recordingRepository.getRecordingFiles()
                 val total = unsyncedWithNoPath.size
+                ProcessMonitor.startProcess("Matching $total call${if (total == 1) "" else "s"} with recordings...")
+                val recordingFiles = recordingRepository.getRecordingFiles()
                 
                 val updates = mutableMapOf<String, String>()
                 
@@ -829,7 +831,8 @@ class CallDataRepository private constructor(private val context: Context) {
                     val updateFrequency = if (total < 20) 1 else 10
                     if (index % updateFrequency == 0 || index == total - 1) {
                         val progress = (index + 1).toFloat() / total
-                        ProcessMonitor.updateProgress(progress, "${(progress * 100).toInt()}% Done")
+                        val foundSoFar = updates.size
+                        ProcessMonitor.updateProgress(progress, "Found $foundSoFar recording${if (foundSoFar == 1) "" else "s"} (${index + 1}/$total)")
                     }
 
                     if (call.duration > 0) {
@@ -848,8 +851,12 @@ class CallDataRepository private constructor(private val context: Context) {
 
                 // Batch update in DB
                 if (updates.isNotEmpty()) {
+                    ProcessMonitor.updateProgress(1f, "Linked ${updates.size} recording${if (updates.size == 1) "" else "s"}")
                     Log.d(TAG, "Found ${updates.size} recordings to link. applying batch updates...")
                     callDataDao.updateRecordingPaths(updates)
+                } else {
+                    ProcessMonitor.updateProgress(1f, "No new recordings found")
+                    Log.d(TAG, "No new recordings matched")
                 }
             }
             

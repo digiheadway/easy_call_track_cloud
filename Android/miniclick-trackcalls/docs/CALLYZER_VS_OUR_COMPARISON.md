@@ -661,52 +661,57 @@ Instead of just matching Callyzer, we could:
 
 ---
 
-## Appendix A: Quick Reference Comparison
+## Appendix A: Quick Reference Comparison (Updated 2026-01-09)
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────┐
-│                    COMPARISON SUMMARY                                       │
+│                    COMPARISON SUMMARY - 🏆 FEATURE PARITY!                 │
 ├────────────────────────────────────────────────────────────────────────────┤
 │                                                                            │
 │ DETECTION METHOD:                                                          │
 │   Callyzer: MediaStore → Path Scan → Full Scan → Manual                   │
-│   Our App:  Path Scan → (none)                                            │
-│   Winner:   🏆 Callyzer                                                    │
+│   Our App:  CallCloud → Learned → MediaStore → FileScan → Wider → Manual  │
+│   Winner:   ✅ TIE (Both use MediaStore as primary)                        │
 │                                                                            │
 │ MATCHING ACCURACY:                                                         │
-│   Callyzer: High threshold (100+), good but can still false positive      │
-│   Our App:  Lower threshold (30+) BUT explicit rejection rules            │
-│   Winner:   🟡 Tie (different approaches, both have merits)               │
+│   Callyzer: High threshold (100+), weight-based scoring                   │
+│   Our App:  High threshold (100+), Callyzer-style weights + folder bonus  │
+│   Winner:   ✅ TIE (Same approach now)                                     │
 │                                                                            │
 │ ANDROID 10+ COMPATIBILITY:                                                 │
 │   Callyzer: MediaStore works everywhere                                   │
-│   Our App:  File API broken on many paths                                 │
-│   Winner:   🏆 Callyzer                                                    │
+│   Our App:  MediaStore Tier 3 & 5 for Android 10+                         │
+│   Winner:   ✅ TIE (Both work on all Android versions)                     │
 │                                                                            │
 │ FALLBACK DEPTH:                                                            │
 │   Callyzer: 6 layers                                                       │
-│   Our App:  2 layers                                                       │
-│   Winner:   🏆 Callyzer                                                    │
+│   Our App:  5 layers + Manual attachment                                  │
+│   Winner:   ✅ TIE (Equivalent coverage)                                   │
 │                                                                            │
 │ FILENAME PARSING:                                                          │
 │   Callyzer: Generic regex                                                  │
-│   Our App:  Device-specific parsers (OnePlus, standard)                   │
-│   Winner:   🏆 Our App                                                     │
+│   Our App:  Device-specific parsers (OnePlus, standard, date extraction)  │
+│   Winner:   🏆 Our App (More accurate date parsing)                        │
 │                                                                            │
 │ COMPRESSION:                                                               │
 │   Callyzer: Built-in configurable                                          │
-│   Our App:  None                                                           │
-│   Winner:   🏆 Callyzer                                                    │
+│   Our App:  AudioCompressor.kt (AAC 32kbps, 16kHz, Mono)                  │
+│   Winner:   ✅ TIE (Both compress before upload)                           │
 │                                                                            │
-│ CRASH HANDLING:                                                            │
-│   Callyzer: Device-specific workarounds documented                         │
-│   Our App:  Basic error handling                                           │
-│   Winner:   🏆 Callyzer                                                    │
+│ DEVICE GUIDES:                                                             │
+│   Callyzer: Manufacturer-specific instructions                             │
+│   Our App:  DevicePermissionGuide.kt with UI bottom sheet                 │
+│   Winner:   ✅ TIE (Both provide device-specific help)                     │
 │                                                                            │
-│ REJECTION LOGIC:                                                           │
-│   Callyzer: Implicit (threshold-based)                                     │
-│   Our App:  Explicit rules (4h rule, 24h rule, date conflict)             │
-│   Winner:   🏆 Our App                                                     │
+│ BULK ATTACH:                                                               │
+│   Callyzer: Zipper algorithm (sorted merge, dedup)                         │
+│   Our App:  Zipper-style chronological sort + matched file tracking        │
+│   Winner:   ✅ TIE (Same algorithm)                                        │
+│                                                                            │
+│ LEARNING SYSTEM:                                                           │
+│   Callyzer: Saves successful folders                                       │
+│   Our App:  KEY_LEARNED_FOLDER priority check                             │
+│   Winner:   ✅ TIE (Both learn from success)                               │
 │                                                                            │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
