@@ -178,7 +178,20 @@ class AudioPlayer(private val context: Context) {
         _metadata.value = metadata
         try {
             mediaPlayer = MediaPlayer().apply {
-                setDataSource(path)
+                // Handle both file paths and content:// URIs
+                if (path.startsWith("content://")) {
+                    val uri = android.net.Uri.parse(path)
+                    setDataSource(context, uri)
+                } else {
+                    // Verify file exists for regular file paths
+                    val file = java.io.File(path)
+                    if (!file.exists()) {
+                        android.util.Log.e("AudioPlayer", "File does not exist: $path")
+                        this@AudioPlayer.stop()
+                        return
+                    }
+                    setDataSource(path)
+                }
                 prepare()
                 setOnCompletionListener { this@AudioPlayer.stop() }
                 start()
@@ -192,6 +205,7 @@ class AudioPlayer(private val context: Context) {
             startTimer()
             updateNotification()
         } catch (e: Exception) {
+            android.util.Log.e("AudioPlayer", "Failed to play: $path", e)
             e.printStackTrace()
             stop()
         }
