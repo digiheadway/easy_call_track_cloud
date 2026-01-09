@@ -244,8 +244,21 @@ export default function EmployeesPage() {
         try {
             const res = await api.get(`/employees.php?action=delete_recordings&id=${deletionEmployee.id}`);
             setRecordingsDeleted(true);
-            setDeletionStats(prev => ({ ...prev, recordings_count: 0, recordings_size_bytes: 0 }));
-            toast.success(`Recordings deleted, freed ${formatBytes(res.data?.bytes_freed || 0)}`);
+            // If all calls were recordings and contacts were deleted too, update those stats
+            if (res.data?.contacts_deleted) {
+                setDeletionStats(prev => ({ ...prev, recordings_count: 0, recordings_size_bytes: 0, calls_count: 0, contacts_count: 0 }));
+                setCallsDeleted(true); // Mark calls as deleted too since all were recordings
+                toast.success(`Recordings, calls & contacts deleted, freed ${formatBytes(res.data?.bytes_freed || 0)}`);
+            } else {
+                // Only update recordings stats, calls/contacts may still exist
+                setDeletionStats(prev => ({ 
+                    ...prev, 
+                    recordings_count: 0, 
+                    recordings_size_bytes: 0,
+                    calls_count: (prev?.calls_count || 0) - (prev?.recordings_count || 0) // Subtract recording calls from total
+                }));
+                toast.success(`Recordings deleted, freed ${formatBytes(res.data?.bytes_freed || 0)}`);
+            }
         } catch (err) {
             console.error('Failed to delete recordings', err);
             toast.error('Failed to delete recordings');

@@ -139,9 +139,19 @@ switch ($method) {
             // Delete the call records that had recordings (after files are deleted)
             Database::execute("DELETE FROM calls WHERE employee_id = '$id' AND org_id = '$orgId' AND recording_url IS NOT NULL AND recording_url != ''");
             
+            // Check if there are any remaining calls, if not, also delete contacts
+            $remainingCalls = Database::getOne("SELECT COUNT(*) as count FROM calls WHERE employee_id = '$id' AND org_id = '$orgId'")['count'] ?? 0;
+            $contactsDeleted = 0;
+            if ($remainingCalls == 0) {
+                // No calls left, delete contacts too
+                Database::execute("DELETE FROM contacts WHERE employee_id = $id AND org_id = '$orgId'");
+                $contactsDeleted = 1;
+            }
+            
             Response::success([
                 'recordings_deleted' => $deletedCount,
-                'bytes_freed' => $freedBytes
+                'bytes_freed' => $freedBytes,
+                'contacts_deleted' => $contactsDeleted
             ], 'Recordings deleted successfully');
         } elseif ($action === 'archive' && $id) {
             // Archive employee (set status to inactive)
