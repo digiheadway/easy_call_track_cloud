@@ -639,7 +639,7 @@ fun CallsScreen(
                                                         onClick = { viewModel.syncFromSystem() },
                                                         shape = RoundedCornerShape(12.dp)
                                                     ) {
-                                                        Icon(Icons.Default.CloudDownload, null)
+                                                        Icon(Icons.Default.Refresh, null)
                                                         Spacer(Modifier.width(8.dp))
                                                         Text("Refresh Again")
                                                     }
