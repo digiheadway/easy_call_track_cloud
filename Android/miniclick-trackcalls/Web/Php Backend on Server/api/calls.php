@@ -332,7 +332,16 @@ switch ($method) {
             } else if ($recordingFilter === 'no_recording') {
                 $where[] = "(c.recording_url IS NULL OR c.recording_url = '')";
             } else if ($recordingFilter === 'pending_upload') {
-                $where[] = "(c.upload_status = 'pending' AND (c.recording_url IS NULL OR c.recording_url = ''))";
+                $where[] = "(c.file_status = 'pending' AND (c.recording_url IS NULL OR c.recording_url = ''))";
+            } else if ($recordingFilter === 'not_found') {
+                $where[] = "c.file_status = 'not_found'";
+            } else if ($recordingFilter === 'failed') {
+                $where[] = "c.file_status = 'failed'";
+            } else if ($recordingFilter === 'not_applicable') {
+                $where[] = "c.file_status = 'not_applicable'";
+            } else if ($recordingFilter === 'disabled') {
+                // Includes: not_allowed, disabled (org restrictions)
+                $where[] = "c.file_status IN ('not_allowed', 'disabled')";
             }
             
             // Duration Filter

@@ -290,18 +290,18 @@ if ($action === "start_call") {
     $updSync->bind_param("i", $employee_id);
     $updSync->execute();
 
-    // Upload status logic
-    $upload_status = $_POST['upload_status'] ?? 'pending';
-    // If duration 0 or missed, no recording expected usually, force completed in those cases
-    if ($duration <= 0 || strtolower($type) === 'missed') {
-        $upload_status = 'completed';
+    // File status logic - Accept both 'file_status' and 'upload_status' for backward compat
+    $file_status = $_POST['file_status'] ?? $_POST['upload_status'] ?? 'pending';
+    // If duration 0 or missed/rejected, no recording expected
+    if ($duration <= 0 || in_array(strtolower($type), ['missed', 'rejected', 'blocked'])) {
+        $file_status = 'not_applicable';
     }
 
     // Insert into 'calls' table
     
     $stmt = $conn->prepare("
         INSERT INTO call_log
-        (unique_id, org_id, employee_id, device_phone, caller_name, caller_phone, duration, type, upload_status, call_time)
+        (unique_id, org_id, employee_id, device_phone, caller_name, caller_phone, duration, type, file_status, call_time)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
             device_phone  = VALUES(device_phone),
@@ -309,7 +309,7 @@ if ($action === "start_call") {
             caller_phone  = VALUES(caller_phone),
             duration      = VALUES(duration),
             type          = VALUES(type),
-            upload_status = VALUES(upload_status),
+            file_status = VALUES(file_status),
             call_time     = VALUES(call_time),
             updated_at    = NOW()
     ");
@@ -324,7 +324,7 @@ if ($action === "start_call") {
         $caller_phone,
         $duration,
         $type,
-        $upload_status,
+        $file_status,
         $call_time_to_insert
     );
 
@@ -336,7 +336,7 @@ if ($action === "start_call") {
 
     out([
         "unique_id" => $unique_id,
-        "upload_status" => $upload_status,
+        "file_status" => $file_status,
         "created_ts" => $created_at
     ], 200, "Call started");
 }
@@ -384,7 +384,7 @@ if ($action === "batch_sync_calls") {
     // Prepare Statement outside loop for efficiency
     $stmt = $conn->prepare("
         INSERT INTO call_log
-        (unique_id, org_id, employee_id, device_phone, caller_name, caller_phone, duration, type, upload_status, call_time)
+        (unique_id, org_id, employee_id, device_phone, caller_name, caller_phone, duration, type, file_status, call_time)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
             device_phone  = VALUES(device_phone),
@@ -392,7 +392,7 @@ if ($action === "batch_sync_calls") {
             caller_phone  = VALUES(caller_phone),
             duration      = VALUES(duration),
             type          = VALUES(type),
-            upload_status = VALUES(upload_status),
+            file_status = VALUES(file_status),
             call_time     = VALUES(call_time),
             updated_at    = NOW()
     ");
@@ -417,10 +417,10 @@ if ($action === "batch_sync_calls") {
                 $call_time_to_insert = $call_time_param;
             }
 
-            // Determine upload status
-            $upload_status = $call['upload_status'] ?? 'pending';
-            if ($duration <= 0 || strtolower($type) === 'missed') {
-                $upload_status = 'completed';
+            // Determine file status - Accept both keys for backward compat
+            $file_status = $call['file_status'] ?? $call['upload_status'] ?? 'pending';
+            if ($duration <= 0 || in_array(strtolower($type), ['missed', 'rejected', 'blocked'])) {
+                $file_status = 'not_applicable';
             }
 
             $stmt->bind_param(
@@ -433,7 +433,7 @@ if ($action === "batch_sync_calls") {
                 $caller_phone,
                 $duration,
                 $type,
-                $upload_status,
+                $file_status,
                 $call_time_to_insert
             );
             $stmt->execute();
@@ -467,7 +467,7 @@ if ($action === "upload_chunk") {
     }
 
     // Check calls table and get org/device info for folder structure
-    $check = $conn->prepare("SELECT upload_status, org_id, employee_id FROM call_log WHERE unique_id=?");
+    $check = $conn->prepare("SELECT file_status, org_id, employee_id FROM call_log WHERE unique_id=?");
     $check->bind_param("s", $unique_id);
     $check->execute();
     $res = $check->get_result();
@@ -477,7 +477,7 @@ if ($action === "upload_chunk") {
     }
     
     $row = $res->fetch_assoc();
-    if ($row && $row['upload_status'] === 'completed') {
+    if ($row && $row['file_status'] === 'completed') {
         errorOut("No recording expected for this call (already completed)");
     }
 
@@ -511,7 +511,7 @@ if ($action === "finalize_upload") {
         errorOut("Missing finalize data");
 
     $stmt = $conn->prepare("
-        SELECT caller_phone, upload_status, employee_id, duration, org_id, call_time
+        SELECT caller_phone, file_status, employee_id, duration, org_id, call_time
         FROM call_log WHERE unique_id=?
     ");
     $stmt->bind_param("s", $unique_id);
@@ -521,7 +521,7 @@ if ($action === "finalize_upload") {
     if (!$call)
         errorOut("Call not found");
 
-    if ($call['upload_status'] === 'completed') {
+    if ($call['file_status'] === 'completed') {
         out([], 200, "No recording required/Already Done");
     }
 
@@ -579,7 +579,7 @@ if ($action === "finalize_upload") {
 
     $upd = $conn->prepare("
         UPDATE call_log
-        SET recording_url=?, upload_status='completed', updated_at=NOW()
+        SET recording_url=?, file_status='completed', updated_at=NOW()
         WHERE unique_id=?
     ");
     $upd->bind_param("ss", $recording_url, $unique_id);
@@ -795,7 +795,7 @@ if ($action === "update_call") {
     $reviewed = isset($_POST['reviewed']) ? ($_POST['reviewed'] === 'true' || $_POST['reviewed'] === '1' ? 1 : 0) : null;
     $note = $_POST['note'] ?? null;
     $caller_name = $_POST['caller_name'] ?? null;
-    $upload_status = $_POST['upload_status'] ?? null;
+    $file_status = $_POST['file_status'] ?? null;
     $updated_at = intval($_POST['updated_at'] ?? 0); // Client's update timestamp in millis
     
     if ($unique_id === '') errorOut("unique_id required");
@@ -823,9 +823,9 @@ if ($action === "update_call") {
         $types .= "s";
     }
     
-    if ($upload_status !== null) {
-        $updates[] = "upload_status = ?";
-        $params[] = $upload_status;
+    if ($file_status !== null) {
+        $updates[] = "file_status = ?";
+        $params[] = $file_status;
         $types .= "s";
     }
     
@@ -1031,7 +1031,7 @@ if ($action === "check_recordings_status") {
     
     $id_list = implode(",", $safe_ids);
     
-    $stmt = $conn->prepare("SELECT unique_id FROM call_log WHERE unique_id IN ($id_list) AND upload_status = 'completed'");
+    $stmt = $conn->prepare("SELECT unique_id FROM call_log WHERE unique_id IN ($id_list) AND file_status = 'completed'");
     $stmt->execute();
     $res = $stmt->get_result();
     
@@ -1081,12 +1081,12 @@ if ($action === "add_demo_call") {
     $type = ucfirst(strtolower($type));
     
     // Upload status
-    $upload_status = 'completed'; // Demo calls don't have recordings
+    $file_status = 'completed'; // Demo calls don't have recordings
     
     // Insert call
     $stmt = $conn->prepare("
         INSERT INTO call_log
-        (unique_id, org_id, employee_id, caller_name, caller_phone, duration, type, upload_status, call_time)
+        (unique_id, org_id, employee_id, caller_name, caller_phone, duration, type, file_status, call_time)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
     
@@ -1099,7 +1099,7 @@ if ($action === "add_demo_call") {
         $caller_phone,
         $duration,
         $type,
-        $upload_status,
+        $file_status,
         $call_time
     );
     
