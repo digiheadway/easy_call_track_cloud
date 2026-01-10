@@ -162,12 +162,20 @@ fun HomeScreen(viewModel: LinkBoxViewModel, navController: NavController) {
                             }
                             is com.clicktoearn.linkbox.data.remote.HomeRenderItem.Ad -> {
                                 if (!isPremium) {
-                                    // Make ad container full width
-                                    Box(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
-                                        when (item.type) {
-                                            "ad_native_video" -> com.clicktoearn.linkbox.ads.AdsManager.NativeVideoAdView()
-                                            "ad_native" -> com.clicktoearn.linkbox.ads.AdsManager.NativeAdView()
-                                            "ad_banner" -> com.clicktoearn.linkbox.ads.AdsManager.AdaptiveBannerAdView()
+                                    // Wrapped ad container for consistent layout
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                    ) {
+                                        Box(modifier = Modifier.padding(8.dp)) {
+                                            when (item.type) {
+                                                "ad_native_video" -> com.clicktoearn.linkbox.ads.AdsManager.NativeVideoAdView()
+                                                "ad_native" -> com.clicktoearn.linkbox.ads.AdsManager.NativeAdView()
+                                                "ad_banner" -> com.clicktoearn.linkbox.ads.AdsManager.AdaptiveBannerAdView()
+                                            }
                                         }
                                     }
                                 }
@@ -357,8 +365,8 @@ fun HomeShimmerContent() {
         contentPadding = PaddingValues(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // 4 sections with shimmer
-        items(4) {
+        // 4 sections with shimmer - using stable items API
+        items(count = 4) {
             HomeShimmerSection(shimmerBrush)
         }
     }

@@ -164,7 +164,7 @@ try {
             SUM(CASE WHEN c.duration > 0 THEN 1 ELSE 0 END) as connected,
             SUM(CASE WHEN c.duration = 0 THEN 1 ELSE 0 END) as not_connected,
             SUM(c.duration) as total_duration_seconds
-        FROM calls c
+        FROM call_log c
         WHERE $whereClause
     ");
 
@@ -188,7 +188,7 @@ try {
             SUM(CASE WHEN c.duration > 0 THEN 1 ELSE 0 END) as connected,
             SUM(CASE WHEN c.duration = 0 THEN 1 ELSE 0 END) as not_connected,
             SUM(c.duration) as duration_seconds
-        FROM calls c
+        FROM call_log c
         WHERE $whereClause
         GROUP BY DATE($sqlLocalTime)
     ");

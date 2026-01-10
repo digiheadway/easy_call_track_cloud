@@ -12,9 +12,15 @@ class CallTrackerApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        Log.d(TAG, "App started - initializing background workers and service")
-        scheduleWorkers()
-        startSyncService()
+        
+        val settingsRepository = com.miniclick.calltrackmanage.data.SettingsRepository.getInstance(this)
+        if (settingsRepository.isAgreementAccepted()) {
+            Log.d(TAG, "App started - agreement already accepted, initializing background workers and service")
+            scheduleWorkers()
+            startSyncService()
+        } else {
+            Log.d(TAG, "App started - agreement not yet accepted, skipping background initialization")
+        }
     }
 
     private fun scheduleWorkers() {

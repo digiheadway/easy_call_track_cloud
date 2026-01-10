@@ -51,6 +51,9 @@ fun SyncQueueModal(
         dragHandle = { BottomSheetDefaults.DragHandle() },
         containerColor = MaterialTheme.colorScheme.surface,
     ) {
+        val settingsViewModel: com.miniclick.calltrackmanage.ui.settings.SettingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+        val uiState by settingsViewModel.uiState.collectAsState()
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -80,6 +83,52 @@ fun SyncQueueModal(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+            }
+
+            // Battery Optimization Warning in Modal
+            if (!uiState.isIgnoringBatteryOptimizations && isSyncSetup) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { 
+                            onDismiss()
+                            settingsViewModel.toggleDevicePermissionGuide(true)
+                        }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.BatteryAlert,
+                            null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Background Sync Restricted",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Text(
+                                "Tap to fix for reliable call tracking",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
+                            )
+                        }
+                        Icon(
+                            Icons.Default.ChevronRight,
+                            null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
 
@@ -184,12 +233,20 @@ fun SyncQueueModal(
                 )
 
                 // Recording Upload
+                val syncedRecordings = allProcesses[com.miniclick.calltrackmanage.data.ProcessMonitor.ProcessIds.UPLOAD_RECORDINGS]?.progress ?: 0f
                 ProcessQueueItem(
                     label = "Recording Uploads",
                     count = pendingRecordings,
                     icon = Icons.Default.Mic,
                     description = when {
-                        pendingRecordings > 0 -> "$pendingRecordings recordings in queue"
+                        pendingRecordings > 0 -> {
+                            val activeCount = runningProcesses.find { it.id == com.miniclick.calltrackmanage.data.ProcessMonitor.ProcessIds.UPLOAD_RECORDINGS }?.details?.split("/")?.lastOrNull()?.toIntOrNull() ?: 0
+                            if (activeCount > 0 && activeCount < pendingRecordings) {
+                                "$activeCount eligible for upload, ${pendingRecordings - activeCount} waiting for metadata sync"
+                            } else {
+                                "$pendingRecordings recordings in queue"
+                            }
+                        }
                         else -> "All uploaded ✓"
                     },
                     isComplete = pendingRecordings == 0,
@@ -698,15 +755,13 @@ fun RecordingQueueItem(
         
         Row(verticalAlignment = Alignment.CenterVertically) {
             val (statusText, statusColor) = when (recording.recordingSyncStatus) {
-                RecordingSyncStatus.COMPRESSING -> "Preparing" to MaterialTheme.colorScheme.secondary
                 RecordingSyncStatus.UPLOADING -> "Uploading" to MaterialTheme.colorScheme.primary
                 RecordingSyncStatus.FAILED -> "Failed" to MaterialTheme.colorScheme.error
                 RecordingSyncStatus.NOT_FOUND -> "Not Found" to MaterialTheme.colorScheme.error
                 else -> "Waiting" to MaterialTheme.colorScheme.onSurfaceVariant
             }
             
-            if (recording.recordingSyncStatus == RecordingSyncStatus.COMPRESSING || 
-                recording.recordingSyncStatus == RecordingSyncStatus.UPLOADING) {
+            if (recording.recordingSyncStatus == RecordingSyncStatus.UPLOADING) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(16.dp),
                     strokeWidth = 2.dp,
@@ -776,9 +831,11 @@ fun GlobalSyncStatusBar(
     pendingRecordings: Int,
     activeUploads: Int,
     isNetworkAvailable: Boolean,
+    isIgnoringBatteryOptimizations: Boolean = true,
     isSyncSetup: Boolean = true,
     onSyncNow: () -> Unit,
     onShowQueue: () -> Unit,
+    onShowDeviceGuide: () -> Unit,
     audioPlayer: AudioPlayer? = null
 ) {
     val activeProcess by com.miniclick.calltrackmanage.data.ProcessMonitor.activeProcess.collectAsState()
@@ -813,7 +870,7 @@ fun GlobalSyncStatusBar(
     // 3. Or if there's an active/ringing call
     // 4. Or if Audio is playing
     val showBar = activeProcess != null || 
-                  (isSyncSetup && (totalPending > 0 || pendingRecordings > 0 || activeUploads > 0 || !isNetworkAvailable)) ||
+                  (isSyncSetup && (totalPending > 0 || pendingRecordings > 0 || activeUploads > 0 || !isNetworkAvailable || !isIgnoringBatteryOptimizations)) ||
                   callStatus != null ||
                   isAudioPlaying
 
@@ -833,6 +890,7 @@ fun GlobalSyncStatusBar(
             callStatus != null -> Color(0xFF30D158) // Green for calls
             isAudioPlaying -> MaterialTheme.colorScheme.tertiaryContainer 
             isLocalProcess -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f)
+            !isIgnoringBatteryOptimizations -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.95f)
             !isNetworkAvailable && isSyncSetup -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.95f)
             else -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f)
         }
@@ -841,6 +899,7 @@ fun GlobalSyncStatusBar(
             callStatus != null -> Color.White
             isAudioPlaying -> MaterialTheme.colorScheme.onTertiaryContainer
             isLocalProcess -> MaterialTheme.colorScheme.onSurfaceVariant
+            !isIgnoringBatteryOptimizations -> MaterialTheme.colorScheme.onErrorContainer
             !isNetworkAvailable && isSyncSetup -> MaterialTheme.colorScheme.onErrorContainer
             else -> MaterialTheme.colorScheme.onPrimaryContainer
         }
@@ -849,16 +908,18 @@ fun GlobalSyncStatusBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
-                    if (callStatus != null) {
-                        try {
-                            val intent = android.content.Intent(context, com.miniclick.calltrackmanage.ui.call.InCallActivity::class.java)
-                            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                            context.startActivity(intent)
-                        } catch (e: Exception) {}
-                    } else if (isAudioPlaying) {
-                        audioPlayer?.togglePlayPause()
-                    } else {
-                        onShowQueue()
+                    when {
+                        callStatus != null -> {
+                            try {
+                                val intent = android.content.Intent(context, com.miniclick.calltrackmanage.ui.call.InCallActivity::class.java)
+                                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                                context.startActivity(intent)
+                            } catch (e: Exception) {}
+                        }
+                        isAudioPlaying -> audioPlayer?.togglePlayPause()
+                        process != null -> onShowQueue()
+                        !isIgnoringBatteryOptimizations -> onShowDeviceGuide()
+                        else -> onShowQueue()
                     }
                 },
             color = backgroundColor,
@@ -899,6 +960,8 @@ fun GlobalSyncStatusBar(
                         val detailText = if (!process.details.isNullOrEmpty()) ": ${process.details}" else progressPct
                         "${process.title}$detailText"
                     }
+                    // Battery optimization issue
+                    !isIgnoringBatteryOptimizations -> "Background sync restricted • Tap to fix"
                     // Network issue (only matters if sync is setup)
                     !isNetworkAvailable && isSyncSetup -> {
                         val pendingTotal = totalPending + pendingRecordings
@@ -928,6 +991,7 @@ fun GlobalSyncStatusBar(
                     process != null -> Icons.Default.Sync  // Local processing
                     !isNetworkAvailable && isSyncSetup -> Icons.Default.CloudOff
                     activeUploads > 0 -> Icons.Default.CloudUpload
+                    !isIgnoringBatteryOptimizations -> Icons.Default.BatteryAlert
                     pendingNewCalls > 0 -> Icons.Default.PhoneCallback
                     pendingMetadata > 0 -> Icons.Default.EditNote
                     pendingPersonUpdates > 0 -> Icons.Default.Person

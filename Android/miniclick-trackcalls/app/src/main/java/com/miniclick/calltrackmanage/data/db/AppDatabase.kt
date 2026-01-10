@@ -13,7 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         CallDataEntity::class,
         PersonDataEntity::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -132,7 +132,7 @@ abstract class AppDatabase : RoomDatabase() {
                         END,
                         recordingSyncStatus = CASE 
                             WHEN syncStatus = 'COMPLETED' THEN 'COMPLETED'
-                            WHEN syncStatus = 'COMPRESSING' THEN 'COMPRESSING'
+                            WHEN syncStatus = 'COMPRESSING' THEN 'PENDING'
                             WHEN syncStatus = 'UPLOADING' THEN 'UPLOADING'
                             WHEN duration > 0 AND localRecordingPath IS NOT NULL THEN 'PENDING'
                             ELSE 'NOT_APPLICABLE'
@@ -179,6 +179,15 @@ abstract class AppDatabase : RoomDatabase() {
                 database.execSQL("CREATE INDEX IF NOT EXISTS index_person_data_excludeFromList ON person_data(excludeFromList)")
             }
         }
+
+        // Migration from version 9 to version 10 (new columns for server status and processing)
+        private val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE call_data ADD COLUMN serverRecordingStatus TEXT")
+                database.execSQL("ALTER TABLE call_data ADD COLUMN metadataReceived INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE call_data ADD COLUMN processingStatus TEXT")
+            }
+        }
         
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -187,7 +196,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "callcloud_database"
                 )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance

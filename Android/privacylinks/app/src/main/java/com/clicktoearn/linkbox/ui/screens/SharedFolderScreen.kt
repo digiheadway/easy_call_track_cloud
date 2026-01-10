@@ -219,7 +219,15 @@ fun SharedFolderScreen(
                             val showNativeTop = !isPremium && !isOwner && AdsManager.isAdEnabled(AdsManager.KEY_SHARED_FOLDER_NATIVE_TOP)
 
                             if (showNativeTop) {
-                                AdsManager.NativeAdView()
+                                Card(
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                ) {
+                                    Box(modifier = Modifier.padding(8.dp)) {
+                                        AdsManager.NativeAdView()
+                                    }
+                                }
                                 Spacer(modifier = Modifier.height(64.dp))
                             }
                             
@@ -247,7 +255,15 @@ fun SharedFolderScreen(
                     ) {
                         item {
                            if (showNativeTop) {
-                               AdsManager.NativeAdView()
+                               Card(
+                                   modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                                   colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                   elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                               ) {
+                                   Box(modifier = Modifier.padding(8.dp)) {
+                                       AdsManager.NativeAdView()
+                                   }
+                               }
                                Spacer(modifier = Modifier.height(8.dp))
                            }
                         }

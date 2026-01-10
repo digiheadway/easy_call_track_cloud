@@ -300,7 +300,7 @@ if ($action === "start_call") {
     // Insert into 'calls' table
     
     $stmt = $conn->prepare("
-        INSERT INTO calls
+        INSERT INTO call_log
         (unique_id, org_id, employee_id, device_phone, caller_name, caller_phone, duration, type, upload_status, call_time)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
@@ -358,7 +358,7 @@ if ($action === "upload_chunk") {
     }
 
     // Check calls table and get org/device info for folder structure
-    $check = $conn->prepare("SELECT upload_status, org_id, employee_id FROM calls WHERE unique_id=?");
+    $check = $conn->prepare("SELECT upload_status, org_id, employee_id FROM call_log WHERE unique_id=?");
     $check->bind_param("s", $unique_id);
     $check->execute();
     $res = $check->get_result();
@@ -403,7 +403,7 @@ if ($action === "finalize_upload") {
 
     $stmt = $conn->prepare("
         SELECT caller_phone, upload_status, employee_id, duration, org_id, call_time
-        FROM calls WHERE unique_id=?
+        FROM call_log WHERE unique_id=?
     ");
     $stmt->bind_param("s", $unique_id);
     $stmt->execute();
@@ -469,7 +469,7 @@ if ($action === "finalize_upload") {
     $recording_url = "$BASE_URL/$relPath$fileName";
 
     $upd = $conn->prepare("
-        UPDATE calls
+        UPDATE call_log
         SET recording_url=?, upload_status='completed', updated_at=NOW()
         WHERE unique_id=?
     ");
@@ -494,7 +494,7 @@ if ($action === "get_updates") {
     // 1. Get Person Updates (Notes/Labels)
     $stmt = $conn->prepare("
         SELECT phone, notes, label, updated_at
-        FROM contacts 
+        FROM call_log_phones 
         WHERE org_id = ? AND updated_at > FROM_UNIXTIME(?)
     ");
     // "sd": string, double
@@ -515,7 +515,7 @@ if ($action === "get_updates") {
     // 2. Get Call Note Updates
     $stmt2 = $conn->prepare("
         SELECT unique_id, note, updated_at
-        FROM calls
+        FROM call_log
         WHERE org_id = ? AND updated_at > FROM_UNIXTIME(?) AND note IS NOT NULL
     ");
     $stmt2->bind_param("sd", $org_id, $last_sync_sec);
@@ -556,7 +556,7 @@ if ($action === "update_note") {
 
     // 4.1 Update Call Note
     if ($note !== null) {
-        $stmt = $conn->prepare("UPDATE calls SET note=?, updated_at=NOW() WHERE unique_id=?");
+        $stmt = $conn->prepare("UPDATE call_log SET note=?, updated_at=NOW() WHERE unique_id=?");
         $stmt->bind_param("ss", $note, $unique_id);
         $stmt->execute();
     }
@@ -564,7 +564,7 @@ if ($action === "update_note") {
     // 4.2 Update Person Note & Label (in contacts table)
     if ($person_note !== null || $label !== null) {
         // Need to find the phone number associated with this unique_id
-        $stmt = $conn->prepare("SELECT caller_phone, org_id FROM calls WHERE unique_id=?");
+        $stmt = $conn->prepare("SELECT caller_phone, org_id FROM call_log WHERE unique_id=?");
         $stmt->bind_param("s", $unique_id);
         $stmt->execute();
         $res = $stmt->get_result();
@@ -577,22 +577,22 @@ if ($action === "update_note") {
             if ($phone && $orgId) {
                 // Update contacts table
                 if ($person_note !== null && $label !== null) {
-                    $upd = $conn->prepare("UPDATE contacts SET notes=?, label=?, updated_at=NOW() WHERE phone=? AND org_id=?");
+                    $upd = $conn->prepare("UPDATE call_log_phones SET notes=?, label=?, updated_at=NOW() WHERE phone=? AND org_id=?");
                     $upd->bind_param("ssss", $person_note, $label, $phone, $orgId);
                     $upd->execute();
                 } elseif ($person_note !== null) {
-                    $upd = $conn->prepare("UPDATE contacts SET notes=?, updated_at=NOW() WHERE phone=? AND org_id=?");
+                    $upd = $conn->prepare("UPDATE call_log_phones SET notes=?, updated_at=NOW() WHERE phone=? AND org_id=?");
                     $upd->bind_param("sss", $person_note, $phone, $orgId);
                     $upd->execute();
                 } elseif ($label !== null) {
-                    $upd = $conn->prepare("UPDATE contacts SET label=?, updated_at=NOW() WHERE phone=? AND org_id=?");
+                    $upd = $conn->prepare("UPDATE call_log_phones SET label=?, updated_at=NOW() WHERE phone=? AND org_id=?");
                     $upd->bind_param("sss", $label, $phone, $orgId);
                     $upd->execute();
                 }
                 
                 // Also update calls.labels for all calls from this phone
                 if ($label !== null) {
-                    $callsLabelUpd = $conn->prepare("UPDATE calls SET labels=?, updated_at=NOW() WHERE caller_phone=? AND org_id=?");
+                    $callsLabelUpd = $conn->prepare("UPDATE call_log SET labels=?, updated_at=NOW() WHERE caller_phone=? AND org_id=?");
                     $callsLabelUpd->bind_param("sss", $label, $phone, $orgId);
                     $callsLabelUpd->execute();
                 }
@@ -630,7 +630,7 @@ if ($action === "fetch_updates") {
     $stmt = $conn->prepare("
         SELECT unique_id, note, reviewed, caller_name, 
                UNIX_TIMESTAMP(updated_at) * 1000 as updated_at
-        FROM calls 
+        FROM call_log 
         WHERE org_id = ? AND updated_at > FROM_UNIXTIME(?)
     ");
     $stmt->bind_param("sd", $org_id, $last_sync_sec);
@@ -652,7 +652,7 @@ if ($action === "fetch_updates") {
     $stmt2 = $conn->prepare("
         SELECT phone, name, notes as person_note, label,
                UNIX_TIMESTAMP(updated_at) * 1000 as updated_at
-        FROM contacts 
+        FROM call_log_phones 
         WHERE org_id = ? AND updated_at > FROM_UNIXTIME(?)
     ");
     $stmt2->bind_param("sd", $org_id, $last_sync_sec);
@@ -725,7 +725,7 @@ if ($action === "update_call") {
     $params[] = $unique_id;
     $types .= "s";
     
-    $sql = "UPDATE calls SET " . implode(", ", $updates) . " WHERE unique_id = ?";
+    $sql = "UPDATE call_log SET " . implode(", ", $updates) . " WHERE unique_id = ?";
     $stmt = $conn->prepare($sql);
     // Use execute with array instead of bind_param for dynamic args
     if ($stmt->execute($params)) {
@@ -756,7 +756,7 @@ if ($action === "update_person") {
     }
     
     // Check if contact exists
-    $checkStmt = $conn->prepare("SELECT id FROM contacts WHERE phone = ? AND org_id = ?");
+    $checkStmt = $conn->prepare("SELECT id FROM call_log_phones WHERE phone = ? AND org_id = ?");
     $checkStmt->bind_param("ss", $phone, $org_id);
     $checkStmt->execute();
     $exists = $checkStmt->get_result()->num_rows > 0;
@@ -791,14 +791,14 @@ if ($action === "update_person") {
             $params[] = $org_id;
             $types .= "ss";
             
-            $sql = "UPDATE contacts SET " . implode(", ", $updates) . " WHERE phone = ? AND org_id = ?";
+            $sql = "UPDATE call_log_phones SET " . implode(", ", $updates) . " WHERE phone = ? AND org_id = ?";
             $stmt = $conn->prepare($sql);
             $stmt->execute($params);
         }
     } else {
         // Insert new contact
         $stmt = $conn->prepare("
-            INSERT INTO contacts (phone, org_id, name, notes, label, created_at, updated_at)
+            INSERT INTO call_log_phones (phone, org_id, name, notes, label, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, NOW(), NOW())
         ");
         $stmt->bind_param("sssss", $phone, $org_id, $name, $person_note, $label);
@@ -807,7 +807,7 @@ if ($action === "update_person") {
     
     // If label was updated, also update calls.labels for all calls from this phone
     if ($label !== null) {
-        $labelUpdate = $conn->prepare("UPDATE calls SET labels = ?, updated_at = NOW() WHERE caller_phone = ? AND org_id = ?");
+        $labelUpdate = $conn->prepare("UPDATE call_log SET labels = ?, updated_at = NOW() WHERE caller_phone = ? AND org_id = ?");
         $labelUpdate->bind_param("sss", $label, $phone, $org_id);
         $labelUpdate->execute();
     }
@@ -921,7 +921,7 @@ if ($action === "check_recordings_status") {
     
     $id_list = implode(",", $safe_ids);
     
-    $stmt = $conn->prepare("SELECT unique_id FROM calls WHERE unique_id IN ($id_list) AND upload_status = 'completed'");
+    $stmt = $conn->prepare("SELECT unique_id FROM call_log WHERE unique_id IN ($id_list) AND upload_status = 'completed'");
     $stmt->execute();
     $res = $stmt->get_result();
     

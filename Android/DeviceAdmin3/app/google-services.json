@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "415342269601",
+    "project_id": "deviceadmin-d549b",
+    "storage_bucket": "deviceadmin-d549b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:415342269601:android:936c74ec4101aa5ed28ce0",
+        "android_client_info": {
+          "package_name": "com.miniclickcrm.deviceadmin3"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD64bb7t0Hq_GMA2hPE2G9VtWZ_8m43H2A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

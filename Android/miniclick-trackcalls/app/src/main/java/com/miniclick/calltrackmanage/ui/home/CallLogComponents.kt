@@ -74,6 +74,13 @@ fun CallLogList(
     onJumpClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val callRecordEnabled = uiState.callRecordEnabled
+    
+    // Pre-compute available labels once to avoid recalculation on each recomposition
+    val availableLabels = remember(uiState.persons) {
+        uiState.persons.mapNotNull { it.label }.filter { it.isNotEmpty() }.distinct().sorted()
+    }
+    
     // Note Dialog States
     var callNoteTarget by remember { mutableStateOf<CallDataEntity?>(null) }
     var personNoteTarget by remember { mutableStateOf<CallDataEntity?>(null) }
@@ -113,7 +120,7 @@ fun CallLogList(
     if (labelTarget != null) {
         LabelPickerDialog(
             currentLabel = personGroupsMap[labelTarget?.phoneNumber]?.label,
-            availableLabels = uiState.persons.mapNotNull { it.label }.filter { it.isNotEmpty() }.distinct().sorted(),
+            availableLabels = availableLabels,
             onDismiss = { labelTarget = null },
             onSave = { label ->
                 labelTarget?.let { viewModel.savePersonLabel(it.phoneNumber, label) }
@@ -408,7 +415,7 @@ fun CallLogList(
                         onLabelClick = { labelTarget = log },
                         onAttachRecording = onAttachRecording,
                         onReviewedToggle = { viewModel.updateReviewed(log.compositeId, !log.reviewed) },
-                        callRecordEnabled = uiState.callRecordEnabled,
+                        callRecordEnabled = callRecordEnabled,
                         showDialButton = showDialButton
                     )
                 }
@@ -525,10 +532,13 @@ fun CallLogItem(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Text(
-                            text = personGroup?.name?.takeIf { it.isNotBlank() } 
+                        val displayName = remember(personGroup?.name, log.contactName, log.phoneNumber) {
+                            personGroup?.name?.takeIf { it.isNotBlank() } 
                                 ?: log.contactName?.takeIf { it.isNotBlank() } 
-                                ?: cleanNumber(log.phoneNumber),
+                                ?: cleanNumber(log.phoneNumber)
+                        }
+                        Text(
+                            text = displayName,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -578,7 +588,8 @@ fun CallLogItem(
                             }
                             
                             if (!personGroup?.label.isNullOrEmpty()) {
-                                personGroup!!.label!!.split(",").map { it.trim() }.filter { it.isNotBlank() }.forEach { label ->
+                                val labelList = remember(personGroup!!.label) { personGroup!!.label!!.split(",").map { it.trim() }.filter { it.isNotBlank() } }
+                                labelList.forEach { label ->
                                     LabelChip(label = label, onClick = onLabelClick, maxLines = 10)
                                 }
                             }
@@ -612,12 +623,10 @@ fun CallLogItem(
                             }
                             
                             if (!personGroup?.label.isNullOrEmpty()) {
-                                val labels = personGroup!!.label!!.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                                val labels = remember(personGroup!!.label) { personGroup!!.label!!.split(",").map { it.trim() }.filter { it.isNotBlank() } }
                                 if (labels.isNotEmpty()) {
-                                    val displayLabel = if (labels.size > 1) {
-                                        "${labels.first()} +${labels.size - 1}"
-                                    } else {
-                                        labels.first()
+                                    val displayLabel = remember(labels) {
+                                        if (labels.size > 1) "${labels.first()} +${labels.size - 1}" else labels.first()
                                     }
                                     LabelChip(label = displayLabel, onClick = onLabelClick)
                                 }
@@ -669,8 +678,12 @@ fun CallLogItem(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         StatusIndicator(log.metadataSyncStatus, log.recordingSyncStatus)
+                        
+                        val formattedTime = remember(log.callDate) {
+                             java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault()).format(java.util.Date(log.callDate))
+                        }
                         Text(
-                            text = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(log.callDate)),
+                            text = formattedTime,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -957,7 +970,6 @@ fun StatusIndicator(metadataStatus: MetadataSyncStatus, recordingStatus: Recordi
     // Prioritize showing recording status if it's in an active state
     val (color, icon) = when {
         // Recording states take priority when active
-        recordingStatus == RecordingSyncStatus.COMPRESSING -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f) to Icons.Default.CloudSync
         recordingStatus == RecordingSyncStatus.UPLOADING -> MaterialTheme.colorScheme.primary.copy(alpha = 0.6f) to Icons.Default.CloudUpload
         recordingStatus == RecordingSyncStatus.FAILED -> MaterialTheme.colorScheme.error.copy(alpha = 0.6f) to Icons.Default.Error
         recordingStatus == RecordingSyncStatus.PENDING -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f) to Icons.Outlined.Timer

@@ -17,7 +17,11 @@ class BillingManager(
 
     private val _billingClient = BillingClient.newBuilder(context)
         .setListener(this)
-        .enablePendingPurchases()
+        .enablePendingPurchases(
+            PendingPurchasesParams.newBuilder()
+                .enableOneTimeProducts()
+                .build()
+        )
         .build()
 
     // SKU Constants - Updated to match Play Console configuration

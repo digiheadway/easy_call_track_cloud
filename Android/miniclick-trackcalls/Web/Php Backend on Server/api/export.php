@@ -291,9 +291,9 @@ if ($type === 'calls') {
             ct.incoming_connected,
             ct.outgoings as total_outgoings,
             ct.outgoing_connected
-        FROM calls c
+        FROM call_log c
         LEFT JOIN employees e ON c.employee_id = e.id
-        LEFT JOIN contacts ct ON (c.caller_phone = ct.phone AND c.org_id = ct.org_id)
+        LEFT JOIN call_log_phones ct ON (c.caller_phone = ct.phone AND c.org_id = ct.org_id)
         WHERE $whereClause
         ORDER BY c.call_time DESC
     ");
@@ -379,7 +379,7 @@ if ($type === 'calls') {
             c.created_at,
             c.updated_at,
             e.name as employee_name
-        FROM contacts c
+        FROM call_log_phones c
         LEFT JOIN employees e ON c.employee_id = e.id
         WHERE c.org_id = '$orgId'
         ORDER BY c.name ASC, c.phone ASC

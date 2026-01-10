@@ -25,6 +25,7 @@ import com.miniclick.calltrackmanage.util.permissions.DevicePermissionGuide
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DevicePermissionGuideSheet(
+    isIgnoringBatteryOptimizations: Boolean = true,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -66,12 +67,12 @@ fun DevicePermissionGuideSheet(
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = "Setup for $deviceName",
+                        text = "Background Setup",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Follow these steps for best performance",
+                        text = "Essential for tracking on $deviceName",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -79,6 +80,55 @@ fun DevicePermissionGuideSheet(
             }
             
             Spacer(Modifier.height(20.dp))
+
+            // CRITICAL ACTION: Battery Optimization
+            if (!isIgnoringBatteryOptimizations) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.BatteryChargingFull, null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                "Disable Battery Optimization",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Your device may stop tracking calls to save battery. Allow background sync to fix this.",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Button(
+                            onClick = {
+                                try {
+                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                                        val intent = android.content.Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                            data = android.net.Uri.parse("package:${context.packageName}")
+                                        }
+                                        context.startActivity(intent)
+                                    }
+                                } catch (e: Exception) {
+                                    val intent = android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                                    context.startActivity(intent)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Allow Background Sync")
+                        }
+                    }
+                }
+                Spacer(Modifier.height(20.dp))
+            }
             
             // Info Card
             if (DevicePermissionGuide.needsSpecialHandling()) {
@@ -128,7 +178,27 @@ fun DevicePermissionGuideSheet(
                                 try {
                                     context.startActivity(intent)
                                 } catch (e: Exception) {
-                                    // Intent not available, ignore
+                                    // Intent not available or broken link
+                                    android.widget.Toast.makeText(
+                                        context, 
+                                        "Manufacturer page not found. Opening general battery settings...", 
+                                        android.widget.Toast.LENGTH_SHORT
+                                    ).show()
+                                    
+                                    // Fallback to general battery settings
+                                    try {
+                                        context.startActivity(android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                                    } catch (ex: Exception) {
+                                        // Even fallback failed, open app info
+                                        try {
+                                            val appInfoIntent = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                                data = android.net.Uri.parse("package:${context.packageName}")
+                                            }
+                                            context.startActivity(appInfoIntent)
+                                        } catch (allEx: Exception) {
+                                            // Final fallback: just a toast
+                                        }
+                                    }
                                 }
                             }
                         }

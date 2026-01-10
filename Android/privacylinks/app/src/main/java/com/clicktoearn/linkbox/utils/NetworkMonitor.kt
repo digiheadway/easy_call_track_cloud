@@ -69,13 +69,20 @@ class NetworkMonitor(context: Context) {
 
     /**
      * Checks the current network connection status synchronously.
+     * Wrapped in try-catch to handle NoSuchMethodError on some devices/ROMs.
      */
     fun checkConnectivity(): Boolean {
-        val network = connectivityManager.activeNetwork ?: return false
-        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-        
-        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-               capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+        return try {
+            val network = connectivityManager.activeNetwork ?: return false
+            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+            
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                   capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+        } catch (e: Exception) {
+            // Fallback for devices with broken network APIs
+            android.util.Log.w("NetworkMonitor", "checkConnectivity failed: ${e.message}")
+            false
+        }
     }
 
     private fun checkCurrentConnection(): Boolean = checkConnectivity()

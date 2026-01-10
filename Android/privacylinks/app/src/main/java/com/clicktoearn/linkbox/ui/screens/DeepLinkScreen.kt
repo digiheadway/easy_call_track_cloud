@@ -323,7 +323,15 @@ fun DeepLinkScreen(
                     ) {
                         // Top Native Ad for Not Found page
                         if (showNativeAboveInfo) {
-                            AdsManager.NativeAdView()
+                            Card(
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            ) {
+                                Box(modifier = Modifier.padding(8.dp)) {
+                                    AdsManager.NativeAdView()
+                                }
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -360,9 +368,17 @@ fun DeepLinkScreen(
 
                         Spacer(modifier = Modifier.weight(1f))
 
-                        // Bottom Native Ad for Not Found page
+                        // Bottom Native Ad with proper container
                         if (showNativeBelowOpenBtn) {
-                            AdsManager.NativeAdView()
+                            Card(
+                                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            ) {
+                                Box(modifier = Modifier.padding(8.dp)) {
+                                    AdsManager.NativeAdView()
+                                }
+                            }
                         }
                         
                         Spacer(modifier = Modifier.height(24.dp + padding.calculateBottomPadding()))
@@ -379,9 +395,17 @@ fun DeepLinkScreen(
                             .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Hero: Native Ad
+                        // Hero Native Ad with proper container
                         if (showNativeAboveInfo) {
-                            AdsManager.NativeAdView()
+                            Card(
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            ) {
+                                Box(modifier = Modifier.padding(8.dp)) {
+                                    AdsManager.NativeAdView()
+                                }
+                            }
                         }
 
 
@@ -597,9 +621,17 @@ fun DeepLinkScreen(
                             }
                         }
                         
-                        // Native Ad after Open button
+                        // Bottom Native Ad with proper container
                         if (showNativeBelowOpenBtn) {
-                            AdsManager.NativeAdView()
+                            Card(
+                                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            ) {
+                                Box(modifier = Modifier.padding(8.dp)) {
+                                    AdsManager.NativeAdView()
+                                }
+                            }
                         }
                         
                         Spacer(modifier = Modifier.height(32.dp))

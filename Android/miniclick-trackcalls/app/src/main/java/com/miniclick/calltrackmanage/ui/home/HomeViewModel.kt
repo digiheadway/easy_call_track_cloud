@@ -7,6 +7,7 @@ import com.miniclick.calltrackmanage.data.CallDataRepository
 import com.miniclick.calltrackmanage.data.RecordingRepository
 import com.miniclick.calltrackmanage.data.db.CallDataEntity
 import com.miniclick.calltrackmanage.data.db.MetadataSyncStatus
+import com.miniclick.calltrackmanage.data.db.PersonDataEntity
 import com.miniclick.calltrackmanage.data.SettingsRepository
 import java.util.*
 import kotlinx.coroutines.*
@@ -24,6 +25,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     // Performance: Cache for normalized numbers to avoid repeated heavy library calls
     private val normalizationCache = java.util.concurrent.ConcurrentHashMap<String, String>()
     private val networkObserver = com.miniclick.calltrackmanage.util.network.NetworkConnectivityObserver(application)
+
+    // Caching for expensive PersonGroup generation
+    private var lastUsedCallLogs: List<CallDataEntity>? = null
+    private var lastUsedPersons: List<PersonDataEntity>? = null
+    private var lastUsedTrackStart: Long? = null
+    private var lastUsedSimSelection: String? = null
+    private var lastComputedGroups: Map<String, PersonGroup> = emptyMap()
+    private var lastLogsForGroupsByPhone: Map<String, List<CallDataEntity>> = emptyMap()
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -317,7 +326,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             callActionBehavior = settingsRepository.getCallActionBehavior(),
             reportCategory = try { ReportCategory.valueOf(settingsRepository.getReportCategory()) } catch(e: Exception) { ReportCategory.OVERVIEW },
             visibleCallFilters = loadVisibleCallFilters(),
-            visiblePersonFilters = loadVisiblePersonFilters()
+            visiblePersonFilters = loadVisiblePersonFilters(),
+            allowPersonalExclusion = settingsRepository.isAllowPersonalExclusion()
         ) }
     }
 
@@ -532,11 +542,71 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             
             // 1. Prepare shared lookup data
             val personsMap = currentState.persons.associateBy { it.phoneNumber }
-            val logsByPhone = currentState.callLogs.groupBy { it.phoneNumber }
             
-            // 2. Perform Single-Pass Call Filtering Across ALL Tabs
+            // 2. Efficiently determine if we need to recompute the heavy PersonGroup objects
+            val trackStart = currentState.trackStartDate
             val simSel = currentState.simSelection
             val targetSubId = if (simSel == "Both") null else getSubIdForSim(simSel)
+            
+            val dataChanged = currentState.callLogs !== lastUsedCallLogs || 
+                              currentState.persons !== lastUsedPersons ||
+                              trackStart != lastUsedTrackStart ||
+                              simSel != lastUsedSimSelection
+
+            if (dataChanged) {
+                // Recompute groups only when underlying data changes
+                val logsForGroupsByPhone = currentState.callLogs
+                    .filter { it.callDate >= trackStart && (targetSubId == null || it.subscriptionId == targetSubId) }
+                    .groupBy { it.phoneNumber }
+                
+                val groups = logsForGroupsByPhone.mapValues { (number, calls) ->
+                    val sortedCalls = calls.sortedByDescending { it.callDate }
+                    val person = personsMap[number] ?: personsMap[getCachedNormalizedNumber(number)]
+                    
+                    // Optimized single-pass calculation
+                    var totalDuration = 0L
+                    var incoming = 0
+                    var outgoing = 0
+                    var missed = 0
+                    
+                    for (call in calls) {
+                        totalDuration += call.duration
+                        when (call.callType) {
+                            android.provider.CallLog.Calls.INCOMING_TYPE -> incoming++
+                            android.provider.CallLog.Calls.OUTGOING_TYPE -> outgoing++
+                            android.provider.CallLog.Calls.MISSED_TYPE, 
+                            android.provider.CallLog.Calls.REJECTED_TYPE, 5 -> missed++
+                        }
+                    }
+
+                    PersonGroup(
+                        number = number,
+                        name = person?.contactName?.takeIf { it.isNotBlank() } ?: calls.firstOrNull { !it.contactName.isNullOrBlank() }?.contactName,
+                        photoUri = person?.photoUri ?: calls.firstOrNull { !it.photoUri.isNullOrEmpty() }?.photoUri,
+                        calls = sortedCalls,
+                        lastCallDate = sortedCalls.firstOrNull()?.callDate ?: 0L,
+                        totalDuration = totalDuration,
+                        incomingCount = incoming,
+                        outgoingCount = outgoing,
+                        missedCount = missed,
+                        personNote = person?.personNote,
+                        label = person?.label
+                    )
+                }
+                
+                // Update cache
+                lastUsedCallLogs = currentState.callLogs
+                lastUsedPersons = currentState.persons
+                lastUsedTrackStart = trackStart
+                lastUsedSimSelection = simSel
+                lastComputedGroups = groups
+                lastLogsForGroupsByPhone = logsForGroupsByPhone
+            }
+
+            val groups = lastComputedGroups
+            val logsForGroupsByPhone = lastLogsForGroupsByPhone
+            
+            // 3. Perform Single-Pass Call Filtering Across ALL Tabs (This respects Date/Search/Labels for the list views)
             val tabLogs = CallLogManager.processCallFilters(
                 currentState, 
                 personsMap, 
@@ -544,36 +614,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 targetSubId
             )
             
-            // 3. Perform Single-Pass Person Filtering Across ALL Tabs
-            val tabPersons = PersonLogManager.processPersonFilters(currentState, logsByPhone)
-            
-            // 4. Get base logs for reporting (ALL tab)
+            // 4. Perform Single-Pass Person Filtering
+            // We pass unfiltered logsForGroupsByPhone so person-level filters (like "with note") see all history
+            // but tabPersons will still only include persons with activity in the selected DateRange
+            val tabPersons = PersonLogManager.processPersonFilters(currentState, logsForGroupsByPhone)
+
+            // 6. Calculate Report Statistics (These SHOULD still respect the date range)
             val visibleLogs = tabLogs[CallTabFilter.ALL] ?: emptyList()
-            
-            // Logs for Person Groups should include IGNORED so we can display them in the Ignore tab
-            val logsForGroups = visibleLogs + (tabLogs[CallTabFilter.IGNORED] ?: emptyList())
-
-            // 5. Compute PersonGroups for ONLY the filtered calls (Huge optimization for history)
-            // This map contains summary info for each contact based on the current global filter (e.g. date range)
-            val groups = logsForGroups.groupBy { it.phoneNumber }.mapValues { (number, calls) ->
-                val sortedCalls = calls.sortedByDescending { it.callDate }
-                val person = personsMap[number] ?: personsMap[getCachedNormalizedNumber(number)]
-                PersonGroup(
-                    number = number,
-                    name = person?.contactName?.takeIf { it.isNotBlank() } ?: calls.firstOrNull { !it.contactName.isNullOrBlank() }?.contactName,
-                    photoUri = person?.photoUri ?: calls.firstOrNull { !it.photoUri.isNullOrEmpty() }?.photoUri,
-                    calls = sortedCalls,
-                    lastCallDate = sortedCalls.firstOrNull()?.callDate ?: 0L,
-                    totalDuration = calls.sumOf { it.duration },
-                    incomingCount = calls.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE },
-                    outgoingCount = calls.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE },
-                    missedCount = calls.count { it.callType == android.provider.CallLog.Calls.MISSED_TYPE || it.callType == android.provider.CallLog.Calls.REJECTED_TYPE || it.callType == 5 },
-                    personNote = person?.personNote,
-                    label = person?.label
-                )
-            }
-
-            // 6. Calculate Report Statistics (Heavy Operation)
             val reportStats = StatsManager.calculateReportStats(
                 visibleLogs, 
                 currentState.persons, 
@@ -865,7 +912,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             callerPhoneSim2 = callerPhone2,
             availableSims = sims,
             callActionBehavior = callActionBehavior,
-            availableWhatsappApps = HomeUtils.fetchWhatsAppApps(getApplication())
+            availableWhatsappApps = HomeUtils.fetchWhatsAppApps(getApplication()),
+            allowPersonalExclusion = settingsRepository.isAllowPersonalExclusion()
         ) }
 
         if (needsSync) {

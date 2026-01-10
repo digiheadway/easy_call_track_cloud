@@ -40,6 +40,10 @@ data class CallDataEntity(
     val metadataSyncStatus: MetadataSyncStatus = MetadataSyncStatus.PENDING,  // Fast sync
     val recordingSyncStatus: RecordingSyncStatus = RecordingSyncStatus.NOT_APPLICABLE,  // Slow sync
     
+    val serverRecordingStatus: String? = null,           // Status received from server about the recording
+    val metadataReceived: Boolean = false,              // Confirmation from server that metadata was received
+    val processingStatus: String? = null,               // Internal status to track if worker is currently processing this call
+    
     // Timestamps for conflict resolution in bidirectional sync
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),  // Local update time

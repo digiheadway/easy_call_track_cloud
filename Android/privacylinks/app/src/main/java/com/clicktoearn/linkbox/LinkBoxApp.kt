@@ -19,6 +19,10 @@ import java.net.URL
 
 class LinkBoxApp : Application() {
     
+    // Track if this is the first session created after install
+    var isFirstSession = false
+        private set
+    
     // Application-level coroutine scope for background tasks
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     
@@ -36,6 +40,9 @@ class LinkBoxApp : Application() {
     override fun onCreate() {
         super.onCreate()
         
+        // Check if this is the first launch before any other logic runs
+        isFirstSession = isFirstAppLaunch()
+        
         // Configure Firestore settings for optimal performance - this is fast and local
         configureFirestore()
         
@@ -43,7 +50,11 @@ class LinkBoxApp : Application() {
         _deferredToken.value = getPendingDeferredToken()
 
         // Initialize crucial SDKs immediately
-        com.clicktoearn.linkbox.ads.AdsManager.init(this)
+        try {
+            com.clicktoearn.linkbox.ads.AdsManager.init(this)
+        } catch (e: Exception) {
+            android.util.Log.e("LinkBoxApp", "Failed to init AdsManager: ${e.message}")
+        }
         
         // Track install only once on first app launch (background, non-blocking)
         trackInstallOnce()
@@ -137,12 +148,15 @@ class LinkBoxApp : Application() {
         if (!isFirstAppLaunch()) return
 
         val referrerManager = InstallReferrerManager(this)
-        referrerManager.fetchInstallReferrer { params, _ ->
+        referrerManager.fetchInstallReferrer { params, referrerUrl ->
             val token = params["token"]
             
             // Pass other params to analytics or logic if needed
             val landingPage = params["landing"] ?: "landingpage0"
             val uniqueId = params["uniqueid"]
+            
+            android.util.Log.d("LinkBoxApp", "Install Referrer Fetch Complete. URL: $referrerUrl")
+            android.util.Log.d("LinkBoxApp", "Extracted Params: $params")
             
             if (token != null) {
                 android.util.Log.d("LinkBoxApp", "Deferred deep link detected with token: $token")
@@ -155,6 +169,8 @@ class LinkBoxApp : Application() {
                 if (uniqueId != null) {
                     prefs.edit().putString("install_unique_id", uniqueId).apply()
                 }
+            } else {
+                android.util.Log.w("LinkBoxApp", "No token found in deferred deep link params")
             }
             // Always mark app as launched so we don't check again
             markAppLaunched()

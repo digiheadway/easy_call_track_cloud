@@ -41,6 +41,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.foundation.text.ClickableText
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -140,12 +145,14 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             ))
             
             // NEW: Prominent Disclosure Step (Final Step)
+/*
             add(OnboardingStep(
                 "Data & Permissions",
                 "To provide its core call management and dialer features, MiniClick Calls needs your permission to access specific data.",
                 Icons.Default.Security,
                 OnboardingStepType.PermissionDisclosure
             ))
+*/
             
         }
     }
@@ -214,9 +221,6 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                 scope.launch {
                                     pagerState.animateScrollToPage(1)
                                 }
-                            },
-                            onJoinAsEmployee = {
-                                showCloudSyncModal = true
                             }
                         )
                     }
@@ -329,9 +333,9 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 @Composable
 fun WelcomeStepContent(
     step: OnboardingStep,
-    onGetStarted: () -> Unit,
-    onJoinAsEmployee: () -> Unit
+    onGetStarted: () -> Unit
 ) {
+    val context = LocalContext.current
     val infiniteTransition = rememberInfiniteTransition(label = "icon_pulse")
     val iconScale by infiniteTransition.animateFloat(
         initialValue = 1f,
@@ -399,20 +403,9 @@ fun WelcomeStepContent(
                 .height(56.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Text("Get Started", style = MaterialTheme.typography.titleMedium)
-        }
-        
-        Spacer(Modifier.height(16.dp))
-        
-        OutlinedButton(
-            onClick = onJoinAsEmployee,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            border = androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-        ) {
-            Text("Login", style = MaterialTheme.typography.titleMedium)
+            Text("See Features", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.width(8.dp))
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, null, modifier = Modifier.size(20.dp))
         }
     }
 }

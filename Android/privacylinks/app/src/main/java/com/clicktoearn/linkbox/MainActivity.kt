@@ -11,6 +11,7 @@ import com.microsoft.clarity.Clarity
 import com.microsoft.clarity.ClarityConfig
 import com.microsoft.clarity.models.LogLevel
 
+import android.util.Log
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -68,22 +69,38 @@ class MainActivity : ComponentActivity() {
         // Handle deep link from intent - highest priority
         handleDeepLink(intent)
         
-        // Initialize Analytics immediately (lightweight)
-        com.clicktoearn.linkbox.analytics.AnalyticsManager.init(this)
-        com.clicktoearn.linkbox.analytics.AnalyticsManager.logAppOpen()
+        // Initialize Analytics immediately (lightweight) - wrapped for safety
+        try {
+            com.clicktoearn.linkbox.analytics.AnalyticsManager.init(this)
+            com.clicktoearn.linkbox.analytics.AnalyticsManager.logAppOpen()
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Analytics init failed: ${e.message}")
+        }
         
-        // Initialize Clarity in background
-        val clarityConfig = ClarityConfig(
-           projectId = "uxpn8i1g92",
-           logLevel = LogLevel.None
-        )
-        Clarity.initialize(applicationContext, clarityConfig)
+        // Initialize Clarity in background - wrapped to prevent NullPointerException crash
+        try {
+            val clarityConfig = ClarityConfig(
+               projectId = "uxpn8i1g92",
+               logLevel = LogLevel.None
+            )
+            Clarity.initialize(applicationContext, clarityConfig)
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Clarity init failed: ${e.message}")
+        }
         
-        // Initialize Billing (non-blocking)
-        viewModel.initializeBilling(this)
+        // Initialize Billing (non-blocking) - wrapped for safety
+        try {
+            viewModel.initializeBilling(this)
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Billing init failed: ${e.message}")
+        }
         
         // Initialize AdsManager core (non-blocking, moves MobileAds.init to background)
-        AdsManager.init(this)
+        try {
+            AdsManager.init(this)
+        } catch (e: Exception) {
+            Log.e("MainActivity", "AdsManager init failed: ${e.message}")
+        }
         
         // Set up Compose UI IMMEDIATELY - this is critical for instant rendering
         setupComposeContent(savedInstanceState)
@@ -93,59 +110,95 @@ class MainActivity : ComponentActivity() {
     }
     
     private fun initializeAdConsent(savedInstanceState: Bundle?) {
-        val params = ConsentRequestParameters.Builder()
-            .setTagForUnderAgeOfConsent(false)
-            .build()
+        try {
+            Log.d("MainActivity", "Initializing Ad Consent flow...")
+            val params = ConsentRequestParameters.Builder()
+                .setTagForUnderAgeOfConsent(false)
+                .build()
 
-        val consentInformation = UserMessagingPlatform.getConsentInformation(this)
-        
-        consentInformation.requestConsentInfoUpdate(
-            this,
-            params,
-            {
-                UserMessagingPlatform.loadAndShowConsentFormIfRequired(
-                    this@MainActivity
-                ) { loadAndShowError ->
-                    if (loadAndShowError != null) {
-                        android.util.Log.w("MainActivity", "${loadAndShowError.errorCode}: ${loadAndShowError.message}")
-                    }
-                    if (consentInformation.canRequestAds()) {
+            val consentInformation = UserMessagingPlatform.getConsentInformation(this)
+            
+            consentInformation.requestConsentInfoUpdate(
+                this,
+                params,
+                {
+                    try {
+                        Log.d("MainActivity", "Consent info update success. Status: ${consentInformation.consentStatus}, canRequestAds: ${consentInformation.canRequestAds()}")
+                        UserMessagingPlatform.loadAndShowConsentFormIfRequired(
+                            this@MainActivity
+                        ) { loadAndShowError ->
+                            if (loadAndShowError != null) {
+                                Log.w("MainActivity", "Consent Form Error: ${loadAndShowError.errorCode}: ${loadAndShowError.message}")
+                            }
+                            Log.d("MainActivity", "Consent form flow complete. canRequestAds: ${consentInformation.canRequestAds()}")
+                            // Proceed to load ads regardless, but respects the canRequestAds status for compliance
+                            loadAds(savedInstanceState)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "Consent form flow error: ${e.message}")
                         loadAds(savedInstanceState)
                     }
+                },
+                { requestConsentError ->
+                    Log.w("MainActivity", "Consent Update Failed: ${requestConsentError.errorCode}: ${requestConsentError.message}")
+                    loadAds(savedInstanceState)
                 }
-            },
-            { requestConsentError ->
-                android.util.Log.w("MainActivity", "${requestConsentError.errorCode}: ${requestConsentError.message}")
-                loadAds(savedInstanceState)
-            }
-        )
+            )
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Ad Consent initialization failed: ${e.message}")
+            // Still try to load ads even if consent failed
+            loadAds(savedInstanceState)
+        }
     }
 
     private fun loadAds(savedInstanceState: Bundle?) {
-        window.decorView.post {
-            val app = application as LinkBoxApp
-            if (app.isPremiumCached()) {
-                return@post
-            }
+        try {
+            window.decorView.post {
+                try {
+                    val app = application as? LinkBoxApp
+                    if (app == null) {
+                        Log.e("MainActivity", "Application is not LinkBoxApp")
+                        return@post
+                    }
+                    
+                    if (app.isPremiumCached()) {
+                        Log.d("MainActivity", "Ads skipped: User is Premium")
+                        return@post
+                    }
 
-            // Preload banner ads first for instant display
-            AdsManager.preloadBannerAds()
-            
-            // Then load full-screen ads
-            AdsManager.loadInterstitialAd(this)
-            AdsManager.loadRewardedAd(this)
-            AdsManager.loadRewardedInterstitialAd(this)
-            
-            // Preload Native Ads
-            AdsManager.loadNativeAd(this)
-            AdsManager.loadStandardNativeAd(this)
-            
-            // Show app open ad after a short delay, but ONLY if not a deep link launch
-            if (pendingDeepLinkToken == null && savedInstanceState == null) {
-                window.decorView.postDelayed({
-                    AdsManager.loadAndShowAppOpenAd(this)
-                }, 500)
+                    Log.d("MainActivity", "Starting to load ads...")
+                    
+                    // Preload banner ads first for instant display
+                    AdsManager.preloadBannerAds()
+                    
+                    // Then load full-screen ads
+                    AdsManager.loadInterstitialAd(this)
+                    AdsManager.loadRewardedAd(this)
+                    AdsManager.loadRewardedInterstitialAd(this)
+                    
+                    // Preload Native Ads
+                    AdsManager.loadNativeAd(this)
+                    AdsManager.loadStandardNativeAd(this)
+                    
+                    // Show app open ad after a short delay
+                    Log.d("MainActivity", "loadAds initiated: isPremium=${app.isPremiumCached()}, savedInstanceState=$savedInstanceState")
+                    if (savedInstanceState == null && !app.isPremiumCached()) {
+                        Log.d("MainActivity", "Scheduling splash ad in 1000ms...")
+                        window.decorView.postDelayed({
+                            try {
+                                Log.d("MainActivity", "Executing scheduled splash ad call")
+                                AdsManager.loadAndShowAppOpenAd(this@MainActivity)
+                            } catch (e: Exception) {
+                                Log.e("MainActivity", "Splash ad failed: ${e.message}")
+                            }
+                        }, 1000)
+                    }
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "loadAds post failed: ${e.message}")
+                }
             }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "loadAds failed: ${e.message}")
         }
     }
     
@@ -236,40 +289,52 @@ class MainActivity : ComponentActivity() {
                     val pendingDeferred = deferredToken
                     val pendingToken = pendingDeepLinkToken
                     
+                    android.util.Log.d("MainActivity", "LaunchedEffect: Token Check. PendingToken=$pendingToken, DeferredToken=$pendingDeferred")
+                    
                     // Skip if this is the initial token already handled by startDestination
                     if (pendingToken != null && pendingToken == initialDeepLinkToken) {
+                        android.util.Log.d("MainActivity", "Skipping pendingToken (already handled)")
                         return@LaunchedEffect
                     }
                     if (pendingDeferred != null && pendingDeferred == initialDeferredToken) {
+                        android.util.Log.d("MainActivity", "Skipping deferredToken (already handled/matched initial)")
                         return@LaunchedEffect
                     }
                     
-                    // For subsequent updates, we need to ensure the graph is ready
-                    // A simple retry mechanism or check usually suffices, but since we filtered out
-                    // the startup case, the graph should be ready by the time a NEW intent arrives.
-                    
                     val currentRoute = navController.currentBackStackEntry?.destination?.route
+                    android.util.Log.d("MainActivity", "Current Route: $currentRoute")
                     
-                    if (pendingDeferred != null) {
-                        val route = Screen.SharedContent.createRoute(pendingDeferred, true)
-                        if (currentRoute != route) {
-                            android.util.Log.d("MainActivity", "LaunchedEffect: Navigating to deferred: $pendingDeferred")
-                            app.clearPendingDeferredToken()
-                            viewModel.prefetchSharedContent(pendingDeferred)
-                            navController.navigate(route) {
-                                launchSingleTop = true
+                    try {
+                        if (pendingDeferred != null) {
+                            val route = Screen.SharedContent.createRoute(pendingDeferred, true)
+                            if (currentRoute != route) {
+                                android.util.Log.d("MainActivity", "Navigating to deferred token: $pendingDeferred")
+                                app.clearPendingDeferredToken()
+                                viewModel.prefetchSharedContent(pendingDeferred)
+                                navController.navigate(route) {
+                                    launchSingleTop = true
+                                }
+                            } else {
+                                android.util.Log.d("MainActivity", "Already on route for deferred token")
+                            }
+                        } else if (pendingToken != null) {
+                            val route = Screen.SharedContent.createRoute(pendingToken, false)
+                            if (currentRoute != route) {
+                                android.util.Log.d("MainActivity", "Navigating to deep link token: $pendingToken")
+                                pendingDeepLinkToken = null
+                                viewModel.prefetchSharedContent(pendingToken)
+                                navController.navigate(route) {
+                                    launchSingleTop = true
+                                }
+                            } else {
+                                android.util.Log.d("MainActivity", "Already on route for deep link token")
                             }
                         }
-                    } else if (pendingToken != null) {
-                        val route = Screen.SharedContent.createRoute(pendingToken, false)
-                        if (currentRoute != route) {
-                            android.util.Log.d("MainActivity", "LaunchedEffect: Navigating to regular: $pendingToken")
-                            pendingDeepLinkToken = null
-                            viewModel.prefetchSharedContent(pendingToken)
-                            navController.navigate(route) {
-                                launchSingleTop = true
-                            }
-                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("MainActivity", "Navigation failed: ${e.message}")
+                        // Clear pending tokens to prevent repeated failures
+                        pendingDeepLinkToken = null
+                        app.clearPendingDeferredToken()
                     }
                 }
 

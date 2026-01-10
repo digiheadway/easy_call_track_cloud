@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    
+    <!-- Shield with lock icon for notifications -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,1 L21,5 L21,11 C21,16.55 17.16,21.74 12,23 C6.84,21.74 3,16.55 3,11 L3,5 L12,1 Z
+                         M12,3.19 L5,6.3 L5,11.22 C5,15.54 8.25,19.5 12,20.93 C15.75,19.5 19,15.54 19,11.22 L19,6.3 L12,3.19 Z" />
+    
+    <!-- Lock body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M9,10 L15,10 Q16,10 16,11 L16,16 Q16,17 15,17 L9,17 Q8,17 8,16 L8,11 Q8,10 9,10 Z" />
+    
+    <!-- Lock shackle -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M10,10 L10,8 Q10,6 12,6 Q14,6 14,8 L14,10 L13,10 L13,8 Q13,7 12,7 Q11,7 11,8 L11,10 Z" />
+    
+</vector>

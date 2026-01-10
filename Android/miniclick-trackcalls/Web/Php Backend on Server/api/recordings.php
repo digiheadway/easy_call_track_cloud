@@ -37,7 +37,7 @@ switch ($method) {
                 SELECT 
                     COUNT(*) as total,
                     SUM(CASE WHEN recording_url IS NOT NULL AND recording_url != '' THEN TIME_TO_SEC(duration) ELSE 0 END) as total_duration_seconds
-                FROM calls 
+                FROM call_log 
                 WHERE org_id = '$orgId' AND recording_url IS NOT NULL AND recording_url != ''
             ");
             
@@ -78,7 +78,7 @@ switch ($method) {
                     c.call_time as recording_timestamp,
                     e.name as employee_name,
                     CONCAT('Call with ', COALESCE(c.caller_name, c.caller_phone)) as title
-                FROM calls c
+                FROM call_log c
                 LEFT JOIN employees e ON c.employee_id = e.id
                 WHERE $whereClause 
                 ORDER BY c.call_time DESC
@@ -98,14 +98,14 @@ switch ($method) {
         $recordingUrl = Database::escape($data['file_path']);
         
         // Verify call belongs to organisation
-        $call = Database::getOne("SELECT id FROM calls WHERE id = $callId AND org_id = '$orgId'");
+        $call = Database::getOne("SELECT id FROM call_log WHERE id = $callId AND org_id = '$orgId'");
         if (!$call) {
             Response::error('Invalid call ID');
         }
         
-        Database::execute("UPDATE calls SET recording_url = '$recordingUrl' WHERE id = $callId");
+        Database::execute("UPDATE call_log SET recording_url = '$recordingUrl' WHERE id = $callId");
         
-        $updatedCall = Database::getOne("SELECT * FROM calls WHERE id = $callId");
+        $updatedCall = Database::getOne("SELECT * FROM call_log WHERE id = $callId");
         
         Response::success($updatedCall, 'Recording attached successfully');
         break;
@@ -117,7 +117,7 @@ switch ($method) {
         }
         
         // Check if call belongs to organization
-        $call = Database::getOne("SELECT id, recording_url FROM calls WHERE id = $id AND org_id = '$orgId'");
+        $call = Database::getOne("SELECT id, recording_url FROM call_log WHERE id = $id AND org_id = '$orgId'");
         if (!$call) {
             Response::error('Recording not found', 404);
         }
@@ -129,7 +129,7 @@ switch ($method) {
              @unlink($call['recording_url']);
         }
         
-        $sql = "UPDATE calls SET recording_url = NULL WHERE id = $id";
+        $sql = "UPDATE call_log SET recording_url = NULL WHERE id = $id";
         Database::execute($sql);
         
         Response::success([], 'Recording deleted successfully');

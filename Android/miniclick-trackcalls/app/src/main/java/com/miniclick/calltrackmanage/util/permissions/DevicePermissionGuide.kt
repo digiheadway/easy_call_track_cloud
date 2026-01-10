@@ -96,11 +96,10 @@ object DevicePermissionGuide {
         PermissionStep(
             title = "1. Enable Autostart",
             description = "Go to Settings → Apps → Manage apps → CallCloud → Autostart → Enable",
-            actionIntent = try {
-                Intent().apply {
-                    setClassName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity")
-                }
-            } catch (e: Exception) { null }
+            actionIntent = Intent().apply {
+                setClassName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
         ),
         PermissionStep(
             title = "2. Disable Battery Saver",
@@ -123,11 +122,10 @@ object DevicePermissionGuide {
         PermissionStep(
             title = "1. Enable Auto-Launch",
             description = "Go to Settings → App Management → App list → CallCloud → Auto-launch → Enable",
-            actionIntent = try {
-                Intent().apply {
-                    setClassName("com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity")
-                }
-            } catch (e: Exception) { null }
+            actionIntent = Intent().apply {
+                setClassName("com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
         ),
         PermissionStep(
             title = "2. Disable Battery Optimization",
@@ -155,11 +153,10 @@ object DevicePermissionGuide {
         PermissionStep(
             title = "2. Enable Auto-Start",
             description = "Settings → More settings → Applications → Autostart → Enable CallCloud",
-            actionIntent = try {
-                Intent().apply {
-                    setClassName("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity")
-                }
-            } catch (e: Exception) { null }
+            actionIntent = Intent().apply {
+                setClassName("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
         ),
         PermissionStep(
             title = "3. Whitelist in Battery Manager",
@@ -171,11 +168,10 @@ object DevicePermissionGuide {
         PermissionStep(
             title = "1. Enable Auto-Launch",
             description = "Settings → Apps → Startup manager → CallCloud → Enable Manual manage and enable all toggles",
-            actionIntent = try {
-                Intent().apply {
-                    setClassName("com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity")
-                }
-            } catch (e: Exception) { null }
+            actionIntent = Intent().apply {
+                setClassName("com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
         ),
         PermissionStep(
             title = "2. Disable Battery Optimization",
@@ -252,7 +248,9 @@ object DevicePermissionGuide {
     // ============== Intent Helpers ==============
 
     private fun getBatterySettingsIntent(): Intent {
-        return Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+        return Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
     }
 
     /**

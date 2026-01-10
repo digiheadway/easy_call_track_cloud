@@ -123,20 +123,42 @@ class InstallReferrerManager(private val context: Context) {
         if (referrerUrl.isNullOrBlank()) return emptyMap()
         
         try {
-            // Decode URL in case it's encoded
-            val decodedUrl = URLDecoder.decode(referrerUrl, "UTF-8")
+            // Log the raw referrer for debugging
+            Log.d(TAG, "Parsing referrer URL: $referrerUrl")
             
-            // Parse parameters (format: key1=value1&key2=value2)
-            return decodedUrl.split("&").associate {
-                val parts = it.split("=", limit = 2)
-                val key = parts.getOrNull(0)?.trim() ?: ""
-                val value = parts.getOrNull(1)?.trim() ?: ""
-                key to value
-            }.filterKeys { it.isNotBlank() }
+            // 1. Try parsing the raw URL first (in case it's not encoded)
+            var params = parseQueryString(referrerUrl)
+            
+            // 2. If valid token found, return immediately
+            if (params.containsKey("token")) {
+                Log.d(TAG, "Found token in raw referrer: ${params["token"]}")
+                return params
+            }
+            
+            // 3. Try decoding and parsing
+            val decodedUrl = URLDecoder.decode(referrerUrl, "UTF-8")
+            if (decodedUrl != referrerUrl) {
+                Log.d(TAG, "Parsing decoded referrer: $decodedUrl")
+                val decodedParams = parseQueryString(decodedUrl)
+                if (decodedParams.isNotEmpty()) {
+                    params = decodedParams
+                }
+            }
+            
+            return params
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing referrer URL", e)
             return emptyMap()
         }
+    }
+
+    private fun parseQueryString(url: String): Map<String, String> {
+        return url.split("&").associate {
+            val parts = it.split("=", limit = 2)
+            val key = parts.getOrNull(0)?.trim() ?: ""
+            val value = parts.getOrNull(1)?.trim() ?: ""
+            key to value
+        }.filterKeys { it.isNotBlank() }
     }
     
     private fun saveReferrerData(referrerUrl: String, clickTimestamp: Long, installTimestamp: Long) {

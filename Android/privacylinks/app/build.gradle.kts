@@ -13,9 +13,9 @@ android {
 
     defaultConfig {
         applicationId = "com.clicktoearn.linkbox"
-        minSdk = 21
+        minSdk = 23
         targetSdk = 35
-        versionCode = 24
+        versionCode = 27
         versionName = "Ad Update & Improved Tracking"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

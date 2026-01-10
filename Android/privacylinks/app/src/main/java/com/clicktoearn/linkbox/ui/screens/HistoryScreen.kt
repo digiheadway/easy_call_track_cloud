@@ -433,8 +433,15 @@ fun HistoryScreen(viewModel: LinkBoxViewModel, navController: NavController) {
                         }
                         item {
                             if (!isPremium && AdsManager.isAdEnabled(AdsManager.KEY_HISTORY_NATIVE_BOTTOM)) {
-                                AdsManager.NativeAdView()
-                                Spacer(modifier = Modifier.height(16.dp))
+                                Card(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                ) {
+                                    Box(modifier = Modifier.padding(8.dp)) {
+                                        AdsManager.NativeAdView()
+                                    }
+                                }
                             }
                         }
                     }

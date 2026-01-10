@@ -23,7 +23,6 @@ import com.miniclick.calltrackmanage.ui.settings.*
 import com.miniclick.calltrackmanage.ui.theme.CallCloudTheme
 import com.miniclick.calltrackmanage.util.audio.AudioPlayer
 import com.miniclick.calltrackmanage.ui.onboarding.OnboardingScreen
-import com.miniclick.calltrackmanage.ui.onboarding.AgreementScreen
 import com.miniclick.calltrackmanage.data.SettingsRepository
 import com.miniclick.calltrackmanage.worker.CallSyncWorker
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -96,18 +95,21 @@ class MainActivity : ComponentActivity() {
             }
 
             CallCloudTheme(darkTheme = darkTheme) {
-                // val settingsRepository = SettingsRepository.getInstance(getApplicationContext()) // Using viewModel instead
                 val isOnboardingCompleted by viewModel.onboardingCompleted.collectAsState()
                 val isAgreementAccepted by viewModel.agreementAccepted.collectAsState()
-                
-                if (!isAgreementAccepted) {
-                    AgreementScreen(onAccepted = {
-                        viewModel.setAgreementAccepted(true)
-                    })
-                } else if (!isOnboardingCompleted) {
+
+                if (!isOnboardingCompleted) {
                     OnboardingScreen(onComplete = {
                         val settingsRepository = SettingsRepository.getInstance(getApplicationContext())
                         settingsRepository.setOnboardingCompleted(true)
+                    })
+                } else if (!isAgreementAccepted) {
+                    com.miniclick.calltrackmanage.ui.onboarding.AgreementScreen(onAccepted = {
+                        viewModel.setAgreementAccepted(true)
+                        // Start background services now that we have consent
+                        com.miniclick.calltrackmanage.service.SyncService.start(getApplicationContext())
+                        com.miniclick.calltrackmanage.worker.CallSyncWorker.enqueue(getApplicationContext())
+                        com.miniclick.calltrackmanage.worker.RecordingUploadWorker.enqueue(getApplicationContext())
                     })
                 } else {
                     MainScreen(audioPlayer = audioPlayer)
@@ -126,6 +128,11 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         viewModel.refreshTheme()
+        
+        val settingsRepository = com.miniclick.calltrackmanage.data.SettingsRepository.getInstance(this)
+        if (settingsRepository.isAgreementAccepted()) {
+            com.miniclick.calltrackmanage.service.SyncService.start(this)
+        }
     }
 
     override fun onNewIntent(intent: android.content.Intent) {
@@ -391,13 +398,14 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                         pendingPersonUpdates = settingsState.pendingPersonUpdatesCount,
                         pendingRecordings = settingsState.pendingRecordingCount,
                         activeUploads = settingsState.activeRecordings.count { 
-                            it.recordingSyncStatus == com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.UPLOADING || 
-                            it.recordingSyncStatus == com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.COMPRESSING 
+                            it.recordingSyncStatus == com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.UPLOADING
                         },
                         isNetworkAvailable = settingsState.isNetworkAvailable,
+                        isIgnoringBatteryOptimizations = settingsState.isIgnoringBatteryOptimizations,
                         isSyncSetup = settingsState.isSyncSetup,
                         onSyncNow = { settingsViewModel.syncCallManually() },
                         onShowQueue = { settingsViewModel.toggleSyncQueue(true) },
+                        onShowDeviceGuide = { settingsViewModel.toggleDevicePermissionGuide(true) },
                         audioPlayer = audioPlayer
                     )
                 }
@@ -532,6 +540,13 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
             activeRecordings = settingsState.activeRecordings,
             onDismiss = { settingsViewModel.toggleRecordingQueue(false) },
             onRetry = { settingsViewModel.retryRecordingUpload(it) }
+        )
+    }
+
+    if (settingsState.showDevicePermissionGuide) {
+        com.miniclick.calltrackmanage.ui.common.DevicePermissionGuideSheet(
+            isIgnoringBatteryOptimizations = settingsState.isIgnoringBatteryOptimizations,
+            onDismiss = { settingsViewModel.toggleDevicePermissionGuide(false) }
         )
     }
 

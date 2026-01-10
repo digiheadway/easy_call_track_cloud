@@ -48,9 +48,9 @@ Call Track Manager is a **Jetpack Compose-based Android application** for tracki
 
 | Metric | Value | Status |
 |--------|-------|--------|
-| Total Kotlin Files | 65 | 🟡 Medium |
-| Largest File | `HomeViewModel.kt` (1859 lines) | 🔴 Needs Refactoring |
-| Second Largest | `SettingsViewModel.kt` (1287 lines) | 🟡 Refactored (Delegating) |
+| Total Kotlin Files | 110+ | 🟢 Growing |
+| Largest File | `SettingsViewModel.kt` (~1372 lines) | 🔴 Needs Refactoring |
+| Second Largest | `HomeViewModel.kt` (~932 lines) | 🟡 Refactored |
 | Database Version | 10 (8 migrations) | 🟢 Good |
 | ProGuard Rules | Comprehensive | 🟢 Good |
 
@@ -62,13 +62,13 @@ Call Track Manager is a **Jetpack Compose-based Android application** for tracki
 app/src/main/java/com/miniclick/calltrackmanage/
 │
 ├── 📄 CallTrackerApplication.kt      # Application class (workers + service init)
-├── 📄 MainActivity.kt                 # Single Activity (689 lines)
+├── 📄 MainActivity.kt                 # Single Activity (722 lines)
 ├── 📄 MainViewModel.kt                # Main screen state management
 │
 ├── 📂 data/                           # Data Layer
-│   ├── 📄 CallDataRepository.kt       # Call data operations (1124 lines)
-│   ├── 📄 RecordingRepository.kt      # Recording file management (966 lines)
-│   ├── 📄 SettingsRepository.kt       # SharedPreferences wrapper (470 lines)
+│   ├── 📄 CallDataRepository.kt       # Call data operations (1256 lines)
+│   ├── 📄 RecordingRepository.kt      # Recording file management (1000+ lines)
+│   ├── 📄 SettingsRepository.kt       # SharedPreferences wrapper (500+ lines)
 │   ├── 📄 ProcessMonitor.kt           # Sync progress monitoring
 │   │
 │   └── 📂 db/                         # Room Database
@@ -126,7 +126,7 @@ app/src/main/java/com/miniclick/calltrackmanage/
     │
     ├── 📂 home/                       # Home Screen
     │   ├── 📄 HomeScreen.kt           # Main home screen
-    │   ├── 📄 HomeViewModel.kt        # ⚠️ LARGEST FILE (1859 lines)
+    │   ├── 📄 HomeViewModel.kt        # Refactored (~932 lines)
     │   ├── 📄 HomeScreenComponents.kt
     │   ├── 📄 CallLogComponents.kt    # Call list (1315 lines)
     │   ├── 📄 PersonsComponents.kt    # Persons list
@@ -500,8 +500,8 @@ data class HomeUiState(
 
 | ViewModel | Lines | Issue |
 |-----------|-------|-------|
-| `HomeViewModel.kt` | 1,859 | Too many responsibilities |
-| `SettingsViewModel.kt` | 1,630 | Mixed concerns |
+| `SettingsViewModel.kt` | ~1,372 | Mixed concerns, needs further split |
+| `HomeViewModel.kt` | ~932 | Refactored, logic extracted to managers |
 
 **Fix:** Split into feature-specific ViewModels:
 - `CallListViewModel`

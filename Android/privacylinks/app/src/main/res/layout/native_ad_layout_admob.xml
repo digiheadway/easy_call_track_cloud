@@ -72,14 +72,16 @@
                 app:layout_constraintStart_toEndOf="@id/ad_app_icon"
                 app:layout_constraintTop_toBottomOf="@id/ad_headline" />
 
-            <!-- Media View (for images/videos) -->
+            <!-- Media View (for images/videos) - Must be at least 120x120 for monetization -->
             <com.google.android.gms.ads.nativead.MediaView
                 android:id="@+id/ad_media"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_marginTop="12dp"
-                android:visibility="gone"
-                app:layout_constraintDimensionRatio="16:9"
+                android:minHeight="180dp"
+                app:layout_constraintDimensionRatio="H,16:9"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/ad_app_icon" />
 
             <!-- Call to Action Button -->

@@ -568,6 +568,7 @@ class LinkBoxViewModel(
     private fun monitorLocalHistory() {
         viewModelScope.launch {
             localRepository.getHistory().collectLatest { localHistoryList ->
+                android.util.Log.d("LinkBoxViewModel", "monitorLocalHistory: Received ${localHistoryList.size} items from local DB")
                 updateLocalHistoryUi(localHistoryList)
             }
         }
@@ -720,21 +721,28 @@ class LinkBoxViewModel(
     }
     
     /**
-     * Save history entry to local Room DB.
-     * Only stores token and local flags - asset details fetched on display.
+     * Save history entry to local Room DB and Cloud.
+     * Preserves existing local flags (isStarred, isPaid) if the entry already exists.
      */
     private suspend fun saveLocalHistory(token: String, isPaid: Boolean = false) {
+        if (token.isBlank()) return
+        
         try {
+            // Fetch existing entry from local DB to preserve flags
+            val existing = localRepository.getHistory().first().find { it.token == token }
+            
             val historyEntity = HistoryEntity(
                 token = token,
                 accessedAt = System.currentTimeMillis(),
-                isStarred = false,
-                isPaid = isPaid
+                isStarred = existing?.isStarred ?: false,
+                isPaid = existing?.isPaid ?: isPaid
             )
             localRepository.insertHistory(historyEntity)
             
-            // Sync to cloud if logged in (repository.saveHistory handles the check)
-            repository.saveHistory(token, isPaid)
+            // Sync to cloud if logged in (repository.saveHistory handles the check and merging)
+            repository.saveHistory(token, historyEntity.isPaid)
+            
+            android.util.Log.d("LinkBoxViewModel", "saveLocalHistory: Saved token=$token, isStarred=${historyEntity.isStarred}, isPaid=${historyEntity.isPaid}")
         } catch (e: Exception) {
             android.util.Log.e("LinkBoxViewModel", "Failed to save local history", e)
         }
@@ -1452,8 +1460,19 @@ private fun uiSharedContentFrom(link: com.clicktoearn.linkbox.data.remote.Firest
 
     fun markAsPaid(token: String) {
         viewModelScope.launch {
+            // Update local first
+            val existing = localRepository.getHistory().first().find { it.token == token }
+            if (existing != null) {
+                localRepository.updateHistory(existing.copy(isPaid = true))
+            } else {
+                // If somehow it wasn't in history yet, add it
+                saveLocalHistory(token, isPaid = true)
+            }
+            
+            // Then sync to cloud
             repository.updateHistoryPaidStatus(token, true)
-            // Stream will update UI
+            
+            android.util.Log.d("LinkBoxViewModel", "markAsPaid: Token $token marked as paid locally and in cloud")
         }
     }
 

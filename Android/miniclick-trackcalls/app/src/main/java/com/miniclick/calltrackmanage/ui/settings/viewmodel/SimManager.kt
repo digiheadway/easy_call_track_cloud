@@ -70,6 +70,32 @@ class SimManager(
                     
                     _availableSims.update { sims }
                     
+                    // Auto-configuration for Single SIM devices
+                    if (sims.size == 1) {
+                        val sim = sims[0]
+                        if (sim.slotIndex == 0) {
+                            if (settingsRepository.getSim1SubscriptionId() == null) {
+                                settingsRepository.setSim1SubscriptionId(sim.subscriptionId)
+                                settingsRepository.setSim1CalibrationHint("Auto-detected")
+                                _sim1SubId.update { sim.subscriptionId }
+                                _sim1CalibrationHint.update { "Auto-detected" }
+                            }
+                            if (settingsRepository.getSimSelection() == "Off") {
+                                settingsRepository.setSimSelection("Sim1")
+                            }
+                        } else if (sim.slotIndex == 1) {
+                            if (settingsRepository.getSim2SubscriptionId() == null) {
+                                settingsRepository.setSim2SubscriptionId(sim.subscriptionId)
+                                settingsRepository.setSim2CalibrationHint("Auto-detected")
+                                _sim2SubId.update { sim.subscriptionId }
+                                _sim2CalibrationHint.update { "Auto-detected" }
+                            }
+                            if (settingsRepository.getSimSelection() == "Off") {
+                                settingsRepository.setSimSelection("Sim2")
+                            }
+                        }
+                    }
+
                     // Update state with current detected IDs
                     sims.find { it.slotIndex == 0 }?.let { sim ->
                         val currentSim1Id = settingsRepository.getSim1SubscriptionId()

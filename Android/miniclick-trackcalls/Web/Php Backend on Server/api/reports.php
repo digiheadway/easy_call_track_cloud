@@ -162,7 +162,7 @@ if ($reportType === 'all' || $reportType === 'missed_opportunities') {
             c.call_time,
             c.employee_id,
             e.name as employee_name
-        FROM calls c
+        FROM call_log c
         LEFT JOIN employees e ON c.employee_id = e.id
         WHERE UPPER(c.org_id) = UPPER('$orgId')
         AND (c.type = 'Inbound' OR c.type = 'Incoming') 
@@ -180,7 +180,7 @@ if ($reportType === 'all' || $reportType === 'missed_opportunities') {
         
         $callback = Database::getOne("
             SELECT c.call_time, c.employee_id, c.duration 
-            FROM calls c
+            FROM call_log c
             WHERE UPPER(c.org_id) = UPPER('$orgId')
             AND c.caller_phone = '$phone' 
             AND (c.type = 'Outbound' OR c.type = 'Outgoing')
@@ -222,7 +222,7 @@ if ($reportType === 'all' || $reportType === 'operational_insights') {
             DAYOFWEEK($sqlLocalTime) as day_num,
             HOUR($sqlLocalTime) as hour_num,
             COUNT(*) as call_volume
-        FROM calls c
+        FROM call_log c
         WHERE UPPER(c.org_id) = UPPER('$orgId') $dateFilter $privacyFilter
         GROUP BY day_num, hour_num
         ORDER BY day_num, hour_num
@@ -299,7 +299,7 @@ if ($reportType === 'all' || $reportType === 'summary') {
             SUM(duration) as total_duration,
             SUM(CASE WHEN duration > 0 THEN 1 ELSE 0 END) as connected,
             SUM(CASE WHEN duration = 0 THEN 1 ELSE 0 END) as missed
-        FROM calls c
+        FROM call_log c
         WHERE UPPER(c.org_id) = UPPER('$orgId') $dateFilter $privacyFilter
     ");
     

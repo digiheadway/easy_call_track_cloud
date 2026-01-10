@@ -40,7 +40,7 @@ switch ($method) {
                     SUM(CASE WHEN type = 'Outgoing' THEN 1 ELSE 0 END) as outbound,
                     SUM(CASE WHEN duration = 0 THEN 1 ELSE 0 END) as missed,
                     AVG(NULLIF(duration, 0)) as avg_duration
-                FROM calls 
+                FROM call_log 
                 WHERE org_id = '$orgId'
             ");
             
@@ -58,7 +58,7 @@ switch ($method) {
                     call_time, 
                     UTC_TIMESTAMP() as db_utc_now,
                     NOW() as db_now
-                FROM calls 
+                FROM call_log 
                 ORDER BY call_time DESC 
                 LIMIT 5
             ");
@@ -75,9 +75,9 @@ switch ($method) {
                     IFNULL(c_info.name, c.caller_name) as contact_name,
                     c.caller_phone as phone_number,
                     e.name as employee_name
-                FROM calls c
+                FROM call_log c
                 LEFT JOIN employees e ON c.employee_id = e.id
-                LEFT JOIN contacts c_info ON (c.caller_phone = c_info.phone AND c.org_id = c_info.org_id)
+                LEFT JOIN call_log_phones c_info ON (c.caller_phone = c_info.phone AND c.org_id = c_info.org_id)
                 WHERE c.org_id = '$orgId'
                 ORDER BY c.call_time DESC
                 LIMIT $limit
@@ -85,9 +85,9 @@ switch ($method) {
             Response::success($calls, 'Recent calls retrieved');
         } else if ($action === 'labels') {
             // Unique labels from calls
-            $labelsRows = Database::select("SELECT DISTINCT labels FROM calls WHERE org_id = '$orgId' AND labels != ''");
+            $labelsRows = Database::select("SELECT DISTINCT labels FROM call_log WHERE org_id = '$orgId' AND labels != ''");
             // Unique labels from contacts
-            $personLabelsRows = Database::select("SELECT DISTINCT label FROM contacts WHERE org_id = '$orgId' AND label != ''");
+            $personLabelsRows = Database::select("SELECT DISTINCT label FROM call_log_phones WHERE org_id = '$orgId' AND label != ''");
             
             $uniqueLabels = [];
             
@@ -118,9 +118,9 @@ switch ($method) {
         } else if ($action === 'migrate_db') {
             // Temporary migration to add is_archived column
             try {
-                $check = Database::getOne("SHOW COLUMNS FROM calls LIKE 'is_archived'");
+                $check = Database::getOne("SHOW COLUMNS FROM call_log LIKE 'is_archived'");
                 if (!$check) {
-                    Database::execute("ALTER TABLE calls ADD COLUMN is_archived TINYINT(1) DEFAULT 0");
+                    Database::execute("ALTER TABLE call_log ADD COLUMN is_archived TINYINT(1) DEFAULT 0");
                     Response::success([], 'Migration successful: Added is_archived column');
                 } else {
                     Response::success([], 'Migration skipped: Column already exists');
@@ -433,11 +433,11 @@ switch ($method) {
             // Get Total Count
             $countResult = Database::getOne("
                 SELECT COUNT(*) as total 
-                FROM calls c 
+                FROM call_log c 
                 LEFT JOIN employees e ON c.employee_id = e.id
                 LEFT JOIN (
                     SELECT phone, org_id, MAX(name) as name, MAX(notes) as notes, MAX(label) as label 
-                    FROM contacts 
+                    FROM call_log_phones 
                     GROUP BY phone, org_id
                 ) c_info ON (c.caller_phone = c_info.phone AND c.org_id = c_info.org_id)
                 LEFT JOIN excluded_contacts exc ON (c.caller_phone = exc.phone AND c.org_id = exc.org_id)
@@ -457,11 +457,11 @@ switch ($method) {
                     CASE WHEN exc.id IS NOT NULL THEN 1 ELSE 0 END as is_excluded,
                     exc.exclude_from_sync,
                     exc.exclude_from_list
-                FROM calls c
+                FROM call_log c
                 LEFT JOIN employees e ON c.employee_id = e.id
                 LEFT JOIN (
                     SELECT phone, org_id, MAX(name) as name, MAX(notes) as notes, MAX(label) as label 
-                    FROM contacts 
+                    FROM call_log_phones 
                     GROUP BY phone, org_id
                 ) c_info ON (c.caller_phone = c_info.phone AND c.org_id = c_info.org_id)
                 LEFT JOIN excluded_contacts exc ON (c.caller_phone = exc.phone AND c.org_id = exc.org_id)
@@ -490,7 +490,7 @@ switch ($method) {
             $phone = $data['phone_number'] ?? '';
             if (!$phone) Response::error('Phone number required');
             $phoneEsc = Database::escape($phone);
-            $sql = "UPDATE calls SET is_archived = 1, updated_at = NOW() WHERE caller_phone = '$phoneEsc' AND org_id = '$orgId'";
+            $sql = "UPDATE call_log SET is_archived = 1, updated_at = NOW() WHERE caller_phone = '$phoneEsc' AND org_id = '$orgId'";
             Database::execute($sql);
             Response::success([], 'Calls archived successfully');
         } 
@@ -500,9 +500,9 @@ switch ($method) {
             $phoneEsc = Database::escape($phone);
             
             // 1. Delete Calls
-            Database::execute("DELETE FROM calls WHERE caller_phone = '$phoneEsc' AND org_id = '$orgId'");
+            Database::execute("DELETE FROM call_log WHERE caller_phone = '$phoneEsc' AND org_id = '$orgId'");
             // 2. Delete Contact Info
-            Database::execute("DELETE FROM contacts WHERE phone = '$phoneEsc' AND org_id = '$orgId'");
+            Database::execute("DELETE FROM call_log_phones WHERE phone = '$phoneEsc' AND org_id = '$orgId'");
             // 3. Delete from Excluded List
             Database::execute("DELETE FROM excluded_contacts WHERE phone = '$phoneEsc' AND org_id = '$orgId'");
             
@@ -522,7 +522,7 @@ switch ($method) {
             $logMsg .= "Data: " . json_encode($data) . "\n";
             
             // Verify call belongs to Org
-            $call = Database::getOne("SELECT id, caller_phone, caller_name FROM calls WHERE id = $id AND org_id = '$orgId'");
+            $call = Database::getOne("SELECT id, caller_phone, caller_name FROM call_log WHERE id = $id AND org_id = '$orgId'");
             if (!$call) {
                 file_put_contents('debug_calls.log', $logMsg . "Error: Call not found\n", FILE_APPEND);
                 Response::error('Call not found', 404);
@@ -564,14 +564,14 @@ switch ($method) {
                 
                 // Also update contacts table
                 $phone = $call['caller_phone'];
-                $contactExists = Database::getOne("SELECT id FROM contacts WHERE phone = '$phone' AND org_id = '$orgId'");
+                $contactExists = Database::getOne("SELECT id FROM call_log_phones WHERE phone = '$phone' AND org_id = '$orgId'");
                 if ($contactExists) {
-                    $res = Database::execute("UPDATE contacts SET name = '$pName', updated_at = NOW() WHERE phone = '$phone' AND org_id = '$orgId'");
+                    $res = Database::execute("UPDATE call_log_phones SET name = '$pName', updated_at = NOW() WHERE phone = '$phone' AND org_id = '$orgId'");
                     if (isset($res['status']) && $res['status'] === false) {
                          file_put_contents('debug_calls.log', $logMsg . "Error updating contact name: " . json_encode($res) . "\n", FILE_APPEND);
                     }
                 } else {
-                    Database::insert("INSERT INTO contacts (org_id, phone, name, created_at, updated_at) VALUES ('$orgId', '$phone', '$pName', NOW(), NOW())");
+                    Database::insert("INSERT INTO call_log_phones (org_id, phone, name, created_at, updated_at) VALUES ('$orgId', '$phone', '$pName', NOW(), NOW())");
                 }
             }
             
@@ -585,16 +585,16 @@ switch ($method) {
                 $pNote = Database::escape($data['person_note']);
                 $phone = $call['caller_phone'];
                 
-                $contactExists = Database::getOne("SELECT id FROM contacts WHERE phone = '$phone' AND org_id = '$orgId'");
+                $contactExists = Database::getOne("SELECT id FROM call_log_phones WHERE phone = '$phone' AND org_id = '$orgId'");
                 if ($contactExists) {
-                    $res = Database::execute("UPDATE contacts SET notes = '$pNote', updated_at = NOW() WHERE phone = '$phone' AND org_id = '$orgId'");
+                    $res = Database::execute("UPDATE call_log_phones SET notes = '$pNote', updated_at = NOW() WHERE phone = '$phone' AND org_id = '$orgId'");
                     if (isset($res['status']) && $res['status'] === false) {
                         file_put_contents('debug_calls.log', $logMsg . "Error updating person note: " . json_encode($res) . "\n", FILE_APPEND);
                         Response::error("Failed to update person note: " . ($res['error'] ?? 'Unknown error'));
                     }
                 } else {
                     $pName = isset($data['contact_name']) ? Database::escape($data['contact_name']) : Database::escape($call['caller_name'] ?? 'Unknown');
-                    $res = Database::insert("INSERT INTO contacts (org_id, phone, name, notes, created_at, updated_at) VALUES ('$orgId', '$phone', '$pName', '$pNote', NOW(), NOW())");
+                    $res = Database::insert("INSERT INTO call_log_phones (org_id, phone, name, notes, created_at, updated_at) VALUES ('$orgId', '$phone', '$pName', '$pNote', NOW(), NOW())");
                      if (!$res) { // insert returns ID or false/null? insert returns ID. execute returns array.
                          // Database::insert returns ID. If ID is missing, check execute logic. 
                          // Actually Database::insert calls Database::execute. 
@@ -608,17 +608,17 @@ switch ($method) {
                 $pLabels = Database::escape($data['person_labels']);
                 $phone = $call['caller_phone'];
                 
-                $contactExists = Database::getOne("SELECT id FROM contacts WHERE phone = '$phone' AND org_id = '$orgId'");
+                $contactExists = Database::getOne("SELECT id FROM call_log_phones WHERE phone = '$phone' AND org_id = '$orgId'");
                 if ($contactExists) {
-                    Database::execute("UPDATE contacts SET label = '$pLabels', updated_at = NOW() WHERE phone = '$phone' AND org_id = '$orgId'");
+                    Database::execute("UPDATE call_log_phones SET label = '$pLabels', updated_at = NOW() WHERE phone = '$phone' AND org_id = '$orgId'");
                 } else {
                     $pName = isset($data['contact_name']) ? Database::escape($data['contact_name']) : Database::escape($call['caller_name'] ?? 'Unknown');
-                    Database::insert("INSERT INTO contacts (org_id, phone, name, label, created_at, updated_at) VALUES ('$orgId', '$phone', '$pName', '$pLabels', NOW(), NOW())");
+                    Database::insert("INSERT INTO call_log_phones (org_id, phone, name, label, created_at, updated_at) VALUES ('$orgId', '$phone', '$pName', '$pLabels', NOW(), NOW())");
                 }
             }
 
             if (!empty($updates)) {
-                $sql = "UPDATE calls SET " . implode(', ', $updates) . " WHERE id = $id";
+                $sql = "UPDATE call_log SET " . implode(', ', $updates) . " WHERE id = $id";
                 $logMsg .= "SQL: $sql\n";
                 $res = Database::execute($sql);
                 if (isset($res['status']) && $res['status'] === false) {
@@ -631,8 +631,8 @@ switch ($method) {
 
             $updatedCall = Database::getOne("
                 SELECT c.*, c_info.notes as person_note 
-                FROM calls c 
-                LEFT JOIN contacts c_info ON (c.caller_phone = c_info.phone AND c.org_id = c_info.org_id)
+                FROM call_log c 
+                LEFT JOIN call_log_phones c_info ON (c.caller_phone = c_info.phone AND c.org_id = c_info.org_id)
                 WHERE c.id = $id
             ");
             Response::success($updatedCall, 'Call updated successfully');
@@ -655,7 +655,7 @@ switch ($method) {
                 Response::error('Invalid employee ID');
             }
             
-            $sql = "INSERT INTO calls (
+            $sql = "INSERT INTO call_log (
                         org_id, employee_id, caller_name, caller_phone, type, duration, call_time, note, recording_url
                     ) VALUES (
                         '$orgId', $employeeId, '$callerName', '$callerPhone', '$type', $duration, '$callTime', '$note', '$recordingUrl'
@@ -668,7 +668,7 @@ switch ($method) {
             }
             
             Database::execute("UPDATE employees SET calls_today = calls_today + 1 WHERE id = $employeeId");
-            $call = Database::getOne("SELECT * FROM calls WHERE id = $callId");
+            $call = Database::getOne("SELECT * FROM call_log WHERE id = $callId");
             
             Response::success($call, 'Call logged successfully');
         }

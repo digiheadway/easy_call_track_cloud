@@ -39,18 +39,28 @@ interface CallDataDao {
         SELECT COUNT(*) FROM call_data c 
         LEFT JOIN person_data p ON c.phoneNumber = p.phoneNumber 
         WHERE (c.metadataSyncStatus IN ('PENDING', 'UPDATE_PENDING', 'FAILED') 
-               OR c.recordingSyncStatus IN ('PENDING', 'FAILED', 'COMPRESSING', 'UPLOADING'))
+               OR (c.recordingSyncStatus IN ('PENDING', 'FAILED', 'UPLOADING') AND c.metadataSyncStatus = 'COMPLETED'))
+        AND (p.excludeFromSync IS NULL OR p.excludeFromSync = 0)
+        AND (p.excludeFromList IS NULL OR p.excludeFromList = 0)
         AND (p.isExcluded IS NULL OR p.isExcluded = 0)
     """)
     fun getPendingSyncCountFlow(): Flow<Int>
     
-    @Query("SELECT * FROM call_data WHERE syncStatus = 'PENDING' ORDER BY callDate DESC")
+    @Query("""
+        SELECT c.* FROM call_data c
+        LEFT JOIN person_data p ON c.phoneNumber = p.phoneNumber
+        WHERE c.syncStatus = 'PENDING'
+        AND (p.excludeFromSync IS NULL OR p.excludeFromSync = 0)
+        AND (p.isExcluded IS NULL OR p.isExcluded = 0)
+        ORDER BY c.callDate DESC
+    """)
     fun getPendingCallsFlow(): Flow<List<CallDataEntity>>
     
     @Query("""
         SELECT COUNT(*) FROM call_data c 
         LEFT JOIN person_data p ON c.phoneNumber = p.phoneNumber 
         WHERE c.syncStatus != 'COMPLETED' 
+        AND (p.excludeFromSync IS NULL OR p.excludeFromSync = 0)
         AND (p.isExcluded IS NULL OR p.isExcluded = 0)
     """)
     fun getUnsyncedCallsCountFlow(): Flow<Int>
@@ -71,6 +81,7 @@ interface CallDataDao {
         LEFT JOIN person_data p ON c.phoneNumber = p.phoneNumber 
         WHERE c.metadataSyncStatus IN ('PENDING', 'UPDATE_PENDING', 'FAILED')
         AND c.callDate >= :minDate
+        AND (p.excludeFromSync IS NULL OR p.excludeFromSync = 0)
         AND (p.isExcluded IS NULL OR p.isExcluded = 0)
         ORDER BY c.callDate DESC
     """)
@@ -80,8 +91,10 @@ interface CallDataDao {
     @Query("""
         SELECT c.* FROM call_data c 
         LEFT JOIN person_data p ON c.phoneNumber = p.phoneNumber 
-        WHERE c.recordingSyncStatus IN ('PENDING', 'FAILED', 'COMPRESSING', 'UPLOADING')
+        WHERE c.recordingSyncStatus IN ('PENDING', 'FAILED', 'UPLOADING')
+        AND c.metadataSyncStatus = 'SYNCED'
         AND c.callDate >= :minDate
+        AND (p.excludeFromSync IS NULL OR p.excludeFromSync = 0)
         AND (p.isExcluded IS NULL OR p.isExcluded = 0)
         ORDER BY c.callDate ASC
     """)
@@ -93,6 +106,7 @@ interface CallDataDao {
         LEFT JOIN person_data p ON c.phoneNumber = p.phoneNumber 
         WHERE c.metadataSyncStatus IN ('PENDING', 'UPDATE_PENDING', 'FAILED')
         AND c.callDate >= :minDate
+        AND (p.excludeFromSync IS NULL OR p.excludeFromSync = 0)
         AND (p.isExcluded IS NULL OR p.isExcluded = 0)
     """)
     fun getPendingMetadataSyncCountFlow(minDate: Long): Flow<Int>
@@ -103,6 +117,8 @@ interface CallDataDao {
         LEFT JOIN person_data p ON c.phoneNumber = p.phoneNumber 
         WHERE c.metadataSyncStatus = 'PENDING'
         AND c.callDate >= :minDate
+        AND (p.excludeFromSync IS NULL OR p.excludeFromSync = 0)
+        AND (p.excludeFromList IS NULL OR p.excludeFromList = 0)
         AND (p.isExcluded IS NULL OR p.isExcluded = 0)
     """)
     fun getPendingNewCallsCountFlow(minDate: Long): Flow<Int>
@@ -113,6 +129,8 @@ interface CallDataDao {
         LEFT JOIN person_data p ON c.phoneNumber = p.phoneNumber 
         WHERE c.metadataSyncStatus = 'UPDATE_PENDING'
         AND c.callDate >= :minDate
+        AND (p.excludeFromSync IS NULL OR p.excludeFromSync = 0)
+        AND (p.excludeFromList IS NULL OR p.excludeFromList = 0)
         AND (p.isExcluded IS NULL OR p.isExcluded = 0)
     """)
     fun getPendingMetadataUpdatesCountFlow(minDate: Long): Flow<Int>
@@ -121,16 +139,24 @@ interface CallDataDao {
     @Query("""
         SELECT COUNT(*) FROM call_data c 
         LEFT JOIN person_data p ON c.phoneNumber = p.phoneNumber 
-        WHERE c.recordingSyncStatus IN ('PENDING', 'FAILED', 'COMPRESSING', 'UPLOADING')
+        WHERE c.recordingSyncStatus IN ('PENDING', 'FAILED', 'UPLOADING')
+        AND c.metadataSyncStatus = 'SYNCED'
         AND c.callDate >= :minDate
+        AND (p.excludeFromSync IS NULL OR p.excludeFromSync = 0)
+        AND (p.excludeFromList IS NULL OR p.excludeFromList = 0)
         AND (p.isExcluded IS NULL OR p.isExcluded = 0)
     """)
     fun getPendingRecordingSyncCountFlow(minDate: Long): Flow<Int>
 
     @Query("""
-        SELECT * FROM call_data 
-        WHERE recordingSyncStatus NOT IN ('NOT_APPLICABLE', 'COMPLETED')
-        ORDER BY updatedAt DESC
+        SELECT c.* FROM call_data c
+        LEFT JOIN person_data p ON c.phoneNumber = p.phoneNumber
+        WHERE c.recordingSyncStatus NOT IN ('NOT_APPLICABLE', 'COMPLETED')
+        AND c.metadataSyncStatus = 'SYNCED'
+        AND (p.excludeFromList IS NULL OR p.excludeFromList = 0)
+        AND (p.excludeFromSync IS NULL OR p.excludeFromSync = 0)
+        AND (p.isExcluded IS NULL OR p.isExcluded = 0)
+        ORDER BY c.updatedAt DESC
     """)
     fun getActiveRecordingSyncsFlow(): Flow<List<CallDataEntity>>
     
@@ -173,12 +199,18 @@ interface CallDataDao {
     // NEW: Update recording sync status
     @Query("UPDATE call_data SET recordingSyncStatus = :status, updatedAt = :timestamp WHERE compositeId = :compositeId")
     suspend fun updateRecordingSyncStatus(compositeId: String, status: RecordingSyncStatus, timestamp: Long = System.currentTimeMillis())
+
+    @Query("UPDATE call_data SET recordingSyncStatus = :status, updatedAt = :timestamp WHERE compositeId IN (:compositeIds)")
+    suspend fun updateRecordingSyncStatusBatch(compositeIds: List<String>, status: RecordingSyncStatus, timestamp: Long = System.currentTimeMillis())
     
     @Query("UPDATE call_data SET callNote = :note, updatedAt = :timestamp WHERE compositeId = :compositeId")
     suspend fun updateCallNote(compositeId: String, note: String?, timestamp: Long = System.currentTimeMillis())
     
     @Query("UPDATE call_data SET syncError = :error, updatedAt = :timestamp WHERE compositeId = :compositeId")
     suspend fun updateSyncError(compositeId: String, error: String?, timestamp: Long = System.currentTimeMillis())
+
+    @Query("UPDATE call_data SET syncError = :error, updatedAt = :timestamp WHERE compositeId IN (:compositeIds)")
+    suspend fun updateSyncErrorBatch(compositeIds: List<String>, error: String?, timestamp: Long = System.currentTimeMillis())
 
     @Query("UPDATE call_data SET localRecordingPath = :path, updatedAt = :timestamp WHERE compositeId = :compositeId")
     suspend fun updateRecordingPath(compositeId: String, path: String?, timestamp: Long = System.currentTimeMillis())
@@ -213,10 +245,28 @@ interface CallDataDao {
     // NEW: Mark metadata as synced
     @Query("UPDATE call_data SET metadataSyncStatus = 'SYNCED', serverUpdatedAt = :serverTime WHERE compositeId = :compositeId")
     suspend fun markMetadataSynced(compositeId: String, serverTime: Long = System.currentTimeMillis())
+
+    @Query("UPDATE call_data SET metadataSyncStatus = 'SYNCED', serverUpdatedAt = :serverTime WHERE compositeId IN (:compositeIds)")
+    suspend fun markMetadataSyncedBatch(compositeIds: List<String>, serverTime: Long = System.currentTimeMillis())
     
     // NEW: Mark recording as uploaded
-    @Query("UPDATE call_data SET recordingSyncStatus = 'COMPLETED' WHERE compositeId = :compositeId")
+    @Query("UPDATE call_data SET recordingSyncStatus = 'COMPLETED', serverRecordingStatus = 'completed' WHERE compositeId = :compositeId")
     suspend fun markRecordingUploaded(compositeId: String)
+    
+    // NEW: Update server recording status specifically
+    @Query("UPDATE call_data SET serverRecordingStatus = :status WHERE compositeId = :compositeId")
+    suspend fun updateServerRecordingStatus(compositeId: String, status: String?)
+
+    // NEW: Update metadata received confirmation
+    @Query("UPDATE call_data SET metadataReceived = :received WHERE compositeId = :compositeId")
+    suspend fun updateMetadataReceived(compositeId: String, received: Boolean = true)
+    
+    // NEW: Update processing status
+    @Query("UPDATE call_data SET processingStatus = :status, updatedAt = :timestamp WHERE compositeId = :compositeId")
+    suspend fun updateProcessingStatus(compositeId: String, status: String?, timestamp: Long = System.currentTimeMillis())
+    
+    @Query("UPDATE call_data SET processingStatus = NULL WHERE processingStatus IS NOT NULL AND updatedAt < :threshold")
+    suspend fun clearStaleProcessingStatuses(threshold: Long)
     
     // ============================================
     // DELETE
@@ -234,4 +284,24 @@ interface CallDataDao {
     // NEW: Rescan skipped recordings (mark NOT_APPLICABLE/NOT_FOUND as PENDING)
     @Query("UPDATE call_data SET recordingSyncStatus = 'PENDING' WHERE recordingSyncStatus IN ('NOT_APPLICABLE', 'NOT_FOUND') AND duration > 0")
     suspend fun resetSkippedRecordings()
+
+    // NEW: Reset all sync statuses for troubleshooting
+    @Query("""
+        UPDATE call_data SET 
+            metadataSyncStatus = 'PENDING', 
+            recordingSyncStatus = CASE WHEN duration > 0 THEN 'PENDING' ELSE 'NOT_APPLICABLE' END,
+            metadataReceived = 0,
+            serverRecordingStatus = NULL,
+            syncError = NULL,
+            updatedAt = :timestamp
+    """)
+    suspend fun resetAllSyncStatuses(timestamp: Long = System.currentTimeMillis())
+
+    // NEW: Reset only metadata sync
+    @Query("UPDATE call_data SET metadataSyncStatus = 'PENDING', metadataReceived = 0, updatedAt = :timestamp")
+    suspend fun resetMetadataSync(timestamp: Long = System.currentTimeMillis())
+    
+    // NEW: Get calls with null processing status that are pending
+    @Query("SELECT * FROM call_data WHERE (metadataSyncStatus IN ('PENDING', 'UPDATE_PENDING') OR recordingSyncStatus = 'PENDING') AND processingStatus IS NULL")
+    suspend fun getPendingCallsWithNoProcessing(): List<CallDataEntity>
 }

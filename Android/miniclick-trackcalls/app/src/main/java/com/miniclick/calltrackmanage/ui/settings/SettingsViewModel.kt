@@ -106,6 +106,7 @@ data class SettingsUiState(
     val showDialButton: Boolean = true,
     val callActionBehavior: String = "Direct",
     val isSystemDefaultDialer: Boolean = false,
+    val isIgnoringBatteryOptimizations: Boolean = false,
     val isReattaching: Boolean = false,
     val reAttachProgress: String? = null,
     
@@ -125,12 +126,16 @@ data class SettingsUiState(
     val showTrackingSettings: Boolean = false,
     val showExtrasScreen: Boolean = false,
     val showDataManagementScreen: Boolean = false,
+    val showDevicePermissionGuide: Boolean = false,
     val contactSubject: String = "",
     val accountEditField: String? = null,
     val lookupPhoneNumber: String? = null,
     val skippedSteps: Set<String> = emptySet(),
     val isTrackStartDateSet: Boolean = false,
-    val syncQueueCount: Int = 0
+    val syncQueueCount: Int = 0,
+    val uploadOverMobile: Boolean = false,
+    val isUploadOverMobileForced: Boolean = false,
+    val agreementAccepted: Boolean = false
 )
 
 @dagger.hilt.android.lifecycle.HiltViewModel
@@ -186,6 +191,11 @@ class SettingsViewModel @javax.inject.Inject constructor(
         viewModelScope.launch {
             permissionManager.isOverlayPermissionGranted.collect { granted: Boolean ->
                 _uiState.update { it.copy(isOverlayPermissionGranted = granted) }
+            }
+        }
+        viewModelScope.launch {
+            permissionManager.isIgnoringBatteryOptimizations.collect { ignoring: Boolean ->
+                _uiState.update { it.copy(isIgnoringBatteryOptimizations = ignoring) }
             }
         }
 
@@ -355,12 +365,15 @@ class SettingsViewModel @javax.inject.Inject constructor(
         // which returns yesterday if not set. We don't auto-set it here so the onboarding
         // step can still show to let users choose their preferred start date.
         
-        _uiState.update {
-            it.copy(
+        _uiState.update { currentState ->
+            val newPairingCode = if (orgId.isNotEmpty() && userId.isNotEmpty()) "$orgId-$userId" else currentState.pairingCode
+            val isSyncActive = orgId.isNotEmpty()
+            
+            currentState.copy(
                 simSelection = settingsRepository.getSimSelection(),
                 trackStartDate = settingsRepository.getTrackStartDate(),
                 recordingPath = recordingRepository.getRecordingPath(),
-                pairingCode = pairingCode,
+                pairingCode = newPairingCode,
                 callerPhoneSim1 = settingsRepository.getCallerPhoneSim1(),
                 callerPhoneSim2 = settingsRepository.getCallerPhoneSim2(),
                 whatsappPreference = settingsRepository.getWhatsappPreference(),
@@ -391,9 +404,12 @@ class SettingsViewModel @javax.inject.Inject constructor(
                 isSystemDefaultDialer = isSystemDefaultDialer(),
                 showDialButton = settingsRepository.isShowDialButton(),
                 callActionBehavior = settingsRepository.getCallActionBehavior(),
-                isSyncSetup = orgId.isNotEmpty(),
+                isSyncSetup = isSyncActive,
                 skippedSteps = settingsRepository.getSkippedSteps(),
-                isTrackStartDateSet = settingsRepository.isTrackStartDateSet()
+                isTrackStartDateSet = settingsRepository.isTrackStartDateSet(),
+                uploadOverMobile = settingsRepository.isUploadOverMobileAllowed(),
+                isUploadOverMobileForced = settingsRepository.isForceUploadOverMobile(),
+                agreementAccepted = settingsRepository.isAgreementAccepted()
             )
         }
         refreshRecordingPathInfo()
@@ -634,6 +650,10 @@ class SettingsViewModel @javax.inject.Inject constructor(
         _uiState.update { it.copy(showDataManagementScreen = show) }
     }
 
+    fun toggleDevicePermissionGuide(show: Boolean) {
+        _uiState.update { it.copy(showDevicePermissionGuide = show) }
+    }
+
     fun showPhoneLookup(phone: String?) {
         _uiState.update { it.copy(lookupPhoneNumber = phone) }
     }
@@ -654,6 +674,16 @@ class SettingsViewModel @javax.inject.Inject constructor(
     fun updateUserDeclinedRecording(declined: Boolean) {
         settingsRepository.setUserDeclinedRecording(declined)
         _uiState.update { it.copy(userDeclinedRecording = declined) }
+    }
+
+    fun setStepSkipped(step: String, skipped: Boolean = true) {
+        settingsRepository.setStepSkipped(step, skipped)
+        _uiState.update { it.copy(skippedSteps = settingsRepository.getSkippedSteps()) }
+    }
+
+    fun setAgreementAccepted(accepted: Boolean) {
+        settingsRepository.setAgreementAccepted(accepted)
+        _uiState.update { it.copy(agreementAccepted = accepted) }
     }
 
     private fun refreshRecordingPathInfo() {
@@ -705,6 +735,11 @@ class SettingsViewModel @javax.inject.Inject constructor(
         _uiState.update { it.copy(showUnknownNoteReminder = show) }
     }
 
+    fun updateUploadOverMobile(allowed: Boolean) {
+        settingsRepository.setUploadOverMobileAllowed(allowed)
+        _uiState.update { it.copy(uploadOverMobile = allowed) }
+    }
+
     fun resetVerificationState() {
         _uiState.update {
             it.copy(
@@ -742,7 +777,8 @@ class SettingsViewModel @javax.inject.Inject constructor(
                             pairingCode = trimmedCode
                         )
                     }
-                    loadSettings()
+                    // We don't call loadSettings here yet because we haven't SAVED to repo
+                    // But we want to ensure any ui depending on pairingCode is updated
                 } else {
                     _uiState.update { it.copy(verificationStatus = "failed") }
                     Toast.makeText(getApplication(), error ?: "Verification failed", Toast.LENGTH_LONG).show()
@@ -917,16 +953,40 @@ class SettingsViewModel @javax.inject.Inject constructor(
     }
 
     fun connectVerifiedOrganisation(onSuccess: () -> Unit = {}) {
-        if (_uiState.value.verificationStatus != "verified") {
+        val currentState = _uiState.value
+        Log.d("SettingsViewModel", "connectVerifiedOrganisation: status=${currentState.verificationStatus}, code=${currentState.pairingCode}")
+        
+        if (currentState.verificationStatus != "verified") {
+            Log.w("SettingsViewModel", "connectVerifiedOrganisation: Not verified, cannot connect")
             return
         }
         
-        val parts = _uiState.value.pairingCode.split("-")
-        if (parts.size == 2) {
-            syncManager.savePairingInfo(parts[0], parts[1])
-            _uiState.update { it.copy(pairingCode = "${parts[0]}-${parts[1]}") }
-            Toast.makeText(getApplication(), "✓ Connected to ${_uiState.value.verifiedOrgName}!", Toast.LENGTH_LONG).show()
+        val pairingCode = currentState.pairingCode
+        if (pairingCode.isEmpty()) {
+            Toast.makeText(getApplication(), "Error: Pairing code is missing. Please verify again.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val parts = pairingCode.split("-")
+        if (parts.size >= 2) {
+            val orgId = parts[0].trim()
+            val userId = parts[1].trim()
+            
+            Log.i("SettingsViewModel", "Saving pairing info: ORG=$orgId, USER=$userId")
+            syncManager.savePairingInfo(orgId, userId)
+            
+            // Refresh settings to update isSyncSetup and other state
+            loadSettings()
+            
+            Toast.makeText(getApplication(), "✓ Connected to ${currentState.verifiedOrgName ?: orgId}!", Toast.LENGTH_LONG).show()
+            
+            // Reset verification state for next time
+            resetVerificationState()
+            
             onSuccess()
+        } else {
+            Log.e("SettingsViewModel", "connectVerifiedOrganisation: Invalid code format in state: $pairingCode")
+            Toast.makeText(getApplication(), "Error: Invalid pairing code format", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -1291,8 +1351,34 @@ class SettingsViewModel @javax.inject.Inject constructor(
         }
     }
 
-    fun setStepSkipped(step: String, skipped: Boolean = true) {
-        settingsRepository.setStepSkipped(step, skipped)
-        _uiState.update { it.copy(skippedSteps = settingsRepository.getSkippedSteps()) }
+    /**
+     * RESET EVERYTHING FOR SYNC: Implements "Forgot server, sync statuses of local data"
+     */
+    fun resetEverythingForSync() {
+        viewModelScope.launch {
+            try {
+                callDataRepository.resetAllSyncStatuses()
+                loadSettings()
+                Toast.makeText(getApplication(), "All sync statuses reset. Ready for full sync.", Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                Toast.makeText(getApplication(), "Reset failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    /**
+     * FETCH META DATA ALL: Implements "Fetch meta data all"
+     */
+    fun fetchMetaDataAll() {
+        viewModelScope.launch {
+            try {
+                callDataRepository.resetMetadataSync()
+                // Trigger sync worker
+                CallSyncWorker.runNow(getApplication())
+                Toast.makeText(getApplication(), "Metadata sync reset. Fetching updates...", Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                Toast.makeText(getApplication(), "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 }

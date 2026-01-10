@@ -78,6 +78,9 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 return@withContext Result.success()
             }
 
+            // Cleanup any stale processing statuses (stuck from crashes)
+            callDataRepository.clearStaleProcessingStatuses()
+
             if (!settingsRepository.isCallTrackEnabled()) {
                 Log.d(TAG, "Call tracking disabled by organisation. Skipping server sync phases.")
                 // Still fetch config to see if it gets re-enabled later
@@ -301,17 +304,31 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 val serverTime = data.serverTime
                 val syncedIds = data.syncedIds
                 
-                for (id in syncedIds) {
-                    callDataRepository.markMetadataSynced(id, serverTime)
-                    callDataRepository.updateSyncError(id, null)
-                    
-                    // Check if recording upload is needed (locally, since server might not return status for each)
-                    // We assume if it synced, we check duration
-                    val call = calls.find { it.compositeId == id }
-                    if (call != null && call.duration > 0) {
-                        callDataRepository.updateRecordingSyncStatus(id, RecordingSyncStatus.PENDING)
-                    }
+                // 1. Mark metadata synced in batch
+                callDataRepository.markMetadataSyncedBatch(syncedIds, serverTime)
+                
+                // 2. Mark metadata as received
+                syncedIds.forEach { id ->
+                    callDataRepository.updateMetadataReceived(id, true)
                 }
+
+                // 3. Update recording statuses if provided
+                data.recordingStatuses?.forEach { (id, status) ->
+                    callDataRepository.updateServerRecordingStatus(id, status)
+                }
+                
+                // 4. Clear errors in batch
+                callDataRepository.updateSyncErrorBatch(syncedIds, null)
+                
+                // 5. Update recording status in batch (for those needing it)
+                val idsNeedingRecording = calls.filter { call -> 
+                    syncedIds.contains(call.compositeId) && call.duration > 0 
+                }.map { it.compositeId }
+                
+                if (idsNeedingRecording.isNotEmpty()) {
+                    callDataRepository.updateRecordingSyncStatusBatch(idsNeedingRecording, RecordingSyncStatus.PENDING)
+                }
+                
                 Log.d(TAG, "Batch sync success: ${syncedIds.size} calls synced")
             } else {
                  Log.w(TAG, "Batch sync returned success=false or no data. Marking all as synced.")
@@ -376,6 +393,12 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 
                 // Mark metadata as synced
                 callDataRepository.markMetadataSynced(call.compositeId, serverTime)
+                
+                // Confirm metadata received
+                callDataRepository.updateMetadataReceived(call.compositeId, true)
+                
+                // Update server recording status
+                callDataRepository.updateServerRecordingStatus(call.compositeId, data.uploadStatus)
                 
                 // Determine if recording upload is needed
                 val uploadStatus = data.uploadStatus
@@ -647,6 +670,9 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     settingsRepository.setDefaultTrackStartDate(defaultDateStr)
                     settingsRepository.setCallTrackEnabled(settings.callTrack == 1)
                     settingsRepository.setCallRecordEnabled(settings.callRecordCrm == 1)
+                    
+                    // Handle forced mobile network upload
+                    settingsRepository.setForceUploadOverMobile(data.forceUploadOverMobile == 1)
                     
                     // If not allowed to change, and a SPECIFIC default date is provided, enforce it
                     if (!allowChanging && !defaultDateStr.isNullOrBlank()) {

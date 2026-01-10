@@ -13,6 +13,7 @@ import kotlinx.coroutines.withContext
 import com.miniclick.calltrackmanage.network.PersonUpdateDto
 import com.miniclick.calltrackmanage.network.CallUpdateDto
 import androidx.room.withTransaction
+import com.miniclick.calltrackmanage.worker.CallSyncWorker
 
 /**
  * Unified repository for all call and person data.
@@ -207,6 +208,20 @@ class CallDataRepository private constructor(private val context: Context) {
         }
     }
 
+    suspend fun updateRecordingSyncStatusBatch(compositeIds: List<String>, status: RecordingSyncStatus) = withContext(Dispatchers.IO) {
+        if (compositeIds.isEmpty()) return@withContext
+        callDataDao.updateRecordingSyncStatusBatch(compositeIds, status)
+        
+        // If recording is NOT_FOUND, we want to push this status update to the server metadata
+        if (status == RecordingSyncStatus.NOT_FOUND) {
+            database.withTransaction {
+                compositeIds.forEach { id ->
+                    callDataDao.updateMetadataSyncStatus(id, MetadataSyncStatus.UPDATE_PENDING)
+                }
+            }
+        }
+    }
+
     /**
      * Rescan skipped recordings (mark NOT_APPLICABLE as PENDING)
      */
@@ -220,6 +235,37 @@ class CallDataRepository private constructor(private val context: Context) {
      */
     suspend fun markMetadataSynced(compositeId: String, serverTime: Long) = withContext(Dispatchers.IO) {
         callDataDao.markMetadataSynced(compositeId, serverTime)
+    }
+
+    suspend fun markMetadataSyncedBatch(compositeIds: List<String>, serverTime: Long) = withContext(Dispatchers.IO) {
+        if (compositeIds.isEmpty()) return@withContext
+        callDataDao.markMetadataSyncedBatch(compositeIds, serverTime)
+    }
+
+    /**
+     * Update metadata received status
+     */
+    suspend fun updateMetadataReceived(compositeId: String, received: Boolean) = withContext(Dispatchers.IO) {
+        callDataDao.updateMetadataReceived(compositeId, received)
+    }
+
+    /**
+     * Update server recording status
+     */
+    suspend fun updateServerRecordingStatus(compositeId: String, status: String?) = withContext(Dispatchers.IO) {
+        callDataDao.updateServerRecordingStatus(compositeId, status)
+    }
+
+    /**
+     * Update processing status
+     */
+    suspend fun updateProcessingStatus(compositeId: String, status: String?) = withContext(Dispatchers.IO) {
+        callDataDao.updateProcessingStatus(compositeId, status)
+    }
+
+    suspend fun clearStaleProcessingStatuses(timeoutMillis: Long = 2 * 60 * 60 * 1000L) = withContext(Dispatchers.IO) {
+        val threshold = System.currentTimeMillis() - timeoutMillis
+        callDataDao.clearStaleProcessingStatuses(threshold)
     }
     
     /**
@@ -241,6 +287,11 @@ class CallDataRepository private constructor(private val context: Context) {
      */
     suspend fun updateSyncError(compositeId: String, error: String?) = withContext(Dispatchers.IO) {
         callDataDao.updateSyncError(compositeId, error)
+    }
+
+    suspend fun updateSyncErrorBatch(compositeIds: List<String>, error: String?) = withContext(Dispatchers.IO) {
+        if (compositeIds.isEmpty()) return@withContext
+        callDataDao.updateSyncErrorBatch(compositeIds, error)
     }
 
     /**
@@ -828,18 +879,16 @@ class CallDataRepository private constructor(private val context: Context) {
                 Log.d(TAG, "No new calls to insert")
             }
             
-            // Update recordings for calls that don't have them yet (including existing ones)
-            // We do this after insertion to simplify
+            // Update recordings for calls that don't have them yet
             val unsyncedWithNoPath = callDataDao.getCallsMissingRecordings().filter { it.localRecordingPath == null }
             if (unsyncedWithNoPath.isNotEmpty()) {
                 val total = unsyncedWithNoPath.size
                 ProcessMonitor.startProcess(ProcessMonitor.ProcessIds.FIND_RECORDINGS, "Matching $total call${if (total == 1) "" else "s"} with recordings...")
-                val recordingFiles = recordingRepository.getRecordingFiles()
                 
                 val updates = mutableMapOf<String, String>()
                 
                 unsyncedWithNoPath.forEachIndexed { index, call ->
-                    // Update progress frequently for small lists, or every 10 for large ones
+                    // Update progress
                     val updateFrequency = if (total < 20) 1 else 10
                     if (index % updateFrequency == 0 || index == total - 1) {
                         val progress = (index + 1).toFloat() / total
@@ -848,8 +897,8 @@ class CallDataRepository private constructor(private val context: Context) {
                     }
 
                     if (call.duration > 0) {
-                        val recordingPath = recordingRepository.findRecordingInList(
-                            recordingFiles,
+                        // Use the ADVANCED Tiered Finder (MediaStore + File Scan + Learned Folder)
+                        val recordingPath = recordingRepository.findRecording(
                             call.callDate,
                             call.duration,
                             call.phoneNumber,
@@ -1117,6 +1166,70 @@ class CallDataRepository private constructor(private val context: Context) {
             callDataDao.updateSyncError(call.compositeId, null)
         }
         Log.d(TAG, "Reset sync status for ${allCalls.size} calls")
+    }
+
+    /**
+     * FULL RESET: Resets all local data statuses to PENDING for a complete fresh sync.
+     * This implements "Forgot server, sync statuses of local data" troubleshooting.
+     */
+    suspend fun resetAllSyncStatuses() = withContext(Dispatchers.IO) {
+        callDataDao.resetAllSyncStatuses()
+        settingsRepository.setLastSyncTime(0L)
+        Log.d(TAG, "Full reset of all sync statuses completed.")
+    }
+
+    /**
+     * RESET METADATA ONLY: Resets only the metadata sync status.
+     * This implements "Fetch meta data all" (by triggering a re-sync of all metadata).
+     */
+    suspend fun resetMetadataSync() = withContext(Dispatchers.IO) {
+        callDataDao.resetMetadataSync()
+        settingsRepository.setLastSyncTime(0L)
+        Log.d(TAG, "Metadata sync reset completed.")
+    }
+
+    /**
+     * RE-IMPORT FROM SYSTEM: Triggers a fresh scan of the system call log.
+     */
+    suspend fun reimportFromSystem() = withContext(Dispatchers.IO) {
+        ProcessMonitor.startProcess(ProcessMonitor.ProcessIds.IMPORT_CALL_LOG, "Re-importing from system...", isIndeterminate = true)
+        try {
+            // Force import by ignoring smart sync markers if we had any (none currently, but we can bypass the time check)
+            // We just call the existing sync method, but maybe we should clear IDs first?
+            // User just wants to "Re import", so we'll run the sync.
+            syncFromSystemCallLog()
+        } finally {
+            ProcessMonitor.endProcess(ProcessMonitor.ProcessIds.IMPORT_CALL_LOG)
+        }
+    }
+
+    /**
+     * RE-ATTACH RECORDINGS: Clears local recording paths and rescans the filesystem.
+     */
+    suspend fun reattachRecordings() = withContext(Dispatchers.IO) {
+        val calls = callDataDao.getAllCalls()
+        val updates = mutableMapOf<String, String?>()
+        calls.forEach { updates[it.compositeId] = null }
+        callDataDao.updateRecordingPaths(updates)
+        
+        // Now trigger the sync which includes finding recordings
+        syncFromSystemCallLog()
+        Log.d(TAG, "Re-attach recordings completed.")
+    }
+
+    /**
+     * CONTINUE RUNNER: Looking for unsynced data with pending status and null processing status.
+     * This implements "Looking for unsynced data pending status any while processing status is null".
+     */
+    suspend fun runContinueRunner(applicationContext: Context) = withContext(Dispatchers.IO) {
+        // First cleanup any stale processing statuses
+        clearStaleProcessingStatuses()
+        
+        val pending = callDataDao.getPendingCallsWithNoProcessing()
+        if (pending.isNotEmpty()) {
+            Log.d(TAG, "Continue Runner: Found ${pending.size} pending items needing processing. Triggering sync.")
+            CallSyncWorker.runNow(applicationContext)
+        }
     }
     
     /**

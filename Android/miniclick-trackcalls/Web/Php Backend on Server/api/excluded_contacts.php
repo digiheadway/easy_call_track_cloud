@@ -58,7 +58,7 @@ switch ($method) {
             $phoneList = implode(',', $phones);
             
             // Delete Physical Files
-            $recordings = Database::select("SELECT recording_url FROM calls WHERE caller_phone IN ($phoneList) AND org_id = '$orgId' AND recording_url IS NOT NULL AND recording_url != ''");
+            $recordings = Database::select("SELECT recording_url FROM call_log WHERE caller_phone IN ($phoneList) AND org_id = '$orgId' AND recording_url IS NOT NULL AND recording_url != ''");
             foreach ($recordings as $rec) {
                 if ($rec['recording_url'] && file_exists($rec['recording_url'])) {
                     @unlink($rec['recording_url']);
@@ -66,9 +66,9 @@ switch ($method) {
             }
             
             // 1. Delete Calls
-            Database::execute("DELETE FROM calls WHERE caller_phone IN ($phoneList) AND org_id = '$orgId'");
+            Database::execute("DELETE FROM call_log WHERE caller_phone IN ($phoneList) AND org_id = '$orgId'");
             // 2. Delete Contact Info
-            Database::execute("DELETE FROM contacts WHERE phone IN ($phoneList) AND org_id = '$orgId'");
+            Database::execute("DELETE FROM call_log_phones WHERE phone IN ($phoneList) AND org_id = '$orgId'");
             
             Response::success([], "All related data for " . count($excluded) . " excluded contacts deleted");
         }
@@ -78,7 +78,7 @@ switch ($method) {
             $phone = Database::escape($data['phone']);
             
             // Delete Physical Files
-            $recordings = Database::select("SELECT recording_url FROM calls WHERE caller_phone = '$phone' AND org_id = '$orgId' AND recording_url IS NOT NULL AND recording_url != ''");
+            $recordings = Database::select("SELECT recording_url FROM call_log WHERE caller_phone = '$phone' AND org_id = '$orgId' AND recording_url IS NOT NULL AND recording_url != ''");
             foreach ($recordings as $rec) {
                 if ($rec['recording_url'] && file_exists($rec['recording_url'])) {
                     @unlink($rec['recording_url']);
@@ -86,9 +86,9 @@ switch ($method) {
             }
             
             // 1. Delete Calls
-            Database::execute("DELETE FROM calls WHERE caller_phone = '$phone' AND org_id = '$orgId'");
+            Database::execute("DELETE FROM call_log WHERE caller_phone = '$phone' AND org_id = '$orgId'");
             // 2. Delete Contact Info
-            Database::execute("DELETE FROM contacts WHERE phone = '$phone' AND org_id = '$orgId'");
+            Database::execute("DELETE FROM call_log_phones WHERE phone = '$phone' AND org_id = '$orgId'");
             
             Response::success([], 'Related data for this contact deleted');
         }

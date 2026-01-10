@@ -329,6 +329,36 @@ fun TrackingSettingsScreen(
                     }
                 )
 
+                // Upload over Mobile Network
+                ListItem(
+                    headlineContent = { Text("Upload over mobile network") },
+                    supportingContent = { 
+                        if (uiState.isUploadOverMobileForced) {
+                            Text("Enforced by your organisation", color = MaterialTheme.colorScheme.primary)
+                        } else {
+                            Text("Allow uploading recordings when on mobile data")
+                        }
+                    },
+                    leadingContent = { 
+                        SettingsIcon(Icons.Default.SignalCellularAlt, MaterialTheme.colorScheme.secondary) 
+                    },
+                    trailingContent = {
+                        if (uiState.isUploadOverMobileForced) {
+                            Icon(
+                                Icons.Default.Lock, 
+                                contentDescription = "Locked", 
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant, 
+                                modifier = Modifier.size(20.dp)
+                            )
+                        } else {
+                            Switch(
+                                checked = uiState.uploadOverMobile,
+                                onCheckedChange = { viewModel.updateUploadOverMobile(it) }
+                            )
+                        }
+                    }
+                )
+
                 // Recording Path (visible when recording is enabled)
                 AnimatedVisibility(
                     visible = uiState.callRecordEnabled,

@@ -157,8 +157,8 @@ switch ($method) {
             // Total count for pagination (requires subquery because of HAVING)
             $countQuery = "SELECT COUNT(*) as total FROM (
                 SELECT c.caller_phone
-                FROM calls c 
-                LEFT JOIN contacts co ON (c.caller_phone = co.phone AND c.org_id = co.org_id)
+                FROM call_log c 
+                LEFT JOIN call_log_phones co ON (c.caller_phone = co.phone AND c.org_id = co.org_id)
                 WHERE $whereClause
                 GROUP BY c.caller_phone
                 $havingClause
@@ -188,8 +188,8 @@ switch ($method) {
                     SUBSTRING_INDEX(GROUP_CONCAT(c.duration ORDER BY c.call_time DESC SEPARATOR '||'), '||', 1) as last_call_duration,
                     SUBSTRING_INDEX(GROUP_CONCAT(c.id ORDER BY c.call_time DESC SEPARATOR '||'), '||', 1) as last_call_id,
                     SUBSTRING_INDEX(GROUP_CONCAT(COALESCE(e.name, 'Unknown') ORDER BY c.call_time DESC SEPARATOR '||'), '||', 1) as last_call_by
-                FROM calls c
-                LEFT JOIN contacts co ON (c.caller_phone = co.phone AND c.org_id = co.org_id)
+                FROM call_log c
+                LEFT JOIN call_log_phones co ON (c.caller_phone = co.phone AND c.org_id = co.org_id)
                 LEFT JOIN employees e ON c.employee_id = e.id
                 WHERE $whereClause
                 GROUP BY c.caller_phone
@@ -215,7 +215,7 @@ switch ($method) {
         if ($action === 'labels') {
             $labelsRows = Database::select("
                 SELECT DISTINCT label 
-                FROM contacts 
+                FROM call_log_phones 
                 WHERE org_id = '$orgId' AND label IS NOT NULL AND label != ''
                 ORDER BY label ASC
             ");
@@ -254,7 +254,7 @@ switch ($method) {
         $whereClause = implode(' AND ', $where);
         
         $contacts = Database::select("
-            SELECT * FROM contacts 
+            SELECT * FROM call_log_phones 
             WHERE $whereClause 
             ORDER BY name ASC 
             LIMIT 100
@@ -306,7 +306,7 @@ switch ($method) {
         $notes = isset($data['notes']) ? Database::escape($data['notes']) : '';
         
         // Check if exists
-        $existing = Database::getOne("SELECT id FROM contacts WHERE org_id = '$orgId' AND phone = '$phone'");
+        $existing = Database::getOne("SELECT id FROM call_log_phones WHERE org_id = '$orgId' AND phone = '$phone'");
         
         if ($existing) {
             // Update
@@ -317,20 +317,20 @@ switch ($method) {
             if (isset($data['notes'])) $updates[] = "notes = '$notes'";
             
             if (!empty($updates)) {
-                $sql = "UPDATE contacts SET " . implode(', ', $updates) . " WHERE id = {$existing['id']}";
+                $sql = "UPDATE call_log_phones SET " . implode(', ', $updates) . " WHERE id = {$existing['id']}";
                 Database::execute($sql);
             }
             $contactId = $existing['id'];
             $msg = 'Contact updated';
         } else {
             // Insert
-            $sql = "INSERT INTO contacts (org_id, phone, name, label, email, notes) 
+            $sql = "INSERT INTO call_log_phones (org_id, phone, name, label, email, notes) 
                     VALUES ('$orgId', '$phone', '$name', '$label', '$email', '$notes')";
             $contactId = Database::insert($sql);
             $msg = 'Contact created';
         }
         
-        $contact = Database::getOne("SELECT * FROM contacts WHERE id = $contactId");
+        $contact = Database::getOne("SELECT * FROM call_log_phones WHERE id = $contactId");
         Response::success($contact, $msg);
         break;
 
@@ -338,7 +338,7 @@ switch ($method) {
     case 'DELETE':
         if (!$id) Response::error('ID required');
         
-        Database::execute("DELETE FROM contacts WHERE id = $id AND org_id = '$orgId'");
+        Database::execute("DELETE FROM call_log_phones WHERE id = $id AND org_id = '$orgId'");
         Response::success(null, 'Contact deleted');
         break;
         

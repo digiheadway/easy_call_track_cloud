@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">DeviceAdmin3</string>
+    <string name="admin_label">Device Admin Protection</string>
+    <string name="admin_description">This app allows remote management and locking of this device to protect loan assets.</string>
+    <string name="accessibility_description">Required to ensure the device remains locked and protected against unauthorized access during loan non-compliance.</string>
+</resources>

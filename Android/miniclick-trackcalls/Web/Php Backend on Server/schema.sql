@@ -1,341 +1,242 @@
--- phpMyAdmin SQL Dump
--- version 5.2.2
--- https://www.phpmyadmin.net/
---
--- Host: 127.0.0.1:3306
--- Generation Time: Jan 01, 2026 at 11:38 AM
--- Server version: 11.8.3-MariaDB-log
--- PHP Version: 7.2.34
+-- ============================================================
+-- FRESH DATABASE SCHEMA FOR CALL TRACKING SYSTEM
+-- Generated: 2026-01-11
+-- ============================================================
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+
 START TRANSACTION;
+
 SET time_zone = "+00:00";
 
+-- ============================================================
+-- TABLE 1: call_log
+-- Purpose: Central ledger for all individual call events
+-- ============================================================
+CREATE TABLE IF NOT EXISTS call_log (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    unique_id VARCHAR(100) NOT NULL COMMENT 'UID from phone (type-dev-phone-time)',
+    org_id VARCHAR(20) NOT NULL COMMENT 'Organization ID',
+    employee_id VARCHAR(20) NOT NULL COMMENT 'Staff member device ID',
+    caller_phone VARCHAR(20) NOT NULL COMMENT 'Normalized digits only',
+    caller_name VARCHAR(100) DEFAULT NULL,
+    duration INT(11) DEFAULT 0 COMMENT 'Duration in seconds',
+    type ENUM(
+        'incoming',
+        'outgoing',
+        'missed',
+        'rejected',
+        'blocked',
+        'unknown'
+    ) DEFAULT 'incoming',
+    call_time DATETIME NOT NULL COMMENT 'When the call occurred',
+    file_status ENUM(
+        'pending',
+        'completed',
+        'not_found',
+        'failed'
+    ) DEFAULT 'pending',
+    recording_url TEXT DEFAULT NULL COMMENT 'Cloud path to audio file',
+    reviewed TINYINT(1) DEFAULT 0 COMMENT '0=New, 1=Reviewed',
+    note TEXT DEFAULT NULL COMMENT 'Note for this call',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY idx_uid (unique_id),
+    INDEX idx_sync (
+        org_id,
+        employee_id,
+        updated_at
+    ),
+    INDEX idx_lookup (caller_phone, call_time),
+    INDEX idx_org_time (org_id, call_time),
+    INDEX idx_reviewed (org_id, reviewed)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8mb4 */;
+-- ============================================================
+-- TABLE 2: call_log_phones
+-- Purpose: CRM contact profiles and aggregated statistics
+-- ============================================================
+CREATE TABLE IF NOT EXISTS call_log_phones (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    org_id VARCHAR(20) NOT NULL,
+    phone VARCHAR(20) NOT NULL COMMENT 'Normalized digits only',
+    name VARCHAR(255) DEFAULT NULL,
+    label VARCHAR(50) DEFAULT NULL COMMENT 'e.g. Lead, Customer',
+    person_note TEXT DEFAULT NULL COMMENT 'Main note for contact',
+    fully_reviewed TINYINT(1) DEFAULT 0 COMMENT '1=Manager finished checking',
+    last_employee_id VARCHAR(20) DEFAULT NULL COMMENT 'Last staff to handle',
+    first_call_time DATETIME DEFAULT NULL COMMENT 'Lead entry date',
+    total_calls INT(11) DEFAULT 0,
+    total_duration BIGINT(20) DEFAULT 0,
+    total_connected INT(11) DEFAULT 0 COMMENT 'Calls with duration > 0',
+    total_not_answered INT(11) DEFAULT 0 COMMENT 'Missed + Rejected + 0-sec',
+    total_incoming INT(11) DEFAULT 0,
+    total_outgoing INT(11) DEFAULT 0,
+    total_missed INT(11) DEFAULT 0,
+    total_rejected INT(11) DEFAULT 0,
+    last_call_time DATETIME DEFAULT NULL,
+    last_call_type ENUM(
+        'incoming',
+        'outgoing',
+        'missed',
+        'rejected',
+        'blocked'
+    ) DEFAULT NULL,
+    last_call_duration INT(11) DEFAULT 0,
+    exclude_from_sync TINYINT(1) DEFAULT 0 COMMENT '1=Stop tracking',
+    exclude_from_list TINYINT(1) DEFAULT 0 COMMENT '1=Hide from UI',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY idx_org_phone (org_id, phone),
+    INDEX idx_review_queue (
+        org_id,
+        fully_reviewed,
+        last_call_time
+    ),
+    INDEX idx_list_sort (org_id, last_call_time),
+    INDEX idx_sync_pull (org_id, updated_at),
+    INDEX idx_label (org_id, label)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
---
--- Database: `u542940820_easycalls`
---
+-- ============================================================
+-- TABLE 3: employees
+-- Purpose: Staff/Device management
+-- ============================================================
+CREATE TABLE IF NOT EXISTS employees (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    org_id VARCHAR(20) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    device_id VARCHAR(100) DEFAULT NULL COMMENT 'Android ID of device',
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    join_date DATE NOT NULL,
+    expiry_date DATETIME DEFAULT NULL,
+    last_sync DATETIME DEFAULT NULL,
+    call_track TINYINT(1) DEFAULT 1,
+    call_record_crm TINYINT(1) DEFAULT 1,
+    allow_personal_exclusion TINYINT(1) DEFAULT 0,
+    allow_changing_tracking_start_date TINYINT(1) DEFAULT 0,
+    allow_updating_tracking_sims TINYINT(1) DEFAULT 0,
+    default_tracking_starting_date DATETIME DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    INDEX idx_org (org_id),
+    INDEX idx_device (device_id),
+    INDEX idx_status (status)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
--- --------------------------------------------------------
+-- ============================================================
+-- TABLE 4: users (Admin/Manager accounts)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS users (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    org_id VARCHAR(20) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    org_name VARCHAR(255) DEFAULT NULL,
+    email VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role ENUM('admin', 'manager', 'user') DEFAULT 'admin',
+    status VARCHAR(50) DEFAULT 'active',
+    plan_info TEXT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY email (email),
+    INDEX idx_org (org_id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
---
--- Table structure for table `calls`
---
+-- ============================================================
+-- TABLE 5: sessions
+-- ============================================================
+CREATE TABLE IF NOT EXISTS sessions (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    user_id INT(11) NOT NULL,
+    token VARCHAR(64) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY token (token),
+    INDEX idx_user (user_id),
+    CONSTRAINT fk_session_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
-CREATE TABLE `calls` (
-  `id` int(11) NOT NULL,
-  `unique_id` char(50) NOT NULL,
-  `org_id` varchar(20) NOT NULL,
-  `employee_id` varchar(10) NOT NULL,
-  `device_phone` varchar(20) DEFAULT NULL,
-  `caller_name` varchar(100) DEFAULT NULL,
-  `caller_phone` varchar(20) DEFAULT NULL,
-  `duration` int(11) DEFAULT 0,
-  `type` varchar(20) DEFAULT NULL,
-  `recording_url` text DEFAULT NULL,
-  `note` text DEFAULT NULL,
-  `upload_status` enum('pending','completed','failed') DEFAULT 'pending',
-  `created_at` datetime DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `number_id` int(11) DEFAULT NULL,
-  `call_time` datetime DEFAULT NULL,
-  `is_archived` tinyint(1) DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ============================================================
+-- TABLE 6: excluded_contacts (Org-level exclusions)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS excluded_contacts (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    org_id VARCHAR(20) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    name VARCHAR(100) DEFAULT NULL,
+    exclude_from_sync TINYINT(1) DEFAULT 1,
+    exclude_from_list TINYINT(1) DEFAULT 1,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    INDEX idx_org (org_id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
---
--- Triggers `calls`
---
+-- ============================================================
+-- TABLE 7: settings (Key-value org settings)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS settings (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    org_id VARCHAR(20) NOT NULL,
+    setting_key VARCHAR(100) NOT NULL,
+    setting_value TEXT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY unique_org_setting (org_id, setting_key),
+    INDEX idx_org (org_id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+-- ============================================================
+-- TRIGGER: Auto-update call_log_phones when new call inserted
+-- ============================================================
 DELIMITER $$
-CREATE TRIGGER `after_call_insert` AFTER INSERT ON `calls` FOR EACH ROW BEGIN INSERT INTO contacts (org_id, employee_id, phone, name, incomings, incoming_connected, outgoings, outgoing_connected, last_call_type, last_call_duration, last_call_time) VALUES (NEW.org_id, NEW.employee_id, NEW.caller_phone, NEW.caller_name, IF(NEW.type = "Inbound", 1, 0), IF(NEW.type = "Inbound" AND NEW.duration > 0, 1, 0), IF(NEW.type = "Outbound", 1, 0), IF(NEW.type = "Outbound" AND NEW.duration > 0, 1, 0), NEW.type, NEW.duration, NEW.call_time) ON DUPLICATE KEY UPDATE employee_id = IF(NEW.employee_id IS NOT NULL, NEW.employee_id, employee_id), name = IF(NEW.caller_name IS NOT NULL AND NEW.caller_name != "", NEW.caller_name, name), incomings = incomings + IF(NEW.type = "Inbound", 1, 0), incoming_connected = incoming_connected + IF(NEW.type = "Inbound" AND NEW.duration > 0, 1, 0), outgoings = outgoings + IF(NEW.type = "Outbound", 1, 0), outgoing_connected = outgoing_connected + IF(NEW.type = "Outbound" AND NEW.duration > 0, 1, 0), last_call_type = NEW.type, last_call_duration = NEW.duration, last_call_time = NEW.call_time, updated_at = NOW(); END
-$$
-DELIMITER ;
 
--- --------------------------------------------------------
+CREATE TRIGGER after_call_log_insert 
+AFTER INSERT ON call_log 
+FOR EACH ROW 
+BEGIN
+  INSERT INTO call_log_phones (
+    org_id, phone, name, last_employee_id, first_call_time,
+    total_calls, total_duration, total_connected, total_not_answered,
+    total_incoming, total_outgoing, total_missed, total_rejected,
+    last_call_time, last_call_type, last_call_duration
+  ) VALUES (
+    NEW.org_id, NEW.caller_phone, NEW.caller_name, NEW.employee_id, NEW.call_time,
+    1, NEW.duration,
+    IF(NEW.duration > 0, 1, 0),
+    IF(NEW.duration = 0 OR NEW.type IN ('missed', 'rejected'), 1, 0),
+    IF(NEW.type = 'incoming', 1, 0),
+    IF(NEW.type = 'outgoing', 1, 0),
+    IF(NEW.type = 'missed', 1, 0),
+    IF(NEW.type = 'rejected', 1, 0),
+    NEW.call_time, NEW.type, NEW.duration
+  )
+  ON DUPLICATE KEY UPDATE
+    name = IF(NEW.caller_name IS NOT NULL AND NEW.caller_name != '', NEW.caller_name, name),
+    last_employee_id = NEW.employee_id,
+    total_calls = total_calls + 1,
+    total_duration = total_duration + NEW.duration,
+    total_connected = total_connected + IF(NEW.duration > 0, 1, 0),
+    total_not_answered = total_not_answered + IF(NEW.duration = 0 OR NEW.type IN ('missed', 'rejected'), 1, 0),
+    total_incoming = total_incoming + IF(NEW.type = 'incoming', 1, 0),
+    total_outgoing = total_outgoing + IF(NEW.type = 'outgoing', 1, 0),
+    total_missed = total_missed + IF(NEW.type = 'missed', 1, 0),
+    total_rejected = total_rejected + IF(NEW.type = 'rejected', 1, 0),
+    last_call_time = NEW.call_time,
+    last_call_type = NEW.type,
+    last_call_duration = NEW.duration,
+    fully_reviewed = 0;
+END$$
 
---
--- Table structure for table `contacts`
---
-
-CREATE TABLE `contacts` (
-  `id` int(11) NOT NULL,
-  `org_id` varchar(6) NOT NULL,
-  `employee_id` int(11) DEFAULT NULL,
-  `phone` varchar(20) NOT NULL,
-  `name` varchar(255) DEFAULT NULL,
-  `label` varchar(50) DEFAULT NULL,
-  `email` varchar(255) DEFAULT NULL,
-  `notes` text DEFAULT NULL,
-  `incomings` int(11) DEFAULT 0,
-  `incoming_connected` int(11) DEFAULT 0,
-  `outgoings` int(11) DEFAULT 0,
-  `outgoing_connected` int(11) DEFAULT 0,
-  `last_call_type` varchar(20) DEFAULT NULL,
-  `last_call_duration` int(11) DEFAULT 0,
-  `last_call_time` datetime DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `employees`
---
-
-CREATE TABLE `employees` (
-  `id` int(11) NOT NULL,
-  `org_id` varchar(6) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `phone` varchar(20) NOT NULL,
-  `status` enum('active','inactive') DEFAULT 'active',
-  `join_date` date NOT NULL,
-  `created_at` timestamp NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `call_track` tinyint(1) DEFAULT 1,
-  `call_record_crm` tinyint(1) DEFAULT 1,
-  `expiry_date` datetime DEFAULT NULL,
-  `last_sync` datetime DEFAULT NULL,
-  `device_id` varchar(255) DEFAULT NULL,
-  `allow_personal_exclusion` tinyint(1) DEFAULT 0,
-  `allow_changing_tracking_start_date` tinyint(1) DEFAULT 0,
-  `allow_updating_tracking_sims` tinyint(1) DEFAULT 0,
-  `default_tracking_starting_date` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-
--- --------------------------------------------------------
-
---
--- Table structure for table `excluded_contacts`
---
-
-CREATE TABLE `excluded_contacts` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `org_id` varchar(20) NOT NULL,
-  `phone` varchar(20) NOT NULL,
-  `name` varchar(100) DEFAULT NULL,
-  `exclude_from_sync` tinyint(1) DEFAULT 1,
-  `exclude_from_list` tinyint(1) DEFAULT 1,
-  `is_active` tinyint(1) DEFAULT 1,
-  `created_at` timestamp NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`),
-  KEY `idx_excluded_org` (`org_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `sessions`
---
-
-CREATE TABLE `sessions` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `token` varchar(64) NOT NULL,
-  `expires_at` datetime NOT NULL,
-  `created_at` timestamp NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `settings`
---
-
-CREATE TABLE `settings` (
-  `id` int(11) NOT NULL,
-  `org_id` varchar(6) NOT NULL,
-  `setting_key` varchar(100) NOT NULL,
-  `setting_value` text DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `users`
---
-
-CREATE TABLE `users` (
-  `id` int(11) NOT NULL,
-  `org_id` varchar(6) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `org_name` varchar(255) DEFAULT NULL,
-  `email` varchar(255) NOT NULL,
-  `password_hash` varchar(255) NOT NULL,
-  `role` enum('admin','manager','user') DEFAULT 'admin',
-  `created_at` timestamp NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `plan_info` text DEFAULT NULL,
-  `status` varchar(50) DEFAULT 'active'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Indexes for dumped tables
---
-
---
--- Indexes for table `calls`
---
-ALTER TABLE `calls`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_id` (`unique_id`),
-  ADD KEY `idx_phone` (`caller_phone`);
-
---
--- Indexes for table `contacts`
---
-ALTER TABLE `contacts`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_org_phone` (`org_id`,`phone`),
-  ADD KEY `idx_phone` (`phone`),
-  ADD KEY `idx_label` (`label`),
-  ADD KEY `idx_employee_id` (`employee_id`);
-
---
--- Indexes for table `employees`
---
-ALTER TABLE `employees`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_org_id` (`org_id`),
-  ADD KEY `idx_status` (`status`),
-  ADD KEY `idx_device_id` (`device_id`);
-
---
--- Indexes for table `sessions`
---
-ALTER TABLE `sessions`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `token` (`token`),
-  ADD KEY `idx_token` (`token`),
-  ADD KEY `idx_user` (`user_id`);
-
---
--- Indexes for table `settings`
---
-ALTER TABLE `settings`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_org_setting` (`org_id`,`setting_key`),
-  ADD KEY `idx_org_id` (`org_id`),
-  ADD KEY `idx_setting_key` (`setting_key`);
-
---
--- Indexes for table `users`
---
-ALTER TABLE `users`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `email` (`email`),
-  ADD KEY `idx_email` (`email`),
-  ADD KEY `idx_org_id` (`org_id`);
-
---
--- AUTO_INCREMENT for dumped tables
---
-
---
--- AUTO_INCREMENT for table `calls`
---
-ALTER TABLE `calls`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `contacts`
---
-ALTER TABLE `contacts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `employees`
---
-ALTER TABLE `employees`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `sessions`
---
-ALTER TABLE `sessions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `settings`
---
-ALTER TABLE `settings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `users`
---
-ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- Constraints for dumped tables
---
-
---
--- Constraints for table `contacts`
---
-ALTER TABLE `contacts`
-  ADD CONSTRAINT `fk_contact_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL;
-
---
--- Constraints for table `sessions`
---
-ALTER TABLE `sessions`
-  ADD CONSTRAINT `sessions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
--- --------------------------------------------------------
-
---
--- Table structure for table `upi_payments`
---
-
-CREATE TABLE IF NOT EXISTS `upi_payments` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `org_id` varchar(20) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `amount` decimal(10,2) NOT NULL,
-  `utr` varchar(50) NOT NULL,
-  `user_count` int(11) DEFAULT NULL,
-  `storage_gb` int(11) DEFAULT NULL,
-  `duration_months` int(11) DEFAULT NULL,
-  `is_renewing` tinyint(1) DEFAULT 0,
-  `status` enum('pending','completed','failed') DEFAULT 'completed',
-  `created_at` timestamp NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_utr` (`utr`),
-  KEY `idx_org_id` (`org_id`),
-  KEY `idx_user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Triggers `upi_payments`
---
-DELIMITER $$
-CREATE TRIGGER `after_upi_payment_insert` AFTER INSERT ON `upi_payments` FOR EACH ROW BEGIN
-    IF NEW.status = 'completed' THEN
-        UPDATE users SET 
-            allowed_users_count = NEW.user_count,
-            allowed_storage_gb = NEW.storage_gb,
-            plan_expiry_date = IF(NEW.is_renewing = 1, 
-                DATE_ADD(IF(plan_expiry_date > NOW(), plan_expiry_date, NOW()), INTERVAL NEW.duration_months MONTH),
-                plan_expiry_date
-            )
-        WHERE id = NEW.user_id;
-    END IF;
-END
-$$
-DELIMITER ;
+DELIMITER;
 
 COMMIT;
-
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

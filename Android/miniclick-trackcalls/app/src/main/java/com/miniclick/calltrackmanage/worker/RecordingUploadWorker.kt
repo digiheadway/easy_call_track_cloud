@@ -59,6 +59,9 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                 Log.w(TAG, "Required settings missing. Skipping recording upload.")
                 return@withContext Result.success()
             }
+
+            // Cleanup any stale processing statuses (stuck from crashes)
+            callDataRepository.clearStaleProcessingStatuses()
     
             if (!settingsRepository.isCallRecordEnabled()) {
                 Log.d(TAG, "Recording tracking disabled by organisation. Skipping uploads.")
@@ -89,8 +92,19 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                 }
             }
     
+            // Check network constraints
+            val cm = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+            val activeNetwork = cm.activeNetwork
+            val capabilities = cm.getNetworkCapabilities(activeNetwork)
+            val isMetered = cm.isActiveNetworkMetered
+            
+            if (isMetered && !settingsRepository.isUploadOverMobileAllowed()) {
+                Log.d(TAG, "Metered network detected and upload over mobile is disabled. Skipping uploads.")
+                return@withContext Result.success()
+            }
+
             try {
-                // Cleanup stuck recordings (stuck in COMPRESSING or UPLOADING for more than 30 mins)
+                // Cleanup stuck recordings (stuck in UPLOADING for more than 30 mins)
                 // This is now handled by the reset logic below if we find them in needingSync
                 
                 val lastEnabledTime = settingsRepository.getRecordingLastEnabledTimestamp()
@@ -113,11 +127,11 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                 }
     
                 // Group by status to log info
-                val stuckCount = needingSync.count { it.recordingSyncStatus == RecordingSyncStatus.COMPRESSING || it.recordingSyncStatus == RecordingSyncStatus.UPLOADING }
+                val stuckCount = needingSync.count { it.recordingSyncStatus == RecordingSyncStatus.UPLOADING }
                 if (stuckCount > 0) {
                     Log.i(TAG, "Resetting $stuckCount stuck recording syncs to PENDING")
                     for (call in needingSync) {
-                        if (call.recordingSyncStatus == RecordingSyncStatus.COMPRESSING || call.recordingSyncStatus == RecordingSyncStatus.UPLOADING) {
+                        if (call.recordingSyncStatus == RecordingSyncStatus.UPLOADING) {
                             callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.PENDING)
                         }
                     }
@@ -130,34 +144,46 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                 
                 val alreadyCompletedSet = mutableSetOf<String>()
                 
-                // Batch check status with server
+                // Batch check status with server (with timeout to prevent hanging)
+                // We check more items now (up to 500) to clear large "already uploaded" queues
                 if (pendingCalls.isNotEmpty()) {
                     try {
-                        // Check only the first 50 to avoid massive requests, rest will be checked in loop if needed
-                        val idList = pendingCalls.take(50).map { it.compositeId }
-                        val jsonIds = Gson().toJson(idList)
-                        
-                        Log.d(TAG, "Checking server status for top ${idList.size} recordings")
-                        val statusResp = NetworkClient.api.checkRecordingsStatus("check_recordings_status", jsonIds)
-                        
-                        if (statusResp.isSuccessful) {
-                            val apiResp = statusResp.body()
-                            if (apiResp?.success == true) {
-                                val completedIds = apiResp.data?.completedIds
-                                
-                                if (!completedIds.isNullOrEmpty()) {
-                                    Log.i(TAG, "Server identified ${completedIds.size} recordings as already completed.")
-                                    alreadyCompletedSet.addAll(completedIds)
+                        withContext(Dispatchers.IO) {
+                            val maxToCheck = 200
+                            val idList = pendingCalls.take(maxToCheck).map { it.compositeId }
+                            val jsonIds = Gson().toJson(idList)
+                            
+                            Log.d(TAG, "Checking server status for top ${idList.size} recordings")
+                            
+                            val response = kotlinx.coroutines.withTimeoutOrNull(20000L) {
+                                try {
+                                    NetworkClient.api.checkRecordingsStatus("check_recordings_status", jsonIds)
+                                } catch (e: Exception) { 
+                                    Log.w(TAG, "Status check request failed: ${e.message}")
+                                    null 
+                                }
+                            }
+                            
+                            if (response != null && response.isSuccessful) {
+                                val apiResp = response.body()
+                                if (apiResp?.success == true) {
+                                    val completedIds = apiResp.data?.completedIds
                                     
-                                    for (id in completedIds) {
-                                        callDataRepository.updateRecordingSyncStatus(id, RecordingSyncStatus.COMPLETED)
-                                        callDataRepository.updateSyncError(id, null)
+                                    if (!completedIds.isNullOrEmpty()) {
+                                        Log.i(TAG, "Server identified ${completedIds.size} recordings as already completed.")
+                                        alreadyCompletedSet.addAll(completedIds)
+                                        
+                                        // Update in database to clear from queue
+                                        for (id in completedIds) {
+                                            callDataRepository.updateRecordingSyncStatus(id, RecordingSyncStatus.COMPLETED)
+                                            callDataRepository.updateSyncError(id, null)
+                                        }
                                     }
                                 }
                             }
                         }
                     } catch (e: Exception) {
-                        Log.e(TAG, "Failed to check batch recording status", e)
+                        Log.e(TAG, "Failed to check batch recording status, continuing with upload anyway", e)
                     }
                 }
     
@@ -197,14 +223,23 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                                     
                                     val progress = currentLocalCount.toFloat() / initialTotal
                                     ProcessMonitor.updateProgress(ProcessMonitor.ProcessIds.UPLOAD_RECORDINGS, progress, "Uploading $currentLocalCount/$initialTotal")
-                                    
+
                                     // Throttle notification updates (every 2 recordings or if it's the last)
                                     if (currentLocalCount % 2 == 0 || currentLocalCount == initialTotal) {
                                         setForeground(createForegroundInfo("Uploading $currentLocalCount/$initialTotal Recordings.."))
                                     }
                                     
+                                    // Mark as processing
+                                    callDataRepository.updateProcessingStatus(call.compositeId, "uploading")
+                                    
+                                    if (call.recordingSyncStatus == RecordingSyncStatus.COMPLETED) {
+                                        skippedCount++
+                                        return@async
+                                    }
+
                                     if (alreadyCompletedSet.contains(call.compositeId)) {
                                         skippedCount++
+                                        callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.COMPLETED)
                                         return@async
                                     }
 
@@ -242,8 +277,11 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                                         callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.FAILED)
                                         failedCount++
                                     }
-                                }
-                            }.awaitAll()
+                                }.also {
+                                        // Clear processing status when done
+                                        callDataRepository.updateProcessingStatus(call.compositeId, null)
+                                    }
+                                }.awaitAll()
                         }
                     }
                 } finally {
@@ -297,49 +335,9 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
             originalSize = file.length()
         }
 
-        // --- COMPRESSION STEP ---
-        // Compress large files to reduce upload size
-        var uploadPath = recordingPath
-        var compressedFile: File? = null
-        
-        if (originalSize > 300 * 1024) { // Only compress files > 300KB (saves time on small files)
-            try {
-                callDataRepository.updateRecordingSyncStatus(compositeId, RecordingSyncStatus.COMPRESSING)
-                
-                val cacheDir = File(applicationContext.cacheDir, "compressed_recordings")
-                if (!cacheDir.exists()) cacheDir.mkdirs()
-                
-                compressedFile = File(cacheDir, "${compositeId}_compressed.m4a")
-                
-                val compressionSuccess = withContext(Dispatchers.IO) {
-                    com.miniclick.calltrackmanage.util.audio.AudioCompressor.compress(
-                        applicationContext,
-                        recordingPath,
-                        compressedFile
-                    )
-                }
-                
-                if (compressionSuccess && compressedFile.exists() && compressedFile.length() > 0) {
-                    val compressionRatio = (1 - compressedFile.length().toFloat() / originalSize) * 100
-                    Log.d(TAG, "Compression successful: ${originalSize / 1024}KB -> ${compressedFile.length() / 1024}KB (${compressionRatio.toInt()}% reduction)")
-                    uploadPath = compressedFile.absolutePath
-                } else {
-                    Log.w(TAG, "Compression failed or produced empty file, using original")
-                    compressedFile?.delete()
-                    compressedFile = null
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Compression error, using original file", e)
-                compressedFile?.delete()
-                compressedFile = null
-            }
-        }
-
+        // --- UPLOAD STEP ---
         callDataRepository.updateRecordingSyncStatus(compositeId, RecordingSyncStatus.UPLOADING)
-        val uploadSuccess = uploadFileInChunks(uploadPath, compositeId)
-        
-        // Cleanup compressed file after upload
-        compressedFile?.delete()
+        val uploadSuccess = uploadFileInChunks(recordingPath, compositeId)
         
         if (uploadSuccess) {
             callDataRepository.updateRecordingSyncStatus(compositeId, RecordingSyncStatus.COMPLETED)
@@ -536,7 +534,7 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
 
             WorkManager.getInstance(context).enqueueUniqueWork(
                 "RecordingUploadWorker",
-                ExistingWorkPolicy.KEEP,
+                ExistingWorkPolicy.REPLACE,
                 request
             )
         }

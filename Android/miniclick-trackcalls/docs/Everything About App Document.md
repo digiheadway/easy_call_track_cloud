@@ -63,11 +63,14 @@ Your usage is simple: **Install and Forget**.
 
 ### Step 3: The Permission Handshake
 You must grant these permissions for the app to work:
-*   **Phone Calls**: To know *when* a call starts/stops.
-*   **Call Logs**: To know *who* you are talking to.
-*   **Audio**: To record the conversation.
+*   **Default Phone App**: Required for reliable call detection and showing information during active calls.
+*   **Call Logs**: To know *who* you are talking to and organize your history.
+*   **Phone State & Numbers**: To detect when a call starts/stops and identify the SIM card used.
 *   **Contacts**: To display names instead of numbers.
-*   **Battery Optimization**: Must be set to **Unrestricted** so the app isn't killed in the background.
+*   **Battery Optimization**: Must be set to **Unrestricted** so the app stays active in the background.
+*   **Audio / Media**: To record and attach conversations (if enabled).
+*   **Notifications**: To show sync status and alerts.
+*   **Overlay (Display over other apps)**: To show caller notes while you are on a call.
 
 ---
 

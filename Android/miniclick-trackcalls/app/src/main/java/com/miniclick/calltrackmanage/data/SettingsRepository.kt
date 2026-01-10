@@ -37,6 +37,8 @@ class SettingsRepository private constructor(private val context: Context) {
     private val KEY_ALLOWED_STORAGE_GB = "allowed_storage_gb"
     private val KEY_STORAGE_USED_BYTES = "storage_used_bytes"
     private val KEY_ONBOARDING_OFFLINE = "onboarding_offline"
+    private val KEY_UPLOAD_OVER_MOBILE = "upload_over_mobile"
+    private val KEY_FORCE_UPLOAD_OVER_MOBILE = "force_upload_over_mobile"
 
     private val KEY_TRACK_START_DATE_SET = "track_start_date_set"
     private val KEY_USER_DECLINED_RECORDING = "user_declined_recording"
@@ -488,4 +490,18 @@ class SettingsRepository private constructor(private val context: Context) {
 
     fun getViewMode(): String = prefs.getString(KEY_VIEW_MODE, "PERSONS") ?: "PERSONS"
     fun setViewMode(mode: String) = prefs.edit().putString(KEY_VIEW_MODE, mode).apply()
+
+    // New Recording Upload Settings
+    fun isUploadOverMobileAllowed(): Boolean {
+        // Force from org takes precedence
+        if (isForceUploadOverMobile()) return true
+        return prefs.getBoolean(KEY_UPLOAD_OVER_MOBILE, false)
+    }
+
+    fun setUploadOverMobileAllowed(allowed: Boolean) {
+        prefs.edit().putBoolean(KEY_UPLOAD_OVER_MOBILE, allowed).apply()
+    }
+
+    fun isForceUploadOverMobile(): Boolean = prefs.getBoolean(KEY_FORCE_UPLOAD_OVER_MOBILE, false)
+    fun setForceUploadOverMobile(force: Boolean) = prefs.edit().putBoolean(KEY_FORCE_UPLOAD_OVER_MOBILE, force).apply()
 }

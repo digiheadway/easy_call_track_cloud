@@ -26,6 +26,7 @@ import com.miniclick.calltrackmanage.MainViewModel
 import com.miniclick.calltrackmanage.ui.settings.SettingsViewModel
 import com.miniclick.calltrackmanage.ui.settings.SettingsUiState
 import com.miniclick.calltrackmanage.ui.settings.AccountInfoModal
+import com.miniclick.calltrackmanage.util.permissions.DevicePermissionGuide
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import androidx.compose.animation.core.*
@@ -190,7 +191,7 @@ fun SetupGuide(
         uiState.simSelection, uiState.callerPhoneSim1, uiState.callerPhoneSim2,
         uiState.sim1SubId, uiState.sim2SubId, uiState.availableSims,
         uiState.callRecordEnabled, uiState.userDeclinedRecording,
-        uiState.skippedSteps, isDefaultDialer
+        uiState.skippedSteps, isDefaultDialer, uiState.isIgnoringBatteryOptimizations
     ) {
         mutableListOf<GuideStep>().apply {
             // 0. Default Dialer (CRITICAL: Must precede runtime permissions for Play Store Approval)
@@ -260,6 +261,7 @@ fun SetupGuide(
                 ))
             }
 
+
             // 5. Start Date
             if (!uiState.isTrackStartDateSet && !uiState.skippedSteps.contains("START_DATE")) {
                 val isSet = uiState.trackStartDate != 0L
@@ -280,18 +282,24 @@ fun SetupGuide(
                 ))
             }
 
-            // 6. SIM Selection
-            if (uiState.simSelection == "Off" && !uiState.skippedSteps.contains("SIM_SELECTION")) {
-                val isDone = uiState.simSelection != "Off"
+            // 6. SIM Selection / Phone Confirmation
+            val isSimSelectionDone = uiState.simSelection != "Off"
+            val needsSimSetup = !isSimSelectionDone || 
+                               (uiState.simSelection == "Sim1" && uiState.callerPhoneSim1.isBlank()) ||
+                               (uiState.simSelection == "Sim2" && uiState.callerPhoneSim2.isBlank()) ||
+                               (uiState.simSelection == "Both" && (uiState.callerPhoneSim1.isBlank() || uiState.callerPhoneSim2.isBlank()))
+
+            if (needsSimSetup && !uiState.skippedSteps.contains("SIM_SELECTION")) {
                 add(GuideStep(
                     type = "SIM_SELECTION", 
-                    title = if (isDone) "SIM Selection Done" else "Select Sim Card to Track", 
-                    description = if (isDone) "Your SIM selection is saved." else "Choose which SIM cards you want to monitor calls for.", 
-                    icon = if (isDone) Icons.Default.CheckCircle else Icons.Default.SimCard, 
-                    actionLabel = if (isDone) "Next" else "Select SIM", 
-                    onAction = { if (isDone) settingsViewModel.setStepSkipped("SIM_SELECTION") else settingsViewModel.toggleTrackSimModal(true) },
-                    secondaryActionLabel = if (isDone) "Change Selection" else "Skip",
-                    onSecondaryAction = { if (isDone) settingsViewModel.toggleTrackSimModal(true) else settingsViewModel.setStepSkipped("SIM_SELECTION") }
+                    title = if (!isSimSelectionDone) "Select SIM to Track" else "Confirm Phone Number", 
+                    description = if (!isSimSelectionDone) "Choose which SIM cards you want to monitor calls for." 
+                                  else "Ensure your phone number is correct for identifying synced calls.", 
+                    icon = if (isSimSelectionDone) Icons.Default.PhoneAndroid else Icons.Default.SimCard, 
+                    actionLabel = if (!isSimSelectionDone) "Select SIM" else "Setup Number", 
+                    onAction = { settingsViewModel.toggleTrackSimModal(true) },
+                    secondaryActionLabel = "Skip",
+                    onSecondaryAction = { settingsViewModel.setStepSkipped("SIM_SELECTION") }
                 ))
             }
 
@@ -358,11 +366,14 @@ fun SetupGuide(
                         icon = step.icon,
                         actionLabel = step.actionLabel,
                         onAction = step.onAction,
-                        onDismiss = { mainViewModel.dismissOnboardingSession() },
+                        onDismiss = { 
+                            // Skip this specific step when clicking X
+                            settingsViewModel.setStepSkipped(step.type)
+                        },
                         asEmptyState = asEmptyState,
                         secondaryActionLabel = step.secondaryActionLabel,
                         onSecondaryAction = step.onSecondaryAction,
-                        canDismiss = false
+                        canDismiss = true
                     )
                 }
             }

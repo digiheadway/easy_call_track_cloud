@@ -49,7 +49,7 @@ class RecordingRepository private constructor(private val context: Context) {
             "Recordings/Call recordings",
             "Recordings/CallCloud",              // Our imported recordings
             "Recordings",
-            "Download",                          // Some Pixel versions
+            "Download",                          // Some Pixel versions, OnePlus O Dialer
             
             // Samsung (OneUI)
             "Recordings/Call",                   // Samsung newer (OneUI 4+)
@@ -65,10 +65,17 @@ class RecordingRepository private constructor(private val context: Context) {
             "MIUI/sound_recorder",
             "Recorder",
             
-            // OnePlus (OxygenOS)
+            // OnePlus (OxygenOS / O Dialer)
+            "Music/Recordings/Call recordings",  // OnePlus O Dialer primary path
+            "Music/Recordings/Call Recordings",  // Case variant
             "Record/Call",
             "Record/PhoneRecord",
             "Recordings/PhoneRecord",
+            "Call recordings",                   // OnePlus legacy path
+            "Download/Record",                   // Some OnePlus versions save to Download
+            "Download/PhoneRecord",              // OnePlus O Dialer variant
+            "Android/data/com.oneplus.communication.data/files/Record/PhoneRecord", // Android 11+
+            "Android/media/com.oneplus.communication.data/files/Record/PhoneRecord", // Media folder variant
             
             // Oppo/Realme/ColorOS
             "Music/Recordings/Call Recordings",
@@ -220,17 +227,39 @@ class RecordingRepository private constructor(private val context: Context) {
      */
     private fun scanForRecordingPath(): String? {
         val storage = Environment.getExternalStorageDirectory()
+        val manufacturer = android.os.Build.MANUFACTURER.lowercase()
         
-        // 1. Search device default paths FIRST
+        // 1. Brand-Specific Priority logic
+        // We prioritize paths that match the device manufacturer
+        val prioritizedPaths = mutableListOf<String>()
+        val others = mutableListOf<String>()
+        
         for (relativePath in DEVICE_DEFAULT_PATHS) {
+            val isMatch = when {
+                manufacturer.contains("samsung") && relativePath.contains("Samsung", ignoreCase = true) -> true
+                manufacturer.contains("samsung") && (relativePath.startsWith("Recordings/Call") || relativePath.startsWith("Call")) -> true
+                (manufacturer.contains("oneplus") || manufacturer.contains("oppo") || manufacturer.contains("realme")) && 
+                    (relativePath.contains("OnePlus", ignoreCase = true) || relativePath.contains("ColorOS", ignoreCase = true) || relativePath.contains("Music/Recordings")) -> true
+                (manufacturer.contains("xiaomi") || manufacturer.contains("redmi") || manufacturer.contains("poco")) && 
+                    relativePath.contains("MIUI", ignoreCase = true) -> true
+                manufacturer.contains("vivo") && (relativePath.contains("Record/Call") || relativePath.contains("VoiceRecorder")) -> true
+                (manufacturer.contains("huawei") || manufacturer.contains("honor")) && relativePath.contains("record", ignoreCase = true) -> true
+                else -> false
+            }
+            
+            if (isMatch) prioritizedPaths.add(relativePath) else others.add(relativePath)
+        }
+
+        // 2. Search Prioritized Paths FIRST
+        for (relativePath in (prioritizedPaths + others)) {
             val dir = File(storage, relativePath)
             if (dir.exists() && dir.isDirectory && hasAudioFiles(dir)) {
-                Log.d(TAG, "Found device default recording path: ${dir.absolutePath}")
+                Log.d(TAG, "Found recording path (Priority: ${prioritizedPaths.contains(relativePath)}): ${dir.absolutePath}")
                 return dir.absolutePath
             }
         }
         
-        // 2. Search third-party app paths
+        // 3. Search third-party app paths
         for (relativePath in THIRD_PARTY_PATHS) {
             val dir = File(storage, relativePath)
             if (dir.exists() && dir.isDirectory && hasAudioFiles(dir)) {
@@ -239,28 +268,19 @@ class RecordingRepository private constructor(private val context: Context) {
             }
         }
         
-        // 3. Deep scan common parent directories
+        // 4. Deep scan common parent directories (Last resort)
         val parentDirs = listOf("Recordings", "Record", "Music", "Call")
         for (parentName in parentDirs) {
             val parentDir = File(storage, parentName)
             if (parentDir.exists() && parentDir.isDirectory) {
-                // Check parent itself
-                if (hasAudioFiles(parentDir)) {
-                    Log.d(TAG, "Found recordings in parent: ${parentDir.absolutePath}")
-                    return parentDir.absolutePath
-                }
+                if (hasAudioFiles(parentDir)) return parentDir.absolutePath
                 
-                // Check subdirectories
                 parentDir.listFiles()?.filter { it.isDirectory }?.forEach { subDir ->
-                    if (hasAudioFiles(subDir)) {
-                        Log.d(TAG, "Found recordings in subdirectory: ${subDir.absolutePath}")
-                        return subDir.absolutePath
-                    }
+                    if (hasAudioFiles(subDir)) return subDir.absolutePath
                 }
             }
         }
         
-        Log.d(TAG, "No recording path detected")
         return null
     }
 
@@ -681,12 +701,19 @@ class RecordingRepository private constructor(private val context: Context) {
         durationSec: Long,
         bufferSeconds: Int = 300
     ): List<RecordingSourceFile> {
-        // --- Cache Check ---
+        // --- Enhanced Cache Check for Batch Syncs ---
         val now = System.currentTimeMillis()
-        if (now - lastMediaStoreScanTime < CACHE_EXPIRY_MS && 
+        val windowStart = callDate - (bufferSeconds * 1000L)
+        val windowEnd = callDate + (durationSec * 1000L) + (bufferSeconds * 1000L)
+
+        // Reuse cache if: 
+        // 1. It was scanned very recently (within 60s)
+        // 2. The previously requested buffer was at least as large as current
+        // 3. The new call date is within the bounds of the last scan's primary window (+/- 4 mins)
+        if (now - lastMediaStoreScanTime < 60_000 && 
             bufferSeconds <= lastScanBuffer && 
-            kotlin.math.abs(callDate - lastCallDate) < 30_000) { // Same ~30s window
-            Log.d(TAG, "Reusing cached MediaStore results (${lastMediaStoreResults.size} files)")
+            kotlin.math.abs(callDate - lastCallDate) < 4 * 60 * 1000L) { 
+            Log.d(TAG, "Reusing cached MediaStore results (${lastMediaStoreResults.size} files) for call at ${java.util.Date(callDate)}")
             return lastMediaStoreResults
         }
 

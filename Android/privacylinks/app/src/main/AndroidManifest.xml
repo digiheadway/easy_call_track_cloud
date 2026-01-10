@@ -9,14 +9,22 @@
     <queries>
         <package android:name="com.facebook.katana" />
         <package android:name="com.instagram.android" />
+        <package android:name="com.google.android.gms" />
         <intent>
             <action android:name="com.google.android.gms.ads.service.CACHE" />
         </intent>
         <intent>
             <action android:name="com.google.android.gms.ads.service.START" />
         </intent>
+        <intent>
+            <action android:name="androidx.credentials.CREDENTIAL_PROVIDER_SERVICE" />
+        </intent>
     </queries>
 
+
+    
+    <attribution android:tag="default_attribution" android:label="@string/app_name" />
+    
     <application
         android:name="com.clicktoearn.linkbox.LinkBoxApp"
         android:allowBackup="true"
@@ -40,6 +48,9 @@
         <meta-data 
             android:name="com.facebook.sdk.ApplicationId" 
             android:value="@string/facebook_app_id"/>
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
 
         <activity
             android:name="com.clicktoearn.linkbox.MainActivity"

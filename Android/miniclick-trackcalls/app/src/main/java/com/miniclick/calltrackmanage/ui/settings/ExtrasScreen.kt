@@ -213,7 +213,25 @@ fun ExtrasScreen(
                             Icon(Icons.Default.ChevronRight, contentDescription = null)
                         },
                         modifier = Modifier.clickable { 
-                            viewModel.toggleResetConfirmDialog(true)
+                            viewModel.resetEverythingForSync()
+                        }
+                    )
+
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                    ListItem(
+                        headlineContent = { Text("Fetch All Metadata") },
+                        supportingContent = { 
+                            Text("Pull all contact names, notes and labels from server")
+                        },
+                        leadingContent = { 
+                            SettingsIcon(Icons.Default.CloudDownload, MaterialTheme.colorScheme.secondary) 
+                        },
+                        trailingContent = {
+                            Icon(Icons.Default.ChevronRight, contentDescription = null)
+                        },
+                        modifier = Modifier.clickable { 
+                            viewModel.fetchMetaDataAll()
                         }
                     )
 

@@ -57,8 +57,15 @@ fun PersonsList(
     lazyListState: androidx.compose.foundation.lazy.LazyListState = androidx.compose.foundation.lazy.rememberLazyListState(),
     onJumpClick: () -> Unit = {}
 ) {
-    var expandedNumber by remember { mutableStateOf<String?>(null) }
+    // Hoist uiState collection to parent level to prevent recomposition in each card
     val uiState by viewModel.uiState.collectAsState()
+    val callRecordEnabled = uiState.callRecordEnabled
+    
+    // Pre-compute labels list once for all dialogs
+    val allLabels = remember(persons) {
+        persons.mapNotNull { it.label }.filter { it.isNotEmpty() }.distinct().sorted()
+    }
+    var expandedNumber by remember { mutableStateOf<String?>(null) }
     
     // State variables
     var longPressTarget by remember { mutableStateOf<PersonGroup?>(null) }
@@ -97,12 +104,9 @@ fun PersonsList(
     }
 
     if (labelTarget != null) {
-        val labelsFromPersons = remember(persons) { 
-            persons.mapNotNull { it.label }.filter { it.isNotEmpty() }.distinct().sorted() 
-        }
         LabelPickerDialog(
             currentLabel = labelTarget?.label,
-            availableLabels = labelsFromPersons,
+            availableLabels = allLabels,
             onDismiss = { labelTarget = null },
             onSave = { label ->
                 labelTarget?.let { viewModel.savePersonLabel(it.number, label) }
@@ -306,7 +310,7 @@ fun PersonsList(
                         isExpanded = isExpanded,
                         recordings = recordings,
                         audioPlayer = audioPlayer,
-                        viewModel = viewModel,
+                        callRecordEnabled = callRecordEnabled,
                         onCardClick = {
                             expandedNumber = if (isExpanded) null else p.number
                         },
@@ -382,7 +386,7 @@ fun PersonCard(
     isExpanded: Boolean,
     recordings: Map<String, String>,
     audioPlayer: AudioPlayer,
-    viewModel: HomeViewModel,
+    callRecordEnabled: Boolean,
     onCardClick: () -> Unit,
     onLongClick: () -> Unit,
     onCallClick: () -> Unit,
@@ -397,7 +401,6 @@ fun PersonCard(
     onAttachRecording: (CallDataEntity) -> Unit,
     onMarkAllReviewed: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
     val interactionSource = remember { MutableInteractionSource() }
     
     ElevatedCard(
@@ -426,12 +429,14 @@ fun PersonCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Avatar with Last Call Type Icon
-                val lastCallType = person.calls.maxByOrNull { it.callDate }?.callType
-                val (iconColor, bgColor) = when (lastCallType) {
-                    android.provider.CallLog.Calls.INCOMING_TYPE -> Color(0xFF4CAF50) to Color(0xFFE8F5E9)
-                    android.provider.CallLog.Calls.OUTGOING_TYPE -> Color(0xFF2196F3) to Color(0xFFE3F2FD)
-                    android.provider.CallLog.Calls.MISSED_TYPE -> Color(0xFFF44336) to Color(0xFFFFEBEE)
-                    else -> MaterialTheme.colorScheme.primary to MaterialTheme.colorScheme.primaryContainer
+                val lastCallType = remember(person.calls) { person.calls.maxByOrNull { it.callDate }?.callType }
+                val (iconColor, bgColor) = remember(lastCallType) {
+                    when (lastCallType) {
+                        android.provider.CallLog.Calls.INCOMING_TYPE -> Color(0xFF4CAF50) to Color(0xFFE8F5E9)
+                        android.provider.CallLog.Calls.OUTGOING_TYPE -> Color(0xFF2196F3) to Color(0xFFE3F2FD)
+                        android.provider.CallLog.Calls.MISSED_TYPE -> Color(0xFFF44336) to Color(0xFFFFEBEE)
+                        else -> Color(0xFF6750A4) to Color(0xFFEADDFF) // Default primary colors
+                    }
                 }
                 
                 Box(
@@ -442,12 +447,12 @@ fun PersonCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = when (lastCallType) {
+                        imageVector = remember(lastCallType) { when (lastCallType) {
                             android.provider.CallLog.Calls.INCOMING_TYPE -> Icons.AutoMirrored.Filled.CallReceived
                             android.provider.CallLog.Calls.OUTGOING_TYPE -> Icons.AutoMirrored.Filled.CallMade
                             android.provider.CallLog.Calls.MISSED_TYPE -> Icons.AutoMirrored.Filled.CallMissed
                             else -> Icons.Default.Phone
-                        },
+                        }},
                         contentDescription = null,
                         tint = iconColor,
                         modifier = Modifier.size(24.dp)
@@ -462,14 +467,17 @@ fun PersonCard(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        val allReviewed = person.calls.isNotEmpty() && person.calls.all { it.reviewed }
+                        val allReviewed = remember(person.calls) { person.calls.isNotEmpty() && person.calls.all { it.reviewed } }
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.weight(1f),
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
+                            val displayName = remember(person.name, person.number) {
+                                person.name?.takeIf { it.isNotBlank() } ?: cleanNumber(person.number)
+                            }
                             Text(
-                                text = person.name?.takeIf { it.isNotBlank() } ?: cleanNumber(person.number),
+                                text = displayName,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = if (isExpanded) 10 else 1,
@@ -535,7 +543,8 @@ fun PersonCard(
                                 }
 
                                 if (hasLabel) {
-                                    person.label!!.split(",").map { it.trim() }.filter { it.isNotBlank() }.forEach { label ->
+                                    val labelList = remember(person.label) { person.label!!.split(",").map { it.trim() }.filter { it.isNotBlank() } }
+                                    labelList.forEach { label ->
                                         LabelChip(label = label, onClick = onLabelClick, maxLines = 10)
                                     }
                                 }
@@ -556,12 +565,10 @@ fun PersonCard(
                                 }
 
                                 if (hasLabel) {
-                                    val labels = person.label!!.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                                    val labels = remember(person.label) { person.label!!.split(",").map { it.trim() }.filter { it.isNotBlank() } }
                                     if (labels.isNotEmpty()) {
-                                        val displayLabel = if (labels.size > 1) {
-                                            "${labels.first()} +${labels.size - 1}"
-                                        } else {
-                                            labels.first()
+                                        val displayLabel = remember(labels) {
+                                            if (labels.size > 1) "${labels.first()} +${labels.size - 1}" else labels.first()
                                         }
                                         LabelChip(label = displayLabel, onClick = onLabelClick)
                                     }
@@ -584,8 +591,12 @@ fun PersonCard(
                             if (person.missedCount > 0) CallTypeSmallBadge(Icons.AutoMirrored.Filled.CallMissed, person.missedCount, Color(0xFFF44336))
                         }
                         
+                        val formattedDate = remember(person.lastCallDate) {
+                            // Using a static formatter pattern for efficiency, note: Locale.getDefault() still queried
+                            java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault()).format(java.util.Date(person.lastCallDate))
+                        }
                         Text(
-                            text = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(person.lastCallDate)),
+                            text = formattedDate,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -640,18 +651,11 @@ fun PersonCard(
                     
                     val recentCalls = remember(person.calls) { person.calls.take(5) }
                     recentCalls.forEach { call ->
-                        // Trigger check for recording path
-                        LaunchedEffect(Unit) {
-                            if (call.localRecordingPath == null) {
-                                viewModel.getRecordingForLog(call)
-                            }
-                        }
-
                         InteractionRow(
                             call = call,
                             recordings = recordings,
                             audioPlayer = audioPlayer,
-                            callRecordEnabled = uiState.callRecordEnabled,
+                            callRecordEnabled = callRecordEnabled,
                             onNoteClick = onCallNoteClick,
                             onAttachRecording = onAttachRecording
                         )

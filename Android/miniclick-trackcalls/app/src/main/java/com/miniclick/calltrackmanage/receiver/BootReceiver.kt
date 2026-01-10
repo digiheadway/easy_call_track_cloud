@@ -14,14 +14,19 @@ class BootReceiver : BroadcastReceiver() {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED || 
             intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) {
             
-            Log.d(TAG, "Boot/Update detected. Starting sync service and scheduling workers.")
-            
-            // Re-schedule workers as backup
-            CallSyncWorker.enqueue(context)
-            RecordingUploadWorker.enqueue(context)
-            
-            // Start foreground service for reliable sync
-            SyncService.start(context)
+            val settingsRepository = com.miniclick.calltrackmanage.data.SettingsRepository.getInstance(context)
+            if (settingsRepository.isAgreementAccepted()) {
+                Log.d(TAG, "Boot/Update detected. Starting sync service and scheduling workers.")
+                
+                // Re-schedule workers as backup
+                CallSyncWorker.enqueue(context)
+                RecordingUploadWorker.enqueue(context)
+                
+                // Start foreground service for reliable sync
+                SyncService.start(context)
+            } else {
+                Log.d(TAG, "Boot detected - agreement not yet accepted, skipping background initialization")
+            }
         }
     }
 

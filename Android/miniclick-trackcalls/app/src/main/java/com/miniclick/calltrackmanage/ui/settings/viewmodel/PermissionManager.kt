@@ -23,6 +23,9 @@ class PermissionManager(
     private val _isOverlayPermissionGranted = MutableStateFlow(false)
     val isOverlayPermissionGranted: StateFlow<Boolean> = _isOverlayPermissionGranted.asStateFlow()
 
+    private val _isIgnoringBatteryOptimizations = MutableStateFlow(false)
+    val isIgnoringBatteryOptimizations: StateFlow<Boolean> = _isIgnoringBatteryOptimizations.asStateFlow()
+
     /**
      * Re-checks all required permissions and updates state.
      */
@@ -59,8 +62,16 @@ class PermissionManager(
             true
         }
 
+        val isIgnoringBattery = if (sdkInt >= Build.VERSION_CODES.M) {
+            val powerManager = ctx.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+            powerManager.isIgnoringBatteryOptimizations(ctx.packageName)
+        } else {
+            true
+        }
+
         _permissions.update { states }
         _isOverlayPermissionGranted.update { hasOverlay }
+        _isIgnoringBatteryOptimizations.update { isIgnoringBattery }
     }
 
     /**

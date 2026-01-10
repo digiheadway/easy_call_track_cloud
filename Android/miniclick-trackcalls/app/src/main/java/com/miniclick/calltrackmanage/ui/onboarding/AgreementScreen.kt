@@ -8,40 +8,62 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun AgreementScreen(onAccepted: () -> Unit) {
+fun AgreementScreen(
+    onAccepted: () -> Unit
+) {
     val context = LocalContext.current
-    var isAgreed by remember { mutableStateOf(false) }
+    var isAgreed by remember { mutableStateOf(true) }
+    
+    val annotatedString = buildAnnotatedString {
+        append("I have read and agree to the ")
+        pushStringAnnotation(tag = "privacy", annotation = "https://miniclickcrm.com/privacy")
+        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
+            append("Privacy Policy")
+        }
+        pop()
+        append(" and ")
+        pushStringAnnotation(tag = "terms", annotation = "https://miniclickcrm.com/terms")
+        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
+            append("Terms of Service")
+        }
+        pop()
+        append(".")
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .statusBarsPadding()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp)
+                .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(40.dp))
-
+            Spacer(Modifier.height(48.dp))
+            
             Surface(
                 modifier = Modifier.size(80.dp),
                 shape = CircleShape,
@@ -49,80 +71,89 @@ fun AgreementScreen(onAccepted: () -> Unit) {
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        Icons.Default.VerifiedUser,
+                        Icons.Default.Security,
                         contentDescription = null,
                         modifier = Modifier.size(40.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }
-
+            
             Spacer(Modifier.height(24.dp))
-
+            
             Text(
-                "Terms & Privacy",
+                "Terms & Privacy Policy",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onBackground
             )
-
+            
             Spacer(Modifier.height(16.dp))
-
+            
             Text(
-                "To provide its core call management and dialer features, MiniClick Calls needs to process your call logs and contact details.",
+                "Before using MiniClick Calls, please review and accept our disclosure regarding your privacy and data handling.",
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            
+            Spacer(Modifier.height(32.dp))
+            
+            PermissionDisclosureItem(
+                icon = Icons.Default.Call,
+                title = "Core Communication Tools",
+                description = "To handle calls, MiniClick requires access to your call log and contact information."
+            )
+            
+            PermissionDisclosureItem(
+                icon = Icons.Default.CloudSync,
+                title = "Server Synchronization",
+                description = "Your call logs can be synced to your organization's CRM for analytics and reporting."
+            )
+            
+            PermissionDisclosureItem(
+                icon = Icons.Default.Security,
+                title = "Data Protection",
+                description = "We use industry-standard encryption to protect your data during transfer and storage."
+            )
 
             Spacer(Modifier.height(32.dp))
 
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+            // Checkbox and Agreement Text
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                InfoItem(
-                    icon = Icons.Default.Security,
-                    title = "Data Privacy",
-                    description = "Your data is only stored locally or on your private dashboard if you enable cloud sync. We never sell your data."
+                Checkbox(
+                    checked = isAgreed,
+                    onCheckedChange = { isAgreed = it },
+                    colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
                 )
-                InfoItem(
-                    icon = Icons.Default.Storage,
-                    title = "Core Functionality",
-                    description = "Access to call logs is essential to track durations, types, and manage recordings effectively."
+                ClickableText(
+                    text = annotatedString,
+                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                    onClick = { offset ->
+                        annotatedString.getStringAnnotations(tag = "privacy", start = offset, end = offset).firstOrNull()?.let {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it.item))
+                            context.startActivity(intent)
+                        }
+                        annotatedString.getStringAnnotations(tag = "terms", start = offset, end = offset).firstOrNull()?.let {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it.item))
+                            context.startActivity(intent)
+                        }
+                        if (annotatedString.getStringAnnotations(tag = "privacy", start = offset, end = offset).isEmpty() &&
+                            annotatedString.getStringAnnotations(tag = "terms", start = offset, end = offset).isEmpty()) {
+                            isAgreed = !isAgreed
+                        }
+                    }
                 )
             }
 
-            Spacer(Modifier.height(40.dp))
-
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .clickable { isAgreed = !isAgreed }
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Checkbox(
-                        checked = isAgreed,
-                        onCheckedChange = { isAgreed = it }
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        "I have read and agree to the Privacy Policy and Terms of Service.",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(32.dp))
-
+            Spacer(Modifier.height(24.dp))
+            
             Button(
                 onClick = onAccepted,
                 enabled = isAgreed,
@@ -131,70 +162,10 @@ fun AgreementScreen(onAccepted: () -> Unit) {
                     .height(56.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text("Accept & Continue")
-            }
-
-            Spacer(Modifier.height(24.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "Privacy Policy",
-                    modifier = Modifier
-                        .clickable {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://miniclickcrm.com/privacy"))
-                            context.startActivity(intent)
-                        }
-                        .padding(8.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(Modifier.width(16.dp))
-                Text(
-                    text = "Terms of Service",
-                    modifier = Modifier
-                        .clickable {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://miniclickcrm.com/terms"))
-                            context.startActivity(intent)
-                        }
-                        .padding(8.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Text("Accept & Continue", style = MaterialTheme.typography.titleMedium)
             }
             
-            Spacer(Modifier.height(24.dp))
-        }
-    }
-}
-
-@Composable
-private fun InfoItem(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, description: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.Top
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-        Spacer(Modifier.width(16.dp))
-        Column {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Spacer(Modifier.height(48.dp))
         }
     }
 }

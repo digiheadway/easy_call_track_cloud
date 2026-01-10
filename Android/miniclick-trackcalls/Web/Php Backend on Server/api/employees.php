@@ -54,18 +54,18 @@ switch ($method) {
                 SELECT 
                     COUNT(*) as calls_count,
                     COUNT(CASE WHEN recording_url IS NOT NULL AND recording_url != '' THEN 1 END) as recordings_count
-                FROM calls 
+                FROM call_log 
                 WHERE employee_id = '$id' AND org_id = '$orgId'
             ");
             
             $contactsCount = Database::getOne("
-                SELECT COUNT(*) as count FROM contacts 
+                SELECT COUNT(*) as count FROM call_log_phones 
                 WHERE employee_id = $id AND org_id = '$orgId'
             ")['count'] ?? 0;
             
             // Calculate recordings size
             $recordings = Database::select("
-                SELECT recording_url FROM calls 
+                SELECT recording_url FROM call_log 
                 WHERE employee_id = '$id' AND org_id = '$orgId' 
                 AND recording_url IS NOT NULL AND recording_url != ''
             ");
@@ -97,10 +97,10 @@ switch ($method) {
             }
             
             // Delete ALL calls for this employee (recordings should be deleted first via delete_recordings action)
-            $callsDeleted = Database::execute("DELETE FROM calls WHERE employee_id = '$id' AND org_id = '$orgId'");
+            $callsDeleted = Database::execute("DELETE FROM call_log WHERE employee_id = '$id' AND org_id = '$orgId'");
             
             // Delete contacts linked to this employee
-            $contactsDeleted = Database::execute("DELETE FROM contacts WHERE employee_id = $id AND org_id = '$orgId'");
+            $contactsDeleted = Database::execute("DELETE FROM call_log_phones WHERE employee_id = $id AND org_id = '$orgId'");
             
             Response::success([
                 'calls_deleted' => true,
@@ -115,7 +115,7 @@ switch ($method) {
             
             // Get all recordings
             $recordings = Database::select("
-                SELECT id, recording_url FROM calls 
+                SELECT id, recording_url FROM call_log 
                 WHERE employee_id = '$id' AND org_id = '$orgId' 
                 AND recording_url IS NOT NULL AND recording_url != ''
             ");
@@ -137,14 +137,14 @@ switch ($method) {
             }
             
             // Delete the call records that had recordings (after files are deleted)
-            Database::execute("DELETE FROM calls WHERE employee_id = '$id' AND org_id = '$orgId' AND recording_url IS NOT NULL AND recording_url != ''");
+            Database::execute("DELETE FROM call_log WHERE employee_id = '$id' AND org_id = '$orgId' AND recording_url IS NOT NULL AND recording_url != ''");
             
             // Check if there are any remaining calls, if not, also delete contacts
-            $remainingCalls = Database::getOne("SELECT COUNT(*) as count FROM calls WHERE employee_id = '$id' AND org_id = '$orgId'")['count'] ?? 0;
+            $remainingCalls = Database::getOne("SELECT COUNT(*) as count FROM call_log WHERE employee_id = '$id' AND org_id = '$orgId'")['count'] ?? 0;
             $contactsDeleted = 0;
             if ($remainingCalls == 0) {
                 // No calls left, delete contacts too
-                Database::execute("DELETE FROM contacts WHERE employee_id = $id AND org_id = '$orgId'");
+                Database::execute("DELETE FROM call_log_phones WHERE employee_id = $id AND org_id = '$orgId'");
                 $contactsDeleted = 1;
             }
             
@@ -299,8 +299,8 @@ switch ($method) {
         }
 
         // Check for existing data
-        $callsCount = Database::getOne("SELECT COUNT(*) as count FROM calls WHERE employee_id = $id AND org_id = '$orgId'")['count'];
-        $contactsCount = Database::getOne("SELECT COUNT(*) as count FROM contacts WHERE employee_id = $id AND org_id = '$orgId'")['count'];
+        $callsCount = Database::getOne("SELECT COUNT(*) as count FROM call_log WHERE employee_id = $id AND org_id = '$orgId'")['count'];
+        $contactsCount = Database::getOne("SELECT COUNT(*) as count FROM call_log_phones WHERE employee_id = $id AND org_id = '$orgId'")['count'];
 
         if ($callsCount > 0 || $contactsCount > 0) {
             Response::error('Cannot delete employee. Associated calls and contacts must be deleted first.', 400);

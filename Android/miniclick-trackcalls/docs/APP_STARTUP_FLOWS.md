@@ -1,4 +1,5 @@
 # 📱 MiniClick Call Track - App Startup Flows
+*Version 1.2 | Updated: Jan 2026*
 
 This document details the startup process and check flows for different user states.
 
@@ -102,7 +103,7 @@ This document details the startup process and check flows for different user sta
 │                                    │                                            │
 │                                    ▼                                            │
 │  ┌─────────────────────────────────────────────────────────────────────────┐    │
-│  │ STEP 2: ONBOARDING SLIDESHOW (7 Steps)                                   │    │
+│  │ STEP 2: ONBOARDING SLIDESHOW (8 Steps)                                   │    │
 │  │ ────────────────────────────────────────                                 │    │
 │  │                                                                          │    │
 │  │  Page 1: Welcome                    Page 5: Notes During Calls           │    │
@@ -624,7 +625,7 @@ START
   ├──────────────┘
   │
   ├─▶ isOnboardingCompleted?
-  │     ├── NO  → OnboardingScreen (7 steps)
+  │     ├── NO  → OnboardingScreen (8 steps)
   │     └── YES ─┐
   │              │
   ├──────────────┘

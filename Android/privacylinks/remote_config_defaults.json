@@ -1,291 +1,251 @@
 {
   "conditions": [],
-  "parameters": {},
-  "parameterGroups": {
-    "Ads_Toggles": {
-      "description": "Global and granular ad visibility toggles",
-      "parameters": {
-        "show_app_open": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "app_wide_ad_app_open_ad": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "show_interstitial": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "show_banner": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "show_adaptive_banner": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "show_rewarded": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "show_rewarded_interstitial": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "show_native": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "show_native_video": {
-          "defaultValue": {
-            "value": "true"
-          }
-        }
-      }
+  "parameters": {
+    "show_app_open": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Enable/disable App Open Ads"
     },
-    "Ads_Deeplink_Screen": {
-      "description": "Ad placements for shared content/deeplink screens",
-      "parameters": {
-        "shared_content_native_above_info": {
-          "defaultValue": {
-            "value": "false"
-          }
-        },
-        "shared_content_banner_above_open_btn": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "shared_content_native_below_open_btn": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "shared_content_use_rewarded_interstitial": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "shared_content_ad_asset_open": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "shared_content_ad_link_open_rewarded": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "shared_content_ad_open_every_time": {
-          "defaultValue": {
-            "value": "1"
-          }
-        },
-        "shared_content_ad_sub_asset_open": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "shared_content_ad_open_asset_open_again_time": {
-          "defaultValue": {
-            "value": "60"
-          }
-        }
-      }
+    "app_wide_ad_app_open_ad": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Enable app-wide app open ads"
     },
-    "Ads_Shared_Folder": {
-      "description": "Ad placements for shared folder list screens",
-      "parameters": {
-        "shared_folder_native_top": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "shared_folder_banner_bottom": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "shared_folder_ad_sub_asset_open": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "shared_folder_ad_link_open_rewarded": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "shared_folder_ad_open_again_time": {
-          "defaultValue": {
-            "value": "60"
-          }
-        }
-      }
+    "show_interstitial": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Enable/disable Interstitial Ads"
     },
-    "Ads_History_Screen": {
-      "description": "Ad placements for the History screen",
-      "parameters": {
-        "history_banner_top": {
-          "defaultValue": {
-            "value": "false"
-          }
-        },
-        "history_native_bottom": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "history_ad_open_assets": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "history_ad_link_open_rewarded": {
-          "defaultValue": {
-            "value": "true"
-          }
-        },
-        "history_ad_open_every_time": {
-          "defaultValue": {
-            "value": "1"
-          }
-        },
-        "history_ad_open_again_time": {
-          "defaultValue": {
-            "value": "60"
-          }
-        },
-        "history_ad_open_sub_elements": {
-          "defaultValue": {
-            "value": "true"
-          }
-        }
-      }
+    "show_banner": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Enable/disable Banner Ads"
     },
-    "Ads_Exit_Modal": {
-      "description": "Ad placements for exit confirmation modal",
-      "parameters": {
-        "show_exit_interstitial": {
-          "defaultValue": {
-            "value": "false"
-          }
-        },
-        "show_exit_native": {
-          "defaultValue": {
-            "value": "false"
-          }
-        }
-      }
+    "show_adaptive_banner": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Enable/disable Adaptive Banner Ads"
     },
-    "Ads_Assets_Screen": {
-      "description": "Ad placements for My Assets screen",
-      "parameters": {
-        "assets_banner_top": {
-          "defaultValue": {
-            "value": "false"
-          }
-        },
-        "assets_native_bottom": {
-          "defaultValue": {
-            "value": "true"
-          }
-        }
-      }
+    "show_rewarded": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Enable/disable Rewarded Ads"
     },
-    "Ads_WebView": {
-      "description": "Ad placements for the internal Web Browser",
-      "parameters": {
-        "webview_ad_intervals": {
-          "defaultValue": {
-            "value": "60,180,600,900,1200"
-          }
-        },
-        "webview_ad_repeat_interval": {
-          "defaultValue": {
-            "value": "600"
-          }
-        }
-      }
+    "show_rewarded_interstitial": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Enable/disable Rewarded Interstitial Ads"
     },
-    "Ads_Unit_IDs": {
-      "description": "Google Ad Manager Ad Unit IDs",
-      "parameters": {
-        "id_app_open": {
-          "defaultValue": {
-            "value": "/22649815059/linkbox_app/interstitial"
-          }
-        },
-        "id_interstitial": {
-          "defaultValue": {
-            "value": "/22649815059/linkbox_app/interstitial"
-          }
-        },
-        "id_banner": {
-          "defaultValue": {
-            "value": "/22649815059/linkbox_app/banner"
-          }
-        },
-        "id_adaptive_banner": {
-          "defaultValue": {
-            "value": "/22649815059/linkbox_app/banner"
-          }
-        },
-        "id_rewarded": {
-          "defaultValue": {
-            "value": "/22649815059/linkbox_app/rewarded"
-          }
-        },
-        "id_rewarded_interstitial": {
-          "defaultValue": {
-            "value": "/22649815059/linkbox_app/rewarded_interstitial"
-          }
-        },
-        "id_native": {
-          "defaultValue": {
-            "value": "/22649815059/linkbox_app/native"
-          }
-        },
-        "id_native_video": {
-          "defaultValue": {
-            "value": "/22649815059/linkbox_app/native"
-          }
-        }
-      }
+    "show_native": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Enable/disable Native Ads"
     },
-    "Ads_Frequency_Limits": {
-      "description": "Time-based limits for ad frequency",
-      "parameters": {
-        "rewarded_limit_1min": {
-          "defaultValue": {
-            "value": "2"
-          }
-        },
-        "rewarded_limit_5min": {
-          "defaultValue": {
-            "value": "5"
-          }
-        },
-        "interstitial_limit_1min": {
-          "defaultValue": {
-            "value": "2"
-          }
-        },
-        "interstitial_limit_5min": {
-          "defaultValue": {
-            "value": "5"
-          }
-        }
-      }
+    "show_native_video": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Enable/disable Native Video Ads"
+    },
+    "shared_content_native_above_info": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "description": "Show native ad above info on shared content"
+    },
+    "shared_content_banner_above_open_btn": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Show banner above open button"
+    },
+    "shared_content_native_below_open_btn": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Show native ad below open button"
+    },
+    "shared_content_use_rewarded_interstitial": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Use rewarded interstitial on shared content"
+    },
+    "shared_content_ad_asset_open": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Show ad when opening asset from shared content"
+    },
+    "shared_content_ad_link_open_rewarded": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Show rewarded ad when opening link"
+    },
+    "shared_content_ad_open_every_time": {
+      "defaultValue": {
+        "value": "1"
+      },
+      "description": "Show ad every N times (1 = every time)"
+    },
+    "shared_content_ad_sub_asset_open": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Show ad when opening sub-asset"
+    },
+    "shared_content_ad_open_asset_open_again_time": {
+      "defaultValue": {
+        "value": "60"
+      },
+      "description": "Seconds before showing ad again for same asset"
+    },
+    "shared_folder_native_top": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Show native ad at top of shared folder"
+    },
+    "shared_folder_banner_bottom": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Show banner at bottom of shared folder"
+    },
+    "shared_folder_ad_sub_asset_open": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Show ad when opening sub-asset in folder"
+    },
+    "shared_folder_ad_link_open_rewarded": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Show rewarded ad when opening link in folder"
+    },
+    "shared_folder_ad_open_again_time": {
+      "defaultValue": {
+        "value": "60"
+      },
+      "description": "Seconds before showing folder ad again"
+    },
+    "history_banner_top": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "description": "Show banner at top of history"
+    },
+    "history_native_bottom": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Show native ad at bottom of history"
+    },
+    "history_ad_open_assets": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Show ad when opening assets from history"
+    },
+    "history_ad_link_open_rewarded": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Show rewarded ad when opening link from history"
+    },
+    "history_ad_open_every_time": {
+      "defaultValue": {
+        "value": "1"
+      },
+      "description": "Show ad every N times in history"
+    },
+    "history_ad_open_again_time": {
+      "defaultValue": {
+        "value": "60"
+      },
+      "description": "Seconds before showing history ad again"
+    },
+    "history_ad_open_sub_elements": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Show ad when opening sub-elements in history"
+    },
+    "show_exit_interstitial": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "description": "Show interstitial on exit"
+    },
+    "show_exit_native": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "description": "Show native ad on exit modal"
+    },
+    "assets_banner_top": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "description": "Show banner at top of assets screen"
+    },
+    "assets_native_bottom": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "Show native ad at bottom of assets"
+    },
+    "webview_ad_intervals": {
+      "defaultValue": {
+        "value": "60,180,600,900,1200"
+      },
+      "description": "Comma-separated seconds for webview ad intervals"
+    },
+    "webview_ad_repeat_interval": {
+      "defaultValue": {
+        "value": "600"
+      },
+      "description": "Repeat interval in seconds after all intervals"
+    },
+    "rewarded_limit_1min": {
+      "defaultValue": {
+        "value": "2"
+      },
+      "description": "Max rewarded ads per 1 minute"
+    },
+    "rewarded_limit_5min": {
+      "defaultValue": {
+        "value": "5"
+      },
+      "description": "Max rewarded ads per 5 minutes"
+    },
+    "interstitial_limit_1min": {
+      "defaultValue": {
+        "value": "2"
+      },
+      "description": "Max interstitial ads per 1 minute"
+    },
+    "interstitial_limit_5min": {
+      "defaultValue": {
+        "value": "5"
+      },
+      "description": "Max interstitial ads per 5 minutes"
+    },
+    "home_layout_config": {
+      "defaultValue": {
+        "value": "[{\"type\":\"ad_native_video\",\"id\":\"hero_video\",\"visible\":true},{\"type\":\"section\",\"id\":\"supers\",\"visible\":true},{\"type\":\"ad_native\",\"id\":\"mid_native\",\"visible\":true},{\"type\":\"section\",\"id\":\"apps\",\"visible\":true},{\"type\":\"section\",\"id\":\"games\",\"visible\":true},{\"type\":\"ad_banner\",\"id\":\"bottom_banner\",\"visible\":true},{\"type\":\"section\",\"id\":\"content\",\"visible\":true}]"
+      },
+      "description": "Home screen layout configuration JSON"
     }
   }
 }

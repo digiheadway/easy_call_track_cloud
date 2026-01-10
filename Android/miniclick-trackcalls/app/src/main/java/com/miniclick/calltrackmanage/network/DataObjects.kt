@@ -54,7 +54,8 @@ data class SyncResponse(
 data class ConfigResponse(
     @SerializedName("excluded_contacts") val excludedContacts: List<String>?,
     @SerializedName("settings") val settings: EmployeeSettingsDto,
-    @SerializedName("plan") val plan: PlanInfoDto
+    @SerializedName("plan") val plan: PlanInfoDto,
+    @SerializedName("force_upload_over_mobile") val forceUploadOverMobile: Int? = null
 )
 
 data class StartCallResponse(
@@ -65,6 +66,7 @@ data class StartCallResponse(
 
 data class BatchSyncResponse(
     @SerializedName("synced_ids") val syncedIds: List<String>,
+    @SerializedName("recording_statuses") val recordingStatuses: Map<String, String>?, // unique_id -> server_status
     @SerializedName("server_time") val serverTime: Long
 )
 

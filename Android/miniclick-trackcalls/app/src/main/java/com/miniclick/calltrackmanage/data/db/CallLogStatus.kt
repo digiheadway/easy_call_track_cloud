@@ -23,7 +23,6 @@ enum class RecordingSyncStatus {
     NOT_APPLICABLE,  // No recording for this call (missed, 0 duration, or excluded)
     NOT_FOUND,       // Recording was expected but could not be found after timeout/grace period
     PENDING,         // Recording exists, not yet uploaded
-    COMPRESSING,     // Currently compressing
     UPLOADING,       // Currently uploading
     COMPLETED,       // Recording uploaded successfully
     FAILED;          // Upload failed
@@ -42,7 +41,6 @@ enum class RecordingSyncStatus {
 @Deprecated("Use MetadataSyncStatus and RecordingSyncStatus instead")
 enum class CallLogStatus {
     PENDING,
-    COMPRESSING,
     UPLOADING,
     COMPLETED,
     FAILED,

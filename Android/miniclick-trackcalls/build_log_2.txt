@@ -1,0 +1,482 @@
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:injectCrashlyticsMappingFileIdDebug UP-TO-DATE
+> Task :app:processDebugGoogleServices UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:desugarDebugFileDependencies
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+> Task :app:processDebugManifestForPackage
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:kspDebugKotlin
+
+> Task :app:compileDebugKotlin FAILED
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/call/InCallActivity.kt:32:41 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/call/InCallActivity.kt:33:41 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/call/InCallActivity.kt:34:41 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/call/InCallActivity.kt:75:46 Unresolved reference 'AudioPlayer'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/call/InCallActivity.kt:85:37 Unresolved reference 'release'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/call/InCallActivity.kt:101:18 Unresolved reference 'AudioPlayer'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/call/InCallActivity.kt:227:73 Unresolved reference 'cleanNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/call/InCallActivity.kt:228:32 Unresolved reference 'cleanNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/call/InCallActivity.kt:261:25 Overload resolution ambiguity between candidates:
+@Composable() @ComposableTarget(...) fun Text(text: AnnotatedString, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., inlineContent: Map<String, InlineTextContent> = ..., onTextLayout: (TextLayoutResult) -> Unit = ..., style: TextStyle = ...): Unit
+@Composable() @ComposableTarget(...) fun Text(text: String, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., onTextLayout: ((TextLayoutResult) -> Unit)? = ..., style: TextStyle = ...): Unit
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/call/InCallActivity.kt:381:41 Overload resolution ambiguity between candidates:
+@Composable() @ComposableTarget(...) fun Text(text: AnnotatedString, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., inlineContent: Map<String, InlineTextContent> = ..., onTextLayout: (TextLayoutResult) -> Unit = ..., style: TextStyle = ...): Unit
+@Composable() @ComposableTarget(...) fun Text(text: String, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., onTextLayout: ((TextLayoutResult) -> Unit)? = ..., style: TextStyle = ...): Unit
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/call/InCallActivity.kt:381:46 Unresolved reference 'getRelativeTime'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:20:38 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:31:22 Unresolved reference 'DevicePermissionGuide'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:32:22 Unresolved reference 'DevicePermissionGuide'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:33:17 Unresolved reference 'DevicePermissionGuide'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:84:17 Unresolved reference 'DevicePermissionGuide'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:118:17 Overload resolution ambiguity between candidates:
+@ComposableInferredTarget(...) fun <T> LazyListScope.itemsIndexed(items: Array<T>, noinline key: ((@ParameterName(...) Int, @ParameterName(...) T) -> Any)? = ..., crossinline contentType: (@ParameterName(...) Int, @ParameterName(...) T) -> Any? = ..., crossinline itemContent: @Composable() ComposableFunction3<LazyItemScope, @ParameterName(...) Int, @ParameterName(...) T, Unit>): Unit
+@ComposableInferredTarget(...) fun <T> LazyListScope.itemsIndexed(items: List<T>, noinline key: ((@ParameterName(...) Int, @ParameterName(...) T) -> Any)? = ..., crossinline contentType: (@ParameterName(...) Int, @ParameterName(...) T) -> Any? = ..., crossinline itemContent: @Composable() ComposableFunction3<LazyItemScope, @ParameterName(...) Int, @ParameterName(...) T, Unit>): Unit
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:118:39 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:118:46 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:119:21 @Composable invocations can only happen from the context of a @Composable function
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:121:44 Overload resolution ambiguity between candidates:
+fun String?.plus(other: Any?): String
+fun <T> Array<T>.plus(element: T): Array<T>
+fun ByteArray.plus(element: Byte): ByteArray
+fun IntArray.plus(element: Int): IntArray
+fun LongArray.plus(element: Long): LongArray
+fun ShortArray.plus(element: Short): ShortArray
+fun <T> Collection<T>.plus(element: T): List<T>
+fun <T> Iterable<T>.plus(element: T): List<T>
+fun <T> Set<T>.plus(element: T): Set<T>
+fun <T> Sequence<T>.plus(element: T): Sequence<T>
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:127:34 Unresolved reference 'actionIntent'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:127:54 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:155:11 Unresolved reference 'DevicePermissionGuide'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:166:39 Unresolved reference 'isOptional'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:185:38 Unresolved reference 'isOptional'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:195:42 Unresolved reference 'isOptional'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:207:25 Overload resolution ambiguity between candidates:
+@Composable() @ComposableTarget(...) fun Text(text: AnnotatedString, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., inlineContent: Map<String, InlineTextContent> = ..., onTextLayout: (TextLayoutResult) -> Unit = ..., style: TextStyle = ...): Unit
+@Composable() @ComposableTarget(...) fun Text(text: String, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., onTextLayout: ((TextLayoutResult) -> Unit)? = ..., style: TextStyle = ...): Unit
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:208:41 Unresolved reference 'title'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:212:34 Unresolved reference 'isOptional'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:235:17 Overload resolution ambiguity between candidates:
+@Composable() @ComposableTarget(...) fun Text(text: AnnotatedString, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., inlineContent: Map<String, InlineTextContent> = ..., onTextLayout: (TextLayoutResult) -> Unit = ..., style: TextStyle = ...): Unit
+@Composable() @ComposableTarget(...) fun Text(text: String, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., onTextLayout: ((TextLayoutResult) -> Unit)? = ..., style: TextStyle = ...): Unit
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:236:33 Unresolved reference 'description'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:241:26 Unresolved reference 'actionIntent'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:270:22 Unresolved reference 'DevicePermissionGuide'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/DevicePermissionGuideSheet.kt:271:32 Unresolved reference 'DevicePermissionGuide'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/SyncComponents.kt:30:41 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/SyncComponents.kt:782:18 Unresolved reference 'AudioPlayer'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/SyncComponents.kt:789:39 Unresolved reference 'isPlaying'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/SyncComponents.kt:790:38 Unresolved reference 'metadata'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/SyncComponents.kt:791:33 Unresolved reference 'currentPosition'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/SyncComponents.kt:792:33 Unresolved reference 'duration'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/SyncComponents.kt:859:38 Unresolved reference 'togglePlayPause'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/SyncComponents.kt:889:50 Unresolved reference 'name'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/common/SyncComponents.kt:889:72 Unresolved reference 'phoneNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:44:41 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:58:18 Unresolved reference 'AudioPlayer'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:137:23 Overload resolution ambiguity between candidates:
+@Composable() @ComposableTarget(...) fun Text(text: AnnotatedString, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., inlineContent: Map<String, InlineTextContent> = ..., onTextLayout: (TextLayoutResult) -> Unit = ..., style: TextStyle = ...): Unit
+@Composable() @ComposableTarget(...) fun Text(text: String, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., onTextLayout: ((TextLayoutResult) -> Unit)? = ..., style: TextStyle = ...): Unit
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:137:28 Unresolved reference 'cleanNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:268:76 Unresolved reference 'cleanNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:289:24 Unresolved reference 'getDateHeader'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:298:25 Overload resolution ambiguity between candidates:
+@HidesMembers() fun <T> Iterable<T>.forEach(action: (T) -> Unit): Unit
+@HidesMembers() fun <K, V> Map<out K, V>.forEach(action: (Map.Entry<K, V>) -> Unit): Unit
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:298:35 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:298:35 Function 'component1()' is ambiguous for this expression: 
+@InlineOnly() fun <T> Array<out T>.component1(): T
+@InlineOnly() fun BooleanArray.component1(): Boolean
+@InlineOnly() fun ByteArray.component1(): Byte
+@InlineOnly() fun CharArray.component1(): Char
+@InlineOnly() fun DoubleArray.component1(): Double
+@InlineOnly() fun FloatArray.component1(): Float
+@InlineOnly() fun IntArray.component1(): Int
+@InlineOnly() fun LongArray.component1(): Long
+@InlineOnly() fun ShortArray.component1(): Short
+@InlineOnly() fun <T> List<T>.component1(): T
+@InlineOnly() fun <K, V> Map.Entry<K, V>.component1(): K
+@SinceKotlin(...) @ExperimentalUnsignedTypes() @InlineOnly() fun UByteArray.component1(): UByte
+@SinceKotlin(...) @ExperimentalUnsignedTypes() @InlineOnly() fun UIntArray.component1(): UInt
+@SinceKotlin(...) @ExperimentalUnsignedTypes() @InlineOnly() fun ULongArray.component1(): ULong
+@SinceKotlin(...) @ExperimentalUnsignedTypes() @InlineOnly() fun UShortArray.component1(): UShort.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:298:35 Function 'component2()' is ambiguous for this expression: 
+@InlineOnly() fun <T> Array<out T>.component2(): T
+@InlineOnly() fun BooleanArray.component2(): Boolean
+@InlineOnly() fun ByteArray.component2(): Byte
+@InlineOnly() fun CharArray.component2(): Char
+@InlineOnly() fun DoubleArray.component2(): Double
+@InlineOnly() fun FloatArray.component2(): Float
+@InlineOnly() fun IntArray.component2(): Int
+@InlineOnly() fun LongArray.component2(): Long
+@InlineOnly() fun ShortArray.component2(): Short
+@InlineOnly() fun <T> List<T>.component2(): T
+@InlineOnly() fun <K, V> Map.Entry<K, V>.component2(): V
+@SinceKotlin(...) @ExperimentalUnsignedTypes() @InlineOnly() fun UByteArray.component2(): UByte
+@SinceKotlin(...) @ExperimentalUnsignedTypes() @InlineOnly() fun UIntArray.component2(): UInt
+@SinceKotlin(...) @ExperimentalUnsignedTypes() @InlineOnly() fun ULongArray.component2(): ULong
+@SinceKotlin(...) @ExperimentalUnsignedTypes() @InlineOnly() fun UShortArray.component2(): UShort.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:302:49 Function invocation 'size(...)' expected.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:303:50 Overload resolution ambiguity between candidates:
+fun <T, K> Array<out T>.distinctBy(selector: (T) -> K): List<T>
+fun <K> BooleanArray.distinctBy(selector: (Boolean) -> K): List<Boolean>
+fun <K> ByteArray.distinctBy(selector: (Byte) -> K): List<Byte>
+fun <K> CharArray.distinctBy(selector: (Char) -> K): List<Char>
+fun <K> DoubleArray.distinctBy(selector: (Double) -> K): List<Double>
+fun <K> FloatArray.distinctBy(selector: (Float) -> K): List<Float>
+fun <K> IntArray.distinctBy(selector: (Int) -> K): List<Int>
+fun <K> LongArray.distinctBy(selector: (Long) -> K): List<Long>
+fun <K> ShortArray.distinctBy(selector: (Short) -> K): List<Short>
+fun <T, K> Iterable<T>.distinctBy(selector: (T) -> K): List<T>
+fun <T, K> Sequence<T>.distinctBy(selector: (T) -> K): Sequence<T>
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:303:63 Unresolved reference 'it'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:303:80 Function invocation 'size(...)' expected.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:307:46 Unresolved reference 'compositeId'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:308:59 Unresolved reference 'compositeId'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:311:44 Unresolved reference 'compositeId'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:312:58 Argument type mismatch: actual type is '@ParameterName(...) kotlin.Int', but 'com.miniclick.calltrackmanage.data.db.CallDataEntity' was expected.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:317:45 Unresolved reference 'localRecordingPath'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:317:82 Unresolved reference 'compositeId'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:323:31 Argument type mismatch: actual type is '@ParameterName(...) kotlin.Int', but 'com.miniclick.calltrackmanage.data.db.CallDataEntity' was expected.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:328:75 Unresolved reference 'compositeId'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:331:47 Assignment type mismatch: actual type is '@ParameterName(...) kotlin.Int', but 'com.miniclick.calltrackmanage.data.db.CallDataEntity?' was expected.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:334:57 Unresolved reference 'callType'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:342:117 Overload resolution ambiguity between candidates:
+constructor(p0: Long): Date
+@Deprecated(...) constructor(p0: String!): Date
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:342:126 Unresolved reference 'callDate'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:343:41 Unresolved reference 'play'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:345:33 Unresolved reference 'PlaybackMetadata'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:346:48 Unresolved reference 'contactName'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:347:55 Unresolved reference 'phoneNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:353:62 Assignment type mismatch: actual type is '@ParameterName(...) kotlin.Int', but 'com.miniclick.calltrackmanage.data.db.CallDataEntity?' was expected.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:354:66 Assignment type mismatch: actual type is '@ParameterName(...) kotlin.Int', but 'com.miniclick.calltrackmanage.data.db.CallDataEntity?' was expected.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:356:56 Unresolved reference 'phoneNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:359:43 Unresolved reference 'cleanNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:359:59 Unresolved reference 'phoneNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:365:59 Unresolved reference 'phoneNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:369:47 Unresolved reference 'cleanNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:369:63 Unresolved reference 'phoneNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:372:37 Overload resolution ambiguity between candidates:
+@NonNull() fun putExtra(p0: String!, p1: Boolean): Intent
+@NonNull() fun putExtra(p0: String!, p1: Byte): Intent
+@NonNull() fun putExtra(p0: String!, p1: Char): Intent
+@NonNull() fun putExtra(p0: String!, p1: Short): Intent
+@NonNull() fun putExtra(p0: String!, p1: Int): Intent
+@NonNull() fun putExtra(p0: String!, p1: Long): Intent
+@NonNull() fun putExtra(p0: String!, p1: Float): Intent
+@NonNull() fun putExtra(p0: String!, p1: Double): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: String?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: CharSequence?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: Parcelable?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: (Array<Parcelable!>?..Array<out Parcelable!>?)): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: Serializable?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: BooleanArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: ByteArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: ShortArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: CharArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: IntArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: LongArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: FloatArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: DoubleArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: (Array<String!>?..Array<out String!>?)): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: (Array<CharSequence!>?..Array<out CharSequence!>?)): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: Bundle?): Intent
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:382:47 Unresolved reference 'cleanNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:382:63 Unresolved reference 'phoneNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:384:63 Unresolved reference 'contactName'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:385:37 Overload resolution ambiguity between candidates:
+@NonNull() fun putExtra(p0: String!, p1: Boolean): Intent
+@NonNull() fun putExtra(p0: String!, p1: Byte): Intent
+@NonNull() fun putExtra(p0: String!, p1: Char): Intent
+@NonNull() fun putExtra(p0: String!, p1: Short): Intent
+@NonNull() fun putExtra(p0: String!, p1: Int): Intent
+@NonNull() fun putExtra(p0: String!, p1: Long): Intent
+@NonNull() fun putExtra(p0: String!, p1: Float): Intent
+@NonNull() fun putExtra(p0: String!, p1: Double): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: String?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: CharSequence?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: Parcelable?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: (Array<Parcelable!>?..Array<out Parcelable!>?)): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: Serializable?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: BooleanArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: ByteArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: ShortArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: CharArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: IntArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: LongArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: FloatArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: DoubleArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: (Array<String!>?..Array<out String!>?)): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: (Array<CharSequence!>?..Array<out CharSequence!>?)): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: Bundle?): Intent
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:397:49 Unresolved reference 'phoneNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:400:59 Unresolved reference 'phoneNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:401:56 Assignment type mismatch: actual type is '@ParameterName(...) kotlin.Int', but 'com.miniclick.calltrackmanage.data.db.CallDataEntity?' was expected.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:403:75 Unresolved reference 'compositeId'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:403:93 Unresolved reference 'reviewed'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:413:35 Overload resolution ambiguity between candidates:
+@IntrinsicConstEvaluation() fun plus(other: Byte): Int
+@IntrinsicConstEvaluation() fun plus(other: Double): Double
+@IntrinsicConstEvaluation() fun plus(other: Float): Float
+@IntrinsicConstEvaluation() fun plus(other: Int): Int
+@IntrinsicConstEvaluation() fun plus(other: Long): Long
+@IntrinsicConstEvaluation() fun plus(other: Short): Int
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:413:49 Function invocation 'size(...)' expected.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:437:18 Unresolved reference 'AudioPlayer'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:445:24 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:445:36 Unresolved reference 'currentFile'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:524:36 Unresolved reference 'cleanNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:975:18 Unresolved reference 'AudioPlayer'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:980:22 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:980:34 Unresolved reference 'isPlaying'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:981:21 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:981:33 Unresolved reference 'progress'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:982:23 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:982:35 Unresolved reference 'currentPosition'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:983:21 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:983:33 Unresolved reference 'duration'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:984:24 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:984:36 Unresolved reference 'currentFile'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1008:41 Unresolved reference 'togglePlayPause'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1019:41 Unresolved reference 'play'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1021:33 Unresolved reference 'PlaybackMetadata'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1056:29 Unresolved reference 'playOrResume'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1058:21 Unresolved reference 'PlaybackMetadata'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1065:29 Unresolved reference 'seekTo'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1081:24 Unresolved reference 'formatTime'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1081:50 Unresolved reference 'formatTime'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1090:30 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1090:42 Unresolved reference 'speed'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1093:51 Unresolved reference 'setPlaybackSpeed'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1105:18 Unresolved reference 'AudioPlayer'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1110:22 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1110:34 Unresolved reference 'isPlaying'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1111:21 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1111:33 Unresolved reference 'progress'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1112:24 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1112:36 Unresolved reference 'currentFile'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1113:23 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1113:35 Unresolved reference 'currentPosition'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1114:21 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1114:33 Unresolved reference 'duration'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1191:49 Unresolved reference 'togglePlayPause'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1202:49 Unresolved reference 'play'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1204:41 Unresolved reference 'PlaybackMetadata'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1238:21 Overload resolution ambiguity between candidates:
+@Composable() @ComposableTarget(...) fun Text(text: AnnotatedString, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., inlineContent: Map<String, InlineTextContent> = ..., onTextLayout: (TextLayoutResult) -> Unit = ..., style: TextStyle = ...): Unit
+@Composable() @ComposableTarget(...) fun Text(text: String, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., onTextLayout: ((TextLayoutResult) -> Unit)? = ..., style: TextStyle = ...): Unit
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1239:32 Unresolved reference 'formatDurationShort'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1270:51 Unresolved reference 'seekTo'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1281:35 Unresolved reference 'formatTime'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1281:61 Unresolved reference 'formatTime'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1286:34 Property delegate must have a 'getValue(Nothing?, KProperty0<ERROR CLASS: Cannot infer argument for type parameter T>)' method. None of the following functions is applicable:
+fun <T> State<T>.getValue(thisObj: Any?, property: KProperty<*>): T
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1286:46 Unresolved reference 'speed'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1289:55 Unresolved reference 'setPlaybackSpeed'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1308:13 Overload resolution ambiguity between candidates:
+@Composable() @ComposableTarget(...) fun Text(text: AnnotatedString, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., inlineContent: Map<String, InlineTextContent> = ..., onTextLayout: (TextLayoutResult) -> Unit = ..., style: TextStyle = ...): Unit
+@Composable() @ComposableTarget(...) fun Text(text: String, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., onTextLayout: ((TextLayoutResult) -> Unit)? = ..., style: TextStyle = ...): Unit
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/CallLogComponents.kt:1309:24 Unresolved reference 'formatDuration'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeScreen.kt:35:41 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeScreen.kt:36:41 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeScreen.kt:37:41 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeScreen.kt:43:18 Unresolved reference 'AudioPlayer'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeScreen.kt:114:28 Unresolved reference 'getFileNameFromUri'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeScreen.kt:284:72 Unresolved reference 'getDateHeader'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeScreen.kt:286:69 Unresolved reference 'getDateHeader'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeScreen.kt:290:44 Function 'component1()' is ambiguous for this expression: 
+@InlineOnly() fun <T> Array<out T>.component1(): T
+@InlineOnly() fun BooleanArray.component1(): Boolean
+@InlineOnly() fun ByteArray.component1(): Byte
+@InlineOnly() fun CharArray.component1(): Char
+@InlineOnly() fun DoubleArray.component1(): Double
+@InlineOnly() fun FloatArray.component1(): Float
+@InlineOnly() fun IntArray.component1(): Int
+@InlineOnly() fun LongArray.component1(): Long
+@InlineOnly() fun ShortArray.component1(): Short
+@InlineOnly() fun <T> List<T>.component1(): T
+@InlineOnly() fun <K, V> Map.Entry<K, V>.component1(): K
+@SinceKotlin(...) @ExperimentalUnsignedTypes() @InlineOnly() fun UByteArray.component1(): UByte
+@SinceKotlin(...) @ExperimentalUnsignedTypes() @InlineOnly() fun UIntArray.component1(): UInt
+@SinceKotlin(...) @ExperimentalUnsignedTypes() @InlineOnly() fun ULongArray.component1(): ULong
+@SinceKotlin(...) @ExperimentalUnsignedTypes() @InlineOnly() fun UShortArray.component1(): UShort.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeScreen.kt:290:44 Function 'component2()' is ambiguous for this expression: 
+@InlineOnly() fun <T> Array<out T>.component2(): T
+@InlineOnly() fun BooleanArray.component2(): Boolean
+@InlineOnly() fun ByteArray.component2(): Byte
+@InlineOnly() fun CharArray.component2(): Char
+@InlineOnly() fun DoubleArray.component2(): Double
+@InlineOnly() fun FloatArray.component2(): Float
+@InlineOnly() fun IntArray.component2(): Int
+@InlineOnly() fun LongArray.component2(): Long
+@InlineOnly() fun ShortArray.component2(): Short
+@InlineOnly() fun <T> List<T>.component2(): T
+@InlineOnly() fun <K, V> Map.Entry<K, V>.component2(): V
+@SinceKotlin(...) @ExperimentalUnsignedTypes() @InlineOnly() fun UByteArray.component2(): UByte
+@SinceKotlin(...) @ExperimentalUnsignedTypes() @InlineOnly() fun UIntArray.component2(): UInt
+@SinceKotlin(...) @ExperimentalUnsignedTypes() @InlineOnly() fun ULongArray.component2(): ULong
+@SinceKotlin(...) @ExperimentalUnsignedTypes() @InlineOnly() fun UShortArray.component2(): UShort.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeScreen.kt:290:44 Method 'iterator()' is ambiguous for this expression. Applicable candidates:
+fun <T> Enumeration<T>.iterator(): Iterator<T>
+@InlineOnly() fun <T> Iterator<T>.iterator(): Iterator<T>
+@InlineOnly() fun <K, V> Map<out K, V>.iterator(): Iterator<Map.Entry<K, V>>
+@JvmName(...) @InlineOnly() fun <K, V> MutableMap<K, V>.iterator(): MutableIterator<MutableMap.MutableEntry<K, V>>
+fun CharSequence.iterator(): CharIterator
+fun BufferedInputStream.iterator(): ByteIterator
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeScreen.kt:295:31 Overload resolution ambiguity between candidates:
+@IntrinsicConstEvaluation() fun plus(other: Byte): Int
+@IntrinsicConstEvaluation() fun plus(other: Double): Double
+@IntrinsicConstEvaluation() fun plus(other: Float): Float
+@IntrinsicConstEvaluation() fun plus(other: Int): Int
+@IntrinsicConstEvaluation() fun plus(other: Long): Long
+@IntrinsicConstEvaluation() fun plus(other: Short): Int
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeScreen.kt:295:36 Overload resolution ambiguity between candidates:
+@IntrinsicConstEvaluation() fun plus(other: Int): Int
+@IntrinsicConstEvaluation() fun plus(other: Byte): Int
+@IntrinsicConstEvaluation() fun plus(other: Double): Double
+@IntrinsicConstEvaluation() fun plus(other: Float): Float
+@IntrinsicConstEvaluation() fun plus(other: Long): Long
+@IntrinsicConstEvaluation() fun plus(other: Short): Int
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeScreen.kt:295:44 Function invocation 'size(...)' expected.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeViewModel.kt:23:41 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeViewModel.kt:240:70 Unresolved reference 'NetworkConnectivityObserver'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeViewModel.kt:348:49 Cannot infer type for this parameter. Please specify it explicitly.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeViewModel.kt:366:57 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeViewModel.kt:1419:47 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeViewModel.kt:1519:42 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeViewModel.kt:1666:57 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeViewModel.kt:1676:46 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeViewModel.kt:1691:42 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeViewModel.kt:1752:70 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeViewModel.kt:1828:55 Unresolved reference 'getDateHeader'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/HomeViewModel.kt:1843:52 Unresolved reference 'getDateHeader'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonInteractionBottomSheet.kt:25:41 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonInteractionBottomSheet.kt:26:41 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonInteractionBottomSheet.kt:27:41 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonInteractionBottomSheet.kt:28:41 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonInteractionBottomSheet.kt:29:41 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonInteractionBottomSheet.kt:38:18 Unresolved reference 'AudioPlayer'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonInteractionBottomSheet.kt:171:51 Unresolved reference 'cleanNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonInteractionBottomSheet.kt:182:25 Overload resolution ambiguity between candidates:
+@Composable() @ComposableTarget(...) fun Text(text: AnnotatedString, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., inlineContent: Map<String, InlineTextContent> = ..., onTextLayout: (TextLayoutResult) -> Unit = ..., style: TextStyle = ...): Unit
+@Composable() @ComposableTarget(...) fun Text(text: String, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., onTextLayout: ((TextLayoutResult) -> Unit)? = ..., style: TextStyle = ...): Unit
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonInteractionBottomSheet.kt:183:36 Unresolved reference 'cleanNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonsComponents.kt:36:41 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonsComponents.kt:37:41 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonsComponents.kt:38:41 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonsComponents.kt:47:18 Unresolved reference 'AudioPlayer'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonsComponents.kt:133:23 Overload resolution ambiguity between candidates:
+@Composable() @ComposableTarget(...) fun Text(text: AnnotatedString, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., inlineContent: Map<String, InlineTextContent> = ..., onTextLayout: (TextLayoutResult) -> Unit = ..., style: TextStyle = ...): Unit
+@Composable() @ComposableTarget(...) fun Text(text: String, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., onTextLayout: ((TextLayoutResult) -> Unit)? = ..., style: TextStyle = ...): Unit
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonsComponents.kt:133:28 Unresolved reference 'cleanNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonsComponents.kt:261:76 Unresolved reference 'cleanNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonsComponents.kt:283:31 Unresolved reference 'getDateHeader'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonsComponents.kt:320:43 Unresolved reference 'cleanNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonsComponents.kt:332:47 Unresolved reference 'cleanNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonsComponents.kt:335:37 Overload resolution ambiguity between candidates:
+@NonNull() fun putExtra(p0: String!, p1: Boolean): Intent
+@NonNull() fun putExtra(p0: String!, p1: Byte): Intent
+@NonNull() fun putExtra(p0: String!, p1: Char): Intent
+@NonNull() fun putExtra(p0: String!, p1: Short): Intent
+@NonNull() fun putExtra(p0: String!, p1: Int): Intent
+@NonNull() fun putExtra(p0: String!, p1: Long): Intent
+@NonNull() fun putExtra(p0: String!, p1: Float): Intent
+@NonNull() fun putExtra(p0: String!, p1: Double): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: String?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: CharSequence?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: Parcelable?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: (Array<Parcelable!>?..Array<out Parcelable!>?)): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: Serializable?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: BooleanArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: ByteArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: ShortArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: CharArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: IntArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: LongArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: FloatArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: DoubleArray?): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: (Array<String!>?..Array<out String!>?)): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: (Array<CharSequence!>?..Array<out CharSequence!>?)): Intent
+@NonNull() fun putExtra(p0: String!, @Nullable() p1: Bundle?): Intent
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonsComponents.kt:384:18 Unresolved reference 'AudioPlayer'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/PersonsComponents.kt:472:83 Unresolved reference 'cleanNumber'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/ReportsScreen.kt:31:41 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/ReportsScreen.kt:470:105 Unresolved reference 'formatDurationShort'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/ReportsScreen.kt:499:29 Unresolved reference 'formatDurationShort'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/ReportsScreen.kt:506:29 Unresolved reference 'formatDurationShort'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/ReportsScreen.kt:802:30 Unresolved reference 'formatDurationShort'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/ReportsScreen.kt:803:32 Unresolved reference 'formatDurationShort'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/ReportsScreen.kt:804:32 Unresolved reference 'formatDurationShort'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/ReportsScreen.kt:883:37 Unresolved reference 'formatDurationShort'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/ReportsScreen.kt:896:37 Unresolved reference 'formatDurationShort'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/ReportsScreen.kt:978:50 Unresolved reference 'formatDurationShort'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/ReportsScreen.kt:1369:27 Unresolved reference 'formatDurationShort'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/ReportsScreen.kt:1430:73 Unresolved reference 'formatDurationShort'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/ReportsScreen.kt:1445:29 Unresolved reference 'formatDurationShort'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/ReportsScreen.kt:1626:9 Overload resolution ambiguity between candidates:
+@Composable() @ComposableTarget(...) fun Text(text: AnnotatedString, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., inlineContent: Map<String, InlineTextContent> = ..., onTextLayout: (TextLayoutResult) -> Unit = ..., style: TextStyle = ...): Unit
+@Composable() @ComposableTarget(...) fun Text(text: String, modifier: Modifier = ..., color: Color = ..., fontSize: TextUnit = ..., fontStyle: FontStyle? = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., letterSpacing: TextUnit = ..., textDecoration: TextDecoration? = ..., textAlign: TextAlign? = ..., lineHeight: TextUnit = ..., overflow: TextOverflow = ..., softWrap: Boolean = ..., maxLines: Int = ..., minLines: Int = ..., onTextLayout: ((TextLayoutResult) -> Unit)? = ..., style: TextStyle = ...): Unit
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/ReportsScreen.kt:1627:20 Unresolved reference 'formatDurationShort'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/home/viewmodel/FilterProcessor.kt:12:43 Unresolved reference 'NetworkConnectivityObserver'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/settings/SettingsViewModel.kt:25:41 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/settings/SettingsViewModel.kt:934:48 Unresolved reference 'LogExporter'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/settings/viewmodel/GeneralSettingsManager.kt:7:41 Unresolved reference 'utils'.
+e: file:///Users/ygs/Documents/Code/Android/miniclick-trackcalls/app/src/main/java/com/miniclick/calltrackmanage/ui/settings/viewmodel/GeneralSettingsManager.kt:29:30 Unresolved reference 'WhatsAppUtils'.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 18s
+32 actionable tasks: 6 executed, 26 up-to-date

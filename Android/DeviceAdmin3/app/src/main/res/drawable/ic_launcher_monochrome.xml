@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Shield outline -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M54,22 L78,31 L78,52 C78,68 67,79 54,86 C41,79 30,68 30,52 L30,31 Z
+                         M54,26 L74,34 L74,52 C74,65 65,75 54,81 C43,75 34,65 34,52 L34,34 Z" />
+    
+    <!-- Phone body -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M44,36 L64,36 Q68,36 68,40 L68,72 Q68,76 64,76 L44,76 Q40,76 40,72 L40,40 Q40,36 44,36 Z
+                         M44,40 L64,40 L64,72 L44,72 Z" />
+    
+    <!-- Lock -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M48,52 L60,52 Q64,52 64,56 L64,66 Q64,70 60,70 L48,70 Q44,70 44,66 L44,56 Q44,52 48,52 Z
+                         M50,52 L50,48 Q50,44 54,44 Q58,44 58,48 L58,52 L56,52 L56,48 Q56,46 54,46 Q52,46 52,48 L52,52 Z" />
+    
+</vector>
