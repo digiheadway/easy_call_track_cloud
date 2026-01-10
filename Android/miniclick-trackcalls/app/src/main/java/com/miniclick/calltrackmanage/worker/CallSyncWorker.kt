@@ -708,13 +708,16 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
         }
     }
 
-    private fun mapRecordingStatusToServer(status: com.miniclick.calltrackmanage.data.db.RecordingSyncStatus): String? {
+    private fun mapRecordingStatusToServer(status: com.miniclick.calltrackmanage.data.db.RecordingSyncStatus): String {
         return when (status) {
-            com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.COMPLETED -> "completed"
+            com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.NOT_APPLICABLE -> "not_applicable"
+            com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.NOT_ALLOWED -> "not_allowed"
+            com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.DISABLED -> "disabled"
             com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.NOT_FOUND -> "not_found"
+            com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.PENDING -> "pending"
+            com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.UPLOADING -> "pending"
+            com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.COMPLETED -> "completed"
             com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.FAILED -> "failed"
-            com.miniclick.calltrackmanage.data.db.RecordingSyncStatus.NOT_APPLICABLE -> "completed"
-            else -> null
         }
     }
 }

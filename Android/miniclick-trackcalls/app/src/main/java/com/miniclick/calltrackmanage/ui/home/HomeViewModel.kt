@@ -38,16 +38,46 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
+        // STARTUP OPTIMIZATION: Load minimal settings synchronously for immediate UI
         loadSettingsSync()
-        viewModelScope.launch(Dispatchers.IO) {
-            refreshSettings()
-            loadRecordingPath()
+        
+        // STARTUP OPTIMIZATION: Defer heavy work until after first frame
+        // This allows Compose to render immediately while heavy work happens in background
+        viewModelScope.launch {
+            // Small delay to let the first frame render
+            kotlinx.coroutines.delay(100)
+            
+            // Start heavy database observers after first frame
+            startDatabaseObservers()
+            
+            // Trigger async initialization
+            kotlinx.coroutines.withContext(Dispatchers.IO) {
+                refreshSettings()
+                loadRecordingPath()
+            }
             triggerFilter()
+            
+            // Sync from system after a brief delay
+            kotlinx.coroutines.delay(200)
+            syncFromSystem()
         }
-        
-        // Trigger immediate sync from system CallLog on app open
-        syncFromSystem()
-        
+
+        // Network observer is lightweight, can start immediately
+        viewModelScope.launch {
+            networkObserver.observe().collect { isAvailable ->
+                _uiState.update { it.copy(isNetworkAvailable = isAvailable) }
+                // If network becomes available and we have pending syncs, trigger sync
+                if (isAvailable && _uiState.value.pendingSyncCount > 0 && _uiState.value.isSyncSetup) {
+                     syncNow()
+                }
+            }
+        }
+    }
+    
+    /**
+     * Starts database Flow observers. Called after first frame to avoid blocking initial render.
+     */
+    private fun startDatabaseObservers() {
         // Observe Room DB for real-time updates
         viewModelScope.launch {
             callDataRepository.getAllCallsFlow()
@@ -69,7 +99,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     triggerFilter()
                 }
         }
-        
 
         // Observe Pending Syncs (Calls + Persons)
         viewModelScope.launch {
@@ -136,18 +165,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     _uiState.update { it.copy(activeRecordings = active) }
                 }
         }
-        
-        
-        // Observe Network Status
-        viewModelScope.launch {
-            networkObserver.observe().collect { isAvailable ->
-                _uiState.update { it.copy(isNetworkAvailable = isAvailable) }
-                // If network becomes available and we have pending syncs, trigger sync
-                if (isAvailable && _uiState.value.pendingSyncCount > 0 && _uiState.value.isSyncSetup) {
-                     syncNow()
-                }
-            }
-        }
 
         // Reactive Settings Observers
         viewModelScope.launch {
@@ -167,8 +184,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 .distinctUntilChanged()
                 .collect { refreshSettings() }
         }
-
-        // Add more flows here as needed...
     }
 
     private fun loadRecordingPath() {

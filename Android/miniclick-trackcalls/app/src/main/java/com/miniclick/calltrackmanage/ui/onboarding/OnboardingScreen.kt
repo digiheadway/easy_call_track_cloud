@@ -90,56 +90,56 @@ fun OnboardingScreen(onComplete: () -> Unit) {
         buildList {
             // Intro Screen
             add(OnboardingStep(
-                "Welcome to MiniClick Calls",
-                "Your intelligent call management companion. Track, organize, and sync your calls effortlessly.",
+                "Never Miss a Detail",
+                "Smart call tracking that works for you.\nOrganize, sync, and stay in control.",
                 Icons.Default.Cloud,
                 OnboardingStepType.Welcome
             ))
             
             // Get Started 1
             add(OnboardingStep(
-                "Organize Your Calls",
-                "Add private notes and color-coded labels to your calls to keep track of important details.",
+                "Notes & Labels",
+                "Tag calls with colors.\nAdd notes you'll actually remember.",
                 Icons.AutoMirrored.Filled.NoteAdd,
                 OnboardingStepType.FeatureIntro
             ))
             
             // Get Started 2
             add(OnboardingStep(
-                "Advanced Filtering",
-                "Find exactly what you're looking for with powerful filters for dates, types, labels, and more.",
+                "Find Calls Instantly",
+                "Filter by date, type, or label.\nSearch smarter, not harder.",
                 Icons.Default.FilterList,
                 OnboardingStepType.FeatureIntro
             ))
             
             // Get Started 3
             add(OnboardingStep(
-                "Attach Recordings",
-                "Keep your call recordings organized by attaching them directly to call logs for easy playback.",
+                "Your Recordings in One Place",
+                "Auto-attach recordings to calls.\nPlay them back anytime.",
                 Icons.Default.Mic,
                 OnboardingStepType.FeatureIntro
             ))
             
             // Get Started 4
             add(OnboardingStep(
-                "Notes During Calls",
-                "Instantly see previous notes and caller details even while you are on an active call.",
+                "Context While You Talk",
+                "See caller notes mid-call.\nBe prepared, every time.",
                 Icons.Default.AssignmentInd,
                 OnboardingStepType.FeatureIntro
             ))
             
             // Get Started 5
             add(OnboardingStep(
-                "Review & Manage",
-                "Quickly review your daily call activity and stay on top of your communication goals.",
+                "Daily Call Overview",
+                "Quick stats at a glance.\nTrack progress effortlessly.",
                 Icons.Default.RateReview,
                 OnboardingStepType.FeatureIntro
             ))
             
             // Get Started 6
             add(OnboardingStep(
-                "Sync to Cloud",
-                "Optionally sync your data to the dashboard to access your call history from any device.",
+                "Sync Across Devices",
+                "Access calls from anywhere.\nYour data, always backed up.",
                 Icons.Default.CloudSync,
                 OnboardingStepType.FeatureIntro
             ))

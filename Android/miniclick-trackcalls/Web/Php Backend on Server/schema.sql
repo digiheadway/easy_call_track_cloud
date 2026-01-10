@@ -31,10 +31,13 @@ CREATE TABLE IF NOT EXISTS call_log (
     ) DEFAULT 'incoming',
     call_time DATETIME NOT NULL COMMENT 'When the call occurred',
     file_status ENUM(
-        'pending',
-        'completed',
-        'not_found',
-        'failed'
+        'pending', -- Waiting for recording upload
+        'completed', -- Recording uploaded successfully
+        'not_found', -- Recording expected but file not found
+        'failed', -- Upload failed
+        'not_applicable', -- Duration 0, no recording expected
+        'not_allowed', -- Employee disabled attach recording in app
+        'disabled' -- Org-level block: storage full, plan expired, call_record_crm=0
     ) DEFAULT 'pending',
     recording_url TEXT DEFAULT NULL COMMENT 'Cloud path to audio file',
     reviewed TINYINT(1) DEFAULT 0 COMMENT '0=New, 1=Reviewed',

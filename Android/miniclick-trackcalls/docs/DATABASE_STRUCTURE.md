@@ -61,7 +61,7 @@ The central ledger for all individual call events.
 | `duration` | INT | Duration in seconds. |
 | `type` | ENUM | `incoming`, `outgoing`, `missed`, `rejected`, `blocked`, `unknown`. |
 | `call_time` | DATETIME | Timestamp when the call occurred. |
-| `file_status` | ENUM | `pending`, `completed`, `not_found`, `failed`. |
+| `file_status` | ENUM | Recording status: `pending`, `completed`, `not_found`, `failed`, `not_applicable`, `not_allowed`, `disabled`. |
 | `recording_url` | TEXT | Cloud path to the audio file. |
 | `reviewed` | TINYINT(1) | 0=New, 1=Reviewed by Manager. |
 | `note` | TEXT | Note attached to this specific call. |

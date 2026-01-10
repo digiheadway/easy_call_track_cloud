@@ -66,10 +66,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     init {
-        loadSettings()
-        // Initialize from repo and also observe changes to ensure consistency
-        // across different ViewModel instances (e.g. Activity vs NavGraph scoped)
+        // STARTUP OPTIMIZATION: Load theme immediately (small read) for proper theming
+        _themeMode.value = settingsRepository.getThemeMode()
+        
+        // STARTUP OPTIMIZATION: Defer Flow collection until after first frame
         viewModelScope.launch {
+            kotlinx.coroutines.delay(50)
+            
+            // Initialize from repo and observe changes for consistency
             settingsRepository.getOnboardingCompletedFlow().collect {
                 if (settingsRepository.isOnboardingOffline()) {
                     _isSessionOnboardingDismissed.value = true

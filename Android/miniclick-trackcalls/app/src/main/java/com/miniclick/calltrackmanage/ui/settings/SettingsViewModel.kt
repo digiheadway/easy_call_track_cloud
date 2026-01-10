@@ -159,7 +159,8 @@ class SettingsViewModel @javax.inject.Inject constructor(
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
     init {
-        // Load critical settings synchronously for immediate UI rendering (avoid onboarding flash)
+        // STARTUP OPTIMIZATION: Load ONLY critical settings synchronously for immediate UI rendering
+        // This prevents onboarding flash and ensures UI consistency
         val initialOrgId = settingsRepository.getOrganisationId()
         _uiState.update { it.copy(
             trackStartDate = settingsRepository.getTrackStartDate(),
@@ -170,6 +171,25 @@ class SettingsViewModel @javax.inject.Inject constructor(
             pairingCode = if (initialOrgId.isNotEmpty()) "$initialOrgId-${settingsRepository.getUserId()}" else ""
         ) }
 
+        // STARTUP OPTIMIZATION: Defer heavy initialization until after first frame
+        viewModelScope.launch {
+            // Small delay to let the first frame render
+            kotlinx.coroutines.delay(100)
+            
+            // Now start all the heavy observers and load full settings
+            startDeferredInitialization()
+        }
+        
+        // Lightweight observers that can start immediately
+        observeSyncCounts() // These use conflate() and are efficient
+    }
+    
+    /**
+     * Deferred initialization for non-critical settings and heavy observers.
+     * Called after first frame to avoid blocking initial render.
+     */
+    private fun startDeferredInitialization() {
+        // Load full settings on IO thread
         viewModelScope.launch(Dispatchers.IO) {
             loadSettings()
             permissionManager.checkPermissions()
@@ -289,7 +309,6 @@ class SettingsViewModel @javax.inject.Inject constructor(
         }
 
         observeExcludedPersons()
-        observeSyncCounts()
     }
 
     private fun observeSyncCounts() {

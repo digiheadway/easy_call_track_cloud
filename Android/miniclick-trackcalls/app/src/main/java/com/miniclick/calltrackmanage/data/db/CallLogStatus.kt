@@ -18,10 +18,22 @@ enum class MetadataSyncStatus {
 
 /**
  * Status for recording sync (slow sync: compression + upload)
+ * 
+ * Status hierarchy:
+ * - NOT_APPLICABLE: Duration 0 (missed/rejected) - no recording expected
+ * - NOT_ALLOWED: Employee disabled recording attachment in app settings
+ * - DISABLED: Org-level restriction (storage full, plan expired, org disabled recording)
+ * - NOT_FOUND: Recording expected but file not found after search
+ * - PENDING: Recording exists, waiting to upload
+ * - UPLOADING: Currently uploading
+ * - COMPLETED: Recording uploaded successfully
+ * - FAILED: Upload failed (network error, server error, etc.)
  */
 enum class RecordingSyncStatus {
-    NOT_APPLICABLE,  // No recording for this call (missed, 0 duration, or excluded)
-    NOT_FOUND,       // Recording was expected but could not be found after timeout/grace period
+    NOT_APPLICABLE,  // No recording expected (duration 0, missed call)
+    NOT_ALLOWED,     // Employee explicitly disabled attach recording in app
+    DISABLED,        // Org-level block: storage full, plan expired, call_record_crm=0
+    NOT_FOUND,       // Recording expected but file not found
     PENDING,         // Recording exists, not yet uploaded
     UPLOADING,       // Currently uploading
     COMPLETED,       // Recording uploaded successfully

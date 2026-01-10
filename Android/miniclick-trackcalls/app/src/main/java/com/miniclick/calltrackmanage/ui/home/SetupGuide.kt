@@ -122,6 +122,12 @@ fun SetupGuide(
 
     // Modals State
     var showDatePicker by remember { mutableStateOf(false) }
+    var showPermissionFallbackSheet by remember { mutableStateOf(false) }
+    var fallbackPermissionType by remember { mutableStateOf<String?>(null) }
+    
+    // Track if a permission request was started (to detect if dialog didn't appear)
+    var permissionRequestStartTime by remember { mutableStateOf<Long?>(null) }
+    var permissionRequestType by remember { mutableStateOf<String?>(null) }
 
     // Lifecycle observer to re-check permissions and default dialer when returning to app
     DisposableEffect(lifecycleOwner) {
@@ -161,6 +167,21 @@ fun SetupGuide(
         ActivityResultContracts.StartActivityForResult()
     ) { _ ->
         checkPermissions()
+        
+        // Check if user is now default dialer
+        if (isDefaultDialer) {
+            // User granted - enable dial button
+            settingsViewModel.updateShowDialButton(true)
+        } else if (permissionRequestType == "DEFAULT_DIALER") {
+            // User declined/cancelled the dialog - show fallback instructions
+            // Only show if they specifically dismissed the system dialog
+            fallbackPermissionType = "DEFAULT_DIALER"
+            showPermissionFallbackSheet = true
+        }
+        
+        // Reset tracking
+        permissionRequestStartTime = null
+        permissionRequestType = null
     }
     
     // Initial check
@@ -199,29 +220,55 @@ fun SetupGuide(
                 add(GuideStep(
                     type = "DEFAULT_DIALER",
                     title = "Set as Default Dialer",
-                    description = "To track and archive calls reliably for CRM syncing, MiniClick should be your default phone app.",
+                    description = "For better tracking and in-call features, use MiniClick as your default phone app.",
                     icon = Icons.Default.Dialpad,
                     actionLabel = "Set as Default",
                     onAction = {
+                        permissionRequestStartTime = System.currentTimeMillis()
+                        permissionRequestType = "DEFAULT_DIALER"
+                        var dialogLaunched = false
+                        
                         try {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                                 val roleManager = context.getSystemService(Context.ROLE_SERVICE) as android.app.role.RoleManager
                                 if (roleManager.isRoleAvailable(android.app.role.RoleManager.ROLE_DIALER)) {
                                     val intent = roleManager.createRequestRoleIntent(android.app.role.RoleManager.ROLE_DIALER)
                                     roleLauncher.launch(intent)
+                                    dialogLaunched = true
+                                } else {
+                                    // Role not available - show fallback
+                                    fallbackPermissionType = "DEFAULT_DIALER"
+                                    showPermissionFallbackSheet = true
                                 }
                             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                                 val intent = android.content.Intent(android.telecom.TelecomManager.ACTION_CHANGE_DEFAULT_DIALER).apply {
                                     putExtra(android.telecom.TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME, context.packageName)
                                 }
                                 context.startActivity(intent)
+                                dialogLaunched = true
                             }
+                        } catch (e: android.content.ActivityNotFoundException) {
+                            // Dialog not available on this device - show fallback
+                            fallbackPermissionType = "DEFAULT_DIALER"
+                            showPermissionFallbackSheet = true
                         } catch (e: Exception) {
-                            android.widget.Toast.makeText(context, "Error: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                            // Other error - show fallback
+                            fallbackPermissionType = "DEFAULT_DIALER"
+                            showPermissionFallbackSheet = true
+                        }
+                        
+                        // If dialog wasn't launched, reset tracking
+                        if (!dialogLaunched) {
+                            permissionRequestStartTime = null
+                            permissionRequestType = null
                         }
                     },
-                    secondaryActionLabel = "Skip",
-                    onSecondaryAction = { settingsViewModel.setStepSkipped("DEFAULT_DIALER") }
+                    secondaryActionLabel = "Skip for Now",
+                    onSecondaryAction = { 
+                        // Skip step and disable dial button since not using as default dialer
+                        settingsViewModel.setStepSkipped("DEFAULT_DIALER") 
+                        settingsViewModel.updateShowDialButton(false)
+                    }
                 ))
             }
 
@@ -352,9 +399,10 @@ fun SetupGuide(
             AnimatedContent(
                 targetState = currentStep,
                 transitionSpec = {
-                    (fadeIn(animationSpec = tween(500, delayMillis = 90)) + 
-                     scaleIn(initialScale = 0.92f, animationSpec = tween(500, delayMillis = 90)))
-                    .togetherWith(fadeOut(animationSpec = tween(400)))
+                    // Faster animations for snappier permission flow transitions
+                    (fadeIn(animationSpec = tween(250, delayMillis = 50)) + 
+                     scaleIn(initialScale = 0.94f, animationSpec = tween(250, delayMillis = 50)))
+                    .togetherWith(fadeOut(animationSpec = tween(200)))
                 },
                 label = "step_transition",
                 modifier = if (asEmptyState) Modifier.fillMaxSize() else Modifier.fillMaxWidth().wrapContentHeight()
@@ -422,6 +470,48 @@ fun SetupGuide(
                 DatePicker(state = datePickerState)
             }
         }
+    }
+
+    // Permission Fallback Bottom Sheet - shown when device dialog doesn't appear
+    if (showPermissionFallbackSheet) {
+        PermissionFallbackSheet(
+            permissionType = fallbackPermissionType,
+            onDismiss = { 
+                showPermissionFallbackSheet = false
+                fallbackPermissionType = null
+                permissionRequestStartTime = null
+                permissionRequestType = null
+            },
+            onSkip = {
+                when (fallbackPermissionType) {
+                    "DEFAULT_DIALER" -> {
+                        settingsViewModel.setStepSkipped("DEFAULT_DIALER")
+                        settingsViewModel.updateShowDialButton(false)
+                    }
+                }
+                showPermissionFallbackSheet = false
+                fallbackPermissionType = null
+            },
+            onOpenSettings = {
+                try {
+                    when (fallbackPermissionType) {
+                        "DEFAULT_DIALER" -> {
+                            // Open default apps settings
+                            val intent = android.content.Intent(android.provider.Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)
+                            context.startActivity(intent)
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Fallback to app settings
+                    val intent = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = android.net.Uri.parse("package:${context.packageName}")
+                    }
+                    context.startActivity(intent)
+                }
+                showPermissionFallbackSheet = false
+                fallbackPermissionType = null
+            }
+        )
     }
 }
 
@@ -616,6 +706,112 @@ private fun OnboardingPromo(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Bottom sheet shown when a permission dialog doesn't appear on the device.
+ * Provides manual instructions for the user to enable the setting.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PermissionFallbackSheet(
+    permissionType: String?,
+    onDismiss: () -> Unit,
+    onSkip: () -> Unit,
+    onOpenSettings: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState()
+    
+    val (title, description, settingsLabel) = when (permissionType) {
+        "DEFAULT_DIALER" -> Triple(
+            "Couldn't Open Dialog",
+            "Your device may not show the default dialer selection automatically. You can manually set MiniClick as your default phone app in Settings.\n\nGo to: Settings → Apps → Default apps → Phone app → Select MiniClick",
+            "Open Default Apps Settings"
+        )
+        else -> Triple(
+            "Permission Required",
+            "Please enable this permission manually in your device settings.",
+            "Open Settings"
+        )
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Warning Icon
+            Surface(
+                modifier = Modifier.size(72.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.errorContainer
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        modifier = Modifier.size(36.dp),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+            
+            Spacer(Modifier.height(20.dp))
+            
+            Text(
+                title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            
+            Spacer(Modifier.height(12.dp))
+            
+            Text(
+                description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                lineHeight = 22.sp
+            )
+            
+            Spacer(Modifier.height(24.dp))
+            
+            // Primary Action - Open Settings
+            Button(
+                onClick = onOpenSettings,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(settingsLabel)
+            }
+            
+            Spacer(Modifier.height(8.dp))
+            
+            // Secondary Action - Skip
+            TextButton(
+                onClick = onSkip,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Skip for Now", color = MaterialTheme.colorScheme.primary)
             }
         }
     }
