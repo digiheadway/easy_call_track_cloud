@@ -2,6 +2,7 @@ package com.miniclick.calltrackmanage
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.viewModels
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme // Added
@@ -61,12 +62,11 @@ enum class AppTab(
 class MainActivity : ComponentActivity() {
 
     private lateinit var audioPlayer: AudioPlayer
-    private lateinit var viewModel: MainViewModel
+    private val viewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        viewModel = androidx.lifecycle.ViewModelProvider(this)[MainViewModel::class.java]
         audioPlayer = AudioPlayer(context = this)
         
         handleIntent(intent)

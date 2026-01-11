@@ -43,7 +43,7 @@ import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun ReportsScreen(
-    viewModel: HomeViewModel = viewModel(),
+    viewModel: HomeViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
     syncStatusBar: @Composable () -> Unit = {},
     onNavigateToTab: ((Int) -> Unit)? = null // 0 = Calls, 1 = Persons
 ) {
@@ -664,7 +664,7 @@ fun EngagementTableCard(stats: ReportStats) {
 @Composable
 fun ConnectionStatsCard(
     stats: ReportStats,
-    viewModel: HomeViewModel = viewModel(),
+    viewModel: HomeViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
     onNavigateToTab: ((Int) -> Unit)? = null
 ) {
     ElevatedCard(
@@ -1065,7 +1065,7 @@ fun ContactsBreakdownCard(
 @Composable
 fun NotesActivityCard(
     stats: ReportStats,
-    viewModel: HomeViewModel = viewModel(),
+    viewModel: HomeViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
     onNavigateToTab: ((Int) -> Unit)? = null
 ) {
     ElevatedCard(

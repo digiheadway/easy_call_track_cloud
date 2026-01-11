@@ -51,7 +51,7 @@ fun SyncQueueModal(
         dragHandle = { BottomSheetDefaults.DragHandle() },
         containerColor = MaterialTheme.colorScheme.surface,
     ) {
-        val settingsViewModel: com.miniclick.calltrackmanage.ui.settings.SettingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+        val settingsViewModel: com.miniclick.calltrackmanage.ui.settings.SettingsViewModel = androidx.hilt.navigation.compose.hiltViewModel()
         val uiState by settingsViewModel.uiState.collectAsState()
 
         Column(
@@ -851,11 +851,11 @@ fun GlobalSyncStatusBar(
     
     // Track duration for active calls
     var activeDuration by remember { mutableStateOf(0L) }
-    LaunchedEffect(callStatus?.state) {
-        if (callStatus?.state == Call.STATE_ACTIVE) {
-            val startTime = System.currentTimeMillis()
+    LaunchedEffect(callStatus?.state, callStatus?.connectTimeMillis) {
+        val connectTime = callStatus?.connectTimeMillis ?: 0L
+        if (callStatus?.state == Call.STATE_ACTIVE && connectTime > 0) {
             while (callStatus?.state == Call.STATE_ACTIVE) {
-                activeDuration = (System.currentTimeMillis() - startTime) / 1000
+                activeDuration = (System.currentTimeMillis() - connectTime) / 1000
                 delay(1000)
             }
         } else {
@@ -908,6 +908,7 @@ fun GlobalSyncStatusBar(
                 showBar = false
             }
         }
+        android.util.Log.d("GlobalSyncStatusBar", "showBar=$showBar, hasPriority=$hasPriorityItems, hasStatus=$hasStatusItems, guide=$isSetupGuideCompleted, proc=$activeProcess, calls=$pendingNewCalls, recs=$pendingRecordings")
     }
 
     AnimatedVisibility(

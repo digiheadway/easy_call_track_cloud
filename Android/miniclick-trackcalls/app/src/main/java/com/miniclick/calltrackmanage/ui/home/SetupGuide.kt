@@ -53,8 +53,8 @@ data class GuideStep(
 @Composable
 fun SetupGuide(
     modifier: Modifier = Modifier,
-    mainViewModel: MainViewModel = viewModel(),
-    settingsViewModel: SettingsViewModel = viewModel(),
+    mainViewModel: MainViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
+    settingsViewModel: SettingsViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
     asEmptyState: Boolean = false,
     contentWhenDone: @Composable () -> Unit = {}
 ) {

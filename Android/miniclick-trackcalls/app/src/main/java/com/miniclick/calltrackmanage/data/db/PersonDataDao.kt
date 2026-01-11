@@ -25,6 +25,9 @@ interface PersonDataDao {
     
     @Query("SELECT * FROM person_data WHERE excludeFromList = 0 ORDER BY lastCallDate DESC")
     suspend fun getAllPersons(): List<PersonDataEntity>
+
+    @Query("SELECT DISTINCT label FROM person_data WHERE label IS NOT NULL AND label != '' ORDER BY label ASC")
+    suspend fun getDistinctLabels(): List<String>
     
     // Legacy: Get persons excluded with old isExcluded flag (for migration compatibility)
     @Query("SELECT * FROM person_data WHERE isExcluded = 1 ORDER BY lastCallDate DESC")

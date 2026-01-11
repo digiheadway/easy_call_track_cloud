@@ -9,7 +9,10 @@ import kotlinx.coroutines.flow.asStateFlow
 data class CallStateInfo(
     val phoneNumber: String = "",
     val state: Int = Call.STATE_DISCONNECTED,
-    val duration: Long = 0
+    val duration: Long = 0,
+    val isIncoming: Boolean = false,
+    val contactName: String? = null,
+    val connectTimeMillis: Long = 0
 )
 
 /**
@@ -22,6 +25,13 @@ class CallTrackInCallService : InCallService() {
         private val _callStatus = MutableStateFlow<CallStateInfo?>(null)
         val callStatus: StateFlow<CallStateInfo?> = _callStatus.asStateFlow()
 
+        private val _audioState = MutableStateFlow<android.telecom.CallAudioState?>(null)
+        val audioState: StateFlow<android.telecom.CallAudioState?> = _audioState.asStateFlow()
+
+        // Track if InCallActivity is currently visible (for notification priority)
+        @Volatile
+        var isInCallActivityVisible = false
+
         var currentCall: Call? = null
             set(value) {
                 field = value
@@ -33,10 +43,54 @@ class CallTrackInCallService : InCallService() {
             }
         
         fun updateStatus(call: Call) {
+            val isIncoming = call.state == Call.STATE_RINGING || 
+                           (_callStatus.value?.isIncoming == true && call.state != Call.STATE_DISCONNECTED)
+            
+            val connectTime = if (call.state == Call.STATE_ACTIVE) {
+                if (call.details.connectTimeMillis > 0) call.details.connectTimeMillis else System.currentTimeMillis()
+            } else 0L
+
+            android.util.Log.d("CallTrackInCallService", "Updating status: state=${call.state}, incoming=$isIncoming, connectTime=$connectTime")
+
             _callStatus.value = CallStateInfo(
                 phoneNumber = call.details?.handle?.schemeSpecificPart ?: "Unknown",
-                state = call.state
+                state = call.state,
+                isIncoming = isIncoming,
+                contactName = call.details?.callerDisplayName ?: call.details?.contactDisplayName,
+                connectTimeMillis = connectTime
             )
+        }
+
+        /**
+         * Fallback update from SyncService when app is not default dialer
+         */
+        fun updateExternalStatus(number: String?, telephonyState: Int, isIncoming: Boolean) {
+            if (currentCall != null) return // Prefer real Telecom Call if available
+            
+            val telecomState = when (telephonyState) {
+                android.telephony.TelephonyManager.CALL_STATE_RINGING -> Call.STATE_RINGING
+                android.telephony.TelephonyManager.CALL_STATE_OFFHOOK -> Call.STATE_ACTIVE
+                android.telephony.TelephonyManager.CALL_STATE_IDLE -> Call.STATE_DISCONNECTED
+                else -> Call.STATE_DISCONNECTED
+            }
+            
+            if (telecomState == Call.STATE_DISCONNECTED) {
+                _callStatus.value = null
+                return
+            }
+
+            val current = _callStatus.value
+            val connectTime = if (telecomState == Call.STATE_ACTIVE) {
+                current?.connectTimeMillis ?: System.currentTimeMillis()
+            } else 0L
+
+            _callStatus.value = CallStateInfo(
+                phoneNumber = number ?: current?.phoneNumber ?: "Unknown",
+                state = telecomState,
+                isIncoming = isIncoming,
+                connectTimeMillis = connectTime
+            )
+            android.util.Log.d("CallTrackInCallService", "External status update: state=$telecomState, number=$number")
         }
 
         const val CHANNEL_ID = "call_channel"
@@ -52,10 +106,11 @@ class CallTrackInCallService : InCallService() {
         fun toggleMute(shouldMute: Boolean) {
             instance?.get()?.setMuted(shouldMute)
         }
-        
-        fun getCurrentAudioState(): android.telecom.CallAudioState? {
-            return instance?.get()?.callAudioState
-        }
+    }
+
+    override fun onCallAudioStateChanged(audioState: android.telecom.CallAudioState?) {
+        super.onCallAudioStateChanged(audioState)
+        _audioState.value = audioState
     }
 
     override fun onCreate() {
@@ -89,13 +144,30 @@ class CallTrackInCallService : InCallService() {
 
     override fun onCallRemoved(call: android.telecom.Call) {
         super.onCallRemoved(call)
+        android.util.Log.d("CallTrackInCallService", "onCallRemoved called")
         if (currentCall == call) {
+            // Cancel notification FIRST to avoid stacking issues
+            try {
+                val nm = getSystemService(android.app.NotificationManager::class.java)
+                nm?.cancel(NOTIFICATION_ID)
+            } catch (e: Exception) {
+                android.util.Log.e("CallTrackInCallService", "Error canceling notification", e)
+            }
+            
             currentCall = null
-            stopForeground(true)
+            
+            // Use STOP_FOREGROUND_REMOVE to ensure notification is fully removed
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
         }
     }
     
     private fun launchInCallActivity() {
+        android.util.Log.d("CallTrackInCallService", "launchInCallActivity requested")
         try {
             val intent = android.content.Intent(this, com.miniclick.calltrackmanage.ui.call.InCallActivity::class.java)
             intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -176,13 +248,22 @@ class CallTrackInCallService : InCallService() {
             .setImportant(true)
             .build()
 
+        // PERFORMANCE FIX: When activity is visible and call is active (not ringing),
+        // use lower priority to prevent notification from overlaying the in-call screen
+        val shouldLowerPriority = isInCallActivityVisible && isActive && !isRinging
+        val notificationPriority = if (shouldLowerPriority) {
+            androidx.core.app.NotificationCompat.PRIORITY_LOW
+        } else {
+            androidx.core.app.NotificationCompat.PRIORITY_MAX
+        }
+
         // Build notification with CallStyle for proper system-level call notification
         val builder = androidx.core.app.NotificationCompat.Builder(this, channelId)
             .setSmallIcon(android.R.drawable.sym_action_call)
             .setContentIntent(pendingIntent)
-            .setFullScreenIntent(pendingIntent, true)
+            .setFullScreenIntent(pendingIntent, !shouldLowerPriority) // Disable full-screen intent when activity is visible
             .setCategory(androidx.core.app.NotificationCompat.CATEGORY_CALL)
-            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_MAX)
+            .setPriority(notificationPriority)
             .setVisibility(androidx.core.app.NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)  // Critical: Makes notification non-dismissable
             .setAutoCancel(false)
@@ -218,7 +299,11 @@ class CallTrackInCallService : InCallService() {
         }
 
         try {
-            startForeground(NOTIFICATION_ID, builder.build())
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                startForeground(NOTIFICATION_ID, builder.build(), android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL)
+            } else {
+                startForeground(NOTIFICATION_ID, builder.build())
+            }
         } catch (e: Exception) {
             android.util.Log.e("CallTrackInCallService", "Error showing notification", e)
         }

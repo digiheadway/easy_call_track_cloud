@@ -41,8 +41,8 @@ import androidx.compose.ui.graphics.Color
 @Composable
 fun SettingsScreen(
     onBack: (() -> Unit)? = null,
-    viewModel: SettingsViewModel = viewModel(),
-    mainViewModel: MainViewModel = viewModel(),
+    viewModel: SettingsViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
+    mainViewModel: MainViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
     syncStatusBar: @Composable () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()

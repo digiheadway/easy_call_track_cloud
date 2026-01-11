@@ -181,6 +181,10 @@ interface CallDataDao {
     @Query("SELECT * FROM call_data WHERE phoneNumber = :phoneNumber ORDER BY callDate DESC")
     suspend fun getCallsForNumber(phoneNumber: String): List<CallDataEntity>
     
+    // PERFORMANCE: Limited query for in-call screen - only fetches recent calls
+    @Query("SELECT * FROM call_data WHERE phoneNumber = :phoneNumber ORDER BY callDate DESC LIMIT :limit")
+    suspend fun getRecentCallsForNumber(phoneNumber: String, limit: Int): List<CallDataEntity>
+    
     @Query("SELECT MAX(callDate) FROM call_data")
     suspend fun getMaxCallDate(): Long?
     

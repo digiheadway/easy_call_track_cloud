@@ -47,16 +47,22 @@ class SimManager(
         _sim2CalibrationHint.value = settingsRepository.getSim2CalibrationHint()
     }
 
+    private var isFetching = false
     fun fetchSimInfo() {
+        if (isFetching) {
+            android.util.Log.d("SimManager", "fetchSimInfo: already in progress, skipping")
+            return
+        }
+        isFetching = true
         scope.launch(Dispatchers.IO) {
-            val ctx = application
-            if (ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_PHONE_STATE) 
-                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                android.util.Log.d("SimManager", "fetchSimInfo: READ_PHONE_STATE not granted")
-                return@launch
-            }
-
             try {
+                val ctx = application
+                if (ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_PHONE_STATE) 
+                    != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    android.util.Log.d("SimManager", "fetchSimInfo: READ_PHONE_STATE not granted")
+                    return@launch
+                }
+
                 val subscriptionManager = ContextCompat.getSystemService(ctx, SubscriptionManager::class.java)
                 var infoList = subscriptionManager?.activeSubscriptionInfoList
                 
@@ -138,7 +144,8 @@ class SimManager(
                 }
             } catch (e: Exception) {
                 android.util.Log.e("SimManager", "Error in fetchSimInfo", e)
-                e.printStackTrace()
+            } finally {
+                isFetching = false
             }
         }
     }

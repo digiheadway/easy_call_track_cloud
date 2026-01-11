@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Call Tracking App with Recordings | MiniClick</title>
+    <meta name="description"
+        content="Track employee phone calls with recordings, analytics & real-time dashboard. Privacy-compliant. Trusted by 5000+ businesses. Try free.">
+    <link rel="canonical" href="https://miniclickcrm.com/employee-call-tracking-app/">
+    <link rel="icon" type="image/png" href="../assets/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Outfit', 'sans-serif'] }, colors: { brand: { 50: '#f0f9ff', 100: '#e0f2fe', 500: '#0ea5e9', 600: '#0284c7' } } } } }
+    </script>
+    <style type="text/tailwindcss">
+        .glass { @apply bg-white/70 backdrop-blur-xl border-b border-gray-100; }
+        .glass-card { @apply bg-white border border-gray-100 shadow-lg transition-all duration-300 hover:border-brand-500/30 hover:shadow-xl hover:-translate-y-1; }
+        .text-gradient { background: linear-gradient(to right, #0ea5e9, #8b5cf6); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+</head>
+
+<body class="antialiased bg-white text-gray-900">
+    <!-- Nav -->
+    <nav class="fixed w-full z-50 top-0 glass">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-20">
+            <a href="../" class="flex items-center gap-2">
+                <div
+                    class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center">
+                    <i data-feather="phone-call" class="text-white w-4 h-4"></i></div>
+                <span class="font-bold text-xl">MiniClick<span class="text-brand-600">.</span></span>
+            </a>
+            <div class="hidden md:flex items-center gap-6">
+                <a href="../call-track/" class="text-gray-600 hover:text-brand-600 text-sm font-medium">Call Track</a>
+                <a href="../sales-crm/" class="text-gray-600 hover:text-brand-600 text-sm font-medium">Sales CRM</a>
+                <a href="../signup/" class="bg-brand-600 text-white px-5 py-2.5 rounded-full text-sm font-medium">Get
+                    Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <div class="pt-32 pb-16 bg-gradient-to-b from-brand-50 to-white text-center">
+        <div class="max-w-4xl mx-auto px-4">
+            <div
+                class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-100 border border-brand-200 mb-6">
+                <i data-feather="users" class="w-4 h-4 text-brand-600"></i>
+                <span class="text-sm font-medium text-brand-700">Team Management</span>
+            </div>
+            <h1 class="text-4xl sm:text-5xl font-bold mb-6">Employee Call Tracking App <span class="text-gradient">with
+                    Recordings</span></h1>
+            <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">Track your team's phone calls with automatic
+                recordings, real-time sync, and performance analytics. Full visibility without micromanaging.</p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="../signup/" class="px-8 py-4 bg-brand-600 text-white font-bold rounded-full shadow-lg">Start
+                    Free Trial</a>
+                <a href="../call-track/"
+                    class="px-8 py-4 bg-white border border-gray-200 text-gray-900 font-medium rounded-full">See
+                    Features</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Why Track -->
+    <section class="py-16 bg-white">
+        <div class="max-w-4xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12">Why Businesses Track Employee Calls</h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="glass-card p-6 rounded-2xl">
+                    <i data-feather="bar-chart-2" class="w-10 h-10 text-brand-600 mb-4"></i>
+                    <h3 class="text-xl font-bold mb-2">Performance Analytics</h3>
+                    <p class="text-gray-600">Know who's making calls, how long they talk, and who's most productive.</p>
+                </div>
+                <div class="glass-card p-6 rounded-2xl">
+                    <i data-feather="headphones" class="w-10 h-10 text-purple-600 mb-4"></i>
+                    <h3 class="text-xl font-bold mb-2">Quality Assurance</h3>
+                    <p class="text-gray-600">Listen to recordings for training and ensuring service quality.</p>
+                </div>
+                <div class="glass-card p-6 rounded-2xl">
+                    <i data-feather="shield" class="w-10 h-10 text-green-600 mb-4"></i>
+                    <h3 class="text-xl font-bold mb-2">Compliance & Records</h3>
+                    <p class="text-gray-600">Keep records of all business communications for legal compliance.</p>
+                </div>
+                <div class="glass-card p-6 rounded-2xl">
+                    <i data-feather="target" class="w-10 h-10 text-orange-600 mb-4"></i>
+                    <h3 class="text-xl font-bold mb-2">Lead Accountability</h3>
+                    <p class="text-gray-600">Ensure every lead gets proper follow-up and nothing falls through cracks.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="py-16 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12">How MiniClick Employee Tracking Works</h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-4"><span
+                            class="text-2xl font-bold text-brand-600">1</span></div>
+                    <h3 class="font-bold mb-2">Manager Signs Up</h3>
+                    <p class="text-sm text-gray-600">Create account, add employees via email or code</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-4"><span
+                            class="text-2xl font-bold text-brand-600">2</span></div>
+                    <h3 class="font-bold mb-2">Employees Install App</h3>
+                    <p class="text-sm text-gray-600">Download app, enter code, grant permissions</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-4"><span
+                            class="text-2xl font-bold text-brand-600">3</span></div>
+                    <h3 class="font-bold mb-2">View Dashboard</h3>
+                    <p class="text-sm text-gray-600">See all calls, recordings, and reports in real-time</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Manager Features -->
+    <section class="py-16 bg-white">
+        <div class="max-w-4xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-4">Manager Dashboard Features</h2>
+            <p class="text-gray-600 text-center mb-12">Everything you need to monitor your team's calling activity</p>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="flex gap-4">
+                    <div class="w-10 h-10 bg-brand-100 rounded-lg flex items-center justify-center shrink-0"><i
+                            data-feather="activity" class="w-5 h-5 text-brand-600"></i></div>
+                    <div>
+                        <h3 class="font-bold mb-1">Live Sync Status</h3>
+                        <p class="text-sm text-gray-600">See when each employee last synced</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center shrink-0"><i
+                            data-feather="play-circle" class="w-5 h-5 text-purple-600"></i></div>
+                    <div>
+                        <h3 class="font-bold mb-1">Recording Playback</h3>
+                        <p class="text-sm text-gray-600">Listen to any call with waveform player</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center shrink-0"><i
+                            data-feather="pie-chart" class="w-5 h-5 text-green-600"></i></div>
+                    <div>
+                        <h3 class="font-bold mb-1">Performance Reports</h3>
+                        <p class="text-sm text-gray-600">Daily, weekly, monthly call analytics</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center shrink-0"><i
+                            data-feather="filter" class="w-5 h-5 text-orange-600"></i></div>
+                    <div>
+                        <h3 class="font-bold mb-1">Advanced Filters</h3>
+                        <p class="text-sm text-gray-600">Filter by employee, date, duration, type</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center shrink-0"><i
+                            data-feather="download-cloud" class="w-5 h-5 text-pink-600"></i></div>
+                    <div>
+                        <h3 class="font-bold mb-1">Bulk Download</h3>
+                        <p class="text-sm text-gray-600">Export recordings and reports</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center shrink-0"><i
+                            data-feather="smartphone" class="w-5 h-5 text-blue-600"></i></div>
+                    <div>
+                        <h3 class="font-bold mb-1">Device Status</h3>
+                        <p class="text-sm text-gray-600">Battery level and app status alerts</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Employee Privacy -->
+    <section class="py-16 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-4">Employee Privacy Controls</h2>
+            <p class="text-gray-600 text-center mb-12">Balance oversight with privacy</p>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="glass-card p-6 rounded-2xl text-center">
+                    <i data-feather="user-x" class="w-10 h-10 text-brand-600 mx-auto mb-4"></i>
+                    <h3 class="font-bold mb-2">Exclude Personal Numbers</h3>
+                    <p class="text-sm text-gray-600">Employees can exclude family/friends from tracking</p>
+                </div>
+                <div class="glass-card p-6 rounded-2xl text-center">
+                    <i data-feather="smartphone" class="w-10 h-10 text-purple-600 mx-auto mb-4"></i>
+                    <h3 class="font-bold mb-2">SIM Slot Control</h3>
+                    <p class="text-sm text-gray-600">Track only work SIM, ignore personal SIM</p>
+                </div>
+                <div class="glass-card p-6 rounded-2xl text-center">
+                    <i data-feather="eye" class="w-10 h-10 text-green-600 mx-auto mb-4"></i>
+                    <h3 class="font-bold mb-2">Transparent Tracking</h3>
+                    <p class="text-sm text-gray-600">Employees see what's being synced</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Industries -->
+    <section class="py-16 bg-white">
+        <div class="max-w-4xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12">Industries Using MiniClick</h2>
+            <div class="grid md:grid-cols-4 gap-4">
+                <div class="text-center p-4"><i data-feather="briefcase"
+                        class="w-8 h-8 text-brand-600 mx-auto mb-2"></i>
+                    <p class="font-medium">Sales Teams</p>
+                </div>
+                <div class="text-center p-4"><i data-feather="home" class="w-8 h-8 text-green-600 mx-auto mb-2"></i>
+                    <p class="font-medium">Real Estate</p>
+                </div>
+                <div class="text-center p-4"><i data-feather="shield" class="w-8 h-8 text-purple-600 mx-auto mb-2"></i>
+                    <p class="font-medium">Insurance</p>
+                </div>
+                <div class="text-center p-4"><i data-feather="headphones"
+                        class="w-8 h-8 text-orange-600 mx-auto mb-2"></i>
+                    <p class="font-medium">Telecalling</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="py-16 bg-gradient-to-r from-brand-500 to-purple-600 text-center">
+        <div class="max-w-4xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-white mb-6">Start Tracking Your Team's Calls</h2>
+            <p class="text-xl text-white/90 mb-8">Free trial for 3 days. No credit card required.</p>
+            <a href="../signup/"
+                class="inline-block px-8 py-4 bg-white text-brand-600 font-bold rounded-full shadow-lg">Add Your First
+                Employee</a>
+        </div>
+    </section>
+
+    <!-- Related -->
+    <section class="py-16 bg-white">
+        <div class="max-w-4xl mx-auto px-4">
+            <h2 class="text-2xl font-bold text-center mb-8">Related Topics</h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <a href="../sim-based-call-tracking/" class="glass-card p-6 rounded-2xl block">
+                    <h3 class="font-bold mb-2">SIM-Based Tracking</h3>
+                    <p class="text-sm text-gray-600">Dual SIM support</p>
+                </a>
+                <a href="../phone-call-organizer-cloud-sync/" class="glass-card p-6 rounded-2xl block">
+                    <h3 class="font-bold mb-2">Cloud Sync</h3>
+                    <p class="text-sm text-gray-600">Auto backup calls</p>
+                </a>
+                <a href="../mobile-call-recording-cloud-backup/" class="glass-card p-6 rounded-2xl block">
+                    <h3 class="font-bold mb-2">Recording Backup</h3>
+                    <p class="text-sm text-gray-600">Secure cloud storage</p>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-100 bg-gray-50 py-8 text-center">
+        <p class="text-gray-500 text-sm">© 2026 MiniClick. All rights reserved.</p>
+    </footer>
+    <script>feather.replace();</script>
+</body>
+
+</html>

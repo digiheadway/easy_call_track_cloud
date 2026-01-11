@@ -129,18 +129,16 @@ object StatsManager {
             hourlyStatsMap[hour] = (hourlyStatsMap[hour] ?: 0) + 1
         }
 
-        // Person-based stats
+        // Person-based stats (Single Pass)
         var personsWithNotes = 0
         var personsWithLabels = 0
         var neverConnectedUniqueCount = 0
         val visibleNumbers = uniquePhoneNumbers
         val labelsList = mutableListOf<String>()
-
+        
         for (person in persons) {
-            val hasNote = !person.personNote.isNullOrEmpty()
-            val hasLabel = !person.label.isNullOrEmpty()
-            if (hasNote) personsWithNotes++
-            if (hasLabel) {
+            if (!person.personNote.isNullOrEmpty()) personsWithNotes++
+            if (!person.label.isNullOrEmpty()) {
                 personsWithLabels++
                 labelsList.addAll(person.label!!.split(",").map { it.trim() }.filter { it.isNotEmpty() })
             }
@@ -157,23 +155,34 @@ object StatsManager {
         val topCallers = phoneStatsMap.values.sortedByDescending { it.callCount }.take(5)
         val mostTalked = phoneStatsMap.values.filter { it.totalDuration > 0 }.sortedByDescending { it.totalDuration }.take(5)
 
-        // Engagement Buckets (Optimized: single pass over logs for all buckets might be overkill since there's only 7, 
-        // but let's keep it simple and much faster than original)
-        val bucketStats = listOf(
-            Pair("Over 5 min", 301..Int.MAX_VALUE),
-            Pair("3 to 5 min", 181..300),
-            Pair("1 to 3 min", 61..180),
-            Pair("30s to 1 min", 31..60),
-            Pair("10s to 30s", 11..30),
-            Pair("5s to 10s", 6..10),
-            Pair("0s to 5s", 0..5)
-        ).mapIndexed { index, (label, range) ->
-            val inBucket = logs.filter { it.duration.toInt() in range }
+        // Engagement Buckets (Optimized: Single Pass)
+        val bucketcounts = IntArray(7)
+        val bucketOut = IntArray(7)
+        val bucketIn = IntArray(7)
+        
+        for (call in logs) {
+            val d = call.duration.toInt()
+            val bucketIndex = when {
+                d > 300 -> 0 // Over 5 min
+                d > 180 -> 1 // 3 to 5 min
+                d > 60 -> 2  // 1 to 3 min
+                d > 30 -> 3  // 30s to 1 min
+                d > 10 -> 4  // 10s to 30s
+                d > 5 -> 5   // 5s to 10s
+                else -> 6     // 0s to 5s
+            }
+            bucketcounts[bucketIndex]++
+            if (call.callType == android.provider.CallLog.Calls.OUTGOING_TYPE) bucketOut[bucketIndex]++
+            else if (call.callType == android.provider.CallLog.Calls.INCOMING_TYPE) bucketIn[bucketIndex]++
+        }
+
+        val bucketLabels = listOf("Over 5 min", "3 to 5 min", "1 to 3 min", "30s to 1 min", "10s to 30s", "5s to 10s", "0s to 5s")
+        val bucketStats = bucketLabels.mapIndexed { index, label ->
             DurationBucketStat(
                 label = label,
-                total = inBucket.size,
-                outCount = inBucket.count { it.callType == android.provider.CallLog.Calls.OUTGOING_TYPE },
-                inCount = inBucket.count { it.callType == android.provider.CallLog.Calls.INCOMING_TYPE },
+                total = bucketcounts[index],
+                outCount = bucketOut[index],
+                inCount = bucketIn[index],
                 sortOrder = index
             )
         }

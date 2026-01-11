@@ -40,7 +40,7 @@ fun DialerScreen(
     initialNumber: String = "",
     onIdentifyCallHistory: () -> Unit, 
     onClose: () -> Unit = {},
-    viewModel: HomeViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    viewModel: HomeViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
     androidx.activity.compose.BackHandler(onBack = onClose)
 

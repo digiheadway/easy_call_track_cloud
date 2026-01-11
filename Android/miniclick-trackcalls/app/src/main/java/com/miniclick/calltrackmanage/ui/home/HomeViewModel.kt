@@ -78,34 +78,37 @@ class HomeViewModel @javax.inject.Inject constructor(
         // STARTUP OPTIMIZATION: Start critical work IMMEDIATELY for fastest data display
         // Only defer truly heavy operations (sync, secondary observers)
         
-        // Phase 1 (0ms): Start critical database observers IMMEDIATELY
+        // Phase 1 (50ms): Start critical database observers with a small delay
         viewModelScope.launch {
+            kotlinx.coroutines.delay(50)
             startCriticalObservers()
         }
         
-        // Phase 2 (0ms): Load recording path in parallel on IO thread
+        // Phase 2 (100ms): Load recording path in parallel on IO thread
         viewModelScope.launch(Dispatchers.IO) {
+            kotlinx.coroutines.delay(100)
             loadRecordingPath()
         }
         
-        // Phase 3 (100ms): Start secondary observers (lighter delay)  
+        // Phase 3 (300ms): Start secondary observers (lighter delay)  
         viewModelScope.launch {
-            kotlinx.coroutines.delay(100)
+            kotlinx.coroutines.delay(300)
             startSecondaryObservers()
         }
         
-        // Phase 4 (300ms): Sync from system (heavy operation - can wait a bit)
+        // Phase 4 (5000ms): Sync from system (very heavy operation - wait until app is fully stable)
+        // Increased from 300ms to 5s to avoid pegging CPU/IO during activity launch
         viewModelScope.launch {
-            kotlinx.coroutines.delay(300)
+            kotlinx.coroutines.delay(5000)
             if (settingsRepository.isSetupGuideCompleted()) {
                 syncFromSystem()
             }
         }
         
-        // Final Loading Termination (500ms): Ensure shimmers stop even if DB is empty
-        // Reduced from 3s to 500ms because local data should be instant.
+        // Final Loading Termination (2000ms): Ensure shimmers stop
+        // Increased to 2s to allow for real data to arrive from observers
         viewModelScope.launch {
-            kotlinx.coroutines.delay(500)
+            kotlinx.coroutines.delay(2000)
             if (_uiState.value.isLoading) {
                 Log.d("HomeViewModel", "Loading timeout reached, forcing filter check")
                 triggerFilter()

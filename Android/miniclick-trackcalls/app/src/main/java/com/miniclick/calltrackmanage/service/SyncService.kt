@@ -87,7 +87,7 @@ class SyncService : Service() {
         }
     }
 
-    private fun createNotification(): Notification {
+    private fun createNotification(title: String = "Call Cloud", text: String = "Syncing calls in background"): Notification {
         val intent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             this, 0, intent,
@@ -95,13 +95,28 @@ class SyncService : Service() {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Call Cloud")
-            .setContentText("Syncing calls in background")
+            .setContentTitle(title)
+            .setContentText(text)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
+    }
+
+    private fun updateServiceNotification(callNumber: String? = null, isRinging: Boolean = false, isActive: Boolean = false) {
+        val title = when {
+            isRinging -> "Incoming Call: ${callNumber ?: "Unknown"}"
+            isActive -> "Active Call: ${callNumber ?: "Unknown"}"
+            else -> "Call Cloud"
+        }
+        val text = when {
+            isRinging -> "Ringing..."
+            isActive -> "Call in progress"
+            else -> "Syncing calls in background"
+        }
+        val notificationManager = getSystemService(NotificationManager::class.java)
+        notificationManager.notify(NOTIFICATION_ID, createNotification(title, text))
     }
 
     private fun checkHasPermissions(): Boolean {
@@ -162,8 +177,16 @@ class SyncService : Service() {
         }
     }
 
+    private var isCurrentCallIncoming = false
+
     private fun handleCallStateChange(state: Int, phoneNumber: String? = null) {
         Log.d(TAG, "Call state changed: $lastState -> $state (Number: $phoneNumber)")
+        
+        // Update global status for UI feedback (Sync Strip)
+        val incoming = state == TelephonyManager.CALL_STATE_RINGING || (state == TelephonyManager.CALL_STATE_OFFHOOK && isCurrentCallIncoming)
+        if (state == TelephonyManager.CALL_STATE_RINGING) isCurrentCallIncoming = true
+        
+        CallTrackInCallService.updateExternalStatus(phoneNumber, state, incoming)
         
         when (state) {
             TelephonyManager.CALL_STATE_RINGING -> {
@@ -171,13 +194,28 @@ class SyncService : Service() {
                 if (lastState == TelephonyManager.CALL_STATE_IDLE) {
                     Log.d(TAG, "Incoming call started - showing caller ID")
                     showCallerIdOverlay(phoneNumber)
+                    updateServiceNotification(phoneNumber, isRinging = true)
                 }
             }
             TelephonyManager.CALL_STATE_OFFHOOK -> {
                 // Outgoing call started or incoming call answered
                 if (lastState == TelephonyManager.CALL_STATE_IDLE) {
                     Log.d(TAG, "Outgoing call started - showing caller ID")
+                    isCurrentCallIncoming = false
                     showCallerIdOverlay(phoneNumber)
+                }
+                updateServiceNotification(phoneNumber, isActive = true)
+                
+                // If number is missing, try to resolve it and update
+                if (phoneNumber.isNullOrBlank()) {
+                    serviceScope.launch {
+                        delay(1000)
+                        val solved = getActiveCallNumber()
+                        if (!solved.isNullOrBlank()) {
+                            CallTrackInCallService.updateExternalStatus(solved, state, isCurrentCallIncoming)
+                            updateServiceNotification(solved, isActive = true)
+                        }
+                    }
                 }
             }
             TelephonyManager.CALL_STATE_IDLE -> {
@@ -187,6 +225,7 @@ class SyncService : Service() {
                     
                     // Hide caller ID overlay
                     CallerIdManager.hide(this)
+                    updateServiceNotification(null) // Reset to standard sync notification
                     
                     // Delay slightly to allow call log to be updated
                     serviceScope.launch {
@@ -194,6 +233,7 @@ class SyncService : Service() {
                         triggerSync()
                     }
                 }
+                isCurrentCallIncoming = false
             }
         }
         

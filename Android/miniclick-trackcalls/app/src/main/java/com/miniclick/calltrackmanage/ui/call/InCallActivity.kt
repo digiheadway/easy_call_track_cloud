@@ -26,7 +26,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.miniclick.calltrackmanage.ui.theme.CallCloudTheme
 import com.miniclick.calltrackmanage.service.CallTrackInCallService
-import com.miniclick.calltrackmanage.ui.home.HomeViewModel
 import com.miniclick.calltrackmanage.ui.home.PersonInteractionBottomSheet
 import com.miniclick.calltrackmanage.ui.home.PersonGroup
 import com.miniclick.calltrackmanage.util.audio.AudioPlayer
@@ -71,9 +70,16 @@ class InCallActivity : ComponentActivity() {
 
         setContent {
             CallCloudTheme {
-                val homeViewModel: HomeViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+                val inCallViewModel: InCallViewModel = androidx.hilt.navigation.compose.hiltViewModel()
                 val settingsViewModel: SettingsViewModel = androidx.hilt.navigation.compose.hiltViewModel()
-                val audioPlayer = remember { AudioPlayer(applicationContext) }
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val audioPlayer = remember { AudioPlayer(context) }
+                
+                DisposableEffect(Unit) {
+                    onDispose {
+                        audioPlayer.release()
+                    }
+                }
                 
                 InCallScreen(
                     onEndCall = {
@@ -83,25 +89,35 @@ class InCallActivity : ComponentActivity() {
                         } else {
                             finish()
                         }
-                        audioPlayer.release()
                     },
-                    homeViewModel = homeViewModel,
+                    inCallViewModel = inCallViewModel,
                     settingsViewModel = settingsViewModel,
                     audioPlayer = audioPlayer
                 )
             }
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        // Notify service that in-call UI is visible (for notification priority adjustment)
+        CallTrackInCallService.isInCallActivityVisible = true
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Notify service that in-call UI is no longer visible
+        CallTrackInCallService.isInCallActivityVisible = false
+    }
 }
 
 @Composable
 fun InCallScreen(
     onEndCall: () -> Unit,
-    homeViewModel: HomeViewModel,
+    inCallViewModel: InCallViewModel,
     settingsViewModel: SettingsViewModel,
     audioPlayer: AudioPlayer
 ) {
-    val uiState by homeViewModel.uiState.collectAsState()
     val settingsUiState by settingsViewModel.uiState.collectAsState()
     var callState by remember { mutableStateOf("Calling...") }
     var duration by remember { mutableLongStateOf(0L) }
@@ -114,60 +130,80 @@ fun InCallScreen(
     var showEditLabelDialog by remember { mutableStateOf(false) }
     var editValue by remember { mutableStateOf("") }
     
-    // Poll for call state
-    LaunchedEffect(Unit) {
-        val startTime = System.currentTimeMillis()
-        while (isActive) {
-            val call = CallTrackInCallService.currentCall
-            if (call != null) {
-                phoneNumber = call.details?.handle?.schemeSpecificPart ?: ""
-                systemContactName = call.details?.callerDisplayName ?: call.details?.contactDisplayName
-                
-                callState = when (call.state) {
-                    Call.STATE_ACTIVE -> "Active"
-                    Call.STATE_DIALING -> "Dialing"
-                    Call.STATE_RINGING -> "Incoming Call"
-                    Call.STATE_HOLDING -> "On Hold"
-                    Call.STATE_DISCONNECTED -> "Ended"
-                    else -> "Connecting..."
-                }
-                
-                // Update Audio State
-                val audioState = CallTrackInCallService.getCurrentAudioState()
-                if (audioState != null) {
-                    isMuted = audioState.isMuted
-                    audioRoute = audioState.route
-                }
-
-                if (call.state == Call.STATE_DISCONNECTED) {
-                     onEndCall() // Auto close
-                }
-            } else {
-                callState = "Ended"
-                delay(1000)
-                onEndCall()
+    val personGroup by inCallViewModel.callerPersonGroup.collectAsState()
+    val availableLabels by inCallViewModel.availableLabels.collectAsState()
+    
+    val callStatus by CallTrackInCallService.callStatus.collectAsState()
+    val systemAudioState by CallTrackInCallService.audioState.collectAsState()
+    
+    // Reactive updates from service
+    // PERFORMANCE FIX: Removed 1-second delay on call end for immediate response
+    LaunchedEffect(callStatus) {
+        android.util.Log.d("InCallActivity", "callStatus update: state=${callStatus?.state}, phone=${callStatus?.phoneNumber}")
+        
+        // CRITICAL: Check for null status first - this means the call was completely removed
+        if (callStatus == null && phoneNumber.isNotEmpty()) {
+            android.util.Log.d("InCallActivity", "Call removed (status null), closing activity")
+            onEndCall()
+            return@LaunchedEffect
+        }
+        
+        callStatus?.let { call ->
+            phoneNumber = call.phoneNumber
+            systemContactName = call.contactName
+            callState = when (call.state) {
+                android.telecom.Call.STATE_ACTIVE -> "Active"
+                android.telecom.Call.STATE_DIALING -> "Dialing"
+                android.telecom.Call.STATE_RINGING -> "Incoming Call"
+                android.telecom.Call.STATE_HOLDING -> "On Hold"
+                android.telecom.Call.STATE_DISCONNECTED -> "Ended"
+                android.telecom.Call.STATE_PULLING_CALL -> "Pulling..."
+                android.telecom.Call.STATE_CONNECTING -> "Connecting..."
+                else -> "In Call"
             }
             
-            if (callState == "Active") {
-                duration = (System.currentTimeMillis() - startTime) / 1000
+            // IMMEDIATE dismissal on disconnect - no artificial delay
+            if (call.state == android.telecom.Call.STATE_DISCONNECTED) {
+                android.util.Log.d("InCallActivity", "Call disconnected, closing activity immediately")
+                onEndCall()
             }
-            delay(500)
         }
     }
 
-    val personGroup = remember(phoneNumber, uiState.personGroups) {
-        uiState.personGroups[phoneNumber] ?: uiState.personGroups[homeViewModel.normalizePhoneNumber(phoneNumber)]
+    LaunchedEffect(systemAudioState) {
+        systemAudioState?.let { state ->
+            isMuted = state.isMuted
+            audioRoute = state.route
+        }
+    }
+
+    // Timer for Active calls
+    LaunchedEffect(callState, callStatus?.connectTimeMillis) {
+        val connectTime = callStatus?.connectTimeMillis ?: 0L
+        if (callState == "Active" && connectTime > 0) {
+            while (isActive) {
+                duration = (System.currentTimeMillis() - connectTime) / 1000
+                delay(1000)
+            }
+        }
     }
 
     if (showHistoryModal && personGroup != null) {
         PersonInteractionBottomSheet(
-            person = personGroup,
-            recordings = uiState.recordings,
+            person = personGroup!!,
+            recordings = emptyMap(), // Can be updated if we want to show recordings in-call
             audioPlayer = audioPlayer,
-            viewModel = homeViewModel,
             onDismiss = { showHistoryModal = false },
+            onSaveCallNote = { id, note -> inCallViewModel.saveCallNote(id, note) },
+            onSavePersonName = { phone, name -> inCallViewModel.savePersonName(phone, name) },
+            onSavePersonLabel = { phone, label -> inCallViewModel.savePersonLabel(phone, label) },
+            onSavePersonNote = { phone, note -> inCallViewModel.savePersonNote(phone, note) },
+            onGetRecordingForLog = { log -> inCallViewModel.getRecordingForLog(log) },
             onAttachRecording = { /* Not supported from in-call yet */ },
-            onCustomLookup = { settingsViewModel.showPhoneLookup(it) }
+            onCustomLookup = { settingsViewModel.showPhoneLookup(it) },
+            availableLabels = availableLabels,
+            callRecordEnabled = inCallViewModel.callRecordEnabled,
+            customLookupEnabled = settingsUiState.customLookupEnabled
         )
     }
 
@@ -180,15 +216,6 @@ fun InCallScreen(
         )
     }
 
-    val availableLabels = remember(uiState.persons) { 
-        uiState.persons.mapNotNull { it.label }
-            .flatMap { it.split(",") }
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .distinct()
-            .sorted() 
-    }
-
     if (showEditNoteDialog) {
         NoteDialog(
             title = "Person Note",
@@ -197,19 +224,24 @@ fun InCallScreen(
             buttonText = "Save Note",
             onDismiss = { showEditNoteDialog = false },
             onSave = { 
-                homeViewModel.savePersonNote(phoneNumber, it)
+                inCallViewModel.savePersonNote(phoneNumber, it)
                 showEditNoteDialog = false
             }
         )
     }
 
     if (showEditLabelDialog) {
+        // PERFORMANCE: Load labels only when dialog is shown
+        LaunchedEffect(Unit) {
+            inCallViewModel.loadLabelsIfNeeded()
+        }
+        
         LabelPickerDialog(
             currentLabel = personGroup?.label,
             availableLabels = availableLabels,
             onDismiss = { showEditLabelDialog = false },
             onSave = { 
-                homeViewModel.savePersonLabel(phoneNumber, it)
+                inCallViewModel.savePersonLabel(phoneNumber, it)
                 showEditLabelDialog = false
             }
         )
@@ -297,11 +329,12 @@ fun InCallScreen(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                if (personGroup != null) {
+                val currentPerson = personGroup
+                if (currentPerson != null) {
                     // Labels Section
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                        if (!personGroup.label.isNullOrEmpty()) {
-                            LabelChip(label = personGroup.label, onClick = { 
+                        if (!currentPerson.label.isNullOrEmpty()) {
+                            LabelChip(label = currentPerson.label, onClick = { 
                                 showEditLabelDialog = true
                             }, color = Color(0xFF333333))
                         }
@@ -313,12 +346,12 @@ fun InCallScreen(
                         ) {
                             Icon(Icons.Default.Add, null, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text(if (personGroup.label.isNullOrEmpty()) "Add Label" else "Edit", style = MaterialTheme.typography.labelSmall)
+                            Text(if (currentPerson.label.isNullOrEmpty()) "Add Label" else "Edit", style = MaterialTheme.typography.labelSmall)
                         }
                     }
                     
                     // Note Section
-                    if (!personGroup.personNote.isNullOrEmpty()) {
+                    if (!currentPerson.personNote.isNullOrEmpty()) {
                         Row(
                             verticalAlignment = Alignment.Top,
                             modifier = Modifier
@@ -326,14 +359,14 @@ fun InCallScreen(
                                 .background(Color(0xFF1A1A1A), RoundedCornerShape(12.dp))
                                 .padding(12.dp)
                                 .clickable { 
-                                    editValue = personGroup.personNote ?: ""
+                                    editValue = currentPerson.personNote ?: ""
                                     showEditNoteDialog = true
                                 }
                         ) {
                             Icon(Icons.Default.StickyNote2, null, tint = Color.Gray, modifier = Modifier.size(16.dp).padding(top = 2.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = personGroup.personNote!!,
+                                text = currentPerson.personNote!!,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color.White.copy(alpha = 0.9f)
                             )
@@ -350,7 +383,7 @@ fun InCallScreen(
                     }
 
                     // Recent History Card
-                    if (personGroup.calls.isNotEmpty()) {
+                    if (currentPerson.calls.isNotEmpty()) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -362,10 +395,10 @@ fun InCallScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text("Recent Calls", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.6f))
-                                Text("${personGroup.calls.size}", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                                Text("${currentPerson.calls.size}", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                             }
                             Spacer(Modifier.height(8.dp))
-                            personGroup.calls.take(3).forEach { call ->
+                            currentPerson.calls.take(3).forEach { call ->
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween
@@ -404,7 +437,12 @@ fun InCallScreen(
             Spacer(Modifier.height(24.dp))
 
             // 2. Fixed Controls Area
-            if (callState == "Incoming Call") {
+            val isIncoming = callStatus?.isIncoming == true
+            val isActive = callStatus?.state == android.telecom.Call.STATE_ACTIVE
+            val isConnecting = callStatus?.state == android.telecom.Call.STATE_CONNECTING || 
+                              callStatus?.state == android.telecom.Call.STATE_DIALING
+            
+            if (isIncoming && !isActive) {
                 Row(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         FloatingActionButton(onClick = onEndCall, containerColor = Color(0xFFEB4E3D), shape = CircleShape) {
@@ -412,13 +450,25 @@ fun InCallScreen(
                         }
                         Text("Decline", color = Color.White, modifier = Modifier.padding(top = 8.dp))
                     }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        FloatingActionButton(onClick = { CallTrackInCallService.currentCall?.answer(0) }, containerColor = Color(0xFF30D158), shape = CircleShape) {
-                            Icon(Icons.Default.Call, "Accept", Modifier.size(32.dp), tint = Color.White)
+                    
+                    if (callStatus?.state == android.telecom.Call.STATE_RINGING) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            FloatingActionButton(onClick = { CallTrackInCallService.currentCall?.answer(0) }, containerColor = Color(0xFF30D158), shape = CircleShape) {
+                                Icon(Icons.Default.Call, "Accept", Modifier.size(32.dp), tint = Color.White)
+                            }
+                            Text("Accept", color = Color.White, modifier = Modifier.padding(top = 8.dp))
                         }
-                        Text("Accept", color = Color.White, modifier = Modifier.padding(top = 8.dp))
+                    } else {
+                        // Show "Connecting..." or similar if it's an incoming call being answered
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator(color = Color(0xFF30D158), modifier = Modifier.size(56.dp))
+                            Text("Connecting...", color = Color.White, modifier = Modifier.padding(top = 8.dp))
+                        }
                     }
                 }
+            } else if (callStatus?.state == android.telecom.Call.STATE_DISCONNECTED) {
+                // Show nothing or "Ended" footer
+                Box(modifier = Modifier.fillMaxWidth().height(100.dp))
             } else {
                 var showKeypad by remember { mutableStateOf(false) }
                 if (showKeypad) {

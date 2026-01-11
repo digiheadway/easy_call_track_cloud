@@ -36,13 +36,18 @@ fun PersonInteractionBottomSheet(
     person: PersonGroup,
     recordings: Map<String, String>,
     audioPlayer: AudioPlayer,
-    viewModel: HomeViewModel,
     onDismiss: () -> Unit,
+    onSaveCallNote: (String, String) -> Unit,
+    onSavePersonName: (String, String) -> Unit,
+    onSavePersonLabel: (String, String) -> Unit,
+    onSavePersonNote: (String, String) -> Unit,
+    onGetRecordingForLog: suspend (CallDataEntity) -> Unit,
     onAttachRecording: (CallDataEntity) -> Unit,
     onCustomLookup: (String) -> Unit,
+    availableLabels: List<String>,
+    callRecordEnabled: Boolean = true,
     customLookupEnabled: Boolean = false
 ) {
-    val uiState by viewModel.uiState.collectAsState()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     
     // Note Dialog States
@@ -60,7 +65,7 @@ fun PersonInteractionBottomSheet(
             buttonText = "Save Call Note",
             onDismiss = { callNoteTarget = null },
             onSave = { note -> 
-                viewModel.saveCallNote(callNoteTarget!!.compositeId, note)
+                onSaveCallNote(callNoteTarget!!.compositeId, note)
                 callNoteTarget = null 
             }
         )
@@ -74,7 +79,7 @@ fun PersonInteractionBottomSheet(
             buttonText = "Save Name",
             onDismiss = { showNameDialog = false },
             onSave = { name ->
-                viewModel.savePersonName(person.number, name)
+                onSavePersonName(person.number, name)
                 showNameDialog = false
             }
         )
@@ -83,10 +88,10 @@ fun PersonInteractionBottomSheet(
     if (showLabelDialog) {
         LabelPickerDialog(
             currentLabel = person.label,
-            availableLabels = uiState.persons.mapNotNull { it.label }.filter { it.isNotEmpty() }.distinct().sorted(),
+            availableLabels = availableLabels,
             onDismiss = { showLabelDialog = false },
             onSave = { label ->
-                viewModel.savePersonLabel(person.number, label)
+                onSavePersonLabel(person.number, label)
                 showLabelDialog = false
             }
         )
@@ -100,7 +105,7 @@ fun PersonInteractionBottomSheet(
             buttonText = "Save Person Note",
             onDismiss = { showPersonNoteDialog = false },
             onSave = { note ->
-                viewModel.savePersonNote(person.number, note)
+                onSavePersonNote(person.number, note)
                 showPersonNoteDialog = false
             }
         )
@@ -267,7 +272,7 @@ fun PersonInteractionBottomSheet(
                     // Trigger check for recording path
                     LaunchedEffect(log.compositeId) {
                         if (log.localRecordingPath == null) {
-                            viewModel.getRecordingForLog(log)
+                            onGetRecordingForLog(log)
                         }
                     }
 
@@ -275,7 +280,7 @@ fun PersonInteractionBottomSheet(
                         call = log,
                         recordings = recordings,
                         audioPlayer = audioPlayer,
-                        callRecordEnabled = uiState.callRecordEnabled,
+                        callRecordEnabled = callRecordEnabled,
                         onNoteClick = { callNoteTarget = it },
                         onAttachRecording = onAttachRecording
                     )

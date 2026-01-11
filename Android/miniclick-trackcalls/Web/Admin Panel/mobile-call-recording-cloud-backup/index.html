@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Call Recording with Cloud Backup | MiniClick</title>
+    <meta name="description"
+        content="Auto record phone calls and backup to cloud. Access recordings from web dashboard. Secure, compressed, searchable. Works on Android. Download free.">
+    <link rel="canonical" href="https://miniclickcrm.com/mobile-call-recording-cloud-backup/">
+    <link rel="icon" type="image/png" href="../assets/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Outfit', 'sans-serif'] }, colors: { brand: { 50: '#f0f9ff', 100: '#e0f2fe', 500: '#0ea5e9', 600: '#0284c7' } } } } }
+    </script>
+    <style type="text/tailwindcss">
+        .glass { @apply bg-white/70 backdrop-blur-xl border-b border-gray-100; }
+        .glass-card { @apply bg-white border border-gray-100 shadow-lg transition-all duration-300 hover:border-brand-500/30 hover:shadow-xl hover:-translate-y-1; }
+        .text-gradient { background: linear-gradient(to right, #0ea5e9, #8b5cf6); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+</head>
+
+<body class="antialiased bg-white text-gray-900">
+    <!-- Nav -->
+    <nav class="fixed w-full z-50 top-0 glass">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-20">
+            <a href="../" class="flex items-center gap-2">
+                <div
+                    class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center">
+                    <i data-feather="phone-call" class="text-white w-4 h-4"></i></div>
+                <span class="font-bold text-xl">MiniClick<span class="text-brand-600">.</span></span>
+            </a>
+            <div class="hidden md:flex items-center gap-6">
+                <a href="../call-track/" class="text-gray-600 hover:text-brand-600 text-sm font-medium">Call Track</a>
+                <a href="../sales-crm/" class="text-gray-600 hover:text-brand-600 text-sm font-medium">Sales CRM</a>
+                <a href="../signup/" class="bg-brand-600 text-white px-5 py-2.5 rounded-full text-sm font-medium">Get
+                    Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <div class="pt-32 pb-16 bg-gradient-to-b from-brand-50 to-white text-center">
+        <div class="max-w-4xl mx-auto px-4">
+            <div
+                class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-100 border border-brand-200 mb-6">
+                <i data-feather="mic" class="w-4 h-4 text-brand-600"></i>
+                <span class="text-sm font-medium text-brand-700">Recording Backup</span>
+            </div>
+            <h1 class="text-4xl sm:text-5xl font-bold mb-6">Mobile Call Recording with <span class="text-gradient">Cloud
+                    Backup</span></h1>
+            <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">Automatically record all phone calls and back them
+                up to secure cloud storage. Access, search, and download recordings from anywhere.</p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="../download/" class="px-8 py-4 bg-brand-600 text-white font-bold rounded-full shadow-lg"><i
+                        data-feather="download" class="w-4 h-4 inline mr-2"></i>Download Free</a>
+                <a href="../call-track/"
+                    class="px-8 py-4 bg-white border border-gray-200 text-gray-900 font-medium rounded-full">Learn
+                    More</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Problem -->
+    <section class="py-16 bg-white">
+        <div class="max-w-4xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12">The Problem with Local Recordings</h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="p-6 rounded-2xl bg-red-50 border border-red-100 text-center">
+                    <i data-feather="hard-drive" class="w-10 h-10 text-red-500 mx-auto mb-4"></i>
+                    <h3 class="font-bold mb-2">Storage Fills Up</h3>
+                    <p class="text-sm text-gray-600">Recordings eat up phone storage quickly</p>
+                </div>
+                <div class="p-6 rounded-2xl bg-red-50 border border-red-100 text-center">
+                    <i data-feather="alert-triangle" class="w-10 h-10 text-red-500 mx-auto mb-4"></i>
+                    <h3 class="font-bold mb-2">Data Loss Risk</h3>
+                    <p class="text-sm text-gray-600">Phone lost, stolen, or damaged = recordings gone</p>
+                </div>
+                <div class="p-6 rounded-2xl bg-red-50 border border-red-100 text-center">
+                    <i data-feather="search" class="w-10 h-10 text-red-500 mx-auto mb-4"></i>
+                    <h3 class="font-bold mb-2">Can't Find Anything</h3>
+                    <p class="text-sm text-gray-600">No way to search recordings by contact</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Solution -->
+    <section class="py-16 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-4">MiniClick: The Cloud Recording Solution</h2>
+            <p class="text-gray-600 text-center mb-12">Here's how it works:</p>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="glass-card p-6 rounded-2xl">
+                    <i data-feather="upload-cloud" class="w-10 h-10 text-brand-600 mb-4"></i>
+                    <h3 class="text-xl font-bold mb-2">Automatic Upload</h3>
+                    <p class="text-gray-600">Recordings upload to cloud automatically after each call. No manual steps
+                        needed.</p>
+                </div>
+                <div class="glass-card p-6 rounded-2xl">
+                    <i data-feather="minimize-2" class="w-10 h-10 text-purple-600 mb-4"></i>
+                    <h3 class="text-xl font-bold mb-2">Smart Compression</h3>
+                    <p class="text-gray-600">Recordings are compressed to save bandwidth and storage while maintaining
+                        quality.</p>
+                </div>
+                <div class="glass-card p-6 rounded-2xl">
+                    <i data-feather="search" class="w-10 h-10 text-green-600 mb-4"></i>
+                    <h3 class="text-xl font-bold mb-2">Searchable Library</h3>
+                    <p class="text-gray-600">Find any recording by contact name, number, date, or duration instantly.
+                    </p>
+                </div>
+                <div class="glass-card p-6 rounded-2xl">
+                    <i data-feather="play-circle" class="w-10 h-10 text-orange-600 mb-4"></i>
+                    <h3 class="text-xl font-bold mb-2">Web Audio Player</h3>
+                    <p class="text-gray-600">Play recordings directly in browser with waveform visualization and speed
+                        control.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="py-16 bg-white">
+        <div class="max-w-4xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-12">Recording Management Features</h2>
+            <div class="space-y-6">
+                <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                    <div class="w-12 h-12 bg-brand-100 rounded-lg flex items-center justify-center shrink-0"><i
+                            data-feather="download" class="w-6 h-6 text-brand-600"></i></div>
+                    <div>
+                        <h3 class="font-bold">Bulk Download</h3>
+                        <p class="text-sm text-gray-600">Download multiple recordings as a zip file</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center shrink-0"><i
+                            data-feather="trash-2" class="w-6 h-6 text-purple-600"></i></div>
+                    <div>
+                        <h3 class="font-bold">Storage Management</h3>
+                        <p class="text-sm text-gray-600">Delete old recordings to free up space, or archive them</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center shrink-0"><i
+                            data-feather="pie-chart" class="w-6 h-6 text-green-600"></i></div>
+                    <div>
+                        <h3 class="font-bold">Storage Analytics</h3>
+                        <p class="text-sm text-gray-600">See how much storage you're using and by whom</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                    <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center shrink-0"><i
+                            data-feather="lock" class="w-6 h-6 text-orange-600"></i></div>
+                    <div>
+                        <h3 class="font-bold">Secure & Encrypted</h3>
+                        <p class="text-sm text-gray-600">All recordings encrypted in transit and at rest</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Privacy -->
+    <section class="py-16 bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-4">Privacy Controls</h2>
+            <p class="text-gray-600 text-center mb-12">You control what gets recorded and backed up</p>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="glass-card p-6 rounded-2xl text-center">
+                    <i data-feather="user-minus" class="w-10 h-10 text-brand-600 mx-auto mb-4"></i>
+                    <h3 class="font-bold mb-2">Exclude Contacts</h3>
+                    <p class="text-sm text-gray-600">Disable recording for specific numbers</p>
+                </div>
+                <div class="glass-card p-6 rounded-2xl text-center">
+                    <i data-feather="toggle-right" class="w-10 h-10 text-purple-600 mx-auto mb-4"></i>
+                    <h3 class="font-bold mb-2">On/Off Switch</h3>
+                    <p class="text-sm text-gray-600">Disable all recording with one toggle</p>
+                </div>
+                <div class="glass-card p-6 rounded-2xl text-center">
+                    <i data-feather="wifi-off" class="w-10 h-10 text-green-600 mx-auto mb-4"></i>
+                    <h3 class="font-bold mb-2">Wi-Fi Only</h3>
+                    <p class="text-sm text-gray-600">Upload only on Wi-Fi to save data</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="py-16 bg-gradient-to-r from-brand-500 to-purple-600 text-center">
+        <div class="max-w-4xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-white mb-6">Start Backing Up Your Recordings</h2>
+            <p class="text-xl text-white/90 mb-8">Download MiniClick and never lose a recording again.</p>
+            <a href="../download/"
+                class="inline-block px-8 py-4 bg-white text-brand-600 font-bold rounded-full shadow-lg">Download Free
+                App</a>
+        </div>
+    </section>
+
+    <!-- Related -->
+    <section class="py-16 bg-white">
+        <div class="max-w-4xl mx-auto px-4">
+            <h2 class="text-2xl font-bold text-center mb-8">Related Topics</h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <a href="../sim-based-call-tracking/" class="glass-card p-6 rounded-2xl block">
+                    <h3 class="font-bold mb-2">SIM-Based Tracking</h3>
+                    <p class="text-sm text-gray-600">Track by SIM slot</p>
+                </a>
+                <a href="../phone-call-organizer-cloud-sync/" class="glass-card p-6 rounded-2xl block">
+                    <h3 class="font-bold mb-2">Cloud Sync</h3>
+                    <p class="text-sm text-gray-600">Organize all calls</p>
+                </a>
+                <a href="../employee-call-tracking-app/" class="glass-card p-6 rounded-2xl block">
+                    <h3 class="font-bold mb-2">Employee Tracking</h3>
+                    <p class="text-sm text-gray-600">Team monitoring</p>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-100 bg-gray-50 py-8 text-center">
+        <p class="text-gray-500 text-sm">© 2026 MiniClick. All rights reserved.</p>
+    </footer>
+    <script>feather.replace();</script>
+</body>
+
+</html>

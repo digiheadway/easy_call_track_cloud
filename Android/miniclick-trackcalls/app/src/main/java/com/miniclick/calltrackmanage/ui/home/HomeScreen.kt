@@ -43,8 +43,8 @@ import com.miniclick.calltrackmanage.worker.RecordingUploadWorker
 @Composable
 fun CallsScreen(
     audioPlayer: AudioPlayer,
-    viewModel: HomeViewModel = viewModel(),
-    settingsViewModel: SettingsViewModel = viewModel(),
+    viewModel: HomeViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
+    settingsViewModel: SettingsViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
     onOpenDialer: () -> Unit = {},
     syncStatusBar: @Composable () -> Unit = {},
     personDetailsPhone: String? = null,
@@ -192,13 +192,19 @@ fun CallsScreen(
             person = latestPerson,
             recordings = uiState.recordings,
             audioPlayer = audioPlayer,
-            viewModel = viewModel,
             onDismiss = { selectedPersonForDetails = null },
+            onSaveCallNote = { id, note -> viewModel.saveCallNote(id, note) },
+            onSavePersonName = { phone, name -> viewModel.savePersonName(phone, name) },
+            onSavePersonLabel = { phone, label -> viewModel.savePersonLabel(phone, label) },
+            onSavePersonNote = { phone, note -> viewModel.savePersonNote(phone, note) },
+            onGetRecordingForLog = { log -> viewModel.getRecordingForLog(log) },
             onAttachRecording = { 
                 attachTarget = it
                 audioPickerLauncher.launch(arrayOf("audio/*"))
             },
             onCustomLookup = { settingsViewModel.showPhoneLookup(it) },
+            availableLabels = uiState.persons.mapNotNull { it.label }.filter { it.isNotEmpty() }.distinct().sorted(),
+            callRecordEnabled = uiState.callRecordEnabled,
             customLookupEnabled = settingsState.customLookupEnabled
         )
     }

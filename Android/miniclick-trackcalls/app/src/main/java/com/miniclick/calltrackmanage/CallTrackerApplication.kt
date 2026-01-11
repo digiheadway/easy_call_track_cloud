@@ -19,7 +19,7 @@ class CallTrackerApplication : Application() {
         // We use a global scope here because it matches the Application lifecycle.
         @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
         kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            kotlinx.coroutines.delay(2000) // 2 second delay for non-critical background work
+            kotlinx.coroutines.delay(500) // 500ms delay for non-critical background work
             
             val settingsRepository = com.miniclick.calltrackmanage.data.SettingsRepository.getInstance(applicationContext)
             if (settingsRepository.isAgreementAccepted() && settingsRepository.isSetupGuideCompleted()) {

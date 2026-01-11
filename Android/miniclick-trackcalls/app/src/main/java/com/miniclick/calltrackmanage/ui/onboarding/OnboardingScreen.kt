@@ -65,7 +65,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     val scope = rememberCoroutineScope()
     
     val settingsViewModel: com.miniclick.calltrackmanage.ui.settings.SettingsViewModel = 
-        androidx.lifecycle.viewmodel.compose.viewModel()
+        androidx.hilt.navigation.compose.hiltViewModel()
     val uiState by settingsViewModel.uiState.collectAsState()
     
     // Modals State

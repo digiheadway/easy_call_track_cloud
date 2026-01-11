@@ -103,6 +103,14 @@ class CallDataRepository private constructor(private val context: Context) {
     }
     
     /**
+     * Get recent calls for a specific number (limited for performance).
+     * Used by InCallViewModel to avoid loading entire call history.
+     */
+    suspend fun getRecentLogsForPhone(phoneNumber: String, limit: Int = 10): List<CallDataEntity> = withContext(Dispatchers.IO) {
+        callDataDao.getRecentCallsForNumber(phoneNumber, limit)
+    }
+    
+    /**
      * Get calls missing local recording paths (to trigger a find)
      */
     suspend fun getCallsMissingRecordings(): List<CallDataEntity> = withContext(Dispatchers.IO) {
@@ -556,6 +564,10 @@ class CallDataRepository private constructor(private val context: Context) {
      */
     suspend fun getAllPersons(): List<PersonDataEntity> = withContext(Dispatchers.IO) {
         personDataDao.getAllPersons()
+    }
+
+    suspend fun getDistinctLabels(): List<String> = withContext(Dispatchers.IO) {
+        personDataDao.getDistinctLabels()
     }
     
     /**
