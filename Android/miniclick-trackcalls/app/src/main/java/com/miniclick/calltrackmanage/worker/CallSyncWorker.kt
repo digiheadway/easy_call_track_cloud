@@ -102,6 +102,11 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 return@withContext Result.success()
             }
 
+            if (!com.miniclick.calltrackmanage.util.network.NetworkConnectivityObserver(applicationContext).isConnected()) {
+                Log.d(TAG, "No network connection. Local import finished. Skipping cloud sync.")
+                return@withContext Result.success()
+            }
+
             val deviceId = android.provider.Settings.Secure.getString(
                 applicationContext.contentResolver,
                 android.provider.Settings.Secure.ANDROID_ID
@@ -585,7 +590,6 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
          */
         fun enqueue(context: Context) {
             val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
 
             val request = PeriodicWorkRequestBuilder<CallSyncWorker>(30, TimeUnit.MINUTES)
@@ -605,7 +609,6 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
          */
         fun runNow(context: Context) {
             val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
 
             val request = OneTimeWorkRequestBuilder<CallSyncWorker>()
@@ -614,7 +617,7 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
             WorkManager.getInstance(context).enqueueUniqueWork(
                 "CallSyncWorker_Immediate",
-                ExistingWorkPolicy.REPLACE,
+                ExistingWorkPolicy.KEEP,
                 request
             )
         }
@@ -626,7 +629,6 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
          */
         fun runQuickSync(context: Context) {
             val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
 
             val inputData = workDataOf(KEY_SKIP_SYSTEM_IMPORT to true)

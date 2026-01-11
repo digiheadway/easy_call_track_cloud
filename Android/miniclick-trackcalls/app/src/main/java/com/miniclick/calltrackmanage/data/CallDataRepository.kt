@@ -14,6 +14,9 @@ import com.miniclick.calltrackmanage.network.PersonUpdateDto
 import com.miniclick.calltrackmanage.network.CallUpdateDto
 import androidx.room.withTransaction
 import com.miniclick.calltrackmanage.worker.CallSyncWorker
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Unified repository for all call and person data.
@@ -47,6 +50,8 @@ class CallDataRepository private constructor(private val context: Context) {
     private val personDataDao = database.personDataDao()
     private val recordingRepository = RecordingRepository.getInstance(context)
     private val settingsRepository = SettingsRepository.getInstance(context)
+    
+    private val syncMutex = Mutex()
     
     companion object {
         private const val TAG = "CallDataRepository"
@@ -148,6 +153,9 @@ class CallDataRepository private constructor(private val context: Context) {
      */
     suspend fun updateRecordingPath(compositeId: String, path: String?) = withContext(Dispatchers.IO) {
         callDataDao.updateRecordingPath(compositeId, path)
+        if (path != null) {
+            callDataDao.updateRecordingSyncStatus(compositeId, RecordingSyncStatus.PENDING)
+        }
     }
     
     /**
@@ -550,28 +558,32 @@ class CallDataRepository private constructor(private val context: Context) {
      * Robust lookup helper for person data
      */
     private suspend fun getPersonRobust(normalized: String): PersonDataEntity? {
-        var existing = personDataDao.getByPhoneNumber(normalized)
-        if (existing != null) return existing
+        // 0. Primary match
+        personDataDao.getByPhoneNumber(normalized)?.let { return it }
 
-        // Fallback 1: Try without '+' if normalized starts with it
+        // 1. Try common normalization variants
+        val variants = mutableListOf<String>()
         if (normalized.startsWith("+")) {
-            existing = personDataDao.getByPhoneNumber(normalized.substring(1))
-            if (existing != null) return existing
+            variants.add(normalized.substring(1))
+        } else {
+            variants.add("+$normalized")
+        }
+        
+        for (v in variants) {
+            personDataDao.getByPhoneNumber(v)?.let { return it }
         }
 
-        // Fallback 2: Try with '+' if normalized doesn't have it
-        if (!normalized.startsWith("+")) {
-            existing = personDataDao.getByPhoneNumber("+$normalized")
-            if (existing != null) return existing
-        }
-
-        // Fallback 3: Suffix match (last 10 digits) - more expensive but safer than creating duplicate
+        // 2. Suffix match (last 10 digits) - prevents creating duplicates for numbers with different country codes
         if (normalized.length >= 10) {
             val suffix = normalized.takeLast(10)
-            existing = personDataDao.getAllPersons().find { it.phoneNumber.endsWith(suffix) }
+            // Use optimized DB query instead of getAllPersons().find
+            val candidates = personDataDao.getByPhoneNumberSuffix(suffix)
+            if (candidates.isNotEmpty()) {
+                return candidates.first()
+            }
         }
 
-        return existing
+        return null
     }
     
     /**
@@ -792,13 +804,42 @@ class CallDataRepository private constructor(private val context: Context) {
         return 0L
     }
 
+    private fun getOldestSystemCallDate(): Long {
+        if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_CALL_LOG) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+             return Long.MAX_VALUE
+        }
+        try {
+            val cursor = context.contentResolver.query(
+                CallLog.Calls.CONTENT_URI,
+                arrayOf(CallLog.Calls.DATE),
+                 null, null,
+                "${CallLog.Calls.DATE} ASC LIMIT 1"
+            )
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val dateIdx = it.getColumnIndex(CallLog.Calls.DATE)
+                    if (dateIdx != -1) return it.getLong(dateIdx)
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to query oldest system call date", e)
+        }
+        return Long.MAX_VALUE
+    }
+
     /**
      * Sync new calls from system call log to Room database.
      * This runs in background and updates Room with any new calls.
      * Also finds and updates recording paths.
      */
     suspend fun syncFromSystemCallLog() = withContext(Dispatchers.IO) {
-        try {
+        if (syncMutex.isLocked) {
+            Log.d(TAG, "Sync already in progress, skipping this request.")
+            return@withContext
+        }
+        
+        syncMutex.withLock {
+            try {
             // 1. Initial Checks (Permissions, Settings)
             if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_CALL_LOG) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
                 return@withContext
@@ -817,14 +858,27 @@ class CallDataRepository private constructor(private val context: Context) {
             val minCallDate = callDataDao.getMinCallDate() ?: Long.MAX_VALUE
             
             // 3. SMART IMPORT CHECK 🧠
-            // If the start date window hasn't expanded backwards (requiring older calls),
-            // check if the system actually has any NEW calls since our last sync.
-            // If DB is empty (minCallDate = MAX), this check is skipped (condition is false).
-            if (filterDate >= minCallDate) {
+            // We skip the full scan if:
+            // a) The filter date hasn't moved backwards (we don't need older calls)
+            // b) OR if we already have the oldest possible calls from the system log (for "All" users)
+            // AND the system has no calls newer than our latest call.
+            
+            val isAtOldestEnd = if (filterDate == 0L) {
+                if (minCallDate == Long.MAX_VALUE) false // Empty DB
+                else getOldestSystemCallDate() >= minCallDate // We have reached the start of system log
+            } else {
+                filterDate >= minCallDate // Cutoff is within or after our current range
+            }
+
+            if (isAtOldestEnd) {
                  val systemLatest = getLatestSystemCallDate()
                  // Allow tiny buffer (1s) for timestamp differences
                  if (systemLatest <= latestCallDate + 1000) {
-                      Log.d(TAG, "Smart Sync: No new calls detected (System: $systemLatest, Local: $latestCallDate). Skipping full import.")
+                      Log.d(TAG, "Smart Sync: Database up-to-date. Skipping full scan.")
+                      
+                      // Even if we skip the call log scan, we should still check if any PENDING recordings 
+                      // can be found now (e.g. if permissions were just granted)
+                      syncRecordingsOnly()
                       return@withContext
                  }
             }
@@ -846,7 +900,8 @@ class CallDataRepository private constructor(private val context: Context) {
             
             // Get existing IDs once (only need those since fetchStartDate)
             val existingIds = callDataDao.getCompositeIdsSince(fetchStartDate).toSet()
-            Log.d(TAG, "Existing calls since ${java.util.Date(fetchStartDate)}: ${existingIds.size}")
+            val existingSystemIds = callDataDao.getSystemIdsSince(fetchStartDate).toSet()
+            Log.d(TAG, "Existing calls since ${java.util.Date(fetchStartDate)}: ${existingIds.size} (System IDs: ${existingSystemIds.size})")
             
             // Fetch from system call log with SIM filter  
             val systemCalls = fetchSystemCallLog(fetchStartDate, deviceId, simSelection)
@@ -861,7 +916,7 @@ class CallDataRepository private constructor(private val context: Context) {
                 val normalized = normalizePhoneNumber(call.phoneNumber)
                 
                 // Collect new calls for batch insert
-                if (!existingIds.contains(call.compositeId)) {
+                if (!existingIds.contains(call.compositeId) && !existingSystemIds.contains(call.systemId)) {
                     newCalls.add(call)
                 }
                 
@@ -884,70 +939,13 @@ class CallDataRepository private constructor(private val context: Context) {
             // for the potentially slow recording matching process below.
             updatePersonsData(personCallsMap)
             
-            // 4. Update recordings for calls that don't have them yet (ONLY if feature enabled & permitted)
-            val isRecordingEnabled = settingsRepository.isCallRecordEnabled()
-            val storagePermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                android.Manifest.permission.READ_MEDIA_AUDIO
-            } else {
-                android.Manifest.permission.READ_EXTERNAL_STORAGE
-            }
-            val hasStoragePermission = androidx.core.content.ContextCompat.checkSelfPermission(context, storagePermission) == 
-                                       android.content.pm.PackageManager.PERMISSION_GRANTED
-
-            val unsyncedWithNoPath = if (isRecordingEnabled && hasStoragePermission) {
-                callDataDao.getCallsMissingRecordings().filter { it.localRecordingPath == null }
-            } else {
-                emptyList()
-            }
-            
-            if (unsyncedWithNoPath.isNotEmpty()) {
-                val total = unsyncedWithNoPath.size
-                ProcessMonitor.startProcess(ProcessMonitor.ProcessIds.FIND_RECORDINGS, "Finding Recordings", isIndeterminate = false)
-                
-                val updates = mutableMapOf<String, String>()
-                
-                unsyncedWithNoPath.forEachIndexed { index, call ->
-                    // Update progress
-                    val updateFrequency = if (total < 20) 1 else 10
-                    if (index % updateFrequency == 0 || index == total - 1) {
-                        val progress = (index + 1).toFloat() / total
-                        val foundSoFar = updates.size
-                        ProcessMonitor.updateProgress(
-                            ProcessMonitor.ProcessIds.FIND_RECORDINGS, 
-                            progress, 
-                            "Matched $foundSoFar recording${if (foundSoFar == 1) "" else "s"} • ${index + 1}/$total"
-                        )
-                    }
-
-                    if (call.duration > 0) {
-                        // Use the ADVANCED Tiered Finder (MediaStore + File Scan + Learned Folder)
-                        val recordingPath = recordingRepository.findRecording(
-                            call.callDate,
-                            call.duration,
-                            call.phoneNumber,
-                            call.contactName
-                        )
-                        if (recordingPath != null) {
-                            updates[call.compositeId] = recordingPath
-                        }
-                    }
-                }
-
-                // Batch update in DB
-                if (updates.isNotEmpty()) {
-                    ProcessMonitor.updateProgress(ProcessMonitor.ProcessIds.FIND_RECORDINGS, 1f, "Matched ${updates.size} recording${if (updates.size == 1) "" else "s"}")
-                    Log.d(TAG, "Found ${updates.size} recordings to link. applying batch updates...")
-                    callDataDao.updateRecordingPaths(updates)
-                } else {
-                    ProcessMonitor.updateProgress(ProcessMonitor.ProcessIds.FIND_RECORDINGS, 1f, "No new matches found")
-                    Log.d(TAG, "No new recordings matched")
-                }
-            }
-            
             // CRITICAL: Delete any calls from Room that are now before the filter date
             // This handles cases where user changed the start date to a later date
             Log.d(TAG, "Cleaning up calls before $filterDate...")
             callDataDao.deleteBefore(filterDate)
+
+            // 4. Update recordings for calls that don't have them yet (ONLY if feature enabled & permitted)
+            syncRecordingsOnly()
             
             val finalCount = callDataDao.getAllCompositeIds().size
             Log.d(TAG, "Sync complete. New calls: ${newCalls.size}. Remaining in Room: $finalCount")
@@ -955,6 +953,95 @@ class CallDataRepository private constructor(private val context: Context) {
             Log.e(TAG, "Sync failed", e)
         } finally {
             ProcessMonitor.endProcess(ProcessMonitor.ProcessIds.IMPORT_CALL_LOG)
+            ProcessMonitor.endProcess(ProcessMonitor.ProcessIds.FIND_RECORDINGS)
+        }
+    }
+}
+
+    /**
+     * Finds and links local recording files to pending calls.
+     */
+    private suspend fun syncRecordingsOnly() = withContext(Dispatchers.IO) {
+        val isRecordingEnabled = settingsRepository.isCallRecordEnabled()
+        val storagePermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            android.Manifest.permission.READ_MEDIA_AUDIO
+        } else {
+            android.Manifest.permission.READ_EXTERNAL_STORAGE
+        }
+        val hasStoragePermission = androidx.core.content.ContextCompat.checkSelfPermission(context, storagePermission) == 
+                                   android.content.pm.PackageManager.PERMISSION_GRANTED
+
+        val unsyncedWithNoPath = if (isRecordingEnabled && hasStoragePermission) {
+            callDataDao.getCallsMissingRecordings().filter { it.localRecordingPath == null }
+        } else {
+            emptyList()
+        }
+        
+        if (unsyncedWithNoPath.isNotEmpty()) {
+            val total = unsyncedWithNoPath.size
+            
+            ProcessMonitor.startProcess(ProcessMonitor.ProcessIds.FIND_RECORDINGS, "Finding Recordings", isIndeterminate = false)
+            
+            val foundUpdates = mutableMapOf<String, String>()
+            val notFoundIds = mutableListOf<String>()
+            
+            var totalFound = 0
+            
+            unsyncedWithNoPath.forEachIndexed { index, call ->
+                if (!kotlinx.coroutines.currentCoroutineContext().isActive) throw kotlinx.coroutines.CancellationException()
+                
+                // Update progress
+                val updateFrequency = if (total < 20) 1 else 10
+                if (index % updateFrequency == 0 || index == total - 1) {
+                    val progress = (index + 1).toFloat() / total
+                    val currentFound = totalFound + foundUpdates.size
+                    ProcessMonitor.updateProgress(
+                        ProcessMonitor.ProcessIds.FIND_RECORDINGS, 
+                        progress, 
+                        "Scanning ${index + 1}/$total ($currentFound matched)"
+                    )
+                }
+
+                if (call.duration > 0) {
+                    val recordingPath = recordingRepository.findRecording(
+                        call.callDate,
+                        call.duration,
+                        call.phoneNumber,
+                        call.contactName
+                    )
+                    if (recordingPath != null) {
+                        foundUpdates[call.compositeId] = recordingPath
+                    } else {
+                        // Recording expected but not found in this pass
+                        notFoundIds.add(call.compositeId)
+                    }
+                }
+                
+                // INCREMENTAL SAVE: Save every 10 items to prevent losing progress on cancellation
+                if (foundUpdates.size >= 10) {
+                    callDataDao.updateRecordingPaths(foundUpdates)
+                    totalFound += foundUpdates.size
+                    foundUpdates.clear()
+                }
+                if (notFoundIds.size >= 10) {
+                    callDataDao.updateRecordingSyncStatusBatch(notFoundIds, RecordingSyncStatus.NOT_FOUND)
+                    notFoundIds.clear()
+                }
+            }
+
+            // Apply remaining updates
+            if (foundUpdates.isNotEmpty()) {
+                callDataDao.updateRecordingPaths(foundUpdates)
+            }
+            
+            // Mark remaining as NOT_FOUND
+            if (notFoundIds.isNotEmpty()) {
+                Log.d(TAG, "Marking ${notFoundIds.size} recordings as NOT_FOUND")
+                callDataDao.updateRecordingSyncStatusBatch(notFoundIds, RecordingSyncStatus.NOT_FOUND)
+            }
+
+            // Give a small delay for UI to show completion before hiding
+            kotlinx.coroutines.delay(800)
             ProcessMonitor.endProcess(ProcessMonitor.ProcessIds.FIND_RECORDINGS)
         }
     }
@@ -966,63 +1053,62 @@ class CallDataRepository private constructor(private val context: Context) {
     private suspend fun updatePersonsData(personCalls: Map<String, List<CallDataEntity>>) {
         if (personCalls.isEmpty()) return
         
-        // Fetch all existing persons for these numbers in one go
+        // Fetch all existing persons for these numbers once
         val phoneNumbers = personCalls.keys.toList()
         val existingPersons = personDataDao.getByPhoneNumbers(phoneNumbers).associateBy { it.phoneNumber }
+        
+        // NEW: Fetch accurate stats from the DB for all these numbers to avoid double-counting bug
+        val accurateStats = callDataDao.getCallStatsForNumbers(phoneNumbers).associateBy { it.phoneNumber }
         
         val personsToUpdate = mutableListOf<PersonDataEntity>()
         
         for ((phoneNumber, calls) in personCalls) {
             val sortedCalls = calls.sortedByDescending { it.callDate }
-            val incomingNew = sortedCalls.firstOrNull() ?: continue
+            val incomingLatest = sortedCalls.firstOrNull() ?: continue
             
             // Robust lookup to match existing person data
             val existing = existingPersons[phoneNumber] ?: getPersonRobust(phoneNumber)
-            
-            // Incremental Stats Optimization: Add new window stats to existing ones
-            val newTotalCalls = (existing?.totalCalls ?: 0) + calls.size
-            val newTotalIncoming = (existing?.totalIncoming ?: 0) + calls.count { it.callType == CallLog.Calls.INCOMING_TYPE }
-            val newTotalOutgoing = (existing?.totalOutgoing ?: 0) + calls.count { it.callType == CallLog.Calls.OUTGOING_TYPE }
-            val newTotalMissed = (existing?.totalMissed ?: 0) + calls.count { it.callType == CallLog.Calls.MISSED_TYPE || it.callType == CallLog.Calls.REJECTED_TYPE || it.callType == 5 }
-            val newTotalDuration = (existing?.totalDuration ?: 0L) + calls.sumOf { it.duration }
+            val stats = accurateStats[phoneNumber]
             
             // Only update "Last Call" info if the latest call in this batch is newer than existing
-            val isNewer = incomingNew.callDate > (existing?.lastCallDate ?: 0L)
+            val isNewer = incomingLatest.callDate > (existing?.lastCallDate ?: 0L)
             
             val personEntity = PersonDataEntity(
                 phoneNumber = phoneNumber,
                 contactName = if (isNewer) {
-                    incomingNew.contactName?.takeIf { it.isNotBlank() } ?: existing?.contactName?.takeIf { it.isNotBlank() }
+                    incomingLatest.contactName?.takeIf { it.isNotBlank() } ?: existing?.contactName?.takeIf { it.isNotBlank() }
                 } else {
-                    existing?.contactName?.takeIf { it.isNotBlank() } ?: incomingNew.contactName?.takeIf { it.isNotBlank() }
+                    existing?.contactName?.takeIf { it.isNotBlank() } ?: incomingLatest.contactName?.takeIf { it.isNotBlank() }
                 },
-                photoUri = if (isNewer) (incomingNew.photoUri ?: existing?.photoUri) else existing?.photoUri,
+                photoUri = if (isNewer) (incomingLatest.photoUri ?: existing?.photoUri) else existing?.photoUri,
                 personNote = existing?.personNote,  // Preserve existing note
                 label = existing?.label, // Preserve existing label
-                lastCallType = if (isNewer) incomingNew.callType else (existing?.lastCallType ?: incomingNew.callType),
-                lastCallDuration = if (isNewer) incomingNew.duration else (existing?.lastCallDuration ?: incomingNew.duration),
-                lastCallDate = if (isNewer) incomingNew.callDate else (existing?.lastCallDate ?: incomingNew.callDate),
-                lastRecordingPath = if (isNewer) incomingNew.localRecordingPath else (existing?.lastRecordingPath ?: incomingNew.localRecordingPath),
-                lastCallCompositeId = if (isNewer) incomingNew.compositeId else (existing?.lastCallCompositeId ?: incomingNew.compositeId),
-                totalCalls = newTotalCalls,
-                totalIncoming = newTotalIncoming,
-                totalOutgoing = newTotalOutgoing,
-                totalMissed = newTotalMissed,
-                totalDuration = newTotalDuration,
+                lastCallType = if (isNewer) incomingLatest.callType else (existing?.lastCallType ?: incomingLatest.callType),
+                lastCallDuration = if (isNewer) incomingLatest.duration else (existing?.lastCallDuration ?: incomingLatest.duration),
+                lastCallDate = if (isNewer) incomingLatest.callDate else (existing?.lastCallDate ?: incomingLatest.callDate),
+                lastRecordingPath = if (isNewer) incomingLatest.localRecordingPath else (existing?.lastRecordingPath ?: incomingLatest.localRecordingPath),
+                lastCallCompositeId = if (isNewer) incomingLatest.compositeId else (existing?.lastCallCompositeId ?: incomingLatest.compositeId),
+                
+                // Use accurate stats from DB
+                totalCalls = stats?.totalCalls ?: (existing?.totalCalls ?: 0),
+                totalIncoming = stats?.totalIncoming ?: (existing?.totalIncoming ?: 0),
+                totalOutgoing = stats?.totalOutgoing ?: (existing?.totalOutgoing ?: 0),
+                totalMissed = stats?.totalMissed ?: (existing?.totalMissed ?: 0),
+                totalDuration = stats?.totalDuration ?: (existing?.totalDuration ?: 0L),
+                
                 createdAt = existing?.createdAt ?: System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis(),
                 isExcluded = existing?.isExcluded ?: false,
                 excludeFromSync = existing?.excludeFromSync ?: false,
                 excludeFromList = existing?.excludeFromList ?: false,
-                needsSync = existing?.needsSync ?: false
+                needsSync = existing?.needsSync ?: (existing == null) // If new person, mark for first sync
             )
-            
             personsToUpdate.add(personEntity)
         }
         
         if (personsToUpdate.isNotEmpty()) {
             personDataDao.insertAll(personsToUpdate)
-            Log.d(TAG, "Updated ${personsToUpdate.size} persons")
+            Log.d(TAG, "Updated ${personsToUpdate.size} persons with fresh stats")
         }
     }
     

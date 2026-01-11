@@ -42,6 +42,9 @@ interface PersonDataDao {
     
     @Query("SELECT * FROM person_data WHERE phoneNumber IN (:phoneNumbers)")
     suspend fun getByPhoneNumbers(phoneNumbers: List<String>): List<PersonDataEntity>
+
+    @Query("SELECT * FROM person_data WHERE phoneNumber LIKE '%' || :suffix")
+    suspend fun getByPhoneNumberSuffix(suffix: String): List<PersonDataEntity>
     
     @Query("SELECT * FROM person_data WHERE personNote IS NOT NULL AND personNote != ''")
     suspend fun getPersonsWithNotes(): List<PersonDataEntity>

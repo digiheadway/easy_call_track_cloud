@@ -56,11 +56,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         // Phase 2 (200ms): Load settings and trigger initial filter
         viewModelScope.launch {
             kotlinx.coroutines.delay(200)
-            kotlinx.coroutines.withContext(Dispatchers.IO) {
+            withContext(Dispatchers.IO) {
                 refreshSettings()
                 loadRecordingPath()
+                // triggerFilter() called via refreshSettings or here, 
+                // but let's make sure it runs on IO
+                runFilteringAsync()
             }
-            triggerFilter()
         }
         
         // Phase 3 (400ms): Start secondary observers  
@@ -77,9 +79,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         
-        // Final Loading Termination (1.6s): Ensure shimmers stop even if DB is empty
+        // Final Loading Termination (3s): Ensure shimmers stop even if DB is empty
         viewModelScope.launch {
-            kotlinx.coroutines.delay(1600)
+            kotlinx.coroutines.delay(3000)
             if (_uiState.value.isLoading) {
                 triggerFilter()
             }
@@ -304,72 +306,27 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Minimal settings needed for the very first frame to avoid shimmer flicker.
+     * Heavy reads are moved to refreshSettings in Phase 2.
+     */
     private fun loadSettingsSync() {
         val searchVisible = settingsRepository.isSearchVisible()
-        val filtersVisible = settingsRepository.isFiltersVisible()
         val searchQuery = settingsRepository.getSearchQuery()
-        val labelFilter = settingsRepository.getLabelFilter()
-        
-        val typeFilter = try { 
-            val saved = settingsRepository.getCallTypeFilter()
-            when (saved) {
-                "ATTENDED" -> CallTabFilter.ANSWERED
-                "RESPONDED" -> CallTabFilter.OUTGOING
-                "NOT_ATTENDED" -> CallTabFilter.NOT_ANSWERED
-                "NOT_RESPONDED" -> CallTabFilter.OUTGOING_NOT_CONNECTED
-                else -> CallTabFilter.valueOf(saved)
-            }
-        } catch(e: Exception) { CallTabFilter.ALL }
-        
-        val pTypeFilter = try { 
-            val saved = settingsRepository.getPersonTabFilter()
-            when (saved) {
-                "ATTENDED" -> PersonTabFilter.ANSWERED
-                "RESPONDED" -> PersonTabFilter.OUTGOING
-                "NOT_ATTENDED" -> PersonTabFilter.NOT_ANSWERED
-                "NOT_RESPONDED" -> PersonTabFilter.OUTGOING_NOT_CONNECTED
-                else -> PersonTabFilter.valueOf(saved)
-            }
-        } catch(e: Exception) { PersonTabFilter.ALL }
-        val connFilter = try { ConnectedFilter.valueOf(settingsRepository.getConnectedFilter()) } catch(e: Exception) { ConnectedFilter.ALL }
-        val nFilter = try { NotesFilter.valueOf(settingsRepository.getNotesFilter()) } catch(e: Exception) { NotesFilter.ALL }
-        val pnFilter = try { PersonNotesFilter.valueOf(settingsRepository.getPersonNotesFilter()) } catch(e: Exception) { PersonNotesFilter.ALL }
-        val cFilter = try { ContactsFilter.valueOf(settingsRepository.getContactsFilter()) } catch(e: Exception) { ContactsFilter.ALL }
-        val aFilter = try { AttendedFilter.valueOf(settingsRepository.getAttendedFilter()) } catch(e: Exception) { AttendedFilter.ALL }
-        val rFilter = try { ReviewedFilter.valueOf(settingsRepository.getReviewedFilter()) } catch(e: Exception) { ReviewedFilter.ALL }
-        val cnFilter = try { CustomNameFilter.valueOf(settingsRepository.getCustomNameFilter()) } catch(e: Exception) { CustomNameFilter.ALL }
+        val viewMode = try { ViewMode.valueOf(settingsRepository.getViewMode()) } catch(e: Exception) { ViewMode.PERSONS }
+        val isSyncSetup = settingsRepository.getOrganisationId().isNotEmpty()
 
         _uiState.update { it.copy(
             isSearchVisible = searchVisible,
-            isFiltersVisible = filtersVisible,
             searchQuery = searchQuery,
-            labelFilter = labelFilter,
-            callTypeFilter = typeFilter,
-            personTabFilter = pTypeFilter,
-            connectedFilter = connFilter,
-            notesFilter = nFilter,
-            personNotesFilter = pnFilter,
-            contactsFilter = cFilter,
-            attendedFilter = aFilter,
-            reviewedFilter = rFilter,
-            customNameFilter = cnFilter,
-            dateRange = try { DateRange.valueOf(settingsRepository.getDateRangeFilter()) } catch(e: Exception) { DateRange.LAST_7_DAYS },
-            customStartDate = settingsRepository.getCustomStartDate().let { if (it == 0L) null else it },
-            customEndDate = settingsRepository.getCustomEndDate().let { if (it == 0L) null else it },
-            viewMode = try { ViewMode.valueOf(settingsRepository.getViewMode()) } catch(e: Exception) { ViewMode.PERSONS },
-            
-            // Critical setup flags for UI consistency
-            simSelection = settingsRepository.getSimSelection(),
-            trackStartDate = settingsRepository.getTrackStartDate(),
-            isSyncSetup = settingsRepository.getOrganisationId().isNotEmpty(),
-            whatsappPreference = settingsRepository.getWhatsappPreference(),
-            callRecordEnabled = settingsRepository.isCallRecordEnabled(),
-            callActionBehavior = settingsRepository.getCallActionBehavior(),
-            reportCategory = try { ReportCategory.valueOf(settingsRepository.getReportCategory()) } catch(e: Exception) { ReportCategory.OVERVIEW },
-            visibleCallFilters = loadVisibleCallFilters(),
-            visiblePersonFilters = loadVisiblePersonFilters(),
-            allowPersonalExclusion = settingsRepository.isAllowPersonalExclusion()
+            viewMode = viewMode,
+            isSyncSetup = isSyncSetup,
+            isLoading = true 
         ) }
+    }
+
+    private suspend fun runFilteringAsync() = withContext(Dispatchers.Default) {
+        triggerFilter()
     }
 
     private fun loadVisibleCallFilters(): List<CallTabFilter> {
@@ -671,12 +628,19 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
             val activeFilterCount = HomeUtils.calculateFilterCount(currentState)
             
-            // Optimization: Only clear loading state if we actually have data, 
-            // OR if enough time has passed that we can assume the DB is truly empty.
-            // This prevents the "No contacts yet" flash on startup.
+            // Refined Loading Logic:
+            // 1. If we have data, we are definitely NOT loading anymore.
+            // 2. If we DON'T have data, only stop loading if a significant time (3s) has passed.
+            // This prevents: Shimmer -> "No results" -> Results
             val hasData = tabPersons.values.any { it.isNotEmpty() } || tabLogs.values.any { it.isNotEmpty() }
             val timeSinceStart = System.currentTimeMillis() - viewModelStartTime
-            val shouldShowingLoading = !hasData && timeSinceStart < 1500 // 1.5s grace period for initial DB read
+            
+            val stillLoading = when {
+                hasData -> false // We have data, stop showing shimmers
+                isFirstLoadComplete -> false // We already finished the first real check
+                timeSinceStart < 3000 -> true // Keep shimmering for at least 3s if no data yet
+                else -> false // After 3s, if still no data, show Empty State
+            }
             
             if (hasData) isFirstLoadComplete = true
 
@@ -690,7 +654,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 personTypeCounts = tabPersons.mapValues { it.value.size },
                 personGroups = groups,
                 reportStats = reportStats,
-                isLoading = shouldShowingLoading
+                isLoading = stillLoading
             ) }
             updateDateSummaries()
         }
@@ -950,21 +914,83 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         
         val callActionBehavior = settingsRepository.getCallActionBehavior()
 
-        _uiState.update { it.copy(
-            simSelection = simSelection, 
-            trackStartDate = trackStartDate,
-            whatsappPreference = whatsappPreference,
-            isSyncSetup = isSyncSetup,
-            callRecordEnabled = callRecordEnabled,
-            sim1SubId = sim1SubId,
-            sim2SubId = sim2SubId,
-            callerPhoneSim1 = callerPhone1,
-            callerPhoneSim2 = callerPhone2,
-            availableSims = sims,
-            callActionBehavior = callActionBehavior,
-            availableWhatsappApps = HomeUtils.fetchWhatsAppApps(getApplication()),
-            allowPersonalExclusion = settingsRepository.isAllowPersonalExclusion()
-        ) }
+    // Defer loading of heavy filter settings to here (Background IO)
+    val filtersVisible = settingsRepository.isFiltersVisible()
+    val labelFilter = settingsRepository.getLabelFilter()
+    
+    val typeFilter = try { 
+        val saved = settingsRepository.getCallTypeFilter()
+        when (saved) {
+            "ATTENDED" -> CallTabFilter.ANSWERED
+            "RESPONDED" -> CallTabFilter.OUTGOING
+            "NOT_ATTENDED" -> CallTabFilter.NOT_ANSWERED
+            "NOT_RESPONDED" -> CallTabFilter.OUTGOING_NOT_CONNECTED
+            else -> CallTabFilter.valueOf(saved)
+        }
+    } catch(e: Exception) { CallTabFilter.ALL }
+    
+    val pTypeFilter = try { 
+        val saved = settingsRepository.getPersonTabFilter()
+        when (saved) {
+            "ATTENDED" -> PersonTabFilter.ANSWERED
+            "RESPONDED" -> PersonTabFilter.OUTGOING
+            "NOT_ATTENDED" -> PersonTabFilter.NOT_ANSWERED
+            "NOT_RESPONDED" -> PersonTabFilter.OUTGOING_NOT_CONNECTED
+            else -> PersonTabFilter.valueOf(saved)
+        }
+    } catch(e: Exception) { PersonTabFilter.ALL }
+
+    // Load other filters
+    val connFilter = try { ConnectedFilter.valueOf(settingsRepository.getConnectedFilter()) } catch(e: Exception) { ConnectedFilter.ALL }
+    val nFilter = try { NotesFilter.valueOf(settingsRepository.getNotesFilter()) } catch(e: Exception) { NotesFilter.ALL }
+    val pnFilter = try { PersonNotesFilter.valueOf(settingsRepository.getPersonNotesFilter()) } catch(e: Exception) { PersonNotesFilter.ALL }
+    val cFilter = try { ContactsFilter.valueOf(settingsRepository.getContactsFilter()) } catch(e: Exception) { ContactsFilter.ALL }
+    val aFilter = try { AttendedFilter.valueOf(settingsRepository.getAttendedFilter()) } catch(e: Exception) { AttendedFilter.ALL }
+    val rFilter = try { ReviewedFilter.valueOf(settingsRepository.getReviewedFilter()) } catch(e: Exception) { ReviewedFilter.ALL }
+    val cnFilter = try { CustomNameFilter.valueOf(settingsRepository.getCustomNameFilter()) } catch(e: Exception) { CustomNameFilter.ALL }
+    
+    val dateRange = try { DateRange.valueOf(settingsRepository.getDateRangeFilter()) } catch(e: Exception) { DateRange.LAST_7_DAYS }
+    val customStartDate = settingsRepository.getCustomStartDate().let { if (it == 0L) null else it }
+    val customEndDate = settingsRepository.getCustomEndDate().let { if (it == 0L) null else it }
+    val reportCategory = try { ReportCategory.valueOf(settingsRepository.getReportCategory()) } catch(e: Exception) { ReportCategory.OVERVIEW }
+    
+    val vCallFilters = loadVisibleCallFilters()
+    val vPersonFilters = loadVisiblePersonFilters()
+
+    _uiState.update { it.copy(
+        simSelection = simSelection, 
+        trackStartDate = trackStartDate,
+        whatsappPreference = whatsappPreference,
+        isSyncSetup = isSyncSetup,
+        callRecordEnabled = callRecordEnabled,
+        sim1SubId = sim1SubId,
+        sim2SubId = sim2SubId,
+        callerPhoneSim1 = callerPhone1,
+        callerPhoneSim2 = callerPhone2,
+        availableSims = sims,
+        callActionBehavior = callActionBehavior,
+        availableWhatsappApps = HomeUtils.fetchWhatsAppApps(getApplication()),
+        allowPersonalExclusion = settingsRepository.isAllowPersonalExclusion(),
+        
+        // Extended Settings loaded in background
+        isFiltersVisible = filtersVisible,
+        labelFilter = labelFilter,
+        callTypeFilter = typeFilter,
+        personTabFilter = pTypeFilter,
+        connectedFilter = connFilter,
+        notesFilter = nFilter,
+        personNotesFilter = pnFilter,
+        contactsFilter = cFilter,
+        attendedFilter = aFilter,
+        reviewedFilter = rFilter,
+        customNameFilter = cnFilter,
+        dateRange = dateRange,
+        customStartDate = customStartDate,
+        customEndDate = customEndDate,
+        reportCategory = reportCategory,
+        visibleCallFilters = vCallFilters,
+        visiblePersonFilters = vPersonFilters
+    ) }
 
         if (needsSync) {
             syncFromSystem()

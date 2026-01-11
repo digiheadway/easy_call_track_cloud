@@ -175,6 +175,52 @@ interface CallDataDao {
     @Query("SELECT compositeId FROM call_data WHERE callDate >= :minDate")
     suspend fun getCompositeIdsSince(minDate: Long): List<String>
     
+    @Query("SELECT systemId FROM call_data WHERE callDate >= :minDate")
+    suspend fun getSystemIdsSince(minDate: Long): List<String>
+    
+    @Query("""
+        SELECT 
+            COUNT(*) as totalCalls,
+            SUM(CASE WHEN callType = 1 THEN 1 ELSE 0 END) as totalIncoming,
+            SUM(CASE WHEN callType = 2 THEN 1 ELSE 0 END) as totalOutgoing,
+            SUM(CASE WHEN callType IN (3, 5, 6) THEN 1 ELSE 0 END) as totalMissed,
+            SUM(duration) as totalDuration
+        FROM call_data 
+        WHERE phoneNumber = :phoneNumber
+    """)
+    suspend fun getCallStatsForNumber(phoneNumber: String): CallStatsResult?
+
+    @Query("""
+        SELECT 
+            phoneNumber,
+            COUNT(*) as totalCalls,
+            SUM(CASE WHEN callType = 1 THEN 1 ELSE 0 END) as totalIncoming,
+            SUM(CASE WHEN callType = 2 THEN 1 ELSE 0 END) as totalOutgoing,
+            SUM(CASE WHEN callType IN (3, 5, 6) THEN 1 ELSE 0 END) as totalMissed,
+            SUM(duration) as totalDuration
+        FROM call_data 
+        WHERE phoneNumber IN (:phoneNumbers)
+        GROUP BY phoneNumber
+    """)
+    suspend fun getCallStatsForNumbers(phoneNumbers: List<String>): List<CallStatsBatchResult>
+
+data class CallStatsBatchResult(
+    val phoneNumber: String,
+    val totalCalls: Int,
+    val totalIncoming: Int,
+    val totalOutgoing: Int,
+    val totalMissed: Int,
+    val totalDuration: Long
+)
+
+data class CallStatsResult(
+    val totalCalls: Int,
+    val totalIncoming: Int,
+    val totalOutgoing: Int,
+    val totalMissed: Int,
+    val totalDuration: Long
+)
+    
     // ============================================
     // INSERTS & UPDATES
     // ============================================

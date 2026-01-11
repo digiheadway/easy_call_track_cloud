@@ -3,12 +3,26 @@ export default {
   darkMode: 'class',
   content: [
     "./index.html",
+    "./**/*.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
       colors: {
-        // Primary brand color - Blue
+        // Primary brand color - Blue (Outfits Brand palette)
+        brand: {
+          50: '#f0f9ff',
+          100: '#e0f2fe',
+          200: '#bae6fd',
+          300: '#7dd3fc',
+          400: '#38bdf8',
+          500: '#0ea5e9',
+          600: '#0284c7',
+          700: '#0369a1',
+          800: '#075985',
+          900: '#0c4a6e',
+          950: '#082f49'
+        },
         primary: {
           50: '#eff6ff',
           100: '#dbeafe',
@@ -36,12 +50,14 @@ export default {
           900: '#0f172a',
           950: '#020617',
         },
+        crm: { 500: '#8b5cf6' },
+        dialer: { 500: '#f97316' },
         // Dark mode specific backgrounds
         dark: {
-          bg: '#0f172a',      // gray-900
-          card: '#1e293b',    // gray-800
-          border: '#334155',  // gray-700
-          hover: '#334155',   // gray-700
+          bg: '#0B0F19',
+          card: '#111827',
+          border: '#1F2937',
+          hover: '#1F2937'
         },
         // Status colors
         success: {

@@ -631,17 +631,20 @@ class RecordingRepository private constructor(private val context: Context) {
             // The scoring system will still prefer better matches, but we don't hard-reject.
 
             // --- 4. Duration Match (Callyzer: +40) ---
-            // Check duration for all candidates (important signal)
-            val fileDurationMs = getAudioDuration(file.absolutePath)
-            if (fileDurationMs > 0) {
-                val callDurationMs = durationSec * 1000
-                val durDiff = kotlin.math.abs(fileDurationMs - callDurationMs)
-                
-                when {
-                    durDiff < 1000 -> totalScore += 40   // <1 sec diff: +40 (exact match)
-                    durDiff < 3000 -> totalScore += 30   // <3 sec diff: +30
-                    durDiff < 5000 -> totalScore += 20   // <5 sec diff: +20 (Callyzer threshold)
-                    durDiff < 10000 -> totalScore += 10  // <10 sec diff: +10
+            // Optimization: Only check duration if we have some baseline signals already (Time, Identity, or Folder)
+            // or if there are very few candidates. Opening a file to read duration is expensive.
+            if (totalScore >= 60 || candidateFiles.size <= 3) {
+                val fileDurationMs = getAudioDuration(file.absolutePath)
+                if (fileDurationMs > 0) {
+                    val callDurationMs = durationSec * 1000
+                    val durDiff = kotlin.math.abs(fileDurationMs - callDurationMs)
+                    
+                    when {
+                        durDiff < 1000 -> totalScore += 40   // <1 sec diff: +40 (exact match)
+                        durDiff < 3000 -> totalScore += 30   // <3 sec diff: +30
+                        durDiff < 5000 -> totalScore += 20   // <5 sec diff: +20
+                        durDiff < 10000 -> totalScore += 10  // <10 sec diff: +10
+                    }
                 }
             }
 
