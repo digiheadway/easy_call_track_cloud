@@ -146,7 +146,7 @@ export default function ReportsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {stats.map((stat) => (
                         <div key={stat.label} className="card p-4 flex items-center gap-4 hover:shadow-md transition-all  ">
-                            <div className={`${stat.bg} ${stat.color} p-3 rounded-xl  >
+                            <div className={`${stat.bg} ${stat.color} p-3 rounded-xl`}>
                                 <stat.icon size={24} />
                             </div>
                             <div>

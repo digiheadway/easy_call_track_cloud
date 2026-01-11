@@ -2,8 +2,8 @@
 export default {
   content: [
     "./index.html",
-    "./**/*.html",
     "./src/**/*.{js,ts,jsx,tsx}",
+    "./{login,signup,products,privacy,terms,verify-email,forgot-password,reset-password,setup,blog,404,call-track,sales-crm,auto-dialer}/**/*.html",
   ],
   theme: {
     extend: {

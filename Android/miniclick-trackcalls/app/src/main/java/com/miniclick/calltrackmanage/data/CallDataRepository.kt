@@ -71,6 +71,11 @@ class CallDataRepository private constructor(private val context: Context) {
     // ============================================
     
     /**
+     * Get all calls since a specific date as Flow
+     */
+    fun getCallsSinceFlow(minDate: Long): Flow<List<CallDataEntity>> = callDataDao.getCallsSinceFlow(minDate)
+
+    /**
      * Get all calls as Flow for real-time updates (UI observes this)
      */
     fun getAllCallsFlow(): Flow<List<CallDataEntity>> = callDataDao.getAllCallsFlow()
@@ -507,10 +512,15 @@ class CallDataRepository private constructor(private val context: Context) {
     // ============================================
     
     /**
-     * Get all persons as Flow for real-time updates
+     * Get persons since a specific date as Flow
      */
-    fun getAllPersonsFlow(): Flow<List<PersonDataEntity>> = personDataDao.getAllPersonsFlow()
-    
+    fun getPersonsSinceFlow(minDate: Long): Flow<List<PersonDataEntity>> = personDataDao.getPersonsSinceFlow(minDate)
+
+    /**
+     * Get ALL persons including excluded since a specific date as Flow
+     */
+    fun getAllPersonsIncludingExcludedFlow(minDate: Long): Flow<List<PersonDataEntity>> = personDataDao.getAllPersonsIncludingExcludedFlow(minDate)
+
     /**
      * Get ALL persons including excluded (for ViewModel filtering with Ignored tab)
      */

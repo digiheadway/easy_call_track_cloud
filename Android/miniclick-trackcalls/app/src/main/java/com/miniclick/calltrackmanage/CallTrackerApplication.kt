@@ -6,6 +6,7 @@ import com.miniclick.calltrackmanage.service.SyncService
 import com.miniclick.calltrackmanage.worker.CallSyncWorker
 import com.miniclick.calltrackmanage.worker.RecordingUploadWorker
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.launch
 
 @HiltAndroidApp
 class CallTrackerApplication : Application() {
@@ -16,6 +17,7 @@ class CallTrackerApplication : Application() {
         // STARTUP OPTIMIZATION: Move background work off the main thread and defer it 
         // to allow the first activity frame to render immediately.
         // We use a global scope here because it matches the Application lifecycle.
+        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
         kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             kotlinx.coroutines.delay(2000) // 2 second delay for non-critical background work
             

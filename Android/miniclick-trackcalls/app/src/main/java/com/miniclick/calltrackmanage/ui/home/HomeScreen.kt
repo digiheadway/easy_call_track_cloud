@@ -61,17 +61,18 @@ fun CallsScreen(
     var genericInfoDesc by remember { mutableStateOf<String?>(null) }
     var showDateJumpSheet by remember { mutableStateOf(false) }
     var showReorderModal by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     
     val visibleCallFilters = remember(uiState.visibleCallFilters) { uiState.visibleCallFilters }
     val visiblePersonFilters = remember(uiState.visiblePersonFilters) { uiState.visiblePersonFilters }
 
     val pagerState = rememberPagerState(
-        initialPage = visibleCallFilters.indexOf(uiState.callTypeFilter).coerceAtLeast(0),
+        initialPage = remember { visibleCallFilters.indexOf(uiState.callTypeFilter).coerceAtLeast(0) },
         pageCount = { visibleCallFilters.size }
     )
 
     val personPagerState = rememberPagerState(
-        initialPage = visiblePersonFilters.indexOf(uiState.personTabFilter).coerceAtLeast(0),
+        initialPage = remember { visiblePersonFilters.indexOf(uiState.personTabFilter).coerceAtLeast(0) },
         pageCount = { visiblePersonFilters.size }
     )
     
@@ -129,7 +130,7 @@ fun CallsScreen(
     }
 
     LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-        viewModel.refreshSettings()
+        // Removed redundant refreshSettings() which was causing state resets on screen return
     }
 
     // Call End Detection
@@ -291,7 +292,6 @@ fun CallsScreen(
     }
 
     if (showDateJumpSheet) {
-        val scope = rememberCoroutineScope()
         QuickDateJumpBottomSheet(
             dateSummaries = uiState.dateSummaries,
             currentDateRange = uiState.dateRange,
@@ -299,48 +299,55 @@ fun CallsScreen(
             onDateClick = { summary ->
                 showDateJumpSheet = false
                 scope.launch {
-                    val filter = if (uiState.viewMode == ViewMode.CALLS) {
-                        visibleCallFilters.getOrNull(pagerState.currentPage) ?: uiState.callTypeFilter
-                    } else {
-                        visiblePersonFilters.getOrNull(personPagerState.currentPage) ?: uiState.personTabFilter
-                    }
-
-                    val targetList: List<Any> = if (uiState.viewMode == ViewMode.CALLS) {
-                         uiState.tabFilteredLogs[filter] ?: emptyList()
-                    } else {
-                         uiState.tabFilteredPersons[filter]?.mapNotNull { allPersonGroupsMap[it.phoneNumber] } ?: emptyList()
-                    }
-
-                    if (targetList.isEmpty()) return@launch
-
-                    var index = 0
-                    val grouped = if (uiState.viewMode == ViewMode.CALLS) {
-                        (targetList as List<CallDataEntity>).groupBy { getDateHeader(it.callDate) }
-                    } else {
-                        (targetList as List<PersonGroup>).groupBy { getDateHeader(it.lastCallDate) }
-                    }
-                    
-                    var found = false
-                    for ((label, items) in grouped) {
-                        if (label == summary.dateLabel) {
-                            found = true
-                            break
-                        }
-                        // +1 for the header item itself
-                        index += 1 + items.size
-                    }
-                    
-                    if (found) {
-                        val state = if (uiState.viewMode == ViewMode.CALLS) {
-                            scrollStates.getOrNull(pagerState.currentPage)
+                    try {
+                        val filter = if (uiState.viewMode == ViewMode.CALLS) {
+                            visibleCallFilters.getOrNull(pagerState.currentPage) ?: uiState.callTypeFilter
                         } else {
-                            personScrollStates.getOrNull(personPagerState.currentPage)
+                            visiblePersonFilters.getOrNull(personPagerState.currentPage) ?: uiState.personTabFilter
+                        }
+
+                        val targetList: List<Any> = if (uiState.viewMode == ViewMode.CALLS) {
+                             uiState.tabFilteredLogs[filter as CallTabFilter] ?: emptyList()
+                        } else {
+                             uiState.tabFilteredPersons[filter as PersonTabFilter]?.mapNotNull { uiState.personGroups[it.phoneNumber] } ?: emptyList()
+                        }
+
+                        if (targetList.isEmpty()) return@launch
+
+                        var index = 0
+                        val grouped = if (uiState.viewMode == ViewMode.CALLS) {
+                            (targetList as List<CallDataEntity>).groupBy { getDateHeader(it.callDate) }
+                        } else {
+                            (targetList as List<PersonGroup>).groupBy { getDateHeader(it.lastCallDate) }
                         }
                         
-                        if (state != null) {
-                            // First scroll to a safe position if it's very far
-                            state.animateScrollToItem(index)
+                        var found = false
+                        for ((label, items) in grouped) {
+                            if (label == summary.dateLabel) {
+                                found = true
+                                break
+                            }
+                            // +1 for the header item itself
+                            index += 1 + items.size
                         }
+
+                        if (found) {
+                            val state = if (uiState.viewMode == ViewMode.CALLS) {
+                                scrollStates.getOrNull(pagerState.currentPage)
+                            } else {
+                                personScrollStates.getOrNull(personPagerState.currentPage)
+                            }
+                            
+                            state?.let {
+                                if (index < it.layoutInfo.totalItemsCount) {
+                                    it.animateScrollToItem(index)
+                                } else {
+                                    it.scrollToItem(index)
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
                 }
             },
@@ -421,9 +428,6 @@ fun CallsScreen(
                             genericInfoDesc = "Toggle between seeing individual call logs or grouping them by phone numbers to see contact summaries."
                         }
                     )
-                    
-                    val scope = rememberCoroutineScope()
-
                     if (uiState.viewMode == ViewMode.CALLS) {
                         // Show red strip when viewing ignored contacts
                         if (uiState.showIgnoredOnly) {

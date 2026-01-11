@@ -14,6 +14,15 @@ interface CallDataDao {
         SELECT c.* FROM call_data c 
         LEFT JOIN person_data p ON c.phoneNumber = p.phoneNumber 
         WHERE (p.isExcluded IS NULL OR p.isExcluded = 0)
+        AND c.callDate >= :minDate
+        ORDER BY c.callDate DESC
+    """)
+    fun getCallsSinceFlow(minDate: Long): Flow<List<CallDataEntity>>
+
+    @Query("""
+        SELECT c.* FROM call_data c 
+        LEFT JOIN person_data p ON c.phoneNumber = p.phoneNumber 
+        WHERE (p.isExcluded IS NULL OR p.isExcluded = 0)
         ORDER BY c.callDate DESC
     """)
     fun getAllCallsFlow(): Flow<List<CallDataEntity>>

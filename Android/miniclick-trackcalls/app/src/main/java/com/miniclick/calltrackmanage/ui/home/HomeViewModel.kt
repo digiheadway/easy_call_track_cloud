@@ -13,6 +13,7 @@ import java.util.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import com.miniclick.calltrackmanage.ui.home.viewmodel.*
+import android.util.Log
 
 
 
@@ -57,7 +58,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             kotlinx.coroutines.delay(200)
             withContext(Dispatchers.IO) {
-                refreshSettings()
+                // Removed redundant refreshSettings() which caused jumpy UI on return from other screens
                 loadRecordingPath()
                 // triggerFilter() called via refreshSettings or here, 
                 // but let's make sure it runs on IO
@@ -100,26 +101,43 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     
     /**
      * Critical observers needed for basic UI functionality.
+     * PERFORMANCE: We now use flatMapLatest to only fetch calls/persons since the Track Start Date.
+     * This drastically reduces memory usage and processing time for users with long histories.
      */
     private fun startCriticalObservers() {
-        // Call logs and persons - needed for main list
+        // Call logs - reactive to trackStartDate
         viewModelScope.launch {
-            callDataRepository.getAllCallsFlow()
+            settingsRepository.getTrackStartDateFlow()
+                .distinctUntilChanged()
+                .flatMapLatest { minDate ->
+                    Log.d("HomeViewModel", "Switching Call Flow: minDate=$minDate")
+                    callDataRepository.getCallsSinceFlow(minDate)
+                }
                 .distinctUntilChanged()
                 .conflate()
                 .collect { calls ->
+                    val start = System.currentTimeMillis()
                     _uiState.update { it.copy(callLogs = calls) }
                     triggerFilter()
+                    Log.d("HomeViewModel", "Collected ${calls.size} calls in ${System.currentTimeMillis() - start}ms")
                 }
         }
         
+        // Persons - reactive to trackStartDate
         viewModelScope.launch {
-            callDataRepository.getAllPersonsIncludingExcludedFlow()
+            settingsRepository.getTrackStartDateFlow()
+                .distinctUntilChanged()
+                .flatMapLatest { minDate ->
+                   Log.d("HomeViewModel", "Switching Person Flow: minDate=$minDate")
+                   callDataRepository.getAllPersonsIncludingExcludedFlow(minDate)
+                }
                 .distinctUntilChanged()
                 .conflate()
                 .collect { persons ->
+                    val start = System.currentTimeMillis()
                     _uiState.update { it.copy(persons = persons) }
                     triggerFilter()
+                    Log.d("HomeViewModel", "Collected ${persons.size} persons in ${System.currentTimeMillis() - start}ms")
                 }
         }
     }
@@ -587,6 +605,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private fun triggerFilter() {
         filterJob?.cancel()
         filterJob = viewModelScope.launch(Dispatchers.Default) {
+            val filterStart = System.currentTimeMillis()
             // Debounce to prevent UI lag during rapid updates - 50ms is ideal for responsiveness
             kotlinx.coroutines.delay(50)
             
@@ -606,29 +625,50 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                               simSel != lastUsedSimSelection
 
             if (dataChanged) {
+                val groupStart = System.currentTimeMillis()
                 // Recompute groups only when underlying data changes
+                // Optimization: Use the fact that DB is already filtered by trackStart to avoid redundant checks
                 val logsForGroupsByPhone = currentState.callLogs
-                    .filter { it.callDate >= trackStart && (targetSubId == null || it.subscriptionId == targetSubId) }
+                    .filter { targetSubId == null || it.subscriptionId == targetSubId }
                     .groupBy { it.phoneNumber }
                 
                 val groups = logsForGroupsByPhone.mapValues { (number, calls) ->
                     val sortedCalls = calls.sortedByDescending { it.callDate }
                     val person = personsMap[number] ?: personsMap[getCachedNormalizedNumber(number)]
                     
-                    // Optimized single-pass calculation
-                    var totalDuration = 0L
-                    var incoming = 0
-                    var outgoing = 0
-                    var missed = 0
+                    // PERFORMANCE OPTIMIZATION: 
+                    // Use pre-computed stats from PersonDataEntity if available and no SIM filter is active.
+                    // If targetSubId is null (Both sims), we can skip the heavy loop.
                     
-                    for (call in calls) {
-                        totalDuration += call.duration
-                        when (call.callType) {
-                            android.provider.CallLog.Calls.INCOMING_TYPE -> incoming++
-                            android.provider.CallLog.Calls.OUTGOING_TYPE -> outgoing++
-                            android.provider.CallLog.Calls.MISSED_TYPE, 
-                            android.provider.CallLog.Calls.REJECTED_TYPE, 5 -> missed++
+                    val totalDuration: Long
+                    val incoming: Int
+                    val outgoing: Int
+                    val missed: Int
+                    
+                    if (person != null && targetSubId == null) {
+                        totalDuration = person.totalDuration
+                        incoming = person.totalIncoming
+                        outgoing = person.totalOutgoing
+                        missed = person.totalMissed
+                    } else {
+                        // Manual fall-back (necessary for single-SIM filtering)
+                        var d = 0L
+                        var i = 0
+                        var o = 0
+                        var m = 0
+                        for (call in calls) {
+                            d += call.duration
+                            when (call.callType) {
+                                android.provider.CallLog.Calls.INCOMING_TYPE -> i++
+                                android.provider.CallLog.Calls.OUTGOING_TYPE -> o++
+                                android.provider.CallLog.Calls.MISSED_TYPE, 
+                                android.provider.CallLog.Calls.REJECTED_TYPE, 5 -> m++
+                            }
                         }
+                        totalDuration = d
+                        incoming = i
+                        outgoing = o
+                        missed = m
                     }
 
                     PersonGroup(
@@ -653,12 +693,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 lastUsedSimSelection = simSel
                 lastComputedGroups = groups
                 lastLogsForGroupsByPhone = logsForGroupsByPhone
+                Log.d("HomeViewModel", "Computed ${groups.size} groups in ${System.currentTimeMillis() - groupStart}ms")
             }
 
             val groups = lastComputedGroups
             val logsForGroupsByPhone = lastLogsForGroupsByPhone
             
-            // 3. Perform Single-Pass Call Filtering Across ALL Tabs (This respects Date/Search/Labels for the list views)
+            // 3. Perform Single-Pass Call Filtering Across ALL Tabs
+            val filterPhaseStart = System.currentTimeMillis()
             val tabLogs = CallLogManager.processCallFilters(
                 currentState, 
                 personsMap, 
@@ -667,11 +709,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             )
             
             // 4. Perform Single-Pass Person Filtering
-            // We pass unfiltered logsForGroupsByPhone so person-level filters (like "with note") see all history
-            // but tabPersons will still only include persons with activity in the selected DateRange
             val tabPersons = PersonLogManager.processPersonFilters(currentState, logsForGroupsByPhone)
 
-            // 6. Calculate Report Statistics (These SHOULD still respect the date range)
+            // 6. Calculate Report Statistics
             val visibleLogs = tabLogs[CallTabFilter.ALL] ?: emptyList()
             val reportStats = StatsManager.calculateReportStats(
                 visibleLogs, 
@@ -682,18 +722,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
             val activeFilterCount = HomeUtils.calculateFilterCount(currentState)
             
-            // Refined Loading Logic:
-            // 1. If we have data, we are definitely NOT loading anymore.
-            // 2. If we DON'T have data, only stop loading if a significant time (3s) has passed.
-            // This prevents: Shimmer -> "No results" -> Results
             val hasData = tabPersons.values.any { it.isNotEmpty() } || tabLogs.values.any { it.isNotEmpty() }
             val timeSinceStart = System.currentTimeMillis() - viewModelStartTime
             
             val stillLoading = when {
-                hasData -> false // We have data, stop showing shimmers
-                isFirstLoadComplete -> false // We already finished the first real check
-                timeSinceStart < 3000 -> true // Keep shimmering for at least 3s if no data yet
-                else -> false // After 3s, if still no data, show Empty State
+                hasData -> false 
+                isFirstLoadComplete -> false 
+                timeSinceStart < 3000 -> true 
+                else -> false 
             }
             
             if (hasData) isFirstLoadComplete = true
@@ -711,6 +747,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 isLoading = stillLoading
             ) }
             updateDateSummaries()
+            Log.d("HomeViewModel", "Filter cycle completed in ${System.currentTimeMillis() - filterStart}ms (Logic: ${System.currentTimeMillis() - filterPhaseStart}ms)")
         }
     }
 
@@ -1011,40 +1048,59 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val vCallFilters = loadVisibleCallFilters()
     val vPersonFilters = loadVisiblePersonFilters()
 
-    _uiState.update { it.copy(
-        simSelection = simSelection, 
-        trackStartDate = trackStartDate,
-        whatsappPreference = whatsappPreference,
-        isSyncSetup = isSyncSetup,
-        callRecordEnabled = callRecordEnabled,
-        sim1SubId = sim1SubId,
-        sim2SubId = sim2SubId,
-        callerPhoneSim1 = callerPhone1,
-        callerPhoneSim2 = callerPhone2,
-        availableSims = sims,
-        callActionBehavior = callActionBehavior,
-        availableWhatsappApps = HomeUtils.fetchWhatsAppApps(getApplication()),
-        allowPersonalExclusion = settingsRepository.isAllowPersonalExclusion(),
-        
-        // Extended Settings loaded in background
-        isFiltersVisible = filtersVisible,
-        labelFilter = labelFilter,
-        callTypeFilter = typeFilter,
-        personTabFilter = pTypeFilter,
-        connectedFilter = connFilter,
-        notesFilter = nFilter,
-        personNotesFilter = pnFilter,
-        contactsFilter = cFilter,
-        attendedFilter = aFilter,
-        reviewedFilter = rFilter,
-        customNameFilter = cnFilter,
-        dateRange = dateRange,
-        customStartDate = customStartDate,
-        customEndDate = customEndDate,
-        reportCategory = reportCategory,
-        visibleCallFilters = vCallFilters,
-        visiblePersonFilters = vPersonFilters
-    ) }
+    val currentState = _uiState.value
+    val newComputedVisibleCallFilters = vCallFilters
+    val newComputedVisiblePersonFilters = vPersonFilters
+
+    // Optimization: Only update UI state if something meaningful changed
+    // This prevents the 'tabs jumping back' issue when returning from other screens
+    val hasMeaningfulChanges = currentState.callTypeFilter != typeFilter ||
+            currentState.personTabFilter != pTypeFilter ||
+            currentState.viewMode != currentState.viewMode || // Check if viewMode reset
+            currentState.visibleCallFilters != newComputedVisibleCallFilters ||
+            currentState.visiblePersonFilters != newComputedVisiblePersonFilters ||
+            currentState.simSelection != simSelection ||
+            currentState.trackStartDate != trackStartDate ||
+            currentState.isFiltersVisible != filtersVisible ||
+            currentState.labelFilter != labelFilter ||
+            currentState.dateRange != dateRange
+
+    if (hasMeaningfulChanges) {
+        _uiState.update { it.copy(
+            simSelection = simSelection, 
+            trackStartDate = trackStartDate,
+            whatsappPreference = whatsappPreference,
+            isSyncSetup = isSyncSetup,
+            callRecordEnabled = callRecordEnabled,
+            sim1SubId = sim1SubId,
+            sim2SubId = sim2SubId,
+            callerPhoneSim1 = callerPhone1,
+            callerPhoneSim2 = callerPhone2,
+            availableSims = sims,
+            callActionBehavior = callActionBehavior,
+            availableWhatsappApps = HomeUtils.fetchWhatsAppApps(getApplication()),
+            allowPersonalExclusion = settingsRepository.isAllowPersonalExclusion(),
+            
+            // Extended Settings loaded in background
+            isFiltersVisible = filtersVisible,
+            labelFilter = labelFilter,
+            callTypeFilter = typeFilter,
+            personTabFilter = pTypeFilter,
+            connectedFilter = connFilter,
+            notesFilter = nFilter,
+            personNotesFilter = pnFilter,
+            contactsFilter = cFilter,
+            attendedFilter = aFilter,
+            reviewedFilter = rFilter,
+            customNameFilter = cnFilter,
+            dateRange = dateRange,
+            customStartDate = customStartDate,
+            customEndDate = customEndDate,
+            reportCategory = reportCategory,
+            visibleCallFilters = newComputedVisibleCallFilters,
+            visiblePersonFilters = newComputedVisiblePersonFilters
+        ) }
+    }
 
         if (needsSync) {
             syncFromSystem()
