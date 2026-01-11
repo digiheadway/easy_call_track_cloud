@@ -233,12 +233,34 @@ class SettingsRepository private constructor(private val context: Context) {
         return prefs.getString(KEY_CALLER_PHONE_SIM1, "") ?: ""
     }
 
+    fun getCallerPhoneSim1Flow(): Flow<String> = callbackFlow {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == KEY_CALLER_PHONE_SIM1) {
+                trySend(getCallerPhoneSim1())
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(getCallerPhoneSim1())
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
     fun setCallerPhoneSim1(phone: String) {
         prefs.edit().putString(KEY_CALLER_PHONE_SIM1, phone).apply()
     }
 
     fun getCallerPhoneSim2(): String {
         return prefs.getString(KEY_CALLER_PHONE_SIM2, "") ?: ""
+    }
+
+    fun getCallerPhoneSim2Flow(): Flow<String> = callbackFlow {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == KEY_CALLER_PHONE_SIM2) {
+                trySend(getCallerPhoneSim2())
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(getCallerPhoneSim2())
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }
 
     fun setCallerPhoneSim2(phone: String) {

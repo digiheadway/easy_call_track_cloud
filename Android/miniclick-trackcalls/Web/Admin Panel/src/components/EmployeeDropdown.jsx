@@ -64,12 +64,12 @@ export default function EmployeeDropdown({
         <div className={`relative ${className}`} ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="h-[38px] min-w-[180px] flex items-center justify-between gap-2 px-3 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
+                className="h-[38px] min-w-[180px] flex items-center justify-between gap-2 px-3 text-sm border border-gray-200  rounded-lg bg-white  hover:bg-gray-50  focus:ring-2 focus:ring-blue-500 outline-none transition-colors"
             >
                 <div className="flex items-center gap-2">
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${selectedEmployee
-                        ? 'bg-blue-100 dark:bg-blue-600/10 text-blue-600 dark:text-blue-400'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                        ? 'bg-blue-100  text-blue-600 '
+                        : 'bg-gray-100  text-gray-500 '
                         }`}>
                         {selectedEmployee ? (
                             selectedEmployee.name?.substring(0, 2).toUpperCase()
@@ -77,7 +77,7 @@ export default function EmployeeDropdown({
                             <Users size={14} />
                         )}
                     </div>
-                    <span className="font-medium text-gray-700 dark:text-gray-200 truncate max-w-[120px]">
+                    <span className="font-medium text-gray-700  truncate max-w-[120px]">
                         {displayText}
                     </span>
                 </div>
@@ -89,15 +89,15 @@ export default function EmployeeDropdown({
 
             {/* Dropdown Menu */}
             {isOpen && (
-                <div className="absolute right-0 top-full mt-1 w-full min-w-[200px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="absolute right-0 top-full mt-1 w-full min-w-[200px] bg-white  border border-gray-200  rounded-lg shadow-lg z-50 py-1 animate-in fade-in slide-in-from-top-2 duration-150">
                     {/* All Employees Option */}
                     <button
                         onClick={() => handleSelect('')}
-                        className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${!value ? 'bg-blue-50 dark:bg-blue-600/10 text-blue-700 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'
+                        className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm hover:bg-gray-50  transition-colors ${!value ? 'bg-blue-50  text-blue-700 ' : 'text-gray-700 '
                             }`}
                     >
                         <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 flex items-center justify-center">
+                            <div className="w-6 h-6 rounded-full bg-gray-100  text-gray-500  flex items-center justify-center">
                                 <Users size={14} />
                             </div>
                             <span className="font-medium">All Employees</span>
@@ -106,12 +106,12 @@ export default function EmployeeDropdown({
                     </button>
 
                     {employees.length > 0 && (
-                        <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
+                        <div className="border-t border-gray-100  my-1" />
                     )}
 
                     {/* Employee List */}
                     {loading ? (
-                        <div className="px-3 py-4 text-center text-gray-500 dark:text-gray-400 text-sm">
+                        <div className="px-3 py-4 text-center text-gray-500  text-sm">
                             Loading...
                         </div>
                     ) : (
@@ -122,13 +122,13 @@ export default function EmployeeDropdown({
                                     <button
                                         key={emp.id}
                                         onClick={() => handleSelect(emp.id)}
-                                        className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${isSelected ? 'bg-blue-50 dark:bg-blue-600/10 text-blue-700 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'
+                                        className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm hover:bg-gray-50  transition-colors ${isSelected ? 'bg-blue-50  text-blue-700 ' : 'text-gray-700 '
                                             }`}
                                     >
                                         <div className="flex items-center gap-2">
                                             <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isSelected
-                                                ? 'bg-blue-100 dark:bg-blue-600/10 text-blue-600 dark:text-blue-400'
-                                                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                                                ? 'bg-blue-100  text-blue-600 '
+                                                : 'bg-gray-100  text-gray-600 '
                                                 }`}>
                                                 {emp.name?.substring(0, 2).toUpperCase()}
                                             </div>

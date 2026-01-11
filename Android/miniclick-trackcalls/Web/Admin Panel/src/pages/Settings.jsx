@@ -173,8 +173,8 @@ export default function Settings() {
     return (
         <div className="max-w-6xl mx-auto space-y-8">
             <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Manage your account and preferences.</p>
+                <h1 className="text-2xl font-bold text-gray-900 ">Settings</h1>
+                <p className="text-gray-500  text-sm mt-1">Manage your account and preferences.</p>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-8 items-start">
@@ -187,9 +187,9 @@ export default function Settings() {
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${isActive ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm border border-gray-200 dark:border-gray-700' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                                    className={`flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${isActive ? 'bg-white  text-blue-600  shadow-sm border border-gray-200 ' : 'text-gray-600  hover:bg-gray-100 '}`}
                                 >
-                                    <Icon size={18} className={isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'} />
+                                    <Icon size={18} className={isActive ? 'text-blue-600 ' : 'text-gray-400 '} />
                                     {tab.label}
                                 </button>
                             );
@@ -197,66 +197,66 @@ export default function Settings() {
                     </nav>
                 </aside>
 
-                <main className="flex-1 w-full bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                <main className="flex-1 w-full bg-white  rounded-2xl border border-gray-200  shadow-sm">
                     {activeTab === 'profile' && (
                         <div className="p-6 space-y-6">
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b dark:border-gray-700 pb-4">Profile</h2>
+                            <h2 className="text-lg font-semibold text-gray-900  border-b  pb-4">Profile</h2>
                             <form onSubmit={handleSaveProfile} className="max-w-2xl space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-2">Full Name</label>
+                                        <label className="block text-xs font-bold uppercase text-gray-500  mb-2">Full Name</label>
                                         <input
                                             type="text"
-                                            className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+                                            className="input   "
                                             value={formData.name}
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-2">Organization Name</label>
+                                        <label className="block text-xs font-bold uppercase text-gray-500  mb-2">Organization Name</label>
                                         <input
                                             type="text"
-                                            className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+                                            className="input   "
                                             value={formData.org_name}
                                             onChange={(e) => setFormData({ ...formData, org_name: e.target.value })}
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-2">Phone Number</label>
+                                        <label className="block text-xs font-bold uppercase text-gray-500  mb-2">Phone Number</label>
                                         <input
                                             type="tel"
-                                            className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+                                            className="input   "
                                             value={formData.phone}
                                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-2">Email Address</label>
+                                        <label className="block text-xs font-bold uppercase text-gray-500  mb-2">Email Address</label>
                                         <div className="relative">
-                                            <input type="email" value={user?.email || ''} disabled className="input bg-gray-50 dark:bg-gray-900 cursor-not-allowed text-gray-500 dark:text-gray-500 pr-10" />
+                                            <input type="email" value={user?.email || ''} disabled className="input bg-gray-50  cursor-not-allowed text-gray-500  pr-10" />
                                             <Lock size={14} className="absolute right-3 top-3 text-gray-400" />
                                         </div>
                                     </div>
 
                                     <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-2">Organization Unique ID</label>
+                                        <label className="block text-xs font-bold uppercase text-gray-500  mb-2">Organization Unique ID</label>
                                         <div className="relative">
-                                            <input type="text" value={user?.org_id || ''} disabled className="input bg-gray-50 dark:bg-gray-900 cursor-not-allowed text-gray-500 dark:text-gray-500 pr-10" />
+                                            <input type="text" value={user?.org_id || ''} disabled className="input bg-gray-50  cursor-not-allowed text-gray-500  pr-10" />
                                             <Lock size={14} className="absolute right-3 top-3 text-gray-400" />
                                         </div>
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-2">Billing Address</label>
-                                    <div className="space-y-4 p-4 border border-gray-100 dark:border-gray-700/50 rounded-xl bg-gray-50/50 dark:bg-gray-800/50">
+                                    <label className="block text-xs font-bold uppercase text-gray-500  mb-2">Billing Address</label>
+                                    <div className="space-y-4 p-4 border border-gray-100  rounded-xl bg-gray-50/50 ">
                                         <div>
-                                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Street Address</label>
+                                            <label className="block text-xs font-medium text-gray-500  mb-1.5">Street Address</label>
                                             <textarea
                                                 rows="2"
-                                                className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white w-full"
+                                                className="input    w-full"
                                                 placeholder="Street address, P.O. box, etc."
                                                 value={formData.billing_address}
                                                 onChange={(e) => setFormData({ ...formData, billing_address: e.target.value })}
@@ -265,19 +265,19 @@ export default function Settings() {
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">City</label>
+                                                <label className="block text-xs font-medium text-gray-500  mb-1.5">City</label>
                                                 <input
                                                     type="text"
-                                                    className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+                                                    className="input   "
                                                     value={formData.city}
                                                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">State / Province</label>
+                                                <label className="block text-xs font-medium text-gray-500  mb-1.5">State / Province</label>
                                                 <input
                                                     type="text"
-                                                    className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+                                                    className="input   "
                                                     value={formData.state}
                                                     onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                                                 />
@@ -286,19 +286,19 @@ export default function Settings() {
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Zip / Postal Code</label>
+                                                <label className="block text-xs font-medium text-gray-500  mb-1.5">Zip / Postal Code</label>
                                                 <input
                                                     type="text"
-                                                    className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+                                                    className="input   "
                                                     value={formData.zip_code}
                                                     onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Country</label>
+                                                <label className="block text-xs font-medium text-gray-500  mb-1.5">Country</label>
                                                 <input
                                                     type="text"
-                                                    className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+                                                    className="input   "
                                                     value={formData.country}
                                                     onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                                                 />
@@ -309,10 +309,10 @@ export default function Settings() {
 
                                 <div className="grid grid-cols-1 gap-6">
                                     <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-2">GST / Tax ID</label>
+                                        <label className="block text-xs font-bold uppercase text-gray-500  mb-2">GST / Tax ID</label>
                                         <input
                                             type="text"
-                                            className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white"
+                                            className="input   "
                                             placeholder="Optional"
                                             value={formData.gst_number}
                                             onChange={(e) => setFormData({ ...formData, gst_number: e.target.value })}
@@ -320,7 +320,7 @@ export default function Settings() {
                                     </div>
                                 </div>
 
-                                <div className="pt-4 border-t dark:border-gray-700">
+                                <div className="pt-4 border-t ">
                                     <button type="submit" disabled={loading} className="btn btn-primary px-6">
                                         {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                                         Save Changes
@@ -333,20 +333,20 @@ export default function Settings() {
 
                     {activeTab === 'security' && (
                         <div className="p-6 space-y-6">
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b dark:border-gray-700 pb-4">Security</h2>
+                            <h2 className="text-lg font-semibold text-gray-900  border-b  pb-4">Security</h2>
                             <form onSubmit={handleChangePassword} className="max-w-xl space-y-6">
                                 <div>
-                                    <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-2">Current Password</label>
-                                    <input type="password" underline="none" className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white" value={passwords.current} onChange={(e) => setPasswords({ ...passwords, current: e.target.value })} />
+                                    <label className="block text-xs font-bold uppercase text-gray-500  mb-2">Current Password</label>
+                                    <input type="password" underline="none" className="input   " value={passwords.current} onChange={(e) => setPasswords({ ...passwords, current: e.target.value })} />
                                 </div>
                                 <div className="grid grid-cols-2 gap-6">
                                     <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-2">New Password</label>
-                                        <input type="password" underline="none" className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white" value={passwords.new} onChange={(e) => setPasswords({ ...passwords, new: e.target.value })} />
+                                        <label className="block text-xs font-bold uppercase text-gray-500  mb-2">New Password</label>
+                                        <input type="password" underline="none" className="input   " value={passwords.new} onChange={(e) => setPasswords({ ...passwords, new: e.target.value })} />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-2">Confirm</label>
-                                        <input type="password" underline="none" className="input dark:bg-gray-900 dark:border-gray-700 dark:text-white" value={passwords.confirm} onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })} />
+                                        <label className="block text-xs font-bold uppercase text-gray-500  mb-2">Confirm</label>
+                                        <input type="password" underline="none" className="input   " value={passwords.confirm} onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })} />
                                     </div>
                                 </div>
                                 <button type="submit" disabled={loading} className="btn btn-primary px-6">Update Password</button>
@@ -356,11 +356,11 @@ export default function Settings() {
 
                     {activeTab === 'exports' && (
                         <div className="p-6 space-y-6">
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b dark:border-gray-700 pb-4">Data Export</h2>
+                            <h2 className="text-lg font-semibold text-gray-900  border-b  pb-4">Data Export</h2>
                             <div className="grid grid-cols-2 gap-6">
-                                <div className="p-4 border dark:border-gray-700 rounded-2xl space-y-4">
-                                    <h3 className="font-bold dark:text-white">Call Logs</h3>
-                                    <select value={exportDateRange} onChange={(e) => setExportDateRange(e.target.value)} className="w-full input text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-white">
+                                <div className="p-4 border  rounded-2xl space-y-4">
+                                    <h3 className="font-bold ">Call Logs</h3>
+                                    <select value={exportDateRange} onChange={(e) => setExportDateRange(e.target.value)} className="w-full input text-sm   ">
                                         <option value="all">All Time</option>
                                         <option value="7days">Last 7 Days</option>
                                         <option value="30days">Last 30 Days</option>
@@ -370,10 +370,10 @@ export default function Settings() {
                                         Export CSV
                                     </button>
                                 </div>
-                                <div className="p-4 border dark:border-gray-700 rounded-2xl space-y-4">
-                                    <h3 className="font-bold dark:text-white">Contacts</h3>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Export all unique callers and stats.</p>
-                                    <button onClick={handleExportCallers} disabled={exportLoading.callers} className="btn w-full border border-gray-200 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                                <div className="p-4 border  rounded-2xl space-y-4">
+                                    <h3 className="font-bold ">Contacts</h3>
+                                    <p className="text-xs text-gray-500 ">Export all unique callers and stats.</p>
+                                    <button onClick={handleExportCallers} disabled={exportLoading.callers} className="btn w-full border border-gray-200   ">
                                         {exportLoading.callers ? <Loader2 className="animate-spin" /> : <Users size={16} />}
                                         Export CSV
                                     </button>

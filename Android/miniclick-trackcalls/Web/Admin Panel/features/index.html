@@ -19,7 +19,6 @@
         rel="stylesheet">
 
     <!-- Theme Initialization Script -->
-    <script src="/js/theme-toggle.js"></script>
 
     <!-- Feather Icons -->
     <script src="https://unpkg.com/feather-icons"></script>
@@ -33,7 +32,7 @@
                     fontFamily: { sans: ['Outfit', 'sans-serif'] },
                     colors: {
                         brand: { 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7' },
-                        dark: { bg: '#0B0F19', card: '#111827', border: '#1F2937' }
+                         { bg: '#0B0F19', card: '#111827', border: '#1F2937' }
                     }
                 }
             }
@@ -41,19 +40,19 @@
     </script>
     <style type="text/tailwindcss">
         body {
-            @apply bg-white dark:bg-dark-bg text-gray-900 dark:text-white transition-colors duration-300;
+            @apply bg-white  text-gray-900  transition-colors duration-300;
         }
 
         .glass {
-            @apply bg-white/70 dark:bg-white/5 backdrop-blur-xl border-b border-gray-100 dark:border-white/5;
+            @apply bg-white/70  backdrop-blur-xl border-b border-gray-100 
         }
 
         .glass-card {
-            @apply bg-gray-50/80 dark:bg-gray-900/60 backdrop-blur-lg border border-gray-200 dark:border-gray-800 transition-all duration-300;
+            @apply bg-gray-50/80  backdrop-blur-lg border border-gray-200  transition-all duration-300;
         }
 
         .glass-card:hover {
-            @apply border-brand-500/30 dark:border-brand-500/30 -translate-y-1 shadow-xl shadow-brand-500/5;
+            @apply border-brand-500/30  -translate-y-1 shadow-xl shadow-brand-500/5;
         }
 
         .text-gradient {
@@ -82,21 +81,20 @@
                 </a>
                 <div class="hidden md:flex items-center gap-6">
                     <a href="index.html#pricing"
-                        class="text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-white transition-colors text-sm font-medium">Pricing</a>
+                        class="text-gray-600  hover:text-brand-600  transition-colors text-sm font-medium">Pricing</a>
                     <a href="../setup/"
-                        class="text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-white transition-colors text-sm font-medium">Setup
+                        class="text-gray-600  hover:text-brand-600  transition-colors text-sm font-medium">Setup
                         Guide</a>
 
                     <!-- Theme Toggle -->
-                    <button onclick="toggleTheme()"
-                        class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-gray-500 dark:text-gray-400"
+                        class="p-2 rounded-full hover:bg-gray-100  transition-colors text-gray-500 "
                         title="Toggle Theme">
-                        <i data-feather="sun" class="w-5 h-5 block dark:hidden"></i>
-                        <i data-feather="moon" class="w-5 h-5 hidden dark:block"></i>
+                        <i data-feather="sun" class="w-5 h-5 block "></i>
+                        <i data-feather="moon" class="w-5 h-5 hidden "></i>
                     </button>
 
                     <a href="../login/"
-                        class="text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-white transition-colors text-sm font-medium">Login</a>
+                        class="text-gray-600  hover:text-brand-600  transition-colors text-sm font-medium">Login</a>
                     <a href="../signup/"
                         class="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-all shadow-lg shadow-brand-500/20">Get
                         Started</a>
@@ -113,9 +111,9 @@
             class="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-[128px] pointer-events-none">
         </div>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-            <h1 class="text-4xl sm:text-6xl font-bold mb-6 text-gray-900 dark:text-white">Powerful Features for
+            <h1 class="text-4xl sm:text-6xl font-bold mb-6 text-gray-900 ">Powerful Features for
                 <br><span class="text-gradient">Smarter Call Management</span></h1>
-            <p class="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">Everything you need to track, record,
+            <p class="text-xl text-gray-600  max-w-3xl mx-auto">Everything you need to track, record,
                 and manage business
                 calls. Built for small teams, designed for productivity.</p>
         </div>
@@ -129,21 +127,21 @@
                 <!-- Feature 1: Auto Sync -->
                 <div class="glass-card p-8 rounded-2xl">
                     <div class="w-14 h-14 bg-blue-500/20 rounded-xl flex items-center justify-center mb-6">
-                        <i data-feather="cloud-lightning" class="text-blue-600 dark:text-blue-400 w-7 h-7"></i>
+                        <i data-feather="cloud-lightning" class="text-blue-600  w-7 h-7"></i>
                     </div>
-                    <h3 class="text-xl font-bold mb-3 text-gray-900 dark:text-white">Auto Cloud Sync</h3>
-                    <p class="text-gray-600 dark:text-gray-400 mb-4">Call logs and recordings are automatically uploaded
+                    <h3 class="text-xl font-bold mb-3 text-gray-900 ">Auto Cloud Sync</h3>
+                    <p class="text-gray-600  mb-4">Call logs and recordings are automatically uploaded
                         to the cloud. No
                         manual uploads required.</p>
-                    <ul class="text-sm text-gray-600 dark:text-gray-300 space-y-2">
+                    <ul class="text-sm text-gray-600  space-y-2">
                         <li class="flex items-center gap-2"><i data-feather="check"
-                                class="w-4 h-4 text-green-500 dark:text-green-400"></i>
+                                class="w-4 h-4 text-green-500 "></i>
                             Real-time synchronization</li>
                         <li class="flex items-center gap-2"><i data-feather="check"
-                                class="w-4 h-4 text-green-500 dark:text-green-400"></i>
+                                class="w-4 h-4 text-green-500 "></i>
                             Works on Wi-Fi or mobile data</li>
                         <li class="flex items-center gap-2"><i data-feather="check"
-                                class="w-4 h-4 text-green-500 dark:text-green-400"></i>
+                                class="w-4 h-4 text-green-500 "></i>
                             Offline queue for poor connectivity</li>
                     </ul>
                 </div>
@@ -305,9 +303,9 @@
                         class="rounded-2xl shadow-2xl border border-white/10 hover:scale-[1.02] transition-transform duration-500">
                 </div>
                 <div class="lg:w-1/2 order-1 lg:order-2">
-                    <h2 class="text-3xl sm:text-4xl font-bold mb-6 text-gray-900 dark:text-white">Gain Insights with
+                    <h2 class="text-3xl sm:text-4xl font-bold mb-6 text-gray-900 ">Gain Insights with
                         <br /><span class="text-gradient">Advanced Analytics</span></h2>
-                    <p class="text-gray-600 dark:text-gray-400 text-lg mb-8">
+                    <p class="text-gray-600  text-lg mb-8">
                         Stop guessing about your team's performance. Visualize call volume, track key metrics, and
                         listen to recordings directly from our beautifully designed admin panel.
                     </p>
@@ -413,15 +411,15 @@
     <!-- CTA -->
     <section class="py-24">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 class="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Ready to get started?</h2>
-            <p class="text-xl text-gray-600 dark:text-gray-400 mb-10">Join thousands of businesses managing calls
+            <h2 class="text-4xl font-bold mb-6 text-gray-900 ">Ready to get started?</h2>
+            <p class="text-xl text-gray-600  mb-10">Join thousands of businesses managing calls
                 smarter.</p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
                 <a href="../signup/"
-                    class="px-8 py-4 bg-gray-900 dark:bg-white text-white dark:text-dark-bg font-bold rounded-full hover:bg-gray-800 dark:hover:bg-gray-100 transition-all shadow-xl dark:shadow-white/5">Start
+                    class="px-8 py-4 bg-gray-900  text-white  font-bold rounded-full hover:bg-gray-800  transition-all shadow-xl ">Start
                     Free Trial</a>
                 <a href="../setup/"
-                    class="px-8 py-4 glass text-gray-700 dark:text-white font-medium rounded-full hover:bg-gray-50 dark:hover:bg-white/10 transition-all flex items-center justify-center gap-2">
+                    class="px-8 py-4 glass text-gray-700  font-medium rounded-full hover:bg-gray-50  transition-all flex items-center justify-center gap-2">
                     <i data-feather="book-open" class="w-5 h-5"></i> View Setup Guide
                 </a>
             </div>
@@ -429,13 +427,13 @@
     </section>
 
     <!-- Footer -->
-    <footer class="border-t border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-dark-bg py-8 transition-colors">
+    <footer class="border-t border-gray-100  bg-gray-50  py-8 transition-colors">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <p class="text-gray-600 text-sm">© 2026 MiniClick. All rights reserved.</p>
-            <div class="mt-4 flex justify-center gap-6 text-sm text-gray-600 dark:text-gray-400">
-                <a href="../privacy/" class="hover:text-brand-600 dark:hover:text-white transition-colors">Privacy
+            <div class="mt-4 flex justify-center gap-6 text-sm text-gray-600 ">
+                <a href="../privacy/" class="hover:text-brand-600  transition-colors">Privacy
                     Policy</a>
-                <a href="../terms/" class="hover:text-brand-600 dark:hover:text-white transition-colors">Terms of
+                <a href="../terms/" class="hover:text-brand-600  transition-colors">Terms of
                     Use</a>
             </div>
         </div>

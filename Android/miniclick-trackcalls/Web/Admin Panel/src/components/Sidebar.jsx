@@ -76,13 +76,13 @@ export default function Sidebar({
     const navLinkClass = ({ isActive }) => cn(
         "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
         isActive
-            ? "bg-blue-50 text-blue-600 dark:bg-blue-600/10 dark:text-blue-400"
-            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100",
+            ? "bg-blue-50 text-blue-600  "
+            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900   ",
         isCollapsed && "justify-center px-2"
     );
 
     const sidebarContent = (
-        <div className="flex flex-col h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-colors duration-200">
+        <div className="flex flex-col h-full bg-white  border-r border-gray-200  transition-colors duration-200">
             {/* Header */}
             <div className={cn("p-5 flex items-center h-16 transition-all duration-300", isCollapsed ? "justify-center px-2" : "justify-between")}>
                 <div className={cn("flex items-center gap-2.5 text-blue-600 font-bold text-lg transition-all duration-300",
@@ -94,7 +94,7 @@ export default function Sidebar({
                 {!isMobile && (
                     <button
                         onClick={toggleCollapse}
-                        className={cn("p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors",
+                        className={cn("p-1.5 rounded-lg hover:bg-gray-100  text-gray-400 hover:text-gray-600  transition-colors",
                             isCollapsed ? "mx-auto" : "ml-auto"
                         )}
                         title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
@@ -106,7 +106,7 @@ export default function Sidebar({
                 {isMobile && (
                     <button
                         onClick={() => setIsMobileOpen(false)}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 ml-auto transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-gray-100  text-gray-400 hover:text-gray-600  ml-auto transition-colors"
                     >
                         <X size={18} />
                     </button>
@@ -128,7 +128,7 @@ export default function Sidebar({
                             <div className="relative">
                                 <item.icon size={18} className="flex-shrink-0" />
                                 {item.name === 'Notifications' && unreadNotificationsCount > 0 && (
-                                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800">
+                                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white ">
                                         {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
                                     </span>
                                 )}
@@ -141,7 +141,7 @@ export default function Sidebar({
                 </div>
 
                 {/* Manage Section */}
-                <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="pt-4 mt-4 border-t border-gray-200 ">
                     {!isCollapsed && (
                         <div
                             className="flex items-center justify-between px-3 mb-2 cursor-pointer group"
@@ -156,7 +156,7 @@ export default function Sidebar({
                     )}
                     {isCollapsed && (
                         <div className="flex justify-center mb-2">
-                            <div className="w-6 h-[1px] bg-gray-200 dark:bg-gray-700" />
+                            <div className="w-6 h-[1px] bg-gray-200 " />
                         </div>
                     )}
 
@@ -182,7 +182,7 @@ export default function Sidebar({
             </nav>
 
             {/* Bottom Utilities */}
-            <div className="px-3 py-3 space-y-0.5 border-t border-gray-200 dark:border-gray-700">
+            <div className="px-3 py-3 space-y-0.5 border-t border-gray-200 ">
                 {bottomItems.map((item) => (
                     <NavLink
                         key={item.name}
@@ -194,7 +194,7 @@ export default function Sidebar({
                         <div className="relative">
                             <item.icon size={18} className="flex-shrink-0" />
                             {item.name === 'Notifications' && unreadNotificationsCount > 0 && (
-                                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800">
+                                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white ">
                                     {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
                                 </span>
                             )}
@@ -207,12 +207,12 @@ export default function Sidebar({
             </div>
 
             {/* Footer */}
-            <div className="p-3 border-t border-gray-200 dark:border-gray-700 mt-auto space-y-2">
+            <div className="p-3 border-t border-gray-200  mt-auto space-y-2">
                 {/* Theme Toggle */}
                 <button
                     onClick={toggleTheme}
                     className={cn(
-                        "flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 transition-colors",
+                        "flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600  hover:bg-gray-100  hover:text-gray-900  transition-colors",
                         isCollapsed && "justify-center"
                     )}
                     title={isCollapsed ? (theme === 'dark' ? "Light Mode" : "Dark Mode") : undefined}
@@ -229,8 +229,8 @@ export default function Sidebar({
                         {user?.name?.substring(0, 2).toUpperCase() || 'AD'}
                     </div>
                     <div className={cn("flex-1 min-w-0 transition-opacity duration-300", isCollapsed ? "opacity-0 w-0 hidden" : "opacity-100")}>
-                        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{user?.name || 'Admin'}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
+                        <p className="text-sm font-semibold text-gray-900  truncate">{user?.name || 'Admin'}</p>
+                        <p className="text-xs text-gray-500  truncate">{user?.email}</p>
                     </div>
                 </div>
 
@@ -238,7 +238,7 @@ export default function Sidebar({
                 <button
                     onClick={handleLogout}
                     className={cn(
-                        "flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 transition-colors",
+                        "flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600  hover:bg-red-50 hover:text-red-600   transition-colors",
                         isCollapsed && "justify-center"
                     )}
                     title={isCollapsed ? "Logout" : undefined}
@@ -263,7 +263,7 @@ export default function Sidebar({
             {/* Sidebar */}
             <aside
                 className={cn(
-                    "fixed top-0 bottom-0 left-0 z-40 bg-white dark:bg-gray-800 transition-all duration-300 shadow-lg lg:shadow-none border-r border-gray-200 dark:border-gray-700",
+                    "fixed top-0 bottom-0 left-0 z-40 bg-white  transition-all duration-300 shadow-lg lg:shadow-none border-r border-gray-200 ",
                     isMobile
                         ? (isMobileOpen ? "translate-x-0 w-64" : "-translate-x-full w-64")
                         : (isCollapsed ? "w-20" : "w-64")

@@ -315,12 +315,38 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val searchQuery = settingsRepository.getSearchQuery()
         val viewMode = try { ViewMode.valueOf(settingsRepository.getViewMode()) } catch(e: Exception) { ViewMode.PERSONS }
         val isSyncSetup = settingsRepository.getOrganisationId().isNotEmpty()
+        
+        val typeFilter = try { 
+            val saved = settingsRepository.getCallTypeFilter()
+            when (saved) {
+                "ATTENDED" -> CallTabFilter.ANSWERED
+                "RESPONDED" -> CallTabFilter.OUTGOING
+                "NOT_ATTENDED" -> CallTabFilter.NOT_ANSWERED
+                "NOT_RESPONDED" -> CallTabFilter.OUTGOING_NOT_CONNECTED
+                else -> CallTabFilter.valueOf(saved)
+            }
+        } catch(e: Exception) { CallTabFilter.ALL }
+        
+        val pTypeFilter = try { 
+            val saved = settingsRepository.getPersonTabFilter()
+            when (saved) {
+                "ATTENDED" -> PersonTabFilter.ANSWERED
+                "RESPONDED" -> PersonTabFilter.OUTGOING
+                "NOT_ATTENDED" -> PersonTabFilter.NOT_ANSWERED
+                "NOT_RESPONDED" -> PersonTabFilter.OUTGOING_NOT_CONNECTED
+                else -> PersonTabFilter.valueOf(saved)
+            }
+        } catch(e: Exception) { PersonTabFilter.ALL }
 
         _uiState.update { it.copy(
             isSearchVisible = searchVisible,
             searchQuery = searchQuery,
             viewMode = viewMode,
             isSyncSetup = isSyncSetup,
+            callTypeFilter = typeFilter,
+            personTabFilter = pTypeFilter,
+            visibleCallFilters = loadVisibleCallFilters(),
+            visiblePersonFilters = loadVisiblePersonFilters(),
             isLoading = true 
         ) }
     }
@@ -409,7 +435,35 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun toggleViewMode() {
-        val newMode = if (_uiState.value.viewMode == ViewMode.CALLS) ViewMode.PERSONS else ViewMode.CALLS
+        val currentState = _uiState.value
+        val oldMode = currentState.viewMode
+        val newMode = if (oldMode == ViewMode.CALLS) ViewMode.PERSONS else ViewMode.CALLS
+        
+        // Synchronize filters by name to maintain context across view modes
+        if (newMode == ViewMode.PERSONS) {
+            try {
+                val matchingFilter = PersonTabFilter.valueOf(currentState.callTypeFilter.name)
+                if (currentState.personTabFilter != matchingFilter) {
+                    _uiState.update { it.copy(personTabFilter = matchingFilter) }
+                    settingsRepository.setPersonTabFilter(matchingFilter.name)
+                }
+            } catch (e: Exception) {
+                // Fallback to ALL if no match
+                _uiState.update { it.copy(personTabFilter = PersonTabFilter.ALL) }
+            }
+        } else {
+            try {
+                val matchingFilter = CallTabFilter.valueOf(currentState.personTabFilter.name)
+                if (currentState.callTypeFilter != matchingFilter) {
+                    _uiState.update { it.copy(callTypeFilter = matchingFilter) }
+                    settingsRepository.setCallTypeFilter(matchingFilter.name)
+                }
+            } catch (e: Exception) {
+                // Fallback to ALL if no match
+                _uiState.update { it.copy(callTypeFilter = CallTabFilter.ALL) }
+            }
+        }
+        
         setViewMode(newMode)
     }
     

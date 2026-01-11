@@ -25,13 +25,13 @@ export default function Layout({ children }) {
     }, []);
 
     return (
-        <div className="flex bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-300">
+        <div className="flex bg-gray-50  min-h-screen transition-colors duration-300">
             {/* Mobile Header */}
             {isMobile && (
-                <div className="fixed top-0 left-0 right-0 h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-30 px-4 flex items-center justify-between lg:hidden">
+                <div className="fixed top-0 left-0 right-0 h-16 bg-white  border-b border-gray-200  z-30 px-4 flex items-center justify-between lg:hidden">
                     <button
                         onClick={() => setIsMobileOpen(true)}
-                        className="p-2 -ml-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                        className="p-2 -ml-2 text-gray-600  hover:bg-gray-100  rounded-lg transition-colors"
                     >
                         <Menu size={24} />
                     </button>
@@ -57,7 +57,7 @@ export default function Layout({ children }) {
             >
                 {/* Verification Warning Strip */}
                 {user && (Number(user.is_verified) === 0) && (
-                    <div className="mb-6 p-4 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center gap-3 animate-in slide-in-from-top-2">
+                    <div className="mb-6 p-4 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-600  flex items-center gap-3 animate-in slide-in-from-top-2">
                         <AlertTriangle size={20} className="flex-shrink-0" />
                         <div className="flex-1 text-sm font-medium">
                             Your email address is not verified. Please check your inbox to verify your account.

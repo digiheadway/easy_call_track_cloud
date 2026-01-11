@@ -73,13 +73,13 @@ export default function NotificationsPage() {
     const getTypeStyles = (type) => {
         switch (type) {
             case 'success':
-                return { icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'border-emerald-100 dark:border-emerald-900/30' };
+                return { icon: CheckCircle2, color: 'text-emerald-600 ', bg: 'bg-emerald-50 ', border: 'border-emerald-100 ' };
             case 'warning':
-                return { icon: AlertTriangle, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-100 dark:border-amber-900/30' };
+                return { icon: AlertTriangle, color: 'text-amber-600 ', bg: 'bg-amber-50 ', border: 'border-amber-100 ' };
             case 'error':
-                return { icon: XCircle, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-100 dark:border-red-900/30' };
+                return { icon: XCircle, color: 'text-red-600 ', bg: 'bg-red-50 ', border: 'border-red-100 ' };
             default:
-                return { icon: Info, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-100 dark:border-blue-900/30' };
+                return { icon: Info, color: 'text-blue-600 ', bg: 'bg-blue-50 ', border: 'border-blue-100 ' };
         }
     };
 
@@ -92,22 +92,22 @@ export default function NotificationsPage() {
             {/* Header */}
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
+                    <h1 className="text-3xl font-black tracking-tight text-gray-900  flex items-center gap-3">
                         Notifications
                         {unreadCount > 0 && (
-                            <span className="px-2.5 py-0.5 bg-blue-600 dark:bg-blue-500 text-white text-[10px] font-black rounded-full uppercase tracking-widest">
+                            <span className="px-2.5 py-0.5 bg-blue-600  text-white text-[10px] font-black rounded-full uppercase tracking-widest">
                                 {unreadCount} New
                             </span>
                         )}
                     </h1>
-                    <p className="text-gray-500 dark:text-gray-400 font-medium">Stay updated with your account and system activities.</p>
+                    <p className="text-gray-500  font-medium">Stay updated with your account and system activities.</p>
                 </div>
 
                 <div className="flex items-center gap-2">
                     {unreadCount > 0 && (
                         <button
                             onClick={() => markAsRead('all')}
-                            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-all active:scale-95"
+                            className="flex items-center gap-2 px-4 py-2 bg-white  border border-gray-200  text-gray-700  rounded-xl text-xs font-bold hover:bg-gray-50  transition-all active:scale-95"
                         >
                             <Check size={14} />
                             Mark all as read
@@ -115,7 +115,7 @@ export default function NotificationsPage() {
                     )}
                     <button
                         onClick={fetchNotifications}
-                        className="p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 rounded-xl hover:text-blue-600 dark:hover:text-blue-400 active:rotate-180 transition-all duration-500"
+                        className="p-2 bg-white  border border-gray-200  text-gray-500  rounded-xl hover:text-blue-600  active:rotate-180 transition-all duration-500"
                     >
                         {loading ? <Loader2 size={20} className="animate-spin" /> : <Bell size={20} />}
                     </button>
@@ -123,16 +123,16 @@ export default function NotificationsPage() {
             </header>
 
             {/* Filters */}
-            <div className="flex items-center gap-1 p-1 bg-gray-100/50 dark:bg-gray-800/50 rounded-2xl w-fit">
+            <div className="flex items-center gap-1 p-1 bg-gray-100/50  rounded-2xl w-fit">
                 <button
                     onClick={() => setFilter('all')}
-                    className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${filter === 'all' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}`}
+                    className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${filter === 'all' ? 'bg-white  text-blue-600  shadow-sm' : 'text-gray-500  hover:text-gray-900 '}`}
                 >
                     All
                 </button>
                 <button
                     onClick={() => setFilter('unread')}
-                    className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${filter === 'unread' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}`}
+                    className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${filter === 'unread' ? 'bg-white  text-blue-600  shadow-sm' : 'text-gray-500  hover:text-gray-900 '}`}
                 >
                     Unread
                 </button>
@@ -141,17 +141,17 @@ export default function NotificationsPage() {
             {/* Notifications List */}
             <div className="space-y-3">
                 {loading && notifications.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 border-dashed">
-                        <Loader2 size={40} className="text-blue-200 dark:text-blue-900 animate-spin mb-4" />
-                        <p className="text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest text-[10px]">Loading notifications...</p>
+                    <div className="flex flex-col items-center justify-center py-20 bg-white  rounded-[2rem] border border-gray-100  border-dashed">
+                        <Loader2 size={40} className="text-blue-200  animate-spin mb-4" />
+                        <p className="text-gray-400  font-bold uppercase tracking-widest text-[10px]">Loading notifications...</p>
                     </div>
                 ) : filteredNotifications.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 border-dashed animate-in fade-in zoom-in-95 duration-500">
-                        <div className="w-16 h-16 bg-gray-50 dark:bg-gray-700/50 text-gray-300 dark:text-gray-500 rounded-2xl flex items-center justify-center mb-4">
+                    <div className="flex flex-col items-center justify-center py-20 bg-white  rounded-[2rem] border border-gray-100  border-dashed animate-in fade-in zoom-in-95 duration-500">
+                        <div className="w-16 h-16 bg-gray-50  text-gray-300  rounded-2xl flex items-center justify-center mb-4">
                             <Inbox size={32} />
                         </div>
-                        <p className="text-gray-900 dark:text-white font-black uppercase tracking-widest text-sm">No Notifications</p>
-                        <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">You're all caught up!</p>
+                        <p className="text-gray-900  font-black uppercase tracking-widest text-sm">No Notifications</p>
+                        <p className="text-gray-400  text-xs mt-1">You're all caught up!</p>
                     </div>
                 ) : (
                     filteredNotifications.map((notification) => {
@@ -161,7 +161,7 @@ export default function NotificationsPage() {
                         return (
                             <div
                                 key={notification.id}
-                                className={`group relative p-5 bg-white dark:bg-gray-800 rounded-[1.5rem] border transition-all duration-300 hover:shadow-xl hover:shadow-gray-100/50 dark:hover:shadow-black/20 flex gap-5 ${notification.is_read ? 'border-gray-100 dark:border-gray-700 opacity-80' : 'border-blue-100 dark:border-blue-900/30 shadow-lg shadow-blue-500/5 dark:shadow-blue-500/5 ring-1 ring-blue-50 dark:ring-blue-900/10 bg-gradient-to-br from-white to-blue-50/10 dark:from-gray-800 dark:to-blue-900/10'}`}
+                                className={`group relative p-5 bg-white  rounded-[1.5rem] border transition-all duration-300 hover:shadow-xl hover:shadow-gray-100/50  flex gap-5 ${notification.is_read ? 'border-gray-100  opacity-80' : 'border-blue-100  shadow-lg shadow-blue-500/5  ring-1 ring-blue-50  bg-gradient-to-br from-white to-blue-50/10  '}`}
                             >
                                 {/* Left Icon */}
                                 <div className={`flex-shrink-0 w-12 h-12 rounded-2xl ${styles.bg} ${styles.color} flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm`}>
@@ -171,22 +171,22 @@ export default function NotificationsPage() {
                                 {/* Content */}
                                 <div className="flex-1 min-w-0 space-y-1">
                                     <div className="flex items-center justify-between gap-4">
-                                        <h3 className={`font-black text-gray-900 dark:text-white leading-none truncate ${!notification.is_read ? 'text-lg' : 'text-base'}`}>
+                                        <h3 className={`font-black text-gray-900  leading-none truncate ${!notification.is_read ? 'text-lg' : 'text-base'}`}>
                                             {notification.title}
                                         </h3>
-                                        <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 flex items-center gap-1.5 whitespace-nowrap bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded-lg">
+                                        <span className="text-[10px] font-bold text-gray-400  flex items-center gap-1.5 whitespace-nowrap bg-gray-50  px-2 py-1 rounded-lg">
                                             <Calendar size={12} />
                                             {format(parseISO(notification.created_at.replace(' ', 'T')), 'MMM d, h:mm a')}
                                         </span>
                                     </div>
-                                    <p className="text-gray-600 dark:text-gray-300 text-sm font-medium leading-relaxed">
+                                    <p className="text-gray-600  text-sm font-medium leading-relaxed">
                                         {notification.message}
                                     </p>
 
                                     {notification.link && (
                                         <a
                                             href={notification.link}
-                                            className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 mt-2 hover:gap-2 transition-all"
+                                            className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-blue-600  mt-2 hover:gap-2 transition-all"
                                         >
                                             View Details
                                             <ArrowRight size={12} />
@@ -199,7 +199,7 @@ export default function NotificationsPage() {
                                     {!notification.is_read && (
                                         <button
                                             onClick={() => markAsRead(notification.id)}
-                                            className="w-8 h-8 bg-blue-50 dark:bg-gray-700 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white transition-all shadow-sm"
+                                            className="w-8 h-8 bg-blue-50  text-blue-600  rounded-xl flex items-center justify-center hover:bg-blue-600 hover:text-white   transition-all shadow-sm"
                                             title="Mark as read"
                                         >
                                             <Check size={16} />
@@ -207,7 +207,7 @@ export default function NotificationsPage() {
                                     )}
                                     <button
                                         onClick={() => deleteNotification(notification.id)}
-                                        className="w-8 h-8 bg-red-50 dark:bg-gray-700 text-red-500 dark:text-red-400 rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white dark:hover:bg-red-500 dark:hover:text-white transition-all shadow-sm"
+                                        className="w-8 h-8 bg-red-50  text-red-500  rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white   transition-all shadow-sm"
                                         title="Delete"
                                     >
                                         <Trash2 size={16} />
@@ -216,7 +216,7 @@ export default function NotificationsPage() {
 
                                 {/* Unread Dot */}
                                 {!notification.is_read && (
-                                    <div className="absolute top-4 left-4 w-3 h-3 bg-blue-600 rounded-full border-2 border-white dark:border-gray-800 shadow-sm -translate-x-1/2 -translate-y-1/2" />
+                                    <div className="absolute top-4 left-4 w-3 h-3 bg-blue-600 rounded-full border-2 border-white  shadow-sm -translate-x-1/2 -translate-y-1/2" />
                                 )}
                             </div>
                         );
@@ -226,17 +226,17 @@ export default function NotificationsPage() {
 
             {/* Legend/Info Footer */}
             {!loading && notifications.length > 0 && (
-                <footer className="pt-8 border-t border-gray-100 dark:border-gray-700 flex flex-wrap gap-6 justify-center opacity-50">
-                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                <footer className="pt-8 border-t border-gray-100  flex flex-wrap gap-6 justify-center opacity-50">
+                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 ">
                         <div className="w-2 h-2 rounded-full bg-emerald-500" /> Success
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 ">
                         <div className="w-2 h-2 rounded-full bg-amber-500" /> Warning
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 ">
                         <div className="w-2 h-2 rounded-full bg-red-500" /> Error
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 ">
                         <div className="w-2 h-2 rounded-full bg-blue-500" /> Info
                     </div>
                 </footer>

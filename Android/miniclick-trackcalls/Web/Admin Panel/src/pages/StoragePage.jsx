@@ -252,14 +252,14 @@ export default function StoragePage() {
         <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500 pb-12">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight text-gray-900 dark:text-white">Storage Management</h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1 font-medium text-sm">Monitor and optimize your cloud recording storage.</p>
+                    <h1 className="text-3xl font-black tracking-tight text-gray-900 ">Storage Management</h1>
+                    <p className="text-gray-500  mt-1 font-medium text-sm">Monitor and optimize your cloud recording storage.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <button
                         onClick={handleRefresh}
                         disabled={refreshing}
-                        className="btn bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 h-10 px-4 rounded-xl font-bold gap-2 hover:border-blue-500 dark:hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all shadow-sm active:scale-95"
+                        className="btn bg-white  border border-gray-200  text-gray-700  h-10 px-4 rounded-xl font-bold gap-2 hover:border-blue-500  hover:text-blue-600  transition-all shadow-sm active:scale-95"
                     >
                         <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
                         Recalculate
@@ -270,11 +270,11 @@ export default function StoragePage() {
             <div className="space-y-6">
                 <div className="space-y-6">
                     {/* Main Stats Card */}
-                    <div className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 shadow-xl overflow-hidden p-8">
+                    <div className="bg-white  rounded-[2rem] border border-gray-100  shadow-xl overflow-hidden p-8">
                         <div className="flex flex-col md:flex-row items-center gap-8">
                             <div className="relative w-36 h-36 flex-shrink-0">
                                 <svg className="w-full h-full transform -rotate-90">
-                                    <circle cx="72" cy="72" r="64" fill="transparent" stroke="currentColor" className="text-gray-100 dark:text-gray-700" strokeWidth="12" />
+                                    <circle cx="72" cy="72" r="64" fill="transparent" stroke="currentColor" className="text-gray-100 " strokeWidth="12" />
                                     <circle
                                         cx="72" cy="72" r="64" fill="transparent"
                                         stroke={isCritical ? "#ef4444" : "#2563eb"}
@@ -286,25 +286,25 @@ export default function StoragePage() {
                                     />
                                 </svg>
                                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                    <span className="text-2xl font-black text-gray-900 dark:text-white">{Math.round(usagePercent)}%</span>
-                                    <span className="text-[8px] uppercase font-black text-gray-400 dark:text-gray-500 tracking-widest">Used</span>
+                                    <span className="text-2xl font-black text-gray-900 ">{Math.round(usagePercent)}%</span>
+                                    <span className="text-[8px] uppercase font-black text-gray-400  tracking-widest">Used</span>
                                 </div>
                             </div>
 
                             <div className="flex-1 space-y-4 text-center md:text-left">
                                 <div className="space-y-0.5">
-                                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Storage Status</p>
-                                    <h2 className="text-3xl font-black text-gray-900 dark:text-white">{usage ? formatBytes(usage.storage_used_bytes) : '0 Bytes'}</h2>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 font-bold uppercase tracking-tight">of {usage?.allowed_storage_gb || 0} GB Total Capacity</p>
+                                    <p className="text-[10px] font-black text-gray-400  uppercase tracking-widest">Storage Status</p>
+                                    <h2 className="text-3xl font-black text-gray-900 ">{usage ? formatBytes(usage.storage_used_bytes) : '0 Bytes'}</h2>
+                                    <p className="text-sm text-gray-500  font-bold uppercase tracking-tight">of {usage?.allowed_storage_gb || 0} GB Total Capacity</p>
                                 </div>
 
                                 <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                                    <div className="px-3 py-1.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-700 flex items-center gap-2">
-                                        <Clock size={12} className="text-gray-400 dark:text-gray-500" />
-                                        <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase">Last Sync: {usage?.last_storage_check ? new Date(usage.last_storage_check).toLocaleTimeString() : 'Never'}</span>
+                                    <div className="px-3 py-1.5 bg-gray-50  rounded-lg border border-gray-100  flex items-center gap-2">
+                                        <Clock size={12} className="text-gray-400 " />
+                                        <span className="text-[10px] font-black text-gray-500  uppercase">Last Sync: {usage?.last_storage_check ? new Date(usage.last_storage_check).toLocaleTimeString() : 'Never'}</span>
                                     </div>
                                     {isCritical && (
-                                        <div className="px-3 py-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg border border-red-100 dark:border-red-900/30 flex items-center gap-2 animate-pulse">
+                                        <div className="px-3 py-1.5 bg-red-50  text-red-600  rounded-lg border border-red-100  flex items-center gap-2 animate-pulse">
                                             <AlertCircle size={12} />
                                             <span className="text-[10px] font-black uppercase">Low Space</span>
                                         </div>
@@ -327,15 +327,15 @@ export default function StoragePage() {
                     </div>
 
                     {/* Breakdown Filter Bar */}
-                    <div className="bg-white dark:bg-gray-800 rounded-[1.5rem] border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="bg-white  rounded-[1.5rem] border border-gray-100  shadow-sm p-4 flex flex-col md:flex-row items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
-                            <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest whitespace-nowrap">Breakdown By:</span>
-                            <div className="flex items-center gap-2 p-1 bg-gray-50 dark:bg-gray-700 rounded-xl w-full md:w-auto overflow-x-auto no-scrollbar">
+                            <span className="text-[10px] font-black text-gray-400  uppercase tracking-widest whitespace-nowrap">Breakdown By:</span>
+                            <div className="flex items-center gap-2 p-1 bg-gray-50  rounded-xl w-full md:w-auto overflow-x-auto no-scrollbar">
                                 <button
                                     onClick={() => { setViewType('time'); setDrillDownMonth(null); setDrillDownEmployee(null); }}
                                     className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-2 ${viewType === 'time'
-                                        ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm border border-gray-100 dark:border-gray-500"
-                                        : "text-gray-400 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                        ? "bg-white  text-blue-600  shadow-sm border border-gray-100 "
+                                        : "text-gray-400  hover:text-gray-600 "
                                         }`}
                                 >
                                     <Calendar size={14} />
@@ -344,8 +344,8 @@ export default function StoragePage() {
                                 <button
                                     onClick={() => { setViewType('employee'); setDrillDownMonth(null); setDrillDownEmployee(null); }}
                                     className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-2 ${viewType === 'employee'
-                                        ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm border border-gray-100 dark:border-gray-500"
-                                        : "text-gray-400 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                                        ? "bg-white  text-blue-600  shadow-sm border border-gray-100 "
+                                        : "text-gray-400  hover:text-gray-600 "
                                         }`}
                                 >
                                     <Users size={14} />
@@ -358,7 +358,7 @@ export default function StoragePage() {
                             {(drillDownMonth || drillDownEmployee) && (
                                 <button
                                     onClick={() => { setDrillDownMonth(null); setDrillDownEmployee(null); }}
-                                    className="flex items-center gap-2 text-[10px] font-black uppercase text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                    className="flex items-center gap-2 text-[10px] font-black uppercase text-gray-500  hover:text-blue-600  transition-colors"
                                 >
                                     <ArrowLeft size={14} />
                                     Back to {drillDownMonth ? 'Months' : 'Employees'}
@@ -366,7 +366,7 @@ export default function StoragePage() {
                             )}
 
                             <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest bg-gray-50 dark:bg-gray-700/50 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700">
+                                <span className="text-[10px] font-black text-gray-400  uppercase tracking-widest bg-gray-50  px-3 py-1.5 rounded-lg border border-gray-100 ">
                                     Total Items: {breakdown.length}
                                 </span>
                             </div>
@@ -374,32 +374,32 @@ export default function StoragePage() {
                     </div>
 
                     {/* Breakdown List */}
-                    <div className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden min-h-[400px]">
-                        <div className="p-6 border-b border-gray-50 dark:border-gray-700 bg-gray-50/20 dark:bg-gray-900/20 flex items-center justify-between">
-                            <h3 className="font-black text-gray-900 dark:text-white uppercase tracking-widest text-xs flex items-center gap-2">
-                                <PieChart size={16} className="text-blue-600 dark:text-blue-400" />
+                    <div className="bg-white  rounded-[2rem] border border-gray-100  shadow-sm overflow-hidden min-h-[400px]">
+                        <div className="p-6 border-b border-gray-50  bg-gray-50/20  flex items-center justify-between">
+                            <h3 className="font-black text-gray-900  uppercase tracking-widest text-xs flex items-center gap-2">
+                                <PieChart size={16} className="text-blue-600 " />
                                 {drillDownMonth ? `Daily for ${formatDateLabel(drillDownMonth)}` :
                                     drillDownEmployee ? `Monthly for ${employees.find(e => String(e.id) === String(drillDownEmployee))?.name || 'Employee'}` :
                                         (viewType === 'time' ? 'Monthly Breakdown' : 'Employee Breakdown')}
                             </h3>
                         </div>
 
-                        <div className="divide-y divide-gray-50 dark:divide-gray-700">
+                        <div className="divide-y divide-gray-50 ">
                             {breakdownLoading ? (
                                 <div className="flex items-center justify-center py-20">
-                                    <Loader2 className="animate-spin text-blue-600 dark:text-blue-400" size={32} />
+                                    <Loader2 className="animate-spin text-blue-600 " size={32} />
                                 </div>
                             ) : breakdown.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-20 text-center">
-                                    <div className="w-16 h-16 bg-gray-50 dark:bg-gray-700/50 rounded-2xl flex items-center justify-center text-gray-300 dark:text-gray-500 mb-4">
+                                    <div className="w-16 h-16 bg-gray-50  rounded-2xl flex items-center justify-center text-gray-300  mb-4">
                                         <HardDrive size={32} />
                                     </div>
-                                    <p className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest whitespace-nowrap">No recordings found</p>
+                                    <p className="text-xs font-black text-gray-400  uppercase tracking-widest whitespace-nowrap">No recordings found</p>
                                 </div>
                             ) : breakdown.map((item) => (
                                 <div
                                     key={item.label}
-                                    className={`p-5 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors group ${((!drillDownMonth && viewType === 'time') || (!drillDownEmployee && viewType === 'employee')) ? 'cursor-pointer' : ''}`}
+                                    className={`p-5 flex items-center justify-between hover:bg-gray-50/50  transition-colors group ${((!drillDownMonth && viewType === 'time') || (!drillDownEmployee && viewType === 'employee')) ? 'cursor-pointer' : ''}`}
                                     onClick={() => {
                                         if (!drillDownMonth && viewType === 'time') {
                                             setDrillDownMonth(item.label);
@@ -409,17 +409,17 @@ export default function StoragePage() {
                                     }}
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 bg-gray-50 dark:bg-gray-700/50 rounded-xl flex items-center justify-center text-gray-400 dark:text-gray-500 group-hover:bg-white dark:group-hover:bg-gray-600 group-hover:text-blue-500 dark:group-hover:text-blue-300 transition-all shadow-sm border border-gray-100 dark:border-gray-600">
+                                        <div className="w-10 h-10 bg-gray-50  rounded-xl flex items-center justify-center text-gray-400  group-hover:bg-white  group-hover:text-blue-500  transition-all shadow-sm border border-gray-100 ">
                                             {(viewType === 'employee' && !drillDownEmployee) ? <Users size={18} /> : (item.label.length === 7 ? <Calendar size={18} /> : <Clock size={18} />)}
                                         </div>
                                         <div>
-                                            <p className="font-black text-gray-900 dark:text-white text-sm">
+                                            <p className="font-black text-gray-900  text-sm">
                                                 {formatDateLabel(item.label)}
                                                 {((!drillDownMonth && viewType === 'time') || (!drillDownEmployee && viewType === 'employee')) && (
                                                     <span className="ml-2 text-[10px] text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">Drill Down ↘</span>
                                                 )}
                                             </p>
-                                            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-tighter">
+                                            <p className="text-[10px] text-gray-500  font-bold uppercase tracking-tighter">
                                                 {formatBytes(item.size)} <span className="mx-1.5">•</span> {item.count} Files
                                             </p>
                                         </div>
@@ -429,10 +429,10 @@ export default function StoragePage() {
                                             onClick={() => handleDownload(drillDownEmployee ? 'month' : (viewType === 'time' ? (drillDownMonth ? 'date' : 'month') : 'employee'), item.label)}
                                             disabled={downloadingKey !== null}
                                             className={`h-10 px-4 border rounded-xl text-[10px] font-black uppercase transition-all shadow-sm flex items-center gap-2 active:scale-95 ${downloadingKey === `${drillDownEmployee ? 'month' : (viewType === 'time' ? (drillDownMonth ? 'date' : 'month') : 'employee')}-${item.label}`
-                                                ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400'
+                                                ? 'bg-blue-50  border-blue-300  text-blue-600 '
                                                 : downloadingKey
-                                                    ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                                                    : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-blue-500 dark:hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400'
+                                                    ? 'bg-gray-100  border-gray-200  text-gray-400  cursor-not-allowed'
+                                                    : 'bg-white  border-gray-200  text-gray-600  hover:border-blue-500  hover:text-blue-600 '
                                                 }`}
                                         >
                                             {downloadingKey === `${drillDownEmployee ? 'month' : (viewType === 'time' ? (drillDownMonth ? 'date' : 'month') : 'employee')}-${item.label}`
@@ -442,7 +442,7 @@ export default function StoragePage() {
                                         <button
                                             onClick={() => handleFilteredCleanup(drillDownEmployee ? 'month' : (viewType === 'time' ? (drillDownMonth ? 'date' : 'month') : 'employee'), item.label)}
                                             disabled={cleanupLoading === `${drillDownEmployee ? 'month' : (viewType === 'time' ? (drillDownMonth ? 'date' : 'month') : 'employee')}-${item.label}`}
-                                            className="h-10 w-10 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500 rounded-xl hover:border-red-500 dark:hover:border-red-500 hover:text-red-500 dark:hover:text-red-500 transition-all shadow-sm flex items-center justify-center active:scale-95"
+                                            className="h-10 w-10 bg-white  border border-gray-200  text-gray-400  rounded-xl hover:border-red-500  hover:text-red-500  transition-all shadow-sm flex items-center justify-center active:scale-95"
                                         >
                                             {cleanupLoading === `${viewType === 'time' ? (drillDownMonth ? 'date' : 'month') : 'employee'}-${item.label}`
                                                 ? <Loader2 size={14} className="animate-spin" />
@@ -464,7 +464,7 @@ export default function StoragePage() {
                 title={confirmModal.title}
             >
                 <div className="space-y-4">
-                    <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-800 dark:text-red-200 border border-red-100 dark:border-red-900/30">
+                    <div className="flex items-start gap-3 p-3 bg-red-50  rounded-lg text-red-800  border border-red-100 ">
                         <AlertTriangle className="shrink-0 mt-0.5" size={18} />
                         <p className="text-sm font-medium">{confirmModal.message}</p>
                     </div>
@@ -472,7 +472,7 @@ export default function StoragePage() {
                         <button
                             type="button"
                             onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
-                            className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium"
+                            className="flex-1 px-4 py-2 border border-gray-200  text-gray-600  rounded-lg hover:bg-gray-50  font-medium"
                         >
                             Cancel
                         </button>

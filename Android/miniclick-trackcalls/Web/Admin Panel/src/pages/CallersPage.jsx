@@ -61,12 +61,12 @@ const LabelCell = ({ labels, field, phone, onUpdate }) => {
 
     const getLabelColor = (label) => {
         const l = label.toLowerCase();
-        if (l.includes('vip') || l.includes('important') || l.includes('hot')) return 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-900/50';
-        if (l.includes('lead')) return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-900/50';
-        if (l.includes('spam') || l.includes('complaint')) return 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-900/50';
-        if (l.includes('follow')) return 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-900/50';
-        if (l.includes('resolved')) return 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-900/50';
-        return 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
+        if (l.includes('vip') || l.includes('important') || l.includes('hot')) return 'bg-amber-100 text-amber-700 border-amber-200   ';
+        if (l.includes('lead')) return 'bg-blue-100 text-blue-700 border-blue-200   ';
+        if (l.includes('spam') || l.includes('complaint')) return 'bg-rose-100 text-rose-700 border-rose-200   ';
+        if (l.includes('follow')) return 'bg-indigo-100 text-indigo-700 border-indigo-200   ';
+        if (l.includes('resolved')) return 'bg-emerald-100 text-emerald-700 border-emerald-200   ';
+        return 'bg-slate-100 text-slate-700 border-slate-200   ';
     };
 
     const handleAdd = (label) => {
@@ -103,17 +103,17 @@ const LabelCell = ({ labels, field, phone, onUpdate }) => {
                             else if (e.key === 'Escape') setIsAdding(false);
                         }}
                         onBlur={() => setTimeout(() => setIsAdding(false), 200)}
-                        className="text-[10px] px-2 py-0.5 border border-blue-400 rounded-lg outline-none w-28 bg-white dark:bg-gray-800 shadow-sm"
+                        className="text-[10px] px-2 py-0.5 border border-blue-400 rounded-lg outline-none w-28 bg-white  shadow-sm"
                         placeholder="Type label..."
                     />
-                    <div className="absolute left-0 top-full mt-1 w-40 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg shadow-xl z-50 p-1 flex flex-col gap-0.5 max-h-48 overflow-y-auto">
+                    <div className="absolute left-0 top-full mt-1 w-40 bg-white  border border-gray-100  rounded-lg shadow-xl z-50 p-1 flex flex-col gap-0.5 max-h-48 overflow-y-auto">
                         {defaultSuggestions
                             .filter(s => s.toLowerCase().includes(inputValue.toLowerCase()) && !currentLabels.includes(s))
                             .map(s => (
                                 <button
                                     key={s}
                                     onMouseDown={(e) => { e.preventDefault(); handleAdd(s); }}
-                                    className="w-full text-left px-2 py-1.5 text-[10px] hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded font-bold text-gray-700 dark:text-gray-300"
+                                    className="w-full text-left px-2 py-1.5 text-[10px] hover:bg-blue-50  rounded font-bold text-gray-700 "
                                 >
                                     {s}
                                 </button>
@@ -121,7 +121,7 @@ const LabelCell = ({ labels, field, phone, onUpdate }) => {
                         {inputValue.trim() && !defaultSuggestions.some(s => s.toLowerCase() === inputValue.toLowerCase().trim()) && (
                             <button
                                 onMouseDown={(e) => { e.preventDefault(); handleAdd(inputValue); }}
-                                className="w-full text-left px-2 py-1.5 text-[10px] hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded font-bold border-t border-gray-50 dark:border-gray-700 mt-1 pt-1"
+                                className="w-full text-left px-2 py-1.5 text-[10px] hover:bg-emerald-50  text-emerald-600  rounded font-bold border-t border-gray-50  mt-1 pt-1"
                             >
                                 + Add "{inputValue.trim()}"
                             </button>
@@ -131,7 +131,7 @@ const LabelCell = ({ labels, field, phone, onUpdate }) => {
             ) : (
                 <button
                     onClick={() => setIsAdding(true)}
-                    className="w-5 h-5 rounded-md flex items-center justify-center border border-dashed border-gray-300 text-gray-400 hover:border-blue-400 hover:text-blue-500 bg-white dark:bg-gray-800 transition-all shadow-sm"
+                    className="w-5 h-5 rounded-md flex items-center justify-center border border-dashed border-gray-300 text-gray-400 hover:border-blue-400 hover:text-blue-500 bg-white  transition-all shadow-sm"
                 >
                     <Plus size={12} />
                 </button>
@@ -142,10 +142,10 @@ const LabelCell = ({ labels, field, phone, onUpdate }) => {
 
 const MetricBadge = ({ label, value, icon: Icon, color = 'blue' }) => {
     const colorClasses = {
-        blue: 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/20 dark:text-blue-400',
-        green: 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400',
-        rose: 'bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-900/20 dark:text-rose-400',
-        amber: 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400'
+        blue: 'bg-blue-50 text-blue-700 border-blue-100  ',
+        green: 'bg-emerald-50 text-emerald-700 border-emerald-100  ',
+        rose: 'bg-rose-50 text-rose-700 border-rose-100  ',
+        amber: 'bg-amber-50 text-amber-700 border-amber-100  '
     };
     return (
         <div className={`flex flex-col items-center px-3 py-1.5 rounded-xl border ${colorClasses[color]} min-w-[64px]`}>
@@ -446,7 +446,7 @@ export default function CallersPage() {
                     />
 
                     <div className="flex items-center gap-3 w-full lg:w-auto ml-auto font-medium">
-                        <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-1 shadow-sm w-full lg:w-auto">
+                        <div className="flex items-center bg-white  border border-gray-200  rounded-xl p-1 shadow-sm w-full lg:w-auto">
                             <div className="relative flex-1 lg:flex-initial">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                                 <input
@@ -457,7 +457,7 @@ export default function CallersPage() {
                                     className="pl-9 pr-4 py-1.5 text-sm bg-transparent border-none outline-none w-full lg:w-56"
                                 />
                             </div>
-                            <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1.5"></div>
+                            <div className="w-px h-5 bg-gray-200  mx-1.5"></div>
                             <button
                                 onClick={() => setShowFilterBar(!showFilterBar)}
                                 className={`relative p-2 rounded-lg transition-all ${showFilterBar ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'text-gray-400 hover:bg-gray-50'}`}
@@ -472,7 +472,7 @@ export default function CallersPage() {
                         </div>
                         <button
                             onClick={() => setShowColumnCustomization(true)}
-                            className="p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-400 shadow-sm hover:text-blue-600 transition-all"
+                            className="p-2 bg-white  border border-gray-200  rounded-xl text-gray-400 shadow-sm hover:text-blue-600 transition-all"
                         >
                             <Columns size={16} />
                         </button>
@@ -481,11 +481,11 @@ export default function CallersPage() {
 
                 {/* Filter Bar */}
                 {showFilterBar && (
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-md p-5 animate-in slide-in-from-top-2 duration-200">
+                    <div className="bg-white  rounded-2xl border border-gray-100  shadow-md p-5 animate-in slide-in-from-top-2 duration-200">
                         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
                             <div className="space-y-1">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Connectivity</label>
-                                <select value={connectStatus} onChange={(e) => setConnectStatus(e.target.value)} className="w-full text-xs rounded-lg py-2 px-3 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 font-bold outline-none">
+                                <select value={connectStatus} onChange={(e) => setConnectStatus(e.target.value)} className="w-full text-xs rounded-lg py-2 px-3 border border-gray-200  bg-gray-50  font-bold outline-none">
                                     <option value="all">All Connections</option>
                                     <option value="connected">Has Connected</option>
                                     <option value="never_connected">Never Connected</option>
@@ -493,7 +493,7 @@ export default function CallersPage() {
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Total Duration</label>
-                                <select value={durationFilter} onChange={(e) => setDurationFilter(e.target.value)} className="w-full text-xs rounded-lg py-2 px-3 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 font-bold outline-none">
+                                <select value={durationFilter} onChange={(e) => setDurationFilter(e.target.value)} className="w-full text-xs rounded-lg py-2 px-3 border border-gray-200  bg-gray-50  font-bold outline-none">
                                     <option value="all">Any Duration</option>
                                     <option value="short">Short (&lt; 1m)</option>
                                     <option value="medium">Medium (1-10m)</option>
@@ -502,7 +502,7 @@ export default function CallersPage() {
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Interactions</label>
-                                <select value={interactionFilter} onChange={(e) => setInteractionFilter(e.target.value)} className="w-full text-xs rounded-lg py-2 px-3 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 font-bold outline-none">
+                                <select value={interactionFilter} onChange={(e) => setInteractionFilter(e.target.value)} className="w-full text-xs rounded-lg py-2 px-3 border border-gray-200  bg-gray-50  font-bold outline-none">
                                     <option value="all">Any Interactions</option>
                                     <option value="frequent">Frequent (&gt; 10)</option>
                                     <option value="rare">Rare (1-3)</option>
@@ -510,7 +510,7 @@ export default function CallersPage() {
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Notes Status</label>
-                                <select value={noteStatus} onChange={(e) => setNoteStatus(e.target.value)} className="w-full text-xs rounded-lg py-2 px-3 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 font-bold outline-none">
+                                <select value={noteStatus} onChange={(e) => setNoteStatus(e.target.value)} className="w-full text-xs rounded-lg py-2 px-3 border border-gray-200  bg-gray-50  font-bold outline-none">
                                     <option value="all">Any Note Status</option>
                                     <option value="has_note">With Notes</option>
                                     <option value="no_note">Without Notes</option>
@@ -518,7 +518,7 @@ export default function CallersPage() {
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Process Status</label>
-                                <select value={reviewStatus} onChange={(e) => setReviewStatus(e.target.value)} className="w-full text-xs rounded-lg py-2 px-3 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 font-bold outline-none">
+                                <select value={reviewStatus} onChange={(e) => setReviewStatus(e.target.value)} className="w-full text-xs rounded-lg py-2 px-3 border border-gray-200  bg-gray-50  font-bold outline-none">
                                     <option value="all">All Review Status</option>
                                     <option value="all_reviewed">Fully Reviewed</option>
                                     <option value="pending">Pending Review</option>
@@ -526,7 +526,7 @@ export default function CallersPage() {
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Last Call Type</label>
-                                <select value={lastCallType} onChange={(e) => setLastCallType(e.target.value)} className="w-full text-xs rounded-lg py-2 px-3 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 font-bold outline-none">
+                                <select value={lastCallType} onChange={(e) => setLastCallType(e.target.value)} className="w-full text-xs rounded-lg py-2 px-3 border border-gray-200  bg-gray-50  font-bold outline-none">
                                     <option value="all">Any Type</option>
                                     <option value="inbound">Inbound</option>
                                     <option value="outbound">Outbound</option>
@@ -534,7 +534,7 @@ export default function CallersPage() {
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">First Call Type</label>
-                                <select value={firstCallType} onChange={(e) => setFirstCallType(e.target.value)} className="w-full text-xs rounded-lg py-2 px-3 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 font-bold outline-none">
+                                <select value={firstCallType} onChange={(e) => setFirstCallType(e.target.value)} className="w-full text-xs rounded-lg py-2 px-3 border border-gray-200  bg-gray-50  font-bold outline-none">
                                     <option value="all">Any Type</option>
                                     <option value="inbound">Inbound</option>
                                     <option value="outbound">Outbound</option>
@@ -542,7 +542,7 @@ export default function CallersPage() {
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">In/Out Ratio</label>
-                                <select value={inOutRatioFilter} onChange={(e) => setInOutRatioFilter(e.target.value)} className="w-full text-xs rounded-lg py-2 px-3 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 font-bold outline-none">
+                                <select value={inOutRatioFilter} onChange={(e) => setInOutRatioFilter(e.target.value)} className="w-full text-xs rounded-lg py-2 px-3 border border-gray-200  bg-gray-50  font-bold outline-none">
                                     <option value="all">Any Ratio</option>
                                     <option value="more_in">More Inbound</option>
                                     <option value="more_out">More Outbound</option>
@@ -551,7 +551,7 @@ export default function CallersPage() {
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Recordings</label>
-                                <select value={recordingStatus} onChange={(e) => setRecordingStatus(e.target.value)} className="w-full text-xs rounded-lg py-2 px-3 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 font-bold outline-none">
+                                <select value={recordingStatus} onChange={(e) => setRecordingStatus(e.target.value)} className="w-full text-xs rounded-lg py-2 px-3 border border-gray-200  bg-gray-50  font-bold outline-none">
                                     <option value="all">Any Status</option>
                                     <option value="has_recordings">Available</option>
                                     <option value="no_recordings">None</option>
@@ -559,7 +559,7 @@ export default function CallersPage() {
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Labels</label>
-                                <select value={labelFilter} onChange={(e) => setLabelFilter(e.target.value)} className="w-full text-xs rounded-lg py-2 px-3 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 font-bold outline-none">
+                                <select value={labelFilter} onChange={(e) => setLabelFilter(e.target.value)} className="w-full text-xs rounded-lg py-2 px-3 border border-gray-200  bg-gray-50  font-bold outline-none">
                                     <option value="all">All Labels</option>
                                     {availableLabels.map(l => (
                                         <option key={l.label} value={l.label}>{l.label}</option>
@@ -576,10 +576,10 @@ export default function CallersPage() {
                 )}
 
                 {/* Table Container */}
-                <div className="card !p-0 overflow-hidden bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm transition-all duration-300">
+                <div className="card !p-0 overflow-hidden bg-white  border-gray-200  shadow-sm transition-all duration-300">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left table-fixed border-separate border-spacing-0">
-                            <thead className="bg-[#f8fafc] dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest text-[10px] whitespace-nowrap sticky top-0 z-20 shadow-sm">
+                            <thead className="bg-[#f8fafc]  border-b border-gray-100  text-gray-500  font-bold uppercase tracking-widest text-[10px] whitespace-nowrap sticky top-0 z-20 shadow-sm">
                                 <tr>
                                     {columnOrder.filter(id => visibleColumns.includes(id)).map(id => {
                                         const width = columnWidths[id] || 150;
@@ -590,7 +590,7 @@ export default function CallersPage() {
                                                 onDragStart={(e) => handleColumnDragStart(e, id)}
                                                 onDragOver={(e) => handleColumnDragOver(e, id)}
                                                 onDragEnd={handleColumnDragEnd}
-                                                className={`relative px-6 py-4 cursor-pointer hover:bg-gray-100/50 dark:hover:bg-gray-800 transition-colors group select-none ${draggedColumn === id ? 'opacity-40 bg-gray-50' : ''}`}
+                                                className={`relative px-6 py-4 cursor-pointer hover:bg-gray-100/50  transition-colors group select-none ${draggedColumn === id ? 'opacity-40 bg-gray-50' : ''}`}
                                                 style={{ width: `${width}px`, minWidth: `${width}px`, maxWidth: `${width}px` }}
                                                 onClick={() => {
                                                     if (id === 'contact') handleSort('name');
@@ -623,14 +623,14 @@ export default function CallersPage() {
                                     })}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                            <tbody className="divide-y divide-gray-50 ">
                                 {callers.length === 0 && !loading ? (
-                                    <tr><td colSpan={visibleColumns.length} className="px-6 py-24 text-center text-gray-400 font-bold uppercase tracking-widest text-xs bg-gray-50/50 dark:bg-gray-900/10">No callers found match these filters</td></tr>
+                                    <tr><td colSpan={visibleColumns.length} className="px-6 py-24 text-center text-gray-400 font-bold uppercase tracking-widest text-xs bg-gray-50/50 ">No callers found match these filters</td></tr>
                                 ) : callers.map((caller) => (
                                     <tr
                                         key={caller.phone}
                                         onClick={() => openPersonModal({ phone_number: caller.phone, contact_name: caller.name, person_labels: caller.label, person_note: caller.notes })}
-                                        className="hover:bg-blue-50/40 dark:hover:bg-blue-900/10 transition-all cursor-pointer group"
+                                        className="hover:bg-blue-50/40  transition-all cursor-pointer group"
                                     >
                                         {columnOrder.filter(id => visibleColumns.includes(id)).map(id => {
                                             const width = columnWidths[id] || 150;
@@ -644,17 +644,17 @@ export default function CallersPage() {
                                                 <td {...cellProps}>
                                                     <div className="flex items-center gap-3">
                                                         <div className="relative">
-                                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 text-white flex items-center justify-center font-black shadow-md text-sm border-2 border-white dark:border-gray-800 ring-1 ring-slate-200 dark:ring-slate-700">
+                                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 text-white flex items-center justify-center font-black shadow-md text-sm border-2 border-white  ring-1 ring-slate-200 ">
                                                                 {caller.name ? caller.name.charAt(0).toUpperCase() : <User size={16} />}
                                                             </div>
                                                             {Number(caller.unreviewed_count) === 0 && (
-                                                                <div className="absolute -top-1 -right-1 bg-emerald-500 text-white p-0.5 rounded-full shadow-sm ring-2 ring-white dark:ring-gray-800">
+                                                                <div className="absolute -top-1 -right-1 bg-emerald-500 text-white p-0.5 rounded-full shadow-sm ring-2 ring-white ">
                                                                     <CheckCircle2 size={10} />
                                                                 </div>
                                                             )}
                                                         </div>
                                                         <div className="min-w-0">
-                                                            <div className="font-bold text-gray-900 dark:text-gray-100 truncate text-sm tracking-tight group-hover:text-blue-600 transition-colors">{caller.name || 'Unknown'}</div>
+                                                            <div className="font-bold text-gray-900  truncate text-sm tracking-tight group-hover:text-blue-600 transition-colors">{caller.name || 'Unknown'}</div>
                                                             <div className="text-[10px] font-mono text-gray-400 flex items-center gap-1 mt-0.5"><Smartphone size={8} />{caller.phone}</div>
                                                         </div>
                                                     </div>
@@ -663,7 +663,7 @@ export default function CallersPage() {
                                             if (id === 'last_call_time') return (
                                                 <td {...cellProps}>
                                                     <div className="flex flex-col gap-0.5">
-                                                        <div className="text-xs font-black text-gray-900 dark:text-gray-100 uppercase">
+                                                        <div className="text-xs font-black text-gray-900  uppercase">
                                                             {format(new Date(caller.last_call + (caller.last_call.endsWith('Z') ? '' : 'Z')), 'p')}
                                                         </div>
                                                         <div className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">
@@ -675,7 +675,7 @@ export default function CallersPage() {
                                             if (id === 'person_note') return (
                                                 <td {...cellProps} onClick={(e) => { e.stopPropagation(); setEditingNote({ phone: caller.phone, notes: caller.notes, name: caller.name }); }}>
                                                     {caller.notes ? (
-                                                        <span className="text-gray-600 dark:text-gray-300 block truncate max-w-[140px] text-[11px] font-medium leading-relaxed bg-gray-50 dark:bg-gray-800/50 px-2 py-1 rounded border border-gray-100 dark:border-gray-700 italic" title={caller.notes}>"{caller.notes}"</span>
+                                                        <span className="text-gray-600  block truncate max-w-[140px] text-[11px] font-medium leading-relaxed bg-gray-50  px-2 py-1 rounded border border-gray-100  italic" title={caller.notes}>"{caller.notes}"</span>
                                                     ) : (
                                                         <button className="text-[10px] text-gray-300 hover:text-blue-500 flex items-center gap-1 font-bold uppercase transition-colors opacity-0 group-hover:opacity-100"><Plus size={10} /> Add Note</button>
                                                     )}
@@ -692,10 +692,10 @@ export default function CallersPage() {
                                                         <MetricBadge label="Calls" value={caller.total_calls} icon={Hash} color="blue" />
                                                         <MetricBadge label="Duration" value={formatDuration(caller.total_duration)} icon={BarChart3} color="green" />
                                                         <div className="flex flex-col items-start min-w-[50px] gap-1">
-                                                            <div className="flex items-center gap-1.5 text-[9px] font-black text-emerald-600 uppercase bg-emerald-50 dark:bg-emerald-900/20 px-1.5 py-0.5 rounded-md">
+                                                            <div className="flex items-center gap-1.5 text-[9px] font-black text-emerald-600 uppercase bg-emerald-50  px-1.5 py-0.5 rounded-md">
                                                                 <ArrowUpRight size={10} /> {caller.connected_calls}
                                                             </div>
-                                                            <div className="flex items-center gap-1.5 text-[9px] font-black text-rose-500 uppercase bg-rose-50 dark:bg-rose-900/20 px-1.5 py-0.5 rounded-md">
+                                                            <div className="flex items-center gap-1.5 text-[9px] font-black text-rose-500 uppercase bg-rose-50  px-1.5 py-0.5 rounded-md">
                                                                 <ArrowDownLeft size={10} /> {caller.missed_calls}
                                                             </div>
                                                         </div>
@@ -705,8 +705,8 @@ export default function CallersPage() {
                                             if (id === 'last_call_type') return (
                                                 <td {...cellProps}>
                                                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-black uppercase tracking-wider ${caller.last_call_type?.toLowerCase().includes('in')
-                                                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400'
-                                                        : 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/20 dark:text-blue-400'}`}>
+                                                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100  '
+                                                        : 'bg-blue-50 text-blue-600 border-blue-100  '}`}>
                                                         {caller.last_call_type?.toLowerCase().includes('in') ? <PhoneIncoming size={10} /> : <PhoneOutgoing size={10} />}
                                                         {caller.last_call_type?.toLowerCase().includes('in') ? 'Inbound' : 'Outbound'}
                                                     </span>
@@ -715,8 +715,8 @@ export default function CallersPage() {
                                             if (id === 'first_call_type') return (
                                                 <td {...cellProps}>
                                                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-black uppercase tracking-wider ${caller.first_call_type?.toLowerCase().includes('in')
-                                                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400'
-                                                        : 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/20 dark:text-blue-400'}`}>
+                                                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100  '
+                                                        : 'bg-blue-50 text-blue-600 border-blue-100  '}`}>
                                                         {caller.first_call_type?.toLowerCase().includes('in') ? <PhoneIncoming size={10} /> : <PhoneOutgoing size={10} />}
                                                         {caller.first_call_type?.toLowerCase().includes('in') ? 'Inbound' : 'Outbound'}
                                                     </span>
@@ -725,7 +725,7 @@ export default function CallersPage() {
                                             if (id === 'in_out_ratio') return (
                                                 <td {...cellProps}>
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden flex">
+                                                        <div className="w-10 h-1.5 bg-gray-100  rounded-full overflow-hidden flex">
                                                             <div className="h-full bg-emerald-500" style={{ width: `${Math.min(100, (Number(caller.in_out_ratio) || 0) * 50)}%` }} />
                                                             <div className="h-full bg-blue-500" style={{ width: `${Math.min(100, 100 - (Number(caller.in_out_ratio) || 0) * 50)}%` }} />
                                                         </div>
@@ -759,17 +759,17 @@ export default function CallersPage() {
                     </div>
 
                     {/* Pagination */}
-                    <div className="flex items-center justify-between p-5 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 backdrop-blur-md">
+                    <div className="flex items-center justify-between p-5 border-t border-gray-100  bg-gray-50/50  backdrop-blur-md">
                         <div className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-4">
                             <span>{pagination.total} unique contacts</span>
                             {loading && <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-ping" />}
                         </div>
                         <div className="flex items-center gap-3 font-bold">
-                            <button onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))} disabled={pagination.page <= 1} className="p-2 border border-gray-200 dark:border-gray-700 rounded-xl disabled:opacity-30 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+                            <button onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))} disabled={pagination.page <= 1} className="p-2 border border-gray-200  rounded-xl disabled:opacity-30 bg-white  hover:bg-gray-50  transition-colors shadow-sm">
                                 <ChevronLeft size={16} />
                             </button>
-                            <span className="text-xs font-black bg-white dark:bg-gray-800 px-4 py-2 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">PAGE {pagination.page} / {pagination.total_pages}</span>
-                            <button onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))} disabled={pagination.page >= pagination.total_pages} className="p-2 border border-gray-200 dark:border-gray-700 rounded-xl disabled:opacity-30 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+                            <span className="text-xs font-black bg-white  px-4 py-2 rounded-xl border border-gray-100  shadow-sm">PAGE {pagination.page} / {pagination.total_pages}</span>
+                            <button onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))} disabled={pagination.page >= pagination.total_pages} className="p-2 border border-gray-200  rounded-xl disabled:opacity-30 bg-white  hover:bg-gray-50  transition-colors shadow-sm">
                                 <ChevronRight size={16} />
                             </button>
                         </div>

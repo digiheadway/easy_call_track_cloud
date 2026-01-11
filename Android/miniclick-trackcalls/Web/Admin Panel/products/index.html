@@ -18,9 +18,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
 
-    <!-- Theme Initialization Script -->
-    <script src="/js/theme-toggle.js"></script>
-
     <!-- Feather Icons -->
     <script src="https://unpkg.com/feather-icons"></script>
 
@@ -28,7 +25,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: {
@@ -37,12 +33,7 @@
                     colors: {
                         brand: { 500: '#0ea5e9' },
                         crm: { 500: '#8b5cf6' },
-                        dialer: { 500: '#f97316' },
-                        dark: {
-                            bg: '#0B0F19',
-                            card: '#111827',
-                            border: '#1F2937'
-                        }
+                        dialer: { 500: '#f97316' }
                     }
                 }
             }
@@ -50,16 +41,16 @@
     </script>
     <style type="text/tailwindcss">
         .glass {
-            @apply bg-white/70 dark:bg-white/5 backdrop-blur-xl border-b border-gray-100 dark:border-white/5;
+            @apply bg-white/70 backdrop-blur-xl border-b border-gray-100;
         }
         .glass-card {
-            @apply bg-gray-50/80 dark:bg-gray-900/60 backdrop-blur-lg border border-gray-200 dark:border-dark-border transition-all duration-300;
+            @apply bg-gray-50/80 backdrop-blur-lg border border-gray-200 transition-all duration-300;
         }
         .glass-card:hover {
-            @apply border-brand-500/30 dark:border-white/20 -translate-y-1 shadow-xl shadow-brand-500/5;
+            @apply border-brand-500/30 -translate-y-1 shadow-xl shadow-brand-500/5;
         }
         body {
-            @apply bg-white text-gray-900 dark:bg-dark-bg dark:text-white transition-colors duration-300;
+            @apply bg-white text-gray-900 transition-colors duration-300;
         }
     </style>
 </head>
@@ -67,7 +58,7 @@
 <body class="antialiased overflow-x-hidden">
 
     <!-- Navbar -->
-    <nav class="fixed w-full z-50 transition-all duration-300 top-0 glass border-b border-white/5">
+    <nav class="fixed w-full z-50 transition-all duration-300 top-0 glass border-b border-gray-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
                 <a href="../" class="flex items-center gap-2">
@@ -80,15 +71,7 @@
                 </a>
                 <div class="hidden md:flex items-center gap-6">
                     <a href="../"
-                        class="text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-white transition-colors text-sm font-medium">Home</a>
-
-                    <!-- Theme Toggle -->
-                    <button onclick="toggleTheme()"
-                        class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-gray-500 dark:text-gray-400"
-                        title="Toggle Theme">
-                        <i data-feather="sun" class="w-5 h-5 block dark:hidden"></i>
-                        <i data-feather="moon" class="w-5 h-5 hidden dark:block"></i>
-                    </button>
+                        class="text-gray-600 hover:text-brand-600 transition-colors text-sm font-medium">Home</a>
 
                     <a href="../login/"
                         class="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2 rounded-full text-sm font-medium transition-all shadow-lg shadow-brand-500/20">
@@ -101,8 +84,8 @@
 
     <!-- Header -->
     <div class="pt-32 pb-12 text-center px-4">
-        <h1 class="text-4xl md:text-5xl font-bold mb-4 text-gray-900 dark:text-white">Our Products</h1>
-        <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">Tools designed to work together to help
+        <h1 class="text-4xl md:text-5xl font-bold mb-4 text-gray-900">Our Products</h1>
+        <p class="text-xl text-gray-600 max-w-2xl mx-auto">Tools designed to work together to help
             your business grow.
         </p>
     </div>
@@ -118,21 +101,17 @@
                     <i data-feather="phone-call" class="text-brand-500 w-8 h-8"></i>
                 </div>
                 <div class="flex-1 text-center md:text-left">
-                    <h2
-                        class="text-2xl font-bold mb-2 group-hover:text-brand-600 dark:group-hover:text-brand-500 transition-colors text-gray-900 dark:text-white">
+                    <h2 class="text-2xl font-bold mb-2 group-hover:text-brand-600 transition-colors text-gray-900">
                         Call Tracking</h2>
-                    <p class="text-gray-600 dark:text-gray-400 mb-4">The core of the MiniClick suite. Mobile app that
+                    <p class="text-gray-600 mb-4">The core of the MiniClick suite. Mobile app that
                         automatically syncs
                         call logs and recordings to the cloud.</p>
                     <ul class="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
-                        <li
-                            class="px-3 py-1 rounded-full bg-gray-100 dark:bg-white/5 text-xs text-gray-600 dark:text-gray-300">
+                        <li class="px-3 py-1 rounded-full bg-gray-100 text-xs text-gray-600">
                             Android App</li>
-                        <li
-                            class="px-3 py-1 rounded-full bg-gray-100 dark:bg-white/5 text-xs text-gray-600 dark:text-gray-300">
+                        <li class="px-3 py-1 rounded-full bg-gray-100 text-xs text-gray-600">
                             Cloud Sync</li>
-                        <li
-                            class="px-3 py-1 rounded-full bg-gray-100 dark:bg-white/5 text-xs text-gray-600 dark:text-gray-300">
+                        <li class="px-3 py-1 rounded-full bg-gray-100 text-xs text-gray-600">
                             Team Management</li>
                     </ul>
                 </div>
@@ -151,21 +130,17 @@
                     <i data-feather="grid" class="text-crm-500 w-8 h-8"></i>
                 </div>
                 <div class="flex-1 text-center md:text-left">
-                    <h2
-                        class="text-2xl font-bold mb-2 group-hover:text-crm-600 dark:group-hover:text-crm-500 transition-colors text-gray-900 dark:text-white">
+                    <h2 class="text-2xl font-bold mb-2 group-hover:text-crm-600 transition-colors text-gray-900">
                         Sales CRM</h2>
-                    <p class="text-gray-600 dark:text-gray-400 mb-4">Pipeline management made simple. Visualize deals,
+                    <p class="text-gray-600 mb-4">Pipeline management made simple. Visualize deals,
                         track leads, and
                         attach call recordings directly to contacts.</p>
                     <ul class="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
-                        <li
-                            class="px-3 py-1 rounded-full bg-gray-100 dark:bg-white/5 text-xs text-gray-600 dark:text-gray-300">
+                        <li class="px-3 py-1 rounded-full bg-gray-100 text-xs text-gray-600">
                             Pipeline Board</li>
-                        <li
-                            class="px-3 py-1 rounded-full bg-gray-100 dark:bg-white/5 text-xs text-gray-600 dark:text-gray-300">
+                        <li class="px-3 py-1 rounded-full bg-gray-100 text-xs text-gray-600">
                             Deal Stages</li>
-                        <li
-                            class="px-3 py-1 rounded-full bg-gray-100 dark:bg-white/5 text-xs text-gray-600 dark:text-gray-300">
+                        <li class="px-3 py-1 rounded-full bg-gray-100 text-xs text-gray-600">
                             Follow-up Tasks</li>
                     </ul>
                 </div>
@@ -184,21 +159,17 @@
                     <i data-feather="zap" class="text-dialer-500 w-8 h-8"></i>
                 </div>
                 <div class="flex-1 text-center md:text-left">
-                    <h2
-                        class="text-2xl font-bold mb-2 group-hover:text-dialer-600 dark:group-hover:text-dialer-500 transition-colors text-gray-900 dark:text-white">
+                    <h2 class="text-2xl font-bold mb-2 group-hover:text-dialer-600 transition-colors text-gray-900">
                         Auto Dialer</h2>
-                    <p class="text-gray-600 dark:text-gray-400 mb-4">High-velocity calling for inside sales teams.
+                    <p class="text-gray-600 mb-4">High-velocity calling for inside sales teams.
                         Import lists and power
                         dial through leads with zero downtime.</p>
                     <ul class="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
-                        <li
-                            class="px-3 py-1 rounded-full bg-gray-100 dark:bg-white/5 text-xs text-gray-600 dark:text-gray-300">
+                        <li class="px-3 py-1 rounded-full bg-gray-100 text-xs text-gray-600">
                             Predictive Dialing</li>
-                        <li
-                            class="px-3 py-1 rounded-full bg-gray-100 dark:bg-white/5 text-xs text-gray-600 dark:text-gray-300">
+                        <li class="px-3 py-1 rounded-full bg-gray-100 text-xs text-gray-600">
                             Campaign Manager</li>
-                        <li
-                            class="px-3 py-1 rounded-full bg-gray-100 dark:bg-white/5 text-xs text-gray-600 dark:text-gray-300">
+                        <li class="px-3 py-1 rounded-full bg-gray-100 text-xs text-gray-600">
                             Instant Connect</li>
                     </ul>
                 </div>
@@ -212,8 +183,7 @@
     </div>
 
     <!-- Footer -->
-    <footer
-        class="border-t border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-dark-bg py-8 text-center transition-colors">
+    <footer class="border-t border-gray-100 bg-gray-50 py-8 text-center transition-colors">
         <p class="text-gray-600 text-sm">© 2026 MiniClick. All rights reserved.</p>
     </footer>
 

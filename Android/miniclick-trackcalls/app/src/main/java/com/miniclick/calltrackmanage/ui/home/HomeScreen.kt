@@ -62,8 +62,8 @@ fun CallsScreen(
     var showDateJumpSheet by remember { mutableStateOf(false) }
     var showReorderModal by remember { mutableStateOf(false) }
     
-    val visibleCallFilters = uiState.visibleCallFilters
-    val visiblePersonFilters = uiState.visiblePersonFilters
+    val visibleCallFilters = remember(uiState.visibleCallFilters) { uiState.visibleCallFilters }
+    val visiblePersonFilters = remember(uiState.visiblePersonFilters) { uiState.visiblePersonFilters }
 
     val pagerState = rememberPagerState(
         initialPage = visibleCallFilters.indexOf(uiState.callTypeFilter).coerceAtLeast(0),
@@ -74,6 +74,12 @@ fun CallsScreen(
         initialPage = visiblePersonFilters.indexOf(uiState.personTabFilter).coerceAtLeast(0),
         pageCount = { visiblePersonFilters.size }
     )
+    
+    // Use a flag to prevent animations on first load
+    var isFirstComposition by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        isFirstComposition = false
+    }
     
     // Independent scroll states for each tab, keyed by filter to persist across reordering
     val scrollStatesMap = remember { mutableStateMapOf<CallTabFilter, LazyListState>() }
@@ -103,11 +109,6 @@ fun CallsScreen(
             .sorted() 
     }
 
-    // Refresh settings whenever this screen is displayed
-    LaunchedEffect(Unit) {
-        viewModel.refreshSettings()
-    }
-    
     // Modals are handled centrally in MainActivity via SettingsViewModel
 
     // Audio Picker
@@ -147,6 +148,17 @@ fun CallsScreen(
         context.registerReceiver(receiver, filter)
         onDispose {
             context.unregisterReceiver(receiver)
+        }
+    }
+
+    // Snap pagers to correct tab when view mode switches
+    LaunchedEffect(uiState.viewMode) {
+        if (uiState.viewMode == ViewMode.CALLS) {
+            val targetIndex = visibleCallFilters.indexOf(uiState.callTypeFilter)
+            if (targetIndex >= 0) pagerState.scrollToPage(targetIndex)
+        } else {
+            val targetIndex = visiblePersonFilters.indexOf(uiState.personTabFilter)
+            if (targetIndex >= 0) personPagerState.scrollToPage(targetIndex)
         }
     }
 
@@ -465,24 +477,30 @@ fun CallsScreen(
                         
                         LaunchedEffect(uiState.callTypeFilter) {
                             val targetIndex = visibleCallFilters.indexOf(uiState.callTypeFilter)
-                            if (targetIndex >= 0 && pagerState.targetPage != targetIndex && 
+                            if (targetIndex >= 0 && pagerState.currentPage != targetIndex && 
                                 !pagerState.isScrollInProgress) {
-                                pagerState.animateScrollToPage(targetIndex)
+                                if (isFirstComposition) {
+                                    pagerState.scrollToPage(targetIndex)
+                                } else {
+                                    pagerState.animateScrollToPage(targetIndex)
+                                }
                             }
                         }
                         
-                        CallTypeTabs(
-                            selectedFilter = if (pagerState.currentPage < visibleCallFilters.size) visibleCallFilters[pagerState.currentPage] else CallTabFilter.ALL,
-                            visibleFilters = visibleCallFilters,
-                            onFilterSelected = { filter ->
-                                scope.launch {
-                                    val index = visibleCallFilters.indexOf(filter)
-                                    if (index >= 0) pagerState.animateScrollToPage(index)
-                                }
-                            },
-                            onFilterLongClick = { inspectedCallFilter = it },
-                            counts = uiState.callTypeCounts
-                        )
+                        key("call_tabs") {
+                            CallTypeTabs(
+                                selectedFilter = if (pagerState.currentPage < visibleCallFilters.size) visibleCallFilters[pagerState.currentPage] else CallTabFilter.ALL,
+                                visibleFilters = visibleCallFilters,
+                                onFilterSelected = { filter ->
+                                    scope.launch {
+                                        val index = visibleCallFilters.indexOf(filter)
+                                        if (index >= 0) pagerState.animateScrollToPage(index)
+                                    }
+                                },
+                                onFilterLongClick = { inspectedCallFilter = it },
+                                counts = uiState.callTypeCounts
+                            )
+                        }
                     } else {
                         // Show red strip when viewing ignored persons
                         if (uiState.showIgnoredOnly) {
@@ -536,24 +554,30 @@ fun CallsScreen(
                         
                         LaunchedEffect(uiState.personTabFilter) {
                             val targetIndex = visiblePersonFilters.indexOf(uiState.personTabFilter)
-                            if (targetIndex >= 0 && personPagerState.targetPage != targetIndex && 
+                            if (targetIndex >= 0 && personPagerState.currentPage != targetIndex && 
                                 !personPagerState.isScrollInProgress) {
-                                personPagerState.animateScrollToPage(targetIndex)
+                                if (isFirstComposition) {
+                                    personPagerState.scrollToPage(targetIndex)
+                                } else {
+                                    personPagerState.animateScrollToPage(targetIndex)
+                                }
                             }
                         }
 
-                        PersonTypeTabs(
-                            selectedFilter = if (personPagerState.currentPage < visiblePersonFilters.size) visiblePersonFilters[personPagerState.currentPage] else PersonTabFilter.ALL,
-                            visibleFilters = visiblePersonFilters,
-                            onFilterSelected = { filter ->
-                                scope.launch {
-                                    val index = visiblePersonFilters.indexOf(filter)
-                                    if (index >= 0) personPagerState.animateScrollToPage(index)
-                                }
-                            },
-                            onFilterLongClick = { inspectedPersonFilter = it },
-                            counts = uiState.personTypeCounts
-                        )
+                        key("person_tabs") {
+                            PersonTypeTabs(
+                                selectedFilter = if (personPagerState.currentPage < visiblePersonFilters.size) visiblePersonFilters[personPagerState.currentPage] else PersonTabFilter.ALL,
+                                visibleFilters = visiblePersonFilters,
+                                onFilterSelected = { filter ->
+                                    scope.launch {
+                                        val index = visiblePersonFilters.indexOf(filter)
+                                        if (index >= 0) personPagerState.animateScrollToPage(index)
+                                    }
+                                },
+                                onFilterLongClick = { inspectedPersonFilter = it },
+                                counts = uiState.personTypeCounts
+                            )
+                        }
                     }
                 }
             }

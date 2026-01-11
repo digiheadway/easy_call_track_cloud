@@ -349,7 +349,7 @@ export default function EmployeesPage() {
                             placeholder="Search..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg w-full focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400"
+                            className="pl-9 pr-4 py-2 text-sm border border-gray-200  rounded-lg w-full focus:ring-2 focus:ring-blue-500 outline-none bg-white  text-gray-900  placeholder-gray-400"
                         />
                     </div>
                     <button
@@ -362,10 +362,10 @@ export default function EmployeesPage() {
                 </div>
             </div>
 
-            <div className="card !p-0 overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="card !p-0 overflow-hidden border border-gray-200  shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
-                        <thead className="bg-[#f8fafc] dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">
+                        <thead className="bg-[#f8fafc]  border-b border-gray-100  text-gray-500  font-medium whitespace-nowrap">
                             <tr>
                                 <th className="px-6 py-4">Employee</th>
                                 <th className="px-6 py-4">Pairing Code</th>
@@ -375,23 +375,23 @@ export default function EmployeesPage() {
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                        <tbody className="divide-y divide-gray-100 ">
                             {filteredEmployees.map((emp) => {
                                 const pairingCode = getPairingCode(emp);
                                 return (
-                                    <tr key={emp.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
+                                    <tr key={emp.id} className="hover:bg-gray-50  transition-colors group">
                                         <td className="px-6 py-4">
                                             <div
                                                 className="flex items-center gap-3 cursor-pointer hover:opacity-70 transition-opacity"
                                                 onClick={() => handleOpenModal(emp)}
                                             >
-                                                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm shadow-sm">
+                                                <div className="w-10 h-10 rounded-full bg-blue-100  text-blue-600  flex items-center justify-center font-bold text-sm shadow-sm">
                                                     {emp.name?.substring(0, 2).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <div className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
+                                                    <div className="font-bold text-gray-900  flex items-center gap-1.5">
                                                         {emp.name}
-                                                        <Settings size={12} className="text-gray-300 dark:text-gray-600 group-hover:text-blue-400" />
+                                                        <Settings size={12} className="text-gray-300  group-hover:text-blue-400" />
                                                     </div>
                                                     <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Click to Edit</div>
                                                 </div>
@@ -399,12 +399,12 @@ export default function EmployeesPage() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
-                                                <code className="bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-md text-sm font-mono font-black text-gray-600 dark:text-gray-300 tracking-wider border border-gray-100 dark:border-gray-700 shadow-sm">
+                                                <code className="bg-gray-50  px-2 py-1 rounded-md text-sm font-mono font-black text-gray-600  tracking-wider border border-gray-100  shadow-sm">
                                                     {pairingCode}
                                                 </code>
                                                 <button
                                                     onClick={() => copyToClipboard(pairingCode)}
-                                                    className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                                    className="p-1.5 hover:bg-gray-100  rounded-md text-gray-400 hover:text-blue-600  transition-colors"
                                                 >
                                                     {copiedCode === pairingCode ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
                                                 </button>
@@ -413,7 +413,7 @@ export default function EmployeesPage() {
                                         <td className="px-6 py-4">
                                             {emp.last_sync ? (
                                                 <div className="flex flex-col">
-                                                    <div className="flex items-center gap-2 text-gray-900 dark:text-gray-100 font-bold whitespace-nowrap">
+                                                    <div className="flex items-center gap-2 text-gray-900  font-bold whitespace-nowrap">
                                                         <RefreshCw size={12} className="text-blue-500" />
                                                         <span>{format(emp.last_sync, 'h:mm a')}</span>
                                                     </div>
@@ -428,29 +428,29 @@ export default function EmployeesPage() {
                                         <td className="px-6 py-4">
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); setSelectedEmployee(emp); setIsTrackingModalOpen(true); }}
-                                                className="group/track flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-all border border-transparent hover:border-gray-100 dark:hover:border-gray-700"
+                                                className="group/track flex items-center gap-2 p-2 hover:bg-gray-50  rounded-xl transition-all border border-transparent hover:border-gray-100 "
                                             >
-                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${emp.track_calls ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${emp.track_calls ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100  text-gray-400'}`}>
                                                     <PhoneCall size={14} />
                                                 </div>
-                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${emp.track_recordings ? 'bg-purple-600 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${emp.track_recordings ? 'bg-purple-600 text-white shadow-sm' : 'bg-gray-100  text-gray-400'}`}>
                                                     <Mic size={14} />
                                                 </div>
-                                                <Settings size={12} className="text-gray-300 dark:text-gray-600 group-hover/track:text-blue-500 transition-colors ml-1" />
+                                                <Settings size={12} className="text-gray-300  group-hover/track:text-blue-500 transition-colors ml-1" />
                                             </button>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center gap-2">
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); setSelectedEmployee(emp); setIsDeviceModalOpen(true); }}
-                                                    className="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-100 dark:hover:border-blue-900/30 transition-all shadow-sm active:scale-95 flex items-center gap-1.5"
+                                                    className="px-3 py-1.5 bg-gray-50  border border-gray-100  text-gray-600  rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-blue-50  hover:text-blue-600  hover:border-blue-100  transition-all shadow-sm active:scale-95 flex items-center gap-1.5"
                                                 >
                                                     <Smartphone size={14} />
                                                     Device
                                                 </button>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); setSelectedEmployee(emp); setIsControlsModalOpen(true); }}
-                                                    className="px-3 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-600 dark:hover:text-orange-400 hover:border-orange-100 dark:hover:border-orange-900/30 transition-all shadow-sm active:scale-95 flex items-center gap-1.5"
+                                                    className="px-3 py-1.5 bg-gray-50  border border-gray-100  text-gray-600  rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-orange-50  hover:text-orange-600  hover:border-orange-100  transition-all shadow-sm active:scale-95 flex items-center gap-1.5"
                                                 >
                                                     <Settings size={14} />
                                                     Controls
@@ -460,7 +460,7 @@ export default function EmployeesPage() {
                                         <td className="px-6 py-4 text-right">
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); handleDelete(emp); }}
-                                                className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 transition-all active:scale-95"
+                                                className="p-2 hover:bg-red-50  rounded-lg text-gray-300  hover:text-red-500  transition-all active:scale-95"
                                                 title="Delete"
                                             >
                                                 <Trash2 size={18} />
@@ -507,7 +507,7 @@ export default function EmployeesPage() {
 
 
                         {!editingEmployee && (
-                            <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 p-4 rounded-lg text-sm">
+                            <div className="bg-blue-50  text-blue-700  p-4 rounded-lg text-sm">
                                 A pairing code will be generated automatically after you create this employee.
                             </div>
                         )}
@@ -539,7 +539,7 @@ export default function EmployeesPage() {
                 title={confirmModal.title}
             >
                 <div className="space-y-4">
-                    <div className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-orange-800 dark:text-orange-300 border border-orange-100 dark:border-orange-900/30">
+                    <div className="flex items-start gap-3 p-3 bg-orange-50  rounded-lg text-orange-800  border border-orange-100 ">
                         <AlertTriangle className="shrink-0 mt-0.5" size={18} />
                         <p className="text-sm font-medium">{confirmModal.message}</p>
                     </div>
@@ -576,31 +576,31 @@ export default function EmployeesPage() {
                 title="Device Information"
             >
                 <div className="space-y-6">
-                    <div className="flex items-center gap-4 p-5 bg-blue-50 dark:bg-blue-900/20 rounded-[2rem] border border-blue-100 dark:border-blue-900/30">
-                        <div className="w-14 h-14 bg-white dark:bg-blue-900 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm border border-blue-100 dark:border-blue-800">
+                    <div className="flex items-center gap-4 p-5 bg-blue-50  rounded-[2rem] border border-blue-100 ">
+                        <div className="w-14 h-14 bg-white  rounded-2xl flex items-center justify-center text-blue-600  shadow-sm border border-blue-100 ">
                             <Smartphone size={32} />
                         </div>
                         <div>
-                            <h4 className="font-black text-gray-900 dark:text-white">{selectedEmployee?.device_model || 'Unknown Device'}</h4>
-                            <p className="text-xs text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider">Device Linked</p>
+                            <h4 className="font-black text-gray-900 ">{selectedEmployee?.device_model || 'Unknown Device'}</h4>
+                            <p className="text-xs text-blue-600  font-bold uppercase tracking-wider">Device Linked</p>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+                        <div className="p-4 bg-gray-50  rounded-2xl border border-gray-100 ">
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Phone Number</p>
-                            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{selectedEmployee?.device_phone || 'N/A'}</p>
+                            <p className="text-sm font-bold text-gray-900 ">{selectedEmployee?.device_phone || 'N/A'}</p>
                         </div>
-                        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+                        <div className="p-4 bg-gray-50  rounded-2xl border border-gray-100 ">
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">OS Version</p>
-                            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">Android {selectedEmployee?.os_version || 'N/A'}</p>
+                            <p className="text-sm font-bold text-gray-900 ">Android {selectedEmployee?.os_version || 'N/A'}</p>
                         </div>
-                        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+                        <div className="p-4 bg-gray-50  rounded-2xl border border-gray-100 ">
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Battery Level</p>
                             <div className="flex items-center gap-2">
-                                <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{selectedEmployee?.battery_level != null ? `${selectedEmployee.battery_level}%` : 'N/A'}</p>
+                                <p className="text-sm font-bold text-gray-900 ">{selectedEmployee?.battery_level != null ? `${selectedEmployee.battery_level}%` : 'N/A'}</p>
                                 {selectedEmployee?.battery_level != null && (
-                                    <div className="w-8 h-4 bg-gray-200 dark:bg-gray-700 rounded-sm p-0.5 relative">
+                                    <div className="w-8 h-4 bg-gray-200  rounded-sm p-0.5 relative">
                                         <div
                                             className={`h-full rounded-sm ${selectedEmployee.battery_level > 20 ? 'bg-green-500' : 'bg-red-500'}`}
                                             style={{ width: `${selectedEmployee.battery_level}%` }}
@@ -609,13 +609,13 @@ export default function EmployeesPage() {
                                 )}
                             </div>
                         </div>
-                        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 col-span-2">
+                        <div className="p-4 bg-gray-50  rounded-2xl border border-gray-100  col-span-2">
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Device ID</p>
-                            <p className="text-[10px] font-mono font-bold text-gray-900 dark:text-gray-100 break-all">{selectedEmployee?.device_id || 'N/A'}</p>
+                            <p className="text-[10px] font-mono font-bold text-gray-900  break-all">{selectedEmployee?.device_id || 'N/A'}</p>
                         </div>
-                        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 col-span-2">
+                        <div className="p-4 bg-gray-50  rounded-2xl border border-gray-100  col-span-2">
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Last Synchronization</p>
-                            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                            <p className="text-sm font-bold text-gray-900 ">
                                 {selectedEmployee?.last_sync ? format(selectedEmployee.last_sync, 'MMM d, yyyy h:mm a') : 'Never'}
                             </p>
                         </div>
@@ -637,19 +637,19 @@ export default function EmployeesPage() {
                 title="App & Enterprise Controls"
             >
                 <div className="space-y-6">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium bg-orange-50 dark:bg-orange-900/20 p-3 rounded-xl border border-orange-100 dark:border-orange-900/30 text-orange-700 dark:text-orange-300">
+                    <p className="text-xs text-gray-500  font-medium bg-orange-50  p-3 rounded-xl border border-orange-100  text-orange-700 ">
                         Configure advanced tracking permissions for <strong>{selectedEmployee?.name || 'Employee'}</strong>.
                     </p>
 
                     <div className="space-y-3">
-                        <label className="flex items-center justify-between cursor-pointer p-4 rounded-2xl border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group">
+                        <label className="flex items-center justify-between cursor-pointer p-4 rounded-2xl border border-gray-100  hover:bg-gray-50  transition-all group">
                             <div className="flex items-center gap-3">
-                                <div className={`p-2.5 rounded-xl ${selectedEmployee?.allow_personal_exclusion ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'} group-hover:scale-110 transition-transform`}>
+                                <div className={`p-2.5 rounded-xl ${selectedEmployee?.allow_personal_exclusion ? 'bg-orange-100  text-orange-600 ' : 'bg-gray-100  text-gray-400'} group-hover:scale-110 transition-transform`}>
                                     <UserX size={20} />
                                 </div>
                                 <div>
-                                    <div className="text-sm font-black text-gray-900 dark:text-gray-100">Personal Exclusion</div>
-                                    <div className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Allow manual contact exclusion</div>
+                                    <div className="text-sm font-black text-gray-900 ">Personal Exclusion</div>
+                                    <div className="text-[10px] text-gray-500  font-medium">Allow manual contact exclusion</div>
                                 </div>
                             </div>
                             <button
@@ -668,14 +668,14 @@ export default function EmployeesPage() {
                             </button>
                         </label>
 
-                        <label className="flex items-center justify-between cursor-pointer p-4 rounded-2xl border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group">
+                        <label className="flex items-center justify-between cursor-pointer p-4 rounded-2xl border border-gray-100  hover:bg-gray-50  transition-all group">
                             <div className="flex items-center gap-3">
-                                <div className={`p-2.5 rounded-xl ${selectedEmployee?.allow_changing_tracking_start_date ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'} group-hover:scale-110 transition-transform`}>
+                                <div className={`p-2.5 rounded-xl ${selectedEmployee?.allow_changing_tracking_start_date ? 'bg-green-100  text-green-600 ' : 'bg-gray-100  text-gray-400'} group-hover:scale-110 transition-transform`}>
                                     <CalendarClock size={20} />
                                 </div>
                                 <div>
-                                    <div className="text-sm font-black text-gray-900 dark:text-gray-100">Change Start Date</div>
-                                    <div className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Manual tracking start control</div>
+                                    <div className="text-sm font-black text-gray-900 ">Change Start Date</div>
+                                    <div className="text-[10px] text-gray-500  font-medium">Manual tracking start control</div>
                                 </div>
                             </div>
                             <button
@@ -694,14 +694,14 @@ export default function EmployeesPage() {
                             </button>
                         </label>
 
-                        <label className="flex items-center justify-between cursor-pointer p-4 rounded-2xl border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group">
+                        <label className="flex items-center justify-between cursor-pointer p-4 rounded-2xl border border-gray-100  hover:bg-gray-50  transition-all group">
                             <div className="flex items-center gap-3">
-                                <div className={`p-2.5 rounded-xl ${selectedEmployee?.allow_updating_tracking_sims ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'} group-hover:scale-110 transition-transform`}>
+                                <div className={`p-2.5 rounded-xl ${selectedEmployee?.allow_updating_tracking_sims ? 'bg-indigo-100  text-indigo-600 ' : 'bg-gray-100  text-gray-400'} group-hover:scale-110 transition-transform`}>
                                     <SmartphoneNfc size={20} />
                                 </div>
                                 <div>
-                                    <div className="text-sm font-black text-gray-900 dark:text-gray-100">Update Tracked SIMs</div>
-                                    <div className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">SIM management from device</div>
+                                    <div className="text-sm font-black text-gray-900 ">Update Tracked SIMs</div>
+                                    <div className="text-[10px] text-gray-500  font-medium">SIM management from device</div>
                                 </div>
                             </div>
                             <button
@@ -737,19 +737,19 @@ export default function EmployeesPage() {
                 title="Tracking Configuration"
             >
                 <div className="space-y-6">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-900/30 text-blue-700 dark:text-blue-300">
+                    <p className="text-xs text-gray-500  font-medium bg-blue-50  p-3 rounded-xl border border-blue-100  text-blue-700 ">
                         Select which activities to track for <strong>{selectedEmployee?.name || 'Employee'}</strong>.
                     </p>
 
                     <div className="space-y-3">
-                        <label className="flex items-center justify-between cursor-pointer p-4 rounded-2xl border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group">
+                        <label className="flex items-center justify-between cursor-pointer p-4 rounded-2xl border border-gray-100  hover:bg-gray-50  transition-all group">
                             <div className="flex items-center gap-3">
-                                <div className={`p-2.5 rounded-xl ${selectedEmployee?.track_calls ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'} group-hover:scale-110 transition-transform`}>
+                                <div className={`p-2.5 rounded-xl ${selectedEmployee?.track_calls ? 'bg-blue-100  text-blue-600 ' : 'bg-gray-100  text-gray-400'} group-hover:scale-110 transition-transform`}>
                                     <PhoneCall size={20} />
                                 </div>
                                 <div>
-                                    <div className="text-sm font-black text-gray-900 dark:text-gray-100">Track Calls</div>
-                                    <div className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Sync call logs from this device</div>
+                                    <div className="text-sm font-black text-gray-900 ">Track Calls</div>
+                                    <div className="text-[10px] text-gray-500  font-medium">Sync call logs from this device</div>
                                 </div>
                             </div>
                             <button
@@ -769,14 +769,14 @@ export default function EmployeesPage() {
                             </button>
                         </label>
 
-                        <label className="flex items-center justify-between cursor-pointer p-4 rounded-2xl border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all group">
+                        <label className="flex items-center justify-between cursor-pointer p-4 rounded-2xl border border-gray-100  hover:bg-gray-50  transition-all group">
                             <div className="flex items-center gap-3">
-                                <div className={`p-2.5 rounded-xl ${selectedEmployee?.track_recordings ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'} group-hover:scale-110 transition-transform`}>
+                                <div className={`p-2.5 rounded-xl ${selectedEmployee?.track_recordings ? 'bg-purple-100  text-purple-600 ' : 'bg-gray-100  text-gray-400'} group-hover:scale-110 transition-transform`}>
                                     <Mic size={20} />
                                 </div>
                                 <div>
-                                    <div className="text-sm font-black text-gray-900 dark:text-gray-100">Track Recordings</div>
-                                    <div className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">Upload audio logs (if available)</div>
+                                    <div className="text-sm font-black text-gray-900 ">Track Recordings</div>
+                                    <div className="text-[10px] text-gray-500  font-medium">Upload audio logs (if available)</div>
                                 </div>
                             </div>
                             <button
@@ -828,13 +828,13 @@ export default function EmployeesPage() {
             >
                 <div className="space-y-5">
                     {/* Employee Header */}
-                    <div className="flex items-center gap-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-2xl border border-red-100 dark:border-red-900/30">
-                        <div className="w-12 h-12 bg-red-100 dark:bg-red-900/50 rounded-xl flex items-center justify-center text-red-600 dark:text-red-400">
+                    <div className="flex items-center gap-4 p-4 bg-red-50  rounded-2xl border border-red-100 ">
+                        <div className="w-12 h-12 bg-red-100  rounded-xl flex items-center justify-center text-red-600 ">
                             <User size={24} />
                         </div>
                         <div>
-                            <h4 className="font-black text-gray-900 dark:text-white">{deletionEmployee?.name}</h4>
-                            <p className="text-xs text-red-600 dark:text-red-400 font-bold uppercase tracking-wider">
+                            <h4 className="font-black text-gray-900 ">{deletionEmployee?.name}</h4>
+                            <p className="text-xs text-red-600  font-bold uppercase tracking-wider">
                                 {deletionEmployee?.status === 'inactive' ? 'Archived' : 'Active Employee'}
                             </p>
                         </div>
@@ -853,14 +853,14 @@ export default function EmployeesPage() {
                         <div className="space-y-3">
                             {/* Delete Calls & Data */}
                             <div className={`p-4 rounded-2xl border transition-all ${callsDeleted || (deletionStats.calls_count === 0 && deletionStats.contacts_count === 0)
-                                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30'
-                                : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700'
+                                ? 'bg-green-50  border-green-200 '
+                                : 'bg-gray-50  border-gray-100 '
                                 }`}>
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex items-start gap-3">
                                         <div className={`p-2.5 rounded-xl ${callsDeleted || (deletionStats.calls_count === 0 && deletionStats.contacts_count === 0)
-                                            ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400'
-                                            : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                            ? 'bg-green-100  text-green-600 '
+                                            : 'bg-blue-100  text-blue-600 '
                                             }`}>
                                             {callsDeleted || (deletionStats.calls_count === 0 && deletionStats.contacts_count === 0)
                                                 ? <CheckCircle2 size={20} />
@@ -868,10 +868,10 @@ export default function EmployeesPage() {
                                             }
                                         </div>
                                         <div>
-                                            <div className="text-sm font-black text-gray-900 dark:text-gray-100">
+                                            <div className="text-sm font-black text-gray-900 ">
                                                 Calls & Contacts Data
                                             </div>
-                                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                            <div className="text-xs text-gray-500  mt-0.5">
                                                 {deletionStats.calls_count === 0 && deletionStats.contacts_count === 0
                                                     ? 'No data to delete'
                                                     : `${deletionStats.calls_count - deletionStats.recordings_count} calls, ${deletionStats.contacts_count} contacts`
@@ -883,7 +883,7 @@ export default function EmployeesPage() {
                                         <button
                                             onClick={handleDeleteCalls}
                                             disabled={deletingCalls}
-                                            className="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-xs font-bold hover:bg-red-200 dark:hover:bg-red-900/50 transition-all disabled:opacity-50 flex items-center gap-1.5"
+                                            className="px-3 py-1.5 bg-red-100  text-red-600  rounded-lg text-xs font-bold hover:bg-red-200  transition-all disabled:opacity-50 flex items-center gap-1.5"
                                         >
                                             {deletingCalls ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                                             Delete
@@ -894,14 +894,14 @@ export default function EmployeesPage() {
 
                             {/* Delete Recordings */}
                             <div className={`p-4 rounded-2xl border transition-all ${recordingsDeleted || deletionStats.recordings_count === 0
-                                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30'
-                                : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700'
+                                ? 'bg-green-50  border-green-200 '
+                                : 'bg-gray-50  border-gray-100 '
                                 }`}>
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex items-start gap-3">
                                         <div className={`p-2.5 rounded-xl ${recordingsDeleted || deletionStats.recordings_count === 0
-                                            ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400'
-                                            : 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                                            ? 'bg-green-100  text-green-600 '
+                                            : 'bg-purple-100  text-purple-600 '
                                             }`}>
                                             {recordingsDeleted || deletionStats.recordings_count === 0
                                                 ? <CheckCircle2 size={20} />
@@ -909,10 +909,10 @@ export default function EmployeesPage() {
                                             }
                                         </div>
                                         <div>
-                                            <div className="text-sm font-black text-gray-900 dark:text-gray-100">
+                                            <div className="text-sm font-black text-gray-900 ">
                                                 Recordings & Storage
                                             </div>
-                                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                            <div className="text-xs text-gray-500  mt-0.5">
                                                 {deletionStats.recordings_count === 0
                                                     ? 'No recordings to delete'
                                                     : `${deletionStats.recordings_count} files • ${formatBytes(deletionStats.recordings_size_bytes)}`
@@ -924,7 +924,7 @@ export default function EmployeesPage() {
                                         <button
                                             onClick={handleDeleteRecordings}
                                             disabled={deletingRecordings}
-                                            className="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-xs font-bold hover:bg-red-200 dark:hover:bg-red-900/50 transition-all disabled:opacity-50 flex items-center gap-1.5"
+                                            className="px-3 py-1.5 bg-red-100  text-red-600  rounded-lg text-xs font-bold hover:bg-red-200  transition-all disabled:opacity-50 flex items-center gap-1.5"
                                         >
                                             {deletingRecordings ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                                             Delete
@@ -936,10 +936,10 @@ export default function EmployeesPage() {
                             {/* Divider */}
                             <div className="relative py-2">
                                 <div className="absolute inset-0 flex items-center">
-                                    <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+                                    <div className="w-full border-t border-gray-200 "></div>
                                 </div>
                                 <div className="relative flex justify-center">
-                                    <span className="px-3 bg-white dark:bg-gray-900 text-[10px] font-black uppercase tracking-widest text-gray-400">Actions</span>
+                                    <span className="px-3 bg-white  text-[10px] font-black uppercase tracking-widest text-gray-400">Actions</span>
                                 </div>
                             </div>
 
@@ -954,7 +954,7 @@ export default function EmployeesPage() {
                                         disabled={!canDelete}
                                         className={`w-full p-4 rounded-2xl border transition-all flex items-center justify-between ${canDelete
                                             ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
-                                            : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 cursor-not-allowed'
+                                            : 'bg-gray-100  border-gray-200  text-gray-400 cursor-not-allowed'
                                             }`}
                                     >
                                         <div className="flex items-center gap-3">
@@ -967,7 +967,7 @@ export default function EmployeesPage() {
                                             </div>
                                         </div>
                                         {!canDelete && (
-                                            <div className="px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded text-[10px] font-black uppercase">
+                                            <div className="px-2 py-1 bg-orange-100  text-orange-600  rounded text-[10px] font-black uppercase">
                                                 Locked
                                             </div>
                                         )}
@@ -980,8 +980,8 @@ export default function EmployeesPage() {
                                 onClick={handleArchiveEmployee}
                                 disabled={deletionEmployee?.status === 'inactive'}
                                 className={`w-full p-4 rounded-2xl border transition-all flex items-center gap-3 ${deletionEmployee?.status === 'inactive'
-                                    ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 cursor-not-allowed'
-                                    : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30'
+                                    ? 'bg-gray-100  border-gray-200  text-gray-400 cursor-not-allowed'
+                                    : 'bg-amber-50  border-amber-200  text-amber-700  hover:bg-amber-100 '
                                     }`}
                             >
                                 <Archive size={20} />
@@ -1000,7 +1000,7 @@ export default function EmployeesPage() {
                     {/* Cancel Button */}
                     <button
                         onClick={() => setIsDeletionModalOpen(false)}
-                        className="w-full btn bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                        className="w-full btn bg-gray-100  text-gray-700  hover:bg-gray-200 "
                     >
                         Cancel
                     </button>

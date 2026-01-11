@@ -260,6 +260,18 @@ class SettingsViewModel @javax.inject.Inject constructor(
             }
         }
 
+        // Observe SIM Phone Numbers (auto-detected)
+        viewModelScope.launch {
+            settingsRepository.getCallerPhoneSim1Flow().collect { phone ->
+                _uiState.update { it.copy(callerPhoneSim1 = phone) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getCallerPhoneSim2Flow().collect { phone ->
+                _uiState.update { it.copy(callerPhoneSim2 = phone) }
+            }
+        }
+
         // Observe tracking info
         viewModelScope.launch {
             recordingRepository.getRecordingCountFlow().collect { count: Int ->
