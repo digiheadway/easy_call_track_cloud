@@ -33,6 +33,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private var lastUsedSimSelection: String? = null
     private var lastComputedGroups: Map<String, PersonGroup> = emptyMap()
     private var lastLogsForGroupsByPhone: Map<String, List<CallDataEntity>> = emptyMap()
+    
+    private val viewModelStartTime = System.currentTimeMillis()
+    private var isFirstLoadComplete = false
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -41,32 +44,51 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         // STARTUP OPTIMIZATION: Load minimal settings synchronously for immediate UI
         loadSettingsSync()
         
-        // STARTUP OPTIMIZATION: Defer heavy work until after first frame
-        // This allows Compose to render immediately while heavy work happens in background
+        // STARTUP OPTIMIZATION: Stagger heavy work to prevent recomposition storms
+        // This spreads state updates over time to keep UI responsive
+        
+        // Phase 1 (50ms): Start critical database observers
         viewModelScope.launch {
-            // Small delay to let the first frame render
-            kotlinx.coroutines.delay(100)
-            
-            // Start heavy database observers after first frame
-            startDatabaseObservers()
-            
-            // Trigger async initialization
+            kotlinx.coroutines.delay(50)
+            startCriticalObservers()
+        }
+        
+        // Phase 2 (200ms): Load settings and trigger initial filter
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(200)
             kotlinx.coroutines.withContext(Dispatchers.IO) {
                 refreshSettings()
                 loadRecordingPath()
             }
             triggerFilter()
-            
-            // Sync from system after a brief delay
-            kotlinx.coroutines.delay(200)
-            syncFromSystem()
+        }
+        
+        // Phase 3 (400ms): Start secondary observers  
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(400)
+            startSecondaryObservers()
+        }
+        
+        // Phase 4 (600ms): Sync from system (heavy operation)
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(600)
+            if (settingsRepository.isSetupGuideCompleted()) {
+                syncFromSystem()
+            }
+        }
+        
+        // Final Loading Termination (1.6s): Ensure shimmers stop even if DB is empty
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(1600)
+            if (_uiState.value.isLoading) {
+                triggerFilter()
+            }
         }
 
         // Network observer is lightweight, can start immediately
         viewModelScope.launch {
             networkObserver.observe().collect { isAvailable ->
                 _uiState.update { it.copy(isNetworkAvailable = isAvailable) }
-                // If network becomes available and we have pending syncs, trigger sync
                 if (isAvailable && _uiState.value.pendingSyncCount > 0 && _uiState.value.isSyncSetup) {
                      syncNow()
                 }
@@ -75,10 +97,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
     
     /**
-     * Starts database Flow observers. Called after first frame to avoid blocking initial render.
+     * Critical observers needed for basic UI functionality.
      */
-    private fun startDatabaseObservers() {
-        // Observe Room DB for real-time updates
+    private fun startCriticalObservers() {
+        // Call logs and persons - needed for main list
         viewModelScope.launch {
             callDataRepository.getAllCallsFlow()
                 .distinctUntilChanged()
@@ -90,7 +112,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
         
         viewModelScope.launch {
-            // Use getAllPersonsIncludingExcludedFlow to include excluded persons for Ignored tab filtering
             callDataRepository.getAllPersonsIncludingExcludedFlow()
                 .distinctUntilChanged()
                 .conflate()
@@ -99,7 +120,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     triggerFilter()
                 }
         }
-
+    }
+    
+    /**
+     * Secondary observers for sync status, counts, etc.
+     */
+    private fun startSecondaryObservers() {
         // Observe Pending Syncs (Calls + Persons)
         viewModelScope.launch {
             callDataRepository.getPendingChangesCountFlow()
@@ -645,6 +671,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
             val activeFilterCount = HomeUtils.calculateFilterCount(currentState)
             
+            // Optimization: Only clear loading state if we actually have data, 
+            // OR if enough time has passed that we can assume the DB is truly empty.
+            // This prevents the "No contacts yet" flash on startup.
+            val hasData = tabPersons.values.any { it.isNotEmpty() } || tabLogs.values.any { it.isNotEmpty() }
+            val timeSinceStart = System.currentTimeMillis() - viewModelStartTime
+            val shouldShowingLoading = !hasData && timeSinceStart < 1500 // 1.5s grace period for initial DB read
+            
+            if (hasData) isFirstLoadComplete = true
+
             _uiState.update { it.copy(
                 tabFilteredLogs = tabLogs,
                 tabFilteredPersons = tabPersons,
@@ -655,7 +690,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 personTypeCounts = tabPersons.mapValues { it.value.size },
                 personGroups = groups,
                 reportStats = reportStats,
-                isLoading = false
+                isLoading = shouldShowingLoading
             ) }
             updateDateSummaries()
         }

@@ -129,25 +129,44 @@ class SimManager(
     }
 
     private fun getSimNumber(ctx: Context, subId: Int): String? {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_PHONE_NUMBERS) 
-                != android.content.pm.PackageManager.PERMISSION_GRANTED) return null
-        } else if (ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_PHONE_STATE) 
-            != android.content.pm.PackageManager.PERMISSION_GRANTED) return null
+        val hasNumbersPerm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_PHONE_NUMBERS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        } else true
+        
+        val hasStatePerm = ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_PHONE_STATE) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
-        return try {
+        if (!hasNumbersPerm && !hasStatePerm) return null
+
+        var number: String? = null
+        
+        // Strategy 1: SubscriptionManager
+        try {
             val subscriptionManager = ContextCompat.getSystemService(ctx, SubscriptionManager::class.java)
             if (subscriptionManager != null) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                number = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     subscriptionManager.getPhoneNumber(subId)
                 } else {
                     @Suppress("DEPRECATION")
                     subscriptionManager.getActiveSubscriptionInfo(subId)?.number
                 }
-            } else null
+            }
         } catch (e: Exception) {
-            null
+            android.util.Log.e("SimManager", "Error getting number from SubscriptionManager", e)
         }
+
+        // Strategy 2: TelephonyManager fallback (very common for older devices or specific manufacturers)
+        if (number.isNullOrBlank()) {
+            try {
+                val telephonyManager = (ctx.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager)
+                    .createForSubscriptionId(subId)
+                number = telephonyManager.line1Number
+            } catch (e: Exception) {
+                android.util.Log.e("SimManager", "Error getting number from TelephonyManager", e)
+            }
+        }
+
+        // Clean number (remove spaces, dashes, etc.) but keep + for international
+        return number?.replace(Regex("[^0-9+]"), "")?.takeIf { it.length > 5 }
     }
 
     fun setSimCalibration(simIndex: Int, subscriptionId: Int, hint: String) {

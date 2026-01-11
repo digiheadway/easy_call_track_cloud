@@ -103,7 +103,7 @@ data class SettingsUiState(
     val showRecordingReminder: Boolean = true,
     val showUnknownNoteReminder: Boolean = true,
     val isGoogleDialer: Boolean = false,
-    val showDialButton: Boolean = true,
+    val showDialButton: Boolean = false,
     val callActionBehavior: String = "Direct",
     val isSystemDefaultDialer: Boolean = false,
     val isIgnoringBatteryOptimizations: Boolean = false,
@@ -132,6 +132,7 @@ data class SettingsUiState(
     val lookupPhoneNumber: String? = null,
     val skippedSteps: Set<String> = emptySet(),
     val isTrackStartDateSet: Boolean = false,
+    val isSetupGuideCompleted: Boolean = false,
     val syncQueueCount: Int = 0,
     val uploadOverMobile: Boolean = false,
     val isUploadOverMobileForced: Boolean = false,
@@ -168,33 +169,46 @@ class SettingsViewModel @javax.inject.Inject constructor(
             simSelection = settingsRepository.getSimSelection(),
             skippedSteps = settingsRepository.getSkippedSteps(),
             isSyncSetup = initialOrgId.isNotEmpty(),
-            pairingCode = if (initialOrgId.isNotEmpty()) "$initialOrgId-${settingsRepository.getUserId()}" else ""
+            isSetupGuideCompleted = settingsRepository.isSetupGuideCompleted(),
+            pairingCode = if (initialOrgId.isNotEmpty()) "$initialOrgId-${settingsRepository.getUserId()}" else "",
+            callerPhoneSim1 = settingsRepository.getCallerPhoneSim1(),
+            callerPhoneSim2 = settingsRepository.getCallerPhoneSim2(),
+            callRecordEnabled = settingsRepository.isCallRecordEnabled(),
+            userDeclinedRecording = settingsRepository.isUserDeclinedRecording(),
+            agreementAccepted = settingsRepository.isAgreementAccepted()
         ) }
 
-        // STARTUP OPTIMIZATION: Defer heavy initialization until after first frame
+        // STARTUP OPTIMIZATION: Stagger heavy work into phases to prevent recomposition storms
+        
+        // Phase 1 (100ms): Load full settings on IO thread
         viewModelScope.launch {
-            // Small delay to let the first frame render
             kotlinx.coroutines.delay(100)
-            
-            // Now start all the heavy observers and load full settings
-            startDeferredInitialization()
+            kotlinx.coroutines.withContext(Dispatchers.IO) {
+                loadSettings()
+                permissionManager.checkPermissions()
+            }
         }
         
-        // Lightweight observers that can start immediately
-        observeSyncCounts() // These use conflate() and are efficient
+        // Phase 2 (300ms): Start observers
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(300)
+            startDeferredObservers()
+        }
+        
+        // Sync count observers are lightweight (use conflate), start immediately
+        viewModelScope.launch {
+            settingsRepository.getSetupGuideCompletedFlow().collect { completed ->
+                _uiState.update { it.copy(isSetupGuideCompleted = completed) }
+            }
+        }
+
+        observeSyncCounts()
     }
     
     /**
-     * Deferred initialization for non-critical settings and heavy observers.
-     * Called after first frame to avoid blocking initial render.
+     * Deferred observers that don't need to run immediately.
      */
-    private fun startDeferredInitialization() {
-        // Load full settings on IO thread
-        viewModelScope.launch(Dispatchers.IO) {
-            loadSettings()
-            permissionManager.checkPermissions()
-        }
-
+    private fun startDeferredObservers() {
         // Observe Network Status
         viewModelScope.launch {
             networkObserver.observe().collect { isAvailable ->
@@ -421,11 +435,13 @@ class SettingsViewModel @javax.inject.Inject constructor(
                 showUnknownNoteReminder = settingsRepository.isShowUnknownNoteReminder(),
                 isGoogleDialer = isGoogleDialer(),
                 isSystemDefaultDialer = isSystemDefaultDialer(),
-                showDialButton = settingsRepository.isShowDialButton(),
+                // Auto-enable dial button if user is already default dialer, otherwise use saved preference
+                showDialButton = if (isSystemDefaultDialer()) true else settingsRepository.isShowDialButton(),
                 callActionBehavior = settingsRepository.getCallActionBehavior(),
                 isSyncSetup = isSyncActive,
                 skippedSteps = settingsRepository.getSkippedSteps(),
                 isTrackStartDateSet = settingsRepository.isTrackStartDateSet(),
+                isSetupGuideCompleted = settingsRepository.isSetupGuideCompleted(),
                 uploadOverMobile = settingsRepository.isUploadOverMobileAllowed(),
                 isUploadOverMobileForced = settingsRepository.isForceUploadOverMobile(),
                 agreementAccepted = settingsRepository.isAgreementAccepted()
@@ -659,6 +675,17 @@ class SettingsViewModel @javax.inject.Inject constructor(
 
     fun toggleTrackingSettings(show: Boolean) {
         _uiState.update { it.copy(showTrackingSettings = show) }
+    }
+
+    fun setSetupComplete(completed: Boolean) {
+        settingsRepository.setSetupGuideCompleted(completed)
+        _uiState.update { it.copy(isSetupGuideCompleted = completed) }
+        
+        if (completed) {
+            // Trigger sync now that setup is finally done
+            com.miniclick.calltrackmanage.service.SyncService.start(getApplication())
+            com.miniclick.calltrackmanage.worker.CallSyncWorker.runNow(getApplication())
+        }
     }
 
     fun toggleExtrasScreen(show: Boolean) {

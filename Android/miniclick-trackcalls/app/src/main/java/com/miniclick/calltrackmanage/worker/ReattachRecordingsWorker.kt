@@ -15,8 +15,8 @@ class ReattachRecordingsWorker(context: Context, params: WorkerParameters) : Cor
     private val recordingRepository = RecordingRepository.getInstance(context)
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        ProcessMonitor.startProcess(ProcessMonitor.ProcessIds.FIND_RECORDINGS, "Scanning Recordings")
-        setForeground(createForegroundInfo("Preparing to scan recordings..."))
+        ProcessMonitor.startProcess(ProcessMonitor.ProcessIds.FIND_RECORDINGS, "Storage Scan: Call Recordings")
+        setForeground(createForegroundInfo("Scanning storage for recordings..."))
         
         try {
             val allLogs = callDataRepository.getAllCalls()
@@ -50,7 +50,7 @@ class ReattachRecordingsWorker(context: Context, params: WorkerParameters) : Cor
                  if (isStopped) return@forEach
                  processed++
                  if (processed % 40 == 0) { // Update less frequently to save UI overhead
-                     val details = "Scanning recordings $processed / ${sortedLogs.size}"
+                     val details = "Linking audio: $processed / ${sortedLogs.size}"
                      ProcessMonitor.updateProgress(ProcessMonitor.ProcessIds.FIND_RECORDINGS, processed.toFloat() / sortedLogs.size, details)
                      setForeground(createForegroundInfo(details))
                  }

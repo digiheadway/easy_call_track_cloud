@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.zIndex
@@ -123,17 +124,46 @@ fun SetupGuide(
     // Modals State
     var showDatePicker by remember { mutableStateOf(false) }
     var showPermissionFallbackSheet by remember { mutableStateOf(false) }
-    var fallbackPermissionType by remember { mutableStateOf<String?>(null) }
+    var fallbackPermissionType by rememberSaveable { mutableStateOf<String?>(null) }
     
     // Track if a permission request was started (to detect if dialog didn't appear)
-    var permissionRequestStartTime by remember { mutableStateOf<Long?>(null) }
-    var permissionRequestType by remember { mutableStateOf<String?>(null) }
+    var permissionRequestStartTime by rememberSaveable { mutableStateOf<Long?>(null) }
+    var permissionRequestType by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Lifecycle observer to re-check permissions and default dialer when returning to app
     DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
                 checkPermissions()
+                
+                // FALLBACK: If we were waiting for a permission and we are back, 
+                // but it's still not granted, show the fallback sheet after a tiny delay
+                // (to give system time to update its state)
+                if (permissionRequestStartTime != null && permissionRequestType != null) {
+                    val waitTime = System.currentTimeMillis() - (permissionRequestStartTime ?: 0)
+                    if (waitTime > 20) { // If we actually went to background and came back
+                        android.util.Log.d("SetupGuide", "App resumed during pending permission $permissionRequestType")
+                        
+                        // If it's the dialer and still not default, show fallback
+                        val isGranted = when (permissionRequestType) {
+                            "DEFAULT_DIALER" -> isDefaultDialer
+                            "CALL_LOG" -> hasCallLog
+                            "CONTACTS" -> hasContacts
+                            "PHONE_STATE" -> hasPhoneState && hasCallPhone
+                            "NOTIFICATIONS" -> hasNotifications
+                            "RECORDING" -> hasStorage
+                            else -> true
+                        }
+
+                        if (!isGranted) {
+                            android.util.Log.d("SetupGuide", "Permission $permissionRequestType still not granted after resume, showing fallback")
+                            fallbackPermissionType = permissionRequestType
+                            showPermissionFallbackSheet = true
+                            permissionRequestStartTime = null
+                            permissionRequestType = null
+                        }
+                    }
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -143,40 +173,73 @@ fun SetupGuide(
     val singlePermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
+        val duration = System.currentTimeMillis() - (permissionRequestStartTime ?: 0)
         checkPermissions()
-        if (isGranted) {
-            com.miniclick.calltrackmanage.service.SyncService.start(context)
-        }
         
+        // If it was denied instantly (< 250ms), the dialog likely didn't show
+        if (!isGranted && duration < 250) {
+            android.util.Log.w("SetupGuide", "Permission $permissionRequestType denied instantly ($duration ms). Showing fallback.")
+            fallbackPermissionType = permissionRequestType
+            showPermissionFallbackSheet = true
+        }
+
         // If storage granted, auto-enable recording setting
         if (hasStorage && !uiState.callRecordEnabled) {
             settingsViewModel.updateCallRecordEnabled(true)
         }
+
+        // Clear tracking
+        permissionRequestStartTime = null
+        permissionRequestType = null
     }
     
     val multiPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
+        val duration = System.currentTimeMillis() - (permissionRequestStartTime ?: 0)
         checkPermissions()
-        if (permissions.containsValue(true)) {
-            com.miniclick.calltrackmanage.service.SyncService.start(context)
+
+        val allGranted = permissions.values.all { it }
+        if (!allGranted && duration < 250) {
+            android.util.Log.w("SetupGuide", "Multi-permission $permissionRequestType denied instantly ($duration ms). Showing fallback.")
+            fallbackPermissionType = permissionRequestType
+            showPermissionFallbackSheet = true
         }
+
+        // Clear tracking
+        permissionRequestStartTime = null
+        permissionRequestType = null
     }
 
     val roleLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { _ ->
+        android.util.Log.d("SetupGuide", "roleLauncher result received, permissionRequestType=$permissionRequestType")
+        
+        // Check permission status directly (not from state which may be stale)
+        val telecomManager = context.getSystemService(Context.TELECOM_SERVICE) as android.telecom.TelecomManager
+        val isNowDefaultDialer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            telecomManager.defaultDialerPackage == context.packageName
+        } else true
+        
+        android.util.Log.d("SetupGuide", "isNowDefaultDialer=$isNowDefaultDialer")
+        
+        // Update state
+        isDefaultDialer = isNowDefaultDialer
         checkPermissions()
         
-        // Check if user is now default dialer
-        if (isDefaultDialer) {
+        // Check result
+        if (isNowDefaultDialer) {
             // User granted - enable dial button
+            android.util.Log.d("SetupGuide", "User granted default dialer, enabling dial button")
             settingsViewModel.updateShowDialButton(true)
         } else if (permissionRequestType == "DEFAULT_DIALER") {
             // User declined/cancelled the dialog - show fallback instructions
-            // Only show if they specifically dismissed the system dialog
+            android.util.Log.d("SetupGuide", "User declined, showing fallback sheet")
             fallbackPermissionType = "DEFAULT_DIALER"
             showPermissionFallbackSheet = true
+        } else {
+            android.util.Log.d("SetupGuide", "No action: isNowDefaultDialer=$isNowDefaultDialer, permissionRequestType=$permissionRequestType")
         }
         
         // Reset tracking
@@ -195,6 +258,22 @@ fun SetupGuide(
         if (uiState.pairingCode.isEmpty() && !isDismissed && !uiState.showCloudSyncModal && !mainViewModel.hasShownCloudSyncPrompt) {
             mainViewModel.markCloudSyncPromptShown()
             settingsViewModel.toggleCloudSyncModal(true)
+        }
+    }
+
+    // Timeout detection for when system permission dialog fails to appear
+    LaunchedEffect(permissionRequestStartTime) {
+        if (permissionRequestStartTime != null) {
+            kotlinx.coroutines.delay(3000) // 3 second timeout
+            if (permissionRequestStartTime != null && !showPermissionFallbackSheet) {
+                android.util.Log.w("SetupGuide", "Permission request timed out. Showing fallback sheet.")
+                fallbackPermissionType = permissionRequestType
+                showPermissionFallbackSheet = true
+                
+                // Clear tracking
+                permissionRequestStartTime = null
+                permissionRequestType = null
+            }
         }
     }
     
@@ -244,7 +323,7 @@ fun SetupGuide(
                                 val intent = android.content.Intent(android.telecom.TelecomManager.ACTION_CHANGE_DEFAULT_DIALER).apply {
                                     putExtra(android.telecom.TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME, context.packageName)
                                 }
-                                context.startActivity(intent)
+                                roleLauncher.launch(intent)
                                 dialogLaunched = true
                             }
                         } catch (e: android.content.ActivityNotFoundException) {
@@ -274,16 +353,22 @@ fun SetupGuide(
 
             if (!hasCallLog && !uiState.skippedSteps.contains("CALL_LOG")) {
                 add(GuideStep("CALL_LOG", "Allow Call Log", "Required to track and organize your calls automatically.", Icons.Default.Call, "Allow Access", onAction = { 
+                    permissionRequestStartTime = System.currentTimeMillis()
+                    permissionRequestType = "CALL_LOG"
                     singlePermissionLauncher.launch(Manifest.permission.READ_CALL_LOG) 
                 }))
             }
             if (!hasContacts && !uiState.skippedSteps.contains("CONTACTS")) {
                 add(GuideStep("CONTACTS", "All Access Contacts", "Identify callers by name from your contact list.", Icons.Default.People, "Allow Access", onAction = {
+                    permissionRequestStartTime = System.currentTimeMillis()
+                    permissionRequestType = "CONTACTS"
                     singlePermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
                 }))
             }
             if ((!hasPhoneState || !hasCallPhone) && !uiState.skippedSteps.contains("PHONE_STATE")) {
                 add(GuideStep("PHONE_STATE", "MiniClick Calls", "Detect active calls and enable direct calling.", Icons.Default.Phone, "Allow Access", onAction = {
+                    permissionRequestStartTime = System.currentTimeMillis()
+                    permissionRequestType = "PHONE_STATE"
                     val perms = mutableListOf(Manifest.permission.READ_PHONE_STATE, Manifest.permission.CALL_PHONE)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         perms.add(Manifest.permission.READ_PHONE_NUMBERS)
@@ -302,6 +387,8 @@ fun SetupGuide(
                     actionLabel = "Allow", 
                     onAction = {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            permissionRequestStartTime = System.currentTimeMillis()
+                            permissionRequestType = "NOTIFICATIONS"
                             singlePermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         }
                     }
@@ -365,6 +452,8 @@ fun SetupGuide(
                         if (isRecordingDone) {
                             settingsViewModel.setStepSkipped("RECORDING")
                         } else if (!hasStorage) {
+                            permissionRequestStartTime = System.currentTimeMillis()
+                            permissionRequestType = "RECORDING"
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                 singlePermissionLauncher.launch(Manifest.permission.READ_MEDIA_AUDIO)
                             } else {
@@ -391,6 +480,16 @@ fun SetupGuide(
         }
     }
     val shouldShowOnboarding = steps.isNotEmpty()
+    
+    // Auto-mark setup as complete when no more steps are left
+    LaunchedEffect(shouldShowOnboarding) {
+        if (!shouldShowOnboarding) {
+            // Only mark complete if it wasn't already (to avoid redundant sync triggers)
+            if (!uiState.isSetupGuideCompleted) {
+                settingsViewModel.setSetupComplete(true)
+            }
+        }
+    }
     
     Box(modifier = modifier) {
         if (shouldShowOnboarding) {
@@ -498,6 +597,13 @@ fun SetupGuide(
                         "DEFAULT_DIALER" -> {
                             // Open default apps settings
                             val intent = android.content.Intent(android.provider.Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)
+                            context.startActivity(intent)
+                        }
+                        else -> {
+                            // Open app settings for regular permissions
+                            val intent = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = android.net.Uri.parse("package:${context.packageName}")
+                            }
                             context.startActivity(intent)
                         }
                     }
@@ -729,11 +835,31 @@ private fun PermissionFallbackSheet(
         "DEFAULT_DIALER" -> Triple(
             "Couldn't Open Dialog",
             "Your device may not show the default dialer selection automatically. You can manually set MiniClick as your default phone app in Settings.\n\nGo to: Settings → Apps → Default apps → Phone app → Select MiniClick",
-            "Open Default Apps Settings"
+            "Open Default Apps"
+        )
+        "CALL_LOG" -> Triple(
+            "Call Log Access",
+            "Standard permission dialog didn't appear. Please enable Call Log access manually in Settings to track your calls.",
+            "Open App Settings"
+        )
+        "CONTACTS" -> Triple(
+            "Contacts Access",
+            "Standard permission dialog didn't appear. Please enable Contacts access manually in Settings to identify callers.",
+            "Open App Settings"
+        )
+        "PHONE_STATE" -> Triple(
+            "Phone State Access",
+            "Standard permission dialog didn't appear. Please enable Phone permissions manually in Settings to record and detect calls.",
+            "Open App Settings"
+        )
+        "NOTIFICATIONS" -> Triple(
+            "Notifications Access",
+            "Standard permission dialog didn't appear. Please enable Notifications manually in Settings.",
+            "Open App Settings"
         )
         else -> Triple(
             "Permission Required",
-            "Please enable this permission manually in your device settings.",
+            "Please enable this permission manually in your device settings to continue using MiniClick.",
             "Open Settings"
         )
     }

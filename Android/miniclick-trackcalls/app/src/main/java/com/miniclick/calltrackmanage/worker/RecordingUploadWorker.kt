@@ -60,6 +60,16 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                 return@withContext Result.success()
             }
 
+            if (!settingsRepository.isAgreementAccepted()) {
+                Log.d(TAG, "Agreement not accepted yet. Skipping recording upload.")
+                return@withContext Result.success()
+            }
+
+            if (!settingsRepository.isSetupGuideCompleted()) {
+                Log.d(TAG, "Initial setup guide not completed. Skipping recording upload.")
+                return@withContext Result.success()
+            }
+
             // Cleanup any stale processing statuses (stuck from crashes)
             callDataRepository.clearStaleProcessingStatuses()
     

@@ -22,6 +22,9 @@
         }
     </script>
 
+    <!-- Theme Initialization Script -->
+    <script src="/js/theme-toggle.js"></script>
+
     <!-- Feather Icons -->
     <script src="https://unpkg.com/feather-icons"></script>
 
@@ -52,30 +55,21 @@
             }
         }
     </script>
-    <style>
+    <style type="text/tailwindcss">
         body {
-            background-color: #0B0F19;
-            color: white;
+            @apply bg-white dark:bg-dark-bg text-gray-900 dark:text-white transition-colors duration-300;
         }
 
         .glass-card {
-            background: rgba(17, 24, 39, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            @apply bg-white/80 dark:bg-gray-900/70 backdrop-blur-xl border border-gray-100 dark:border-white/10 shadow-2xl;
         }
 
         .input-field {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
-            transition: all 0.3s ease;
+            @apply bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white transition-all duration-300;
         }
 
         .input-field:focus {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: #0ea5e9;
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+            @apply ring-2 ring-brand-500/20 border-brand-500 outline-none;
         }
     </style>
     <link rel="manifest" href="/manifest.json">
@@ -97,14 +91,27 @@
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <a href="/" class="flex items-center gap-2 group">
                 <div
-                    class="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                    <i data-feather="arrow-left" class="text-white w-4 h-4"></i>
+                    class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center group-hover:bg-gray-200 dark:group-hover:bg-white/10 transition-colors">
+                    <i data-feather="arrow-left" class="text-gray-600 dark:text-white w-4 h-4"></i>
                 </div>
-                <span class="font-medium text-gray-300 hover:text-white transition-colors">Back to Home</span>
+                <span
+                    class="font-medium text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Back
+                    to Home</span>
             </a>
-            <div class="hidden sm:block text-sm text-gray-400">
-                Already have an account? <a href="../login/"
-                    class="text-brand-400 hover:text-brand-300 font-medium ml-1">Log in</a>
+
+            <div class="flex items-center gap-6">
+                <!-- Theme Toggle -->
+                <button onclick="toggleTheme()"
+                    class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors text-gray-500 dark:text-gray-400"
+                    title="Toggle Theme">
+                    <i data-feather="sun" class="w-5 h-5 block dark:hidden"></i>
+                    <i data-feather="moon" class="w-5 h-5 hidden dark:block"></i>
+                </button>
+                <div class="hidden sm:block text-sm text-gray-600 dark:text-gray-400">
+                    Already have an account? <a href="../login/"
+                        class="text-brand-600 dark:text-brand-400 hover:text-brand-500 dark:hover:text-brand-300 font-bold ml-1">Log
+                        in</a>
+                </div>
             </div>
         </div>
     </nav>
@@ -113,83 +120,94 @@
         <div class="glass-card w-full max-w-md p-8 sm:p-10 rounded-3xl shadow-2xl">
 
             <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold mb-2">Create Account</h1>
-                <p class="text-gray-400">Start your 3-day free trial today</p>
+                <h1 class="text-3xl font-bold mb-2 text-gray-900 dark:text-white">Create Account</h1>
+                <p class="text-gray-600 dark:text-gray-400">Start your 3-day free trial today</p>
             </div>
 
             <form id="signupForm" class="space-y-4">
                 <div>
-                    <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i data-feather="mail" class="text-gray-500 w-5 h-5"></i>
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email
+                            Address</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i data-feather="mail" class="text-gray-400 dark:text-gray-500 w-5 h-5"></i>
+                            </div>
+                            <input type="email" id="email" name="email" required
+                                class="input-field w-full rounded-xl py-3 pl-10 pr-4 placeholder-gray-400 dark:placeholder-gray-500"
+                                placeholder="name@company.com">
                         </div>
-                        <input type="email" id="email" name="email" required
-                            class="input-field w-full rounded-xl py-3 pl-10 pr-4 placeholder-gray-500"
-                            placeholder="name@company.com">
                     </div>
-                </div>
 
-                <div>
-                    <label for="phone" class="block text-sm font-medium text-gray-300 mb-2">Phone Number</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i data-feather="phone" class="text-gray-500 w-5 h-5"></i>
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone
+                            Number</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i data-feather="phone" class="text-gray-400 dark:text-gray-500 w-5 h-5"></i>
+                            </div>
+                            <input type="tel" id="phone" name="phone" required
+                                class="input-field w-full rounded-xl py-3 pl-10 pr-4 placeholder-gray-400 dark:placeholder-gray-500"
+                                placeholder="+91 9876543210">
                         </div>
-                        <input type="tel" id="phone" name="phone" required
-                            class="input-field w-full rounded-xl py-3 pl-10 pr-4 placeholder-gray-500"
-                            placeholder="+91 9876543210">
                     </div>
-                </div>
 
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i data-feather="lock" class="text-gray-500 w-5 h-5"></i>
+                    <div>
+                        <label for="password"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i data-feather="lock" class="text-gray-400 dark:text-gray-500 w-5 h-5"></i>
+                            </div>
+                            <input type="password" id="password" name="password" required
+                                class="input-field w-full rounded-xl py-3 pl-10 pr-4 placeholder-gray-400 dark:placeholder-gray-500"
+                                placeholder="Create a strong password">
                         </div>
-                        <input type="password" id="password" name="password" required
-                            class="input-field w-full rounded-xl py-3 pl-10 pr-4 placeholder-gray-500"
-                            placeholder="Create a strong password">
                     </div>
-                </div>
 
-                <div>
-                    <label for="confirm_password" class="block text-sm font-medium text-gray-300 mb-2">Confirm
-                        Password</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i data-feather="lock" class="text-gray-500 w-5 h-5"></i>
+                    <div>
+                        <label for="confirm_password"
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm
+                            Password</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i data-feather="lock" class="text-gray-400 dark:text-gray-500 w-5 h-5"></i>
+                            </div>
+                            <input type="password" id="confirm_password" name="confirm_password" required
+                                class="input-field w-full rounded-xl py-3 pl-10 pr-4 placeholder-gray-400 dark:placeholder-gray-500"
+                                placeholder="Confirm your password">
                         </div>
-                        <input type="password" id="confirm_password" name="confirm_password" required
-                            class="input-field w-full rounded-xl py-3 pl-10 pr-4 placeholder-gray-500"
-                            placeholder="Confirm your password">
                     </div>
-                </div>
 
-                <div id="errorMessage"
-                    class="hidden text-red-500 text-sm p-3 bg-red-500/10 border border-red-500/20 rounded-lg"></div>
+                    <div id="errorMessage"
+                        class="hidden text-red-600 dark:text-red-500 text-sm p-3 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-lg">
+                    </div>
 
-                <div class="flex items-start gap-3 mt-2">
-                    <input type="checkbox" id="terms" required
-                        class="mt-1 w-4 h-4 rounded border-gray-600 text-brand-500 focus:ring-brand-500 bg-white/5">
-                    <label for="terms" class="text-sm text-gray-400">
-                        I agree to the <a href="../terms/" class="text-brand-400 hover:text-brand-300">Terms of
-                            Service</a> and
-                        <a href="../privacy/" class="text-brand-400 hover:text-brand-300">Privacy Policy</a>
-                    </label>
-                </div>
+                    <div class="flex items-start gap-3 mt-2">
+                        <input type="checkbox" id="terms" required
+                            class="mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-brand-500 focus:ring-brand-500 bg-gray-50 dark:bg-white/5">
+                        <label for="terms" class="text-sm text-gray-600 dark:text-gray-400">
+                            I agree to the <a href="../terms/"
+                                class="text-brand-600 dark:text-brand-400 hover:text-brand-500 dark:hover:text-brand-300 font-medium">Terms
+                                of
+                                Service</a> and
+                            <a href="../privacy/"
+                                class="text-brand-600 dark:text-brand-400 hover:text-brand-500 dark:hover:text-brand-300 font-medium">Privacy
+                                Policy</a>
+                        </label>
+                    </div>
 
-                <button type="submit" id="submitBtn"
-                    class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-brand-500/25 mt-4">
-                    Create Account
-                </button>
+                    <button type="submit" id="submitBtn"
+                        class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-brand-500/25 mt-4">
+                        Create Account
+                    </button>
             </form>
 
             <div class="mt-8 text-center sm:hidden">
-                <p class="text-gray-400 text-sm">
+                <p class="text-gray-600 dark:text-gray-400 text-sm">
                     Already have an account?
-                    <a href="../login/" class="text-brand-400 font-semibold hover:text-brand-300 transition-colors">Log
+                    <a href="../login/"
+                        class="text-brand-600 dark:text-brand-400 font-bold hover:text-brand-500 dark:hover:text-brand-300 transition-colors">Log
                         in</a>
                 </p>
             </div>

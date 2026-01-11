@@ -41,11 +41,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
-import androidx.compose.foundation.text.ClickableText
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -403,7 +398,7 @@ fun WelcomeStepContent(
                 .height(56.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Text("See Features", style = MaterialTheme.typography.titleMedium)
+            Text("Explore Features", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.width(8.dp))
             Icon(Icons.AutoMirrored.Filled.ArrowForward, null, modifier = Modifier.size(20.dp))
         }

@@ -42,6 +42,16 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 return@withContext Result.success()
             }
             
+            if (!settingsRepository.isAgreementAccepted()) {
+                Log.d(TAG, "Agreement not accepted yet. Skipping sync pass.")
+                return@withContext Result.success()
+            }
+
+            if (!settingsRepository.isSetupGuideCompleted()) {
+                Log.d(TAG, "Initial setup guide not completed. Skipping sync pass.")
+                return@withContext Result.success()
+            }
+            
             // Check if this is a quick sync (skip system import)
             val skipSystemImport = inputData.getBoolean(KEY_SKIP_SYSTEM_IMPORT, false)
             

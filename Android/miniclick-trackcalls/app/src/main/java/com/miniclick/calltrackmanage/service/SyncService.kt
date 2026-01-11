@@ -290,7 +290,15 @@ class SyncService : Service() {
             Log.d(TAG, "Sync skipped - missing permissions")
             return
         }
+        
+        val settingsRepository = com.miniclick.calltrackmanage.data.SettingsRepository.getInstance(this)
+        if (!settingsRepository.isSetupGuideCompleted()) {
+            Log.d(TAG, "Sync skipped - setup guide not completed")
+            return
+        }
+
         Log.d(TAG, "Triggering sync workers")
+
         CallSyncWorker.runNow(this)
         RecordingUploadWorker.runNow(this)
     }

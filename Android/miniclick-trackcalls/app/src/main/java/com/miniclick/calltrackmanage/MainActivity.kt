@@ -106,10 +106,9 @@ class MainActivity : ComponentActivity() {
                 } else if (!isAgreementAccepted) {
                     com.miniclick.calltrackmanage.ui.onboarding.AgreementScreen(onAccepted = {
                         viewModel.setAgreementAccepted(true)
-                        // Start background services now that we have consent
-                        com.miniclick.calltrackmanage.service.SyncService.start(getApplicationContext())
-                        com.miniclick.calltrackmanage.worker.CallSyncWorker.enqueue(getApplicationContext())
-                        com.miniclick.calltrackmanage.worker.RecordingUploadWorker.enqueue(getApplicationContext())
+                        // Note: Sync services will be started automatically by SettingsViewModel 
+                        // once the SetupGuide is completed. No need to start them here 
+                        // as it would trigger premature importing.
                     })
                 } else {
                     MainScreen(audioPlayer = audioPlayer)
@@ -130,7 +129,7 @@ class MainActivity : ComponentActivity() {
         viewModel.refreshTheme()
         
         val settingsRepository = com.miniclick.calltrackmanage.data.SettingsRepository.getInstance(this)
-        if (settingsRepository.isAgreementAccepted()) {
+        if (settingsRepository.isAgreementAccepted() && settingsRepository.isSetupGuideCompleted()) {
             com.miniclick.calltrackmanage.service.SyncService.start(this)
         }
     }
@@ -403,6 +402,7 @@ fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel())
                         isNetworkAvailable = settingsState.isNetworkAvailable,
                         isIgnoringBatteryOptimizations = settingsState.isIgnoringBatteryOptimizations,
                         isSyncSetup = settingsState.isSyncSetup,
+                        isSetupGuideCompleted = settingsState.isSetupGuideCompleted,
                         onSyncNow = { settingsViewModel.syncCallManually() },
                         onShowQueue = { settingsViewModel.toggleSyncQueue(true) },
                         onShowDeviceGuide = { settingsViewModel.toggleDevicePermissionGuide(true) },

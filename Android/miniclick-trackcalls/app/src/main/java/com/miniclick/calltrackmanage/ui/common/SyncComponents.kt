@@ -833,6 +833,7 @@ fun GlobalSyncStatusBar(
     isNetworkAvailable: Boolean,
     isIgnoringBatteryOptimizations: Boolean = true,
     isSyncSetup: Boolean = true,
+    isSetupGuideCompleted: Boolean = true,
     onSyncNow: () -> Unit,
     onShowQueue: () -> Unit,
     onShowDeviceGuide: () -> Unit,
@@ -863,18 +864,51 @@ fun GlobalSyncStatusBar(
     }
 
     val totalPending = pendingNewCalls + pendingMetadata + pendingPersonUpdates
+    val hasPendingData = totalPending > 0 || pendingRecordings > 0 || activeUploads > 0
     
-    // Only show bar if:
-    // 1. There's an active local process (importing, finding recordings)
-    // 2. Sync is setup AND there are pending items or network issues
-    // 3. Or if there's an active/ringing call
-    // 4. Or if Audio is playing
-    val showBar = activeProcess != null || 
-                  (isSyncSetup && (totalPending > 0 || pendingRecordings > 0 || activeUploads > 0 || !isNetworkAvailable || !isIgnoringBatteryOptimizations)) ||
-                  callStatus != null ||
-                  isAudioPlaying
+    // Determine if we have status-level items (Sync, Processes, Network)
+    // We suppress these during setup guide to avoid cluttering the UI with "restricted" warnings
+    val hasStatusItems = isSetupGuideCompleted && (activeProcess != null || 
+                         (isSyncSetup && hasPendingData && (!isNetworkAvailable || !isIgnoringBatteryOptimizations)) ||
+                         (isSyncSetup && hasPendingData))
+    
+    // Determine if we have priority items that need NO delay (Live Calls, Audio Player)
+    val hasPriorityItems = callStatus != null || isAudioPlaying
 
-    // android.util.Log.d("GlobalSyncStatusBar", "showBar: $showBar ...")
+    // Debounced visibility state to prevent "flashing"
+    var showBar by remember { mutableStateOf(false) }
+    
+    // Internal timer to ensure minimum visibility
+    var lastShownTime by remember { mutableLongStateOf(0L) }
+    
+    LaunchedEffect(hasPriorityItems, hasStatusItems) {
+        if (hasPriorityItems) {
+            showBar = true
+            lastShownTime = System.currentTimeMillis()
+        } else if (hasStatusItems) {
+            if (!showBar) {
+                // 1. Debounce Show: Wait to see if it's just a momentary blip
+                delay(400)
+                if (hasStatusItems) {
+                    showBar = true
+                    lastShownTime = System.currentTimeMillis()
+                }
+            }
+        } else {
+            // 2. Debounce Hide: Wait before hiding to bridge gaps between phases (e.g. Import -> Find)
+            delay(1000)
+            
+            // 3. Enforce Minimum Display: If it hasn't been up for 2s, wait longer
+            val elapsed = System.currentTimeMillis() - lastShownTime
+            if (elapsed < 2000) {
+                delay(2000 - elapsed)
+            }
+            
+            if (!hasStatusItems && !hasPriorityItems) {
+                showBar = false
+            }
+        }
+    }
 
     AnimatedVisibility(
         visible = showBar,

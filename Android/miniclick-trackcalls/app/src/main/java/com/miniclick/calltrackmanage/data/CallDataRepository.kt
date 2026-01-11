@@ -879,11 +879,30 @@ class CallDataRepository private constructor(private val context: Context) {
                 Log.d(TAG, "No new calls to insert")
             }
             
-            // Update recordings for calls that don't have them yet
-            val unsyncedWithNoPath = callDataDao.getCallsMissingRecordings().filter { it.localRecordingPath == null }
+            // CRITICAL UI PERFORMANCE: Update person data immediately after calls are inserted
+            // This ensures the "Grouped by Phone" view appears quickly, without waiting 
+            // for the potentially slow recording matching process below.
+            updatePersonsData(personCallsMap)
+            
+            // 4. Update recordings for calls that don't have them yet (ONLY if feature enabled & permitted)
+            val isRecordingEnabled = settingsRepository.isCallRecordEnabled()
+            val storagePermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                android.Manifest.permission.READ_MEDIA_AUDIO
+            } else {
+                android.Manifest.permission.READ_EXTERNAL_STORAGE
+            }
+            val hasStoragePermission = androidx.core.content.ContextCompat.checkSelfPermission(context, storagePermission) == 
+                                       android.content.pm.PackageManager.PERMISSION_GRANTED
+
+            val unsyncedWithNoPath = if (isRecordingEnabled && hasStoragePermission) {
+                callDataDao.getCallsMissingRecordings().filter { it.localRecordingPath == null }
+            } else {
+                emptyList()
+            }
+            
             if (unsyncedWithNoPath.isNotEmpty()) {
                 val total = unsyncedWithNoPath.size
-                ProcessMonitor.startProcess(ProcessMonitor.ProcessIds.FIND_RECORDINGS, "Matching $total call${if (total == 1) "" else "s"} with recordings...")
+                ProcessMonitor.startProcess(ProcessMonitor.ProcessIds.FIND_RECORDINGS, "Finding Recordings", isIndeterminate = false)
                 
                 val updates = mutableMapOf<String, String>()
                 
@@ -893,7 +912,11 @@ class CallDataRepository private constructor(private val context: Context) {
                     if (index % updateFrequency == 0 || index == total - 1) {
                         val progress = (index + 1).toFloat() / total
                         val foundSoFar = updates.size
-                        ProcessMonitor.updateProgress(ProcessMonitor.ProcessIds.FIND_RECORDINGS, progress, "Found $foundSoFar recording${if (foundSoFar == 1) "" else "s"} (${index + 1}/$total)")
+                        ProcessMonitor.updateProgress(
+                            ProcessMonitor.ProcessIds.FIND_RECORDINGS, 
+                            progress, 
+                            "Matched $foundSoFar recording${if (foundSoFar == 1) "" else "s"} • ${index + 1}/$total"
+                        )
                     }
 
                     if (call.duration > 0) {
@@ -912,17 +935,14 @@ class CallDataRepository private constructor(private val context: Context) {
 
                 // Batch update in DB
                 if (updates.isNotEmpty()) {
-                    ProcessMonitor.updateProgress(ProcessMonitor.ProcessIds.FIND_RECORDINGS, 1f, "Linked ${updates.size} recording${if (updates.size == 1) "" else "s"}")
+                    ProcessMonitor.updateProgress(ProcessMonitor.ProcessIds.FIND_RECORDINGS, 1f, "Matched ${updates.size} recording${if (updates.size == 1) "" else "s"}")
                     Log.d(TAG, "Found ${updates.size} recordings to link. applying batch updates...")
                     callDataDao.updateRecordingPaths(updates)
                 } else {
-                    ProcessMonitor.updateProgress(ProcessMonitor.ProcessIds.FIND_RECORDINGS, 1f, "No new recordings found")
+                    ProcessMonitor.updateProgress(ProcessMonitor.ProcessIds.FIND_RECORDINGS, 1f, "No new matches found")
                     Log.d(TAG, "No new recordings matched")
                 }
             }
-            
-            // Update person data in batch
-            updatePersonsData(personCallsMap)
             
             // CRITICAL: Delete any calls from Room that are now before the filter date
             // This handles cases where user changed the start date to a later date

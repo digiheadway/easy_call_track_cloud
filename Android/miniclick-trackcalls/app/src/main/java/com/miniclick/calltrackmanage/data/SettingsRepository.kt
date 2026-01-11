@@ -53,6 +53,7 @@ class SettingsRepository private constructor(private val context: Context) {
     private val KEY_CALL_ACTION_BEHAVIOR = "call_action_behavior" // "Direct", "Dialpad"
 
     // Persistence for Home Screen State
+    private val KEY_SETUP_GUIDE_COMPLETED = "setup_guide_completed"
     private val KEY_SEARCH_VISIBLE = "search_visible"
     private val KEY_FILTERS_VISIBLE = "filters_visible"
     private val KEY_SEARCH_QUERY = "search_query"
@@ -284,6 +285,25 @@ class SettingsRepository private constructor(private val context: Context) {
     fun isOnboardingOffline(): Boolean = prefs.getBoolean(KEY_ONBOARDING_OFFLINE, false)
     fun setOnboardingOffline(offline: Boolean) = prefs.edit().putBoolean(KEY_ONBOARDING_OFFLINE, offline).apply()
 
+    fun isSetupGuideCompleted(): Boolean {
+        return prefs.getBoolean(KEY_SETUP_GUIDE_COMPLETED, false) || isOnboardingOffline()
+    }
+
+    fun setSetupGuideCompleted(completed: Boolean) {
+        prefs.edit().putBoolean(KEY_SETUP_GUIDE_COMPLETED, completed).apply()
+    }
+
+    fun getSetupGuideCompletedFlow(): Flow<Boolean> = callbackFlow {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == KEY_SETUP_GUIDE_COMPLETED || key == KEY_ONBOARDING_OFFLINE) {
+                trySend(isSetupGuideCompleted())
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(isSetupGuideCompleted())
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
     fun getSim1CalibrationHint(): String? {
         return prefs.getString(KEY_SIM1_CALIBRATION_HINT, null)
     }
@@ -371,7 +391,7 @@ class SettingsRepository private constructor(private val context: Context) {
     fun isShowUnknownNoteReminder(): Boolean = prefs.getBoolean(KEY_SHOW_UNKNOWN_NOTE_REMINDER, true)
     fun setShowUnknownNoteReminder(show: Boolean) = prefs.edit().putBoolean(KEY_SHOW_UNKNOWN_NOTE_REMINDER, show).apply()
 
-    fun isShowDialButton(): Boolean = prefs.getBoolean(KEY_SHOW_DIAL_BUTTON, true)
+    fun isShowDialButton(): Boolean = prefs.getBoolean(KEY_SHOW_DIAL_BUTTON, false)
     fun setShowDialButton(show: Boolean) = prefs.edit().putBoolean(KEY_SHOW_DIAL_BUTTON, show).apply()
 
     fun getCallActionBehavior(): String = prefs.getString(KEY_CALL_ACTION_BEHAVIOR, "Direct") ?: "Direct"

@@ -293,6 +293,13 @@ fun SimSetupModal(
     var phone by remember { mutableStateOf(phoneNumber) }
     var showCallPicker by remember { mutableStateOf(false) }
     
+    // STARTUP OPTIMIZATION: If phone number is detected/updated while modal is open, prefill it
+    LaunchedEffect(phoneNumber) {
+        if (phone.isBlank() && phoneNumber.isNotBlank()) {
+            phone = phoneNumber
+        }
+    }
+    
     if (showCallPicker) {
         CallSelectionModal(
             viewModel = viewModel,
