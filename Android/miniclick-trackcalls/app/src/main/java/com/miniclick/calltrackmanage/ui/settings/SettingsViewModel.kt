@@ -175,12 +175,17 @@ class SettingsViewModel @javax.inject.Inject constructor(
             val isTrackStartDateSet = settingsRepository.isTrackStartDateSet()
             val simSelection = settingsRepository.getSimSelection()
             val skippedSteps = settingsRepository.getSkippedSteps()
+            // Load caller phones together with simSelection to prevent SetupGuide flicker
+            val callerPhone1 = settingsRepository.getCallerPhoneSim1()
+            val callerPhone2 = settingsRepository.getCallerPhoneSim2()
             
             _uiState.update { it.copy(
                 trackStartDate = trackStartDate,
                 isTrackStartDateSet = isTrackStartDateSet,
                 simSelection = simSelection,
-                skippedSteps = skippedSteps
+                skippedSteps = skippedSteps,
+                callerPhoneSim1 = callerPhone1,
+                callerPhoneSim2 = callerPhone2
             ) }
         }
 

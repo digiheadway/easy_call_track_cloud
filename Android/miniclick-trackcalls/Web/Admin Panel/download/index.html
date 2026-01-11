@@ -20,7 +20,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-            
             theme: {
                 extend: {
                     fontFamily: {
@@ -31,10 +30,6 @@
                             400: '#38bdf8',
                             500: '#0ea5e9',
                             600: '#0284c7',
-                        },
-                         {
-                            bg: '#0B0F19',
-                            card: '#111827',
                         }
                     },
                     animation: {
@@ -44,23 +39,20 @@
             }
         }
     </script>
-    <style>
+    <style type="text/tailwindcss">
         body {
-            background-color: #0B0F19;
-            color: white;
+            @apply bg-gradient-to-b from-brand-50 to-white text-gray-900;
         }
 
         .glass {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            @apply bg-white/80 backdrop-blur-xl border border-gray-100 shadow-lg;
         }
     </style>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#0ea5e9">
 </head>
 
-<body class="antialiased h-screen flex flex-col justify-between">
+<body class="antialiased min-h-screen flex flex-col justify-between">
 
     <nav class="w-full flex justify-between items-center p-6 lg:px-12">
         <a href="/" class="flex items-center gap-2 group">
@@ -68,11 +60,13 @@
                 class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center">
                 <i data-feather="arrow-left" class="text-white w-4 h-4"></i>
             </div>
-            <span class="font-bold text-xl tracking-tight group-hover:text-brand-400 transition-colors">Back to
+            <span
+                class="font-bold text-xl tracking-tight text-gray-900 group-hover:text-brand-600 transition-colors">Back
+                to
                 Home</span>
         </a>
         <a href="../setup/"
-            class="text-gray-400 hover:text-white transition-colors font-medium flex items-center gap-2">
+            class="text-gray-600 hover:text-brand-600 transition-colors font-medium flex items-center gap-2">
             <i data-feather="book-open" class="w-4 h-4"></i>
             Setup Guide
         </a>
@@ -80,54 +74,55 @@
 
     <main class="flex-grow flex flex-col items-center justify-center px-4 text-center">
         <div class="relative w-32 h-32 mb-8 mx-auto">
-            <div class="absolute inset-0 bg-brand-500 blur-3xl opacity-20 rounded-full"></div>
+            <div class="absolute inset-0 bg-brand-500 blur-3xl opacity-10 rounded-full"></div>
             <div
-                class="relative w-full h-full bg-gradient-to-br from-brand-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl animate-bounce-slow">
+                class="relative w-full h-full bg-gradient-to-br from-brand-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-brand-500/20 animate-bounce-slow">
                 <i data-feather="smartphone" class="w-16 h-16 text-white"></i>
             </div>
         </div>
 
-        <h1 class="text-4xl md:text-5xl font-bold mb-4">Download <span class="text-brand-400">MiniClick Calls</span></h1>
-        <p class="text-gray-400 text-lg max-w-xl mx-auto mb-10">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4 text-gray-900">Download <span class="text-brand-600">MiniClick
+                Calls</span></h1>
+        <p class="text-gray-600 text-lg max-w-xl mx-auto mb-10">
             Get the app on your Android device to start tracking calls, syncing recordings, and managing your business
             leads effortlessly.
         </p>
 
         <div class="flex flex-col sm:flex-row gap-6">
             <a href="https://play.google.com/store/apps/details?id=com.miniclick.calltrackmanage"
-                class="flex items-center gap-4 bg-white text-dark-bg px-6 py-3 rounded-xl hover:bg-gray-200 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1 group">
-                <i data-feather="play-circle" class="w-8 h-8 text-green-600"></i>
+                class="flex items-center gap-4 bg-gray-900 text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1 group">
+                <i data-feather="play-circle" class="w-8 h-8 text-green-400"></i>
                 <div class="text-left">
-                    <div class="text-xs font-semibold uppercase tracking-wider text-gray-500">Get it on</div>
+                    <div class="text-xs font-semibold uppercase tracking-wider text-gray-300">Get it on</div>
                     <div class="text-xl font-bold">Google Play</div>
                 </div>
             </a>
 
             <a href="/app-debug.apk"
-                class="flex items-center gap-4 bg-white/10 text-white px-6 py-3 rounded-xl hover:bg-white/20 transition-all border border-white/20 transform hover:-translate-y-1">
-                <i data-feather="download" class="w-8 h-8"></i>
+                class="flex items-center gap-4 bg-white text-gray-900 px-6 py-3 rounded-xl hover:bg-gray-50 transition-all border border-gray-200 shadow-lg transform hover:-translate-y-1">
+                <i data-feather="download" class="w-8 h-8 text-brand-600"></i>
                 <div class="text-left">
-                    <div class="text-xs font-semibold uppercase tracking-wider text-gray-400">Download APK</div>
+                    <div class="text-xs font-semibold uppercase tracking-wider text-gray-500">Download APK</div>
                     <div class="text-xl font-bold">Direct Link</div>
                 </div>
             </a>
         </div>
 
-        <div class="mt-12 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 max-w-md">
+        <div class="mt-12 p-4 rounded-lg bg-amber-50 border border-amber-200 max-w-md shadow-sm">
             <div class="flex items-center gap-2 mb-2">
-                <i data-feather="alert-circle" class="text-yellow-500 w-4 h-4"></i>
-                <span class="text-sm font-bold text-yellow-500">Setup Requirement</span>
+                <i data-feather="alert-circle" class="text-amber-600 w-4 h-4"></i>
+                <span class="text-sm font-bold text-amber-700">Setup Requirement</span>
             </div>
-            <p class="text-xs text-left text-gray-400">
+            <p class="text-xs text-left text-gray-600">
                 After installing, please open the app and follow the <a href="../setup/"
-                    class="text-yellow-500 hover:underline font-bold">"Easy Setup" guide</a> to grant necessary
+                    class="text-amber-700 hover:underline font-bold">"Easy Setup" guide</a> to grant necessary
                 permissions
                 for call recording and sync.
             </p>
         </div>
     </main>
 
-    <footer class="py-8 text-center text-gray-600 text-sm">
+    <footer class="py-8 text-center text-gray-500 text-sm">
         &copy; 2026 MiniClick. All rights reserved.
     </footer>
 

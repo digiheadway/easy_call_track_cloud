@@ -33,7 +33,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-            
             theme: {
                 extend: {
                     fontFamily: {
@@ -51,11 +50,6 @@
                             700: '#0369a1',
                             800: '#075985',
                             900: '#0c4a6e',
-                        },
-                         {
-                            bg: '#0B0F19',
-                            card: '#111827',
-                            border: '#1F2937'
                         }
                     },
                     animation: {
@@ -74,42 +68,22 @@
     </script>
     <style type="text/tailwindcss">
         .glass {
-            background-color: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            @apply bg-white/70 backdrop-blur-xl border-b border-gray-100;
         }
         .glass-card {
-            background-color: rgba(17, 24, 39, 0.6);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(31, 41, 55, 0.5);
-            transition: all 0.3s;
+            @apply bg-white border border-gray-100 shadow-lg transition-all duration-300;
         }
         .glass-card:hover {
-            border-color: rgba(14, 165, 233, 0.3);
+            @apply border-brand-500/30 shadow-xl -translate-y-1;
         }
         .text-gradient {
-            background: linear-gradient(to right, #38bdf8, #c084fc);
+            background: linear-gradient(to right, #0ea5e9, #8b5cf6);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
         }
         body {
-            background-color: #0B0F19; /* dark-bg */
-            color: #ffffff;
-        }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0B0F19; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #334155; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #475569; 
+            @apply bg-white text-gray-900;
         }
     </style>
 </head>
@@ -117,7 +91,7 @@
 <body class="antialiased overflow-x-hidden">
 
     <!-- Navbar -->
-    <nav class="fixed w-full z-50 transition-all duration-300 top-0 glass border-b border-white/5">
+    <nav class="fixed w-full z-50 transition-all duration-300 top-0 glass">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
                 <a href="../" class="flex items-center gap-2">
@@ -125,26 +99,28 @@
                         class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center">
                         <i data-feather="phone-call" class="text-white w-4 h-4"></i>
                     </div>
-                    <span class="font-bold text-xl tracking-tight">MiniClick Calls<span
-                            class="text-brand-400">.</span></span>
+                    <span class="font-bold text-xl tracking-tight text-gray-900">MiniClick Calls<span
+                            class="text-brand-600">.</span></span>
                 </a>
                 <div class="hidden md:block">
                     <div class="ml-10 flex items-baseline space-x-8">
                         <a href="../"
-                            class="hover:text-white text-gray-400 transition-colors px-3 py-2 text-sm font-medium">Home</a>
+                            class="text-gray-600 hover:text-brand-600 transition-colors px-3 py-2 text-sm font-medium">Home</a>
                         <a href="#features"
-                            class="hover:text-brand-400 transition-colors px-3 py-2 text-sm font-medium">Features</a>
+                            class="text-gray-600 hover:text-brand-600 transition-colors px-3 py-2 text-sm font-medium">Features</a>
                         <a href="#how-it-works"
-                            class="hover:text-brand-400 transition-colors px-3 py-2 text-sm font-medium">How it
+                            class="text-gray-600 hover:text-brand-600 transition-colors px-3 py-2 text-sm font-medium">How
+                            it
                             Works</a>
                         <a href="#pricing"
-                            class="hover:text-brand-400 transition-colors px-3 py-2 text-sm font-medium">Pricing</a>
+                            class="text-gray-600 hover:text-brand-600 transition-colors px-3 py-2 text-sm font-medium">Pricing</a>
                         <a href="#faqs"
-                            class="hover:text-brand-400 transition-colors px-3 py-2 text-sm font-medium">FAQs</a>
+                            class="text-gray-600 hover:text-brand-600 transition-colors px-3 py-2 text-sm font-medium">FAQs</a>
                     </div>
                 </div>
                 <div id="auth-desktop" class="hidden md:flex items-center gap-4">
-                    <a href="../login/" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">Log
+                    <a href="../login/"
+                        class="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">Log
                         In</a>
                     <a href="../signup/"
                         class="bg-brand-600 hover:bg-brand-500 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-all shadow-lg shadow-brand-500/20 hover:shadow-brand-500/40">
@@ -153,7 +129,7 @@
                 </div>
                 <div class="-mr-2 flex md:hidden">
                     <button type="button"
-                        class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-white/10 focus:outline-none"
+                        class="inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 focus:outline-none"
                         aria-controls="mobile-menu" aria-expanded="false">
                         <i data-feather="menu"></i>
                     </button>
@@ -161,17 +137,21 @@
             </div>
         </div>
         <!-- Mobile Menu (Hidden by default) -->
-        <div class="md:hidden hidden bg-dark-bg/95 backdrop-blur-xl border-b border-white/10" id="mobile-menu">
+        <div class="md:hidden hidden bg-white/95 backdrop-blur-xl border-b border-gray-100" id="mobile-menu">
             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                <a href="../" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">Home</a>
+                <a href="../"
+                    class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Home</a>
                 <a href="#features"
-                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">Features</a>
-                <a href="#how-it-works" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">How it
+                    class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Features</a>
+                <a href="#how-it-works"
+                    class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">How it
                     Works</a>
-                <a href="#pricing" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">Pricing</a>
-                <a href="#faqs" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">FAQs</a>
+                <a href="#pricing"
+                    class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Pricing</a>
+                <a href="#faqs"
+                    class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">FAQs</a>
                 <a id="auth-mobile-login" href="../login/"
-                    class="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/5">Log
+                    class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">Log
                     In</a>
                 <a id="auth-mobile-signup" href="../signup/"
                     class="block w-full text-center mt-4 bg-brand-600 hover:bg-brand-500 text-white px-5 py-3 rounded-lg text-base font-medium">Get
@@ -181,63 +161,64 @@
     </nav>
 
     <!-- Hero Section -->
-    <div class="relative pt-32 pb-20 sm:pt-40 sm:pb-24 overflow-hidden">
+    <div class="relative pt-32 pb-20 sm:pt-40 sm:pb-24 overflow-hidden bg-gradient-to-b from-brand-50 to-white">
         <!-- Background Glows -->
-        <div class="absolute top-0 left-1/4 w-96 h-96 bg-brand-500/20 rounded-full blur-[128px] pointer-events-none">
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-brand-500/10 rounded-full blur-[128px] pointer-events-none">
         </div>
         <div
-            class="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-[128px] pointer-events-none">
+            class="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[128px] pointer-events-none">
         </div>
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div class="lg:grid lg:grid-cols-12 lg:gap-16 items-center">
                 <div class="lg:col-span-6 text-center lg:text-left mb-12 lg:mb-0">
                     <div
-                        class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-6 backdrop-blur-sm">
+                        class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-100 border border-brand-200 mb-6">
                         <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                        <span class="text-sm font-medium text-gray-300">Detailed Call Insights</span>
+                        <span class="text-sm font-medium text-brand-700">Detailed Call Insights</span>
                     </div>
-                    <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-tight">
+                    <h1
+                        class="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-tight text-gray-900">
                         Power Your Business with <br />
                         <span class="text-gradient">Smart Call Tracking</span>
                     </h1>
-                    <p class="text-lg text-gray-400 mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+                    <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
                         The ultimate solution to <strong>Track, Manage, & Sync</strong> your business calls
                         effortlessly. Empower your team and gain visibility with cloud-synced recordings.
                     </p>
                     <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
                         <a href="#pricing"
-                            class="w-full sm:w-auto px-8 py-4 bg-white text-dark-bg font-bold rounded-full hover:bg-gray-100 transition-all shadow-lg shadow-white/10 transform hover:-translate-y-1">
+                            class="w-full sm:w-auto px-8 py-4 bg-brand-600 text-white font-bold rounded-full hover:bg-brand-500 transition-all shadow-lg shadow-brand-500/20 transform hover:-translate-y-1">
                             Start 3 Day Free Trial
                         </a>
                         <a href="../download/"
-                            class="w-full sm:w-auto px-8 py-4 glass text-white font-medium rounded-full hover:bg-white/10 transition-all flex items-center justify-center gap-2">
+                            class="w-full sm:w-auto px-8 py-4 bg-white border border-gray-200 text-gray-900 font-medium rounded-full hover:bg-gray-50 transition-all flex items-center justify-center gap-2 shadow-lg">
                             <i data-feather="download" class="w-4 h-4"></i> Download App
                         </a>
                     </div>
                 </div>
                 <div class="lg:col-span-6 relative">
                     <div
-                        class="relative rounded-3xl overflow-hidden shadow-2xl shadow-brand-500/10 border border-white/5 animate-float">
+                        class="relative rounded-3xl overflow-hidden shadow-2xl shadow-brand-500/10 border border-gray-100 animate-float bg-white">
                         <img src="../assets/hero.png" alt="App Dashboard"
                             class="w-full h-auto object-cover rounded-3xl">
                         <!-- Glass Overlay Card -->
                         <div
-                            class="absolute -bottom-6 -left-6 bg-dark-card/80 backdrop-blur-md p-4 rounded-xl border border-white/10 shadow-xl hidden sm:block">
+                            class="absolute -bottom-6 -left-6 bg-white/90 backdrop-blur-md p-4 rounded-xl border border-gray-100 shadow-xl hidden sm:block">
                             <div class="flex items-center gap-3 mb-2">
-                                <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                                    <i data-feather="phone-incoming" class="text-green-400 w-5 h-5"></i>
+                                <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                                    <i data-feather="phone-incoming" class="text-green-600 w-5 h-5"></i>
                                 </div>
                                 <div>
-                                    <p class="text-sm font-bold text-white">New Lead</p>
-                                    <p class="text-xs text-gray-400">+1 (555) 123-4567</p>
+                                    <p class="text-sm font-bold text-gray-900">New Lead</p>
+                                    <p class="text-xs text-gray-500">+1 (555) 123-4567</p>
                                 </div>
                             </div>
                             <div class="flex gap-2">
                                 <span
-                                    class="px-2 py-1 rounded bg-brand-500/20 text-brand-300 text-[10px] font-medium">Interested</span>
+                                    class="px-2 py-1 rounded bg-brand-100 text-brand-700 text-[10px] font-medium">Interested</span>
                                 <span
-                                    class="px-2 py-1 rounded bg-purple-500/20 text-purple-300 text-[10px] font-medium">Follow-up</span>
+                                    class="px-2 py-1 rounded bg-purple-100 text-purple-700 text-[10px] font-medium">Follow-up</span>
                             </div>
                         </div>
                     </div>
@@ -250,74 +231,75 @@
     <section id="features" class="py-24 relative">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
-                <h2 class="text-base text-brand-400 font-semibold tracking-wide uppercase">Features</h2>
-                <p class="mt-2 text-3xl font-extrabold text-white sm:text-4xl">Everything you need to <br />manage your
+                <h2 class="text-base text-brand-600 font-semibold tracking-wide uppercase">Features</h2>
+                <p class="mt-2 text-3xl font-extrabold text-gray-900 sm:text-4xl">Everything you need to <br />manage
+                    your
                     calls</p>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <!-- Feature 1 -->
                 <div class="glass-card p-8 rounded-2xl group">
                     <div
-                        class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                        <i data-feather="cloud-lightning" class="text-blue-400"></i>
+                        class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-feather="cloud-lightning" class="text-blue-600"></i>
                     </div>
-                    <h3 class="text-xl font-semibold mb-3">Auto Sync</h3>
-                    <p class="text-gray-400">Automatically upload call recordings and logs to the cloud instantly. Never
+                    <h3 class="text-xl font-semibold mb-3 text-gray-900">Auto Sync</h3>
+                    <p class="text-gray-600">Automatically upload call recordings and logs to the cloud instantly. Never
                         lose a conversation again.</p>
                 </div>
 
                 <!-- Feature 2 -->
                 <div class="glass-card p-8 rounded-2xl group">
                     <div
-                        class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                        <i data-feather="edit-3" class="text-purple-400"></i>
+                        class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-feather="edit-3" class="text-purple-600"></i>
                     </div>
-                    <h3 class="text-xl font-semibold mb-3">Smart Notes</h3>
-                    <p class="text-gray-400">Add detailed notes to calls and specific contacts. Keep your team aligned
+                    <h3 class="text-xl font-semibold mb-3 text-gray-900">Smart Notes</h3>
+                    <p class="text-gray-600">Add detailed notes to calls and specific contacts. Keep your team aligned
                         with context.</p>
                 </div>
 
                 <!-- Feature 3 -->
                 <div class="glass-card p-8 rounded-2xl group">
                     <div
-                        class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                        <i data-feather="tag" class="text-green-400"></i>
+                        class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-feather="tag" class="text-green-600"></i>
                     </div>
-                    <h3 class="text-xl font-semibold mb-3">Custom Labels</h3>
-                    <p class="text-gray-400">Organize calls with custom labels like 'Lead', 'Support', or 'VIP'. Filter
+                    <h3 class="text-xl font-semibold mb-3 text-gray-900">Custom Labels</h3>
+                    <p class="text-gray-600">Organize calls with custom labels like 'Lead', 'Support', or 'VIP'. Filter
                         and find what matters fast.</p>
                 </div>
 
                 <!-- Feature 4 -->
                 <div class="glass-card p-8 rounded-2xl group">
                     <div
-                        class="w-12 h-12 bg-pink-500/20 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                        <i data-feather="sliders" class="text-pink-400"></i>
+                        class="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-feather="sliders" class="text-pink-600"></i>
                     </div>
-                    <h3 class="text-xl font-semibold mb-3">Advanced Filter</h3>
-                    <p class="text-gray-400">Filter your call logs by duration, date, employee, or type. Find the exact
+                    <h3 class="text-xl font-semibold mb-3 text-gray-900">Advanced Filter</h3>
+                    <p class="text-gray-600">Filter your call logs by duration, date, employee, or type. Find the exact
                         recording you need.</p>
                 </div>
 
                 <!-- Feature 5 -->
                 <div class="glass-card p-8 rounded-2xl group">
                     <div
-                        class="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                        <i data-feather="shield" class="text-orange-400"></i>
+                        class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-feather="shield" class="text-orange-600"></i>
                     </div>
-                    <h3 class="text-xl font-semibold mb-3">Secure Storage</h3>
-                    <p class="text-gray-400">Your data is encrypted and stored safely. Access your recordings from
+                    <h3 class="text-xl font-semibold mb-3 text-gray-900">Secure Storage</h3>
+                    <p class="text-gray-600">Your data is encrypted and stored safely. Access your recordings from
                         anywhere, anytime.</p>
                 </div>
 
                 <!-- Feature 6 -->
                 <div class="glass-card p-8 rounded-2xl group">
                     <div
-                        class="w-12 h-12 bg-teal-500/20 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                        <i data-feather="user-check" class="text-teal-400"></i>
+                        class="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-feather="user-check" class="text-teal-600"></i>
                     </div>
-                    <h3 class="text-xl font-semibold mb-3">Team Management</h3>
-                    <p class="text-gray-400">Add employees, monitor their device status, and ensure they are tracking
+                    <h3 class="text-xl font-semibold mb-3 text-gray-900">Team Management</h3>
+                    <p class="text-gray-600">Add employees, monitor their device status, and ensure they are tracking
                         properly.</p>
                 </div>
             </div>
@@ -325,41 +307,41 @@
     </section>
 
     <!-- Visual Breakdown Section -->
-    <section id="how-it-works" class="py-24 bg-white/5 relative overflow-hidden">
+    <section id="how-it-works" class="py-24 bg-gray-50 relative overflow-hidden">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col lg:flex-row items-center gap-16">
                 <div class="lg:w-1/2 order-2 lg:order-1">
                     <img src="../assets/dashboard.png" alt="Analytics Dashboard"
-                        class="rounded-2xl shadow-2xl border border-white/10 hover:scale-[1.02] transition-transform duration-500">
+                        class="rounded-2xl shadow-2xl border border-gray-100 hover:scale-[1.02] transition-transform duration-500">
                 </div>
                 <div class="lg:w-1/2 order-1 lg:order-2">
-                    <h2 class="text-3xl sm:text-4xl font-bold mb-6">Gain Insights with <br /><span
+                    <h2 class="text-3xl sm:text-4xl font-bold mb-6 text-gray-900">Gain Insights with <br /><span
                             class="text-gradient">Advanced Analytics</span></h2>
-                    <p class="text-gray-400 text-lg mb-8">
+                    <p class="text-gray-600 text-lg mb-8">
                         Stop guessing. Visualize your call volume, track employee performance, and understand your
                         customer interactions with our beautifully designed admin panel.
                     </p>
                     <ul class="space-y-4">
                         <li class="flex items-start gap-3">
                             <div
-                                class="mt-1 w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center shrink-0">
-                                <i data-feather="bar-chart-2" class="w-3 h-3 text-brand-400"></i>
+                                class="mt-1 w-6 h-6 rounded-full bg-brand-100 flex items-center justify-center shrink-0">
+                                <i data-feather="bar-chart-2" class="w-3 h-3 text-brand-600"></i>
                             </div>
-                            <span class="text-gray-300">Detailed performance reports per employee</span>
+                            <span class="text-gray-700">Detailed performance reports per employee</span>
                         </li>
                         <li class="flex items-start gap-3">
                             <div
-                                class="mt-1 w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center shrink-0">
-                                <i data-feather="database" class="w-3 h-3 text-brand-400"></i>
+                                class="mt-1 w-6 h-6 rounded-full bg-brand-100 flex items-center justify-center shrink-0">
+                                <i data-feather="database" class="w-3 h-3 text-brand-600"></i>
                             </div>
-                            <span class="text-gray-300">Storage usage tracking and management</span>
+                            <span class="text-gray-700">Storage usage tracking and management</span>
                         </li>
                         <li class="flex items-start gap-3">
                             <div
-                                class="mt-1 w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center shrink-0">
-                                <i data-feather="monitor" class="w-3 h-3 text-brand-400"></i>
+                                class="mt-1 w-6 h-6 rounded-full bg-brand-100 flex items-center justify-center shrink-0">
+                                <i data-feather="monitor" class="w-3 h-3 text-brand-600"></i>
                             </div>
-                            <span class="text-gray-300">Accessible from any desktop or tablet</span>
+                            <span class="text-gray-700">Accessible from any desktop or tablet</span>
                         </li>
                     </ul>
                 </div>
@@ -368,66 +350,65 @@
     </section>
 
     <!-- Pricing Section -->
-    <section id="pricing" class="py-24 relative">
-        <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black/50 pointer-events-none"></div>
+    <section id="pricing" class="py-24 relative bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div class="text-center mb-16">
-                <h2 class="text-base text-brand-400 font-semibold tracking-wide uppercase">Pricing</h2>
-                <p class="mt-2 text-3xl font-extrabold text-white sm:text-4xl">Simple, transparent pricing</p>
+                <h2 class="text-base text-brand-600 font-semibold tracking-wide uppercase">Pricing</h2>
+                <p class="mt-2 text-3xl font-extrabold text-gray-900 sm:text-4xl">Simple, transparent pricing</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <!-- Free Tier -->
-                <div class="glass-card p-8 rounded-3xl flex flex-col relative border-t-4 border-gray-600">
-                    <h3 class="text-xl font-bold text-gray-300">Local Use</h3>
+                <div class="glass-card p-8 rounded-3xl flex flex-col relative border-t-4 border-gray-300">
+                    <h3 class="text-xl font-bold text-gray-700">Local Use</h3>
                     <div class="my-6">
-                        <span class="text-4xl font-bold">Free</span>
+                        <span class="text-4xl font-bold text-gray-900">Free</span>
                         <span class="text-gray-500">/ lifetime</span>
                     </div>
-                    <p class="text-gray-400 text-sm mb-8">Perfect for individuals who just need local call recording
+                    <p class="text-gray-600 text-sm mb-8">Perfect for individuals who just need local call recording
                         management.</p>
                     <ul class="space-y-4 mb-8 flex-1">
-                        <li class="flex items-center gap-3 text-sm text-gray-300">
-                            <i data-feather="check" class="w-4 h-4 text-green-400"></i> Local Recording
+                        <li class="flex items-center gap-3 text-sm text-gray-700">
+                            <i data-feather="check" class="w-4 h-4 text-green-500"></i> Local Recording
                         </li>
-                        <li class="flex items-center gap-3 text-sm text-gray-300">
-                            <i data-feather="check" class="w-4 h-4 text-green-400"></i> Basic Call Stats
+                        <li class="flex items-center gap-3 text-sm text-gray-700">
+                            <i data-feather="check" class="w-4 h-4 text-green-500"></i> Basic Call Stats
                         </li>
-                        <li class="flex items-center gap-3 text-sm text-gray-300">
-                            <i data-feather="check" class="w-4 h-4 text-green-400"></i> No Cloud Sync
+                        <li class="flex items-center gap-3 text-sm text-gray-700">
+                            <i data-feather="check" class="w-4 h-4 text-green-500"></i> No Cloud Sync
                         </li>
                     </ul>
                     <a href="../download/"
-                        class="w-full block text-center py-3 rounded-xl border border-white/20 hover:bg-white/10 transition-colors font-medium">Download
+                        class="w-full block text-center py-3 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors font-medium text-gray-900">Download
                         Now</a>
                 </div>
 
                 <!-- Employee Tier -->
                 <div
-                    class="glass-card p-8 rounded-3xl flex flex-col relative border-t-4 border-brand-500 bg-brand-900/10 transform scale-105 shadow-2xl shadow-brand-500/10">
+                    class="glass-card p-8 rounded-3xl flex flex-col relative border-t-4 border-brand-500 bg-brand-50 transform scale-105 shadow-2xl">
                     <div
-                        class="absolute top-0 right-0 -mt-3 mr-3 px-3 py-1 bg-gradient-to-r from-brand-500 to-purple-500 rounded-full text-xs font-bold shadow-lg">
+                        class="absolute top-0 right-0 -mt-3 mr-3 px-3 py-1 bg-gradient-to-r from-brand-500 to-purple-500 rounded-full text-xs font-bold text-white shadow-lg">
                         POPULAR</div>
-                    <h3 class="text-xl font-bold text-white">CallSync Pro</h3>
+                    <h3 class="text-xl font-bold text-gray-900">CallSync Pro</h3>
                     <div class="my-6">
-                        <span class="text-4xl font-bold">₹149</span>
-                        <span class="text-gray-400">/user/mo</span>
+                        <span class="text-4xl font-bold text-gray-900">₹149</span>
+                        <span class="text-gray-500">/user/mo</span>
                     </div>
-                    <p class="text-gray-400 text-sm mb-8">For businesses that need to track employee performance and
+                    <p class="text-gray-600 text-sm mb-8">For businesses that need to track employee performance and
                         calls.</p>
                     <ul class="space-y-4 mb-8 flex-1">
-                        <li class="flex items-center gap-3 text-sm text-white">
-                            <i data-feather="check" class="w-4 h-4 text-brand-400"></i> <strong>Everything in
+                        <li class="flex items-center gap-3 text-sm text-gray-900">
+                            <i data-feather="check" class="w-4 h-4 text-brand-600"></i> <strong>Everything in
                                 Free</strong>
                         </li>
-                        <li class="flex items-center gap-3 text-sm text-white">
-                            <i data-feather="check" class="w-4 h-4 text-brand-400"></i> Cloud Synchronization
+                        <li class="flex items-center gap-3 text-sm text-gray-900">
+                            <i data-feather="check" class="w-4 h-4 text-brand-600"></i> Cloud Synchronization
                         </li>
-                        <li class="flex items-center gap-3 text-sm text-white">
-                            <i data-feather="check" class="w-4 h-4 text-brand-400"></i> Admin Panel Access
+                        <li class="flex items-center gap-3 text-sm text-gray-900">
+                            <i data-feather="check" class="w-4 h-4 text-brand-600"></i> Admin Panel Access
                         </li>
-                        <li class="flex items-center gap-3 text-sm text-white">
-                            <i data-feather="check" class="w-4 h-4 text-brand-400"></i> Employee Activity Reports
+                        <li class="flex items-center gap-3 text-sm text-gray-900">
+                            <i data-feather="check" class="w-4 h-4 text-brand-600"></i> Employee Activity Reports
                         </li>
                     </ul>
                     <a href="../signup/"
@@ -437,26 +418,26 @@
 
                 <!-- Storage Tier -->
                 <div class="glass-card p-8 rounded-3xl flex flex-col relative border-t-4 border-purple-500">
-                    <h3 class="text-xl font-bold text-white">Storage Add-on</h3>
+                    <h3 class="text-xl font-bold text-gray-900">Storage Add-on</h3>
                     <div class="my-6">
-                        <span class="text-4xl font-bold">₹99</span>
-                        <span class="text-gray-400">/mo</span>
+                        <span class="text-4xl font-bold text-gray-900">₹99</span>
+                        <span class="text-gray-500">/mo</span>
                     </div>
-                    <p class="text-gray-400 text-sm mb-8">Extra space for all your call recordings. Scale as you grow.
+                    <p class="text-gray-600 text-sm mb-8">Extra space for all your call recordings. Scale as you grow.
                     </p>
                     <ul class="space-y-4 mb-8 flex-1">
-                        <li class="flex items-center gap-3 text-sm text-gray-300">
-                            <i data-feather="check" class="w-4 h-4 text-purple-400"></i> 1 GB Storage included
+                        <li class="flex items-center gap-3 text-sm text-gray-700">
+                            <i data-feather="check" class="w-4 h-4 text-purple-500"></i> 1 GB Storage included
                         </li>
-                        <li class="flex items-center gap-3 text-sm text-gray-300">
-                            <i data-feather="check" class="w-4 h-4 text-purple-400"></i> Secure Cloud Backup
+                        <li class="flex items-center gap-3 text-sm text-gray-700">
+                            <i data-feather="check" class="w-4 h-4 text-purple-500"></i> Secure Cloud Backup
                         </li>
-                        <li class="flex items-center gap-3 text-sm text-gray-300">
-                            <i data-feather="check" class="w-4 h-4 text-purple-400"></i> Accessible Anywhere
+                        <li class="flex items-center gap-3 text-sm text-gray-700">
+                            <i data-feather="check" class="w-4 h-4 text-purple-500"></i> Accessible Anywhere
                         </li>
                     </ul>
                     <a href="../signup/"
-                        class="w-full block text-center py-3 rounded-xl border border-white/20 hover:bg-white/10 transition-colors font-medium">Add
+                        class="w-full block text-center py-3 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors font-medium text-gray-900">Add
                         to Plan</a>
                 </div>
             </div>
@@ -464,78 +445,78 @@
     </section>
 
     <!-- Connectors / Integrations -->
-    <section class="py-24 relative">
+    <section class="py-24 relative bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
-                <h2 class="text-base text-brand-400 font-semibold tracking-wide uppercase">Integrations</h2>
-                <h2 class="text-3xl font-bold mb-4">Connect with your favorite tools</h2>
-                <p class="text-gray-400">Push call data where you need it. Automate workflows instantly.</p>
+                <h2 class="text-base text-brand-600 font-semibold tracking-wide uppercase">Integrations</h2>
+                <h2 class="text-3xl font-bold mb-4 text-gray-900">Connect with your favorite tools</h2>
+                <p class="text-gray-600">Push call data where you need it. Automate workflows instantly.</p>
             </div>
 
             <div class="grid grid-cols-2 md:grid-cols-5 gap-6">
                 <!-- Zapier -->
                 <div class="glass-card p-6 rounded-2xl flex flex-col items-center justify-center text-center group">
                     <div
-                        class="w-12 h-12 bg-[#FF4F00]/20 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                        <i data-feather="zap" class="text-[#FF4F00]"></i>
+                        class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <i data-feather="zap" class="text-orange-500"></i>
                     </div>
-                    <span class="font-bold text-gray-300">Zapier</span>
+                    <span class="font-bold text-gray-700">Zapier</span>
                 </div>
 
                 <!-- Google Sheets -->
                 <div class="glass-card p-6 rounded-2xl flex flex-col items-center justify-center text-center group">
                     <div
-                        class="w-12 h-12 bg-[#34A853]/20 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                        <i data-feather="grid" class="text-[#34A853]"></i>
+                        class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <i data-feather="grid" class="text-green-600"></i>
                     </div>
-                    <span class="font-bold text-gray-300">Sheets</span>
+                    <span class="font-bold text-gray-700">Sheets</span>
                 </div>
 
                 <!-- Webhook -->
                 <div class="glass-card p-6 rounded-2xl flex flex-col items-center justify-center text-center group">
                     <div
-                        class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                        <i data-feather="code" class="text-white"></i>
+                        class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <i data-feather="code" class="text-gray-600"></i>
                     </div>
-                    <span class="font-bold text-gray-300">Webhook</span>
+                    <span class="font-bold text-gray-700">Webhook</span>
                 </div>
 
                 <!-- Salesforce (Coming Soon) -->
                 <div
-                    class="glass-card p-6 rounded-2xl flex flex-col items-center justify-center text-center group border-white/5 opacity-70">
+                    class="glass-card p-6 rounded-2xl flex flex-col items-center justify-center text-center group opacity-70">
                     <span
-                        class="text-[10px] uppercase font-bold text-brand-400 bg-brand-500/10 px-2 py-1 rounded-full mb-3">Coming
+                        class="text-[10px] uppercase font-bold text-brand-600 bg-brand-100 px-2 py-1 rounded-full mb-3">Coming
                         Soon</span>
                     <div
-                        class="w-12 h-12 bg-[#00A1E0]/20 rounded-xl flex items-center justify-center mb-4 grayscale group-hover:grayscale-0 transition-all">
-                        <i data-feather="cloud" class="text-[#00A1E0]"></i>
+                        class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4 grayscale group-hover:grayscale-0 transition-all">
+                        <i data-feather="cloud" class="text-blue-500"></i>
                     </div>
-                    <span class="font-bold text-gray-400">Salesforce</span>
+                    <span class="font-bold text-gray-500">Salesforce</span>
                 </div>
 
                 <!-- HubSpot (Coming Soon) -->
                 <div
-                    class="glass-card p-6 rounded-2xl flex flex-col items-center justify-center text-center group border-white/5 opacity-70">
+                    class="glass-card p-6 rounded-2xl flex flex-col items-center justify-center text-center group opacity-70">
                     <span
-                        class="text-[10px] uppercase font-bold text-brand-400 bg-brand-500/10 px-2 py-1 rounded-full mb-3">Coming
+                        class="text-[10px] uppercase font-bold text-brand-600 bg-brand-100 px-2 py-1 rounded-full mb-3">Coming
                         Soon</span>
                     <div
-                        class="w-12 h-12 bg-[#FF7A59]/20 rounded-xl flex items-center justify-center mb-4 grayscale group-hover:grayscale-0 transition-all">
-                        <i data-feather="users" class="text-[#FF7A59]"></i>
+                        class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-4 grayscale group-hover:grayscale-0 transition-all">
+                        <i data-feather="users" class="text-orange-500"></i>
                     </div>
-                    <span class="font-bold text-gray-400">HubSpot</span>
+                    <span class="font-bold text-gray-500">HubSpot</span>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- FAQ Section -->
-    <section id="faqs" class="py-24 relative overflow-hidden bg-white/[0.02]">
+    <section id="faqs" class="py-24 relative overflow-hidden bg-white">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
-                <h2 class="text-base text-brand-400 font-semibold tracking-wide uppercase">Support</h2>
-                <p class="mt-2 text-3xl font-extrabold text-white sm:text-4xl">Frequently Asked Questions</p>
-                <p class="mt-4 text-gray-400">Everything you need to know about MiniClick Calls.</p>
+                <h2 class="text-base text-brand-600 font-semibold tracking-wide uppercase">Support</h2>
+                <p class="mt-2 text-3xl font-extrabold text-gray-900 sm:text-4xl">Frequently Asked Questions</p>
+                <p class="mt-4 text-gray-600">Everything you need to know about MiniClick Calls.</p>
             </div>
 
             <div class="space-y-4">
@@ -543,11 +524,12 @@
                 <div class="glass-card rounded-2xl overflow-hidden transition-all duration-300">
                     <button class="w-full px-8 py-6 text-left flex justify-between items-center group"
                         onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-180')">
-                        <span class="text-lg font-semibold text-white group-hover:text-brand-400 transition-colors">What
+                        <span
+                            class="text-lg font-semibold text-gray-900 group-hover:text-brand-600 transition-colors">What
                             devices are supported?</span>
-                        <i data-feather="chevron-down" class="text-gray-500 transition-transform duration-300"></i>
+                        <i data-feather="chevron-down" class="text-gray-400 transition-transform duration-300"></i>
                     </button>
-                    <div class="px-8 pb-6 text-gray-400 hidden animate-fade-in">
+                    <div class="px-8 pb-6 text-gray-600 hidden animate-fade-in">
                         MiniClick Calls works on all Android devices running Android 8.0 (Oreo) and above. We recommend
                         disabling battery optimization for the best experience. iOS is currently not supported due to
                         Apple's system restrictions on call recording.
@@ -558,11 +540,12 @@
                 <div class="glass-card rounded-2xl overflow-hidden transition-all duration-300">
                     <button class="w-full px-8 py-6 text-left flex justify-between items-center group"
                         onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-180')">
-                        <span class="text-lg font-semibold text-white group-hover:text-brand-400 transition-colors">Is
+                        <span
+                            class="text-lg font-semibold text-gray-900 group-hover:text-brand-600 transition-colors">Is
                             it legal to record phone calls?</span>
-                        <i data-feather="chevron-down" class="text-gray-500 transition-transform duration-300"></i>
+                        <i data-feather="chevron-down" class="text-gray-400 transition-transform duration-300"></i>
                     </button>
-                    <div class="px-8 pb-6 text-gray-400 hidden animate-fade-in">
+                    <div class="px-8 pb-6 text-gray-600 hidden animate-fade-in">
                         Call recording laws vary by country and state. Generally, you should inform the other party that
                         the call is being recorded. Some jurisdictions require "one-party consent" while others require
                         "all-party consent." Always consult your local laws to ensure compliance.
@@ -573,11 +556,12 @@
                 <div class="glass-card rounded-2xl overflow-hidden transition-all duration-300">
                     <button class="w-full px-8 py-6 text-left flex justify-between items-center group"
                         onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-180')">
-                        <span class="text-lg font-semibold text-white group-hover:text-brand-400 transition-colors">Does
+                        <span
+                            class="text-lg font-semibold text-gray-900 group-hover:text-brand-600 transition-colors">Does
                             it work on Dual-SIM phones?</span>
-                        <i data-feather="chevron-down" class="text-gray-500 transition-transform duration-300"></i>
+                        <i data-feather="chevron-down" class="text-gray-400 transition-transform duration-300"></i>
                     </button>
-                    <div class="px-8 pb-6 text-gray-400 hidden animate-fade-in">
+                    <div class="px-8 pb-6 text-gray-600 hidden animate-fade-in">
                         Yes! MiniClick Calls fully supports Dual-SIM devices. You can choose to track calls from both
                         SIMs or exclude specific numbers and SIM slots in the app settings.
                     </div>
@@ -587,11 +571,12 @@
                 <div class="glass-card rounded-2xl overflow-hidden transition-all duration-300">
                     <button class="w-full px-8 py-6 text-left flex justify-between items-center group"
                         onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-180')">
-                        <span class="text-lg font-semibold text-white group-hover:text-brand-400 transition-colors">Will
+                        <span
+                            class="text-lg font-semibold text-gray-900 group-hover:text-brand-600 transition-colors">Will
                             it work if the phone is offline?</span>
-                        <i data-feather="chevron-down" class="text-gray-500 transition-transform duration-300"></i>
+                        <i data-feather="chevron-down" class="text-gray-400 transition-transform duration-300"></i>
                     </button>
-                    <div class="px-8 pb-6 text-gray-400 hidden animate-fade-in">
+                    <div class="px-8 pb-6 text-gray-600 hidden animate-fade-in">
                         Yes. Calls and recordings are queued locally on the device and will automatically sync to the
                         cloud as soon as an internet connection (Wi-Fi or Mobile Data) is restored.
                     </div>
@@ -601,21 +586,20 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="py-24 relative overflow-hidden">
-        <div class="absolute inset-0 bg-brand-600/10"></div>
+    <section class="py-24 relative overflow-hidden bg-gradient-to-r from-brand-500 to-purple-600">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-            <h2 class="text-3xl font-bold mb-6">Ready to transform your business?</h2>
-            <p class="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
+            <h2 class="text-3xl font-bold mb-6 text-white">Ready to transform your business?</h2>
+            <p class="text-xl text-white/90 mb-10 max-w-2xl mx-auto">
                 Join thousands of businesses using MiniClick to track calls and grow sales. Start your 3-day free trial
                 today.
             </p>
             <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <a href="../signup/"
-                    class="w-full sm:w-auto px-8 py-4 bg-brand-600 text-white font-bold rounded-full hover:bg-brand-500 transition-all shadow-lg shadow-brand-500/30">
+                    class="w-full sm:w-auto px-8 py-4 bg-white text-brand-600 font-bold rounded-full hover:bg-gray-100 transition-all shadow-lg transform hover:-translate-y-1">
                     Get Started Now
                 </a>
                 <a href="../download/"
-                    class="w-full sm:w-auto px-8 py-4 glass text-white font-medium rounded-full hover:bg-white/10 transition-all flex items-center justify-center gap-2">
+                    class="w-full sm:w-auto px-8 py-4 bg-white/10 text-white font-medium rounded-full hover:bg-white/20 transition-all flex items-center justify-center gap-2 border border-white/20">
                     <i data-feather="download" class="w-4 h-4"></i> Download App
                 </a>
             </div>
@@ -623,33 +607,32 @@
     </section>
 
     <!-- Footer -->
-    <footer class="border-t border-white/10 bg-[#0B0F19] pt-16 pb-8">
+    <footer class="border-t border-gray-100 bg-white pt-16 pb-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
                 <div class="col-span-2 md:col-span-1">
-                    <span class="font-bold text-xl tracking-tight mb-4 block">MiniClick Calls<span
-                            class="text-brand-400">.</span></span>
+                    <span class="font-bold text-xl tracking-tight mb-4 block text-gray-900">MiniClick Calls<span
+                            class="text-brand-600">.</span></span>
                     <p class="text-gray-500 text-sm">Track, Manage, & Sync business calls with ease.</p>
                 </div>
                 <div>
-                    <h4 class="font-bold mb-4">Product</h4>
-                    <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="#features" class="hover:text-white transition-colors">Features</a></li>
-                        <li><a href="#pricing" class="hover:text-white transition-colors">Pricing</a></li>
-                        <li><a href="../download/" class="hover:text-white transition-colors">Download</a></li>
+                    <h4 class="font-bold mb-4 text-gray-900">Product</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li><a href="#features" class="hover:text-brand-600 transition-colors">Features</a></li>
+                        <li><a href="#pricing" class="hover:text-brand-600 transition-colors">Pricing</a></li>
+                        <li><a href="../download/" class="hover:text-brand-600 transition-colors">Download</a></li>
                     </ul>
                 </div>
-                <!-- ... other footer cols (simplified for brevity, main structure is here) ... -->
                 <div>
-                    <h4 class="font-bold mb-4">Admin</h4>
-                    <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="../login/" class="hover:text-white transition-colors">Login</a></li>
-                        <li><a href="../signup/" class="hover:text-white transition-colors">Sign Up</a></li>
+                    <h4 class="font-bold mb-4 text-gray-900">Admin</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li><a href="../login/" class="hover:text-brand-600 transition-colors">Login</a></li>
+                        <li><a href="../signup/" class="hover:text-brand-600 transition-colors">Sign Up</a></li>
                     </ul>
                 </div>
             </div>
-            <div class="border-t border-white/5 pt-8 text-center">
-                <p class="text-gray-600 text-sm">© 2026 MiniClick. All rights reserved.</p>
+            <div class="border-t border-gray-100 pt-8 text-center">
+                <p class="text-gray-500 text-sm">© 2026 MiniClick. All rights reserved.</p>
             </div>
         </div>
     </footer>

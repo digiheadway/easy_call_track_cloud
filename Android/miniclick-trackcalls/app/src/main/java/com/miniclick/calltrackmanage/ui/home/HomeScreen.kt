@@ -599,9 +599,6 @@ fun CallsScreen(
                 asEmptyState = true,
                 modifier = Modifier.weight(1f)
             ) {
-                LaunchedEffect(Unit) {
-                    viewModel.refreshSettings()
-                }
 
                 if (uiState.viewMode == ViewMode.CALLS) {
                     HorizontalPager(

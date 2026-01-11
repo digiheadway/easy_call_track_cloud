@@ -54,15 +54,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             startCriticalObservers()
         }
         
-        // Phase 2 (200ms): Load settings and trigger initial filter
+        // Phase 2 (200ms): Load recording path (triggerFilter is called by observers when data arrives)
         viewModelScope.launch {
             kotlinx.coroutines.delay(200)
             withContext(Dispatchers.IO) {
-                // Removed redundant refreshSettings() which caused jumpy UI on return from other screens
                 loadRecordingPath()
-                // triggerFilter() called via refreshSettings or here, 
-                // but let's make sure it runs on IO
-                runFilteringAsync()
             }
         }
         
@@ -333,6 +329,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val searchQuery = settingsRepository.getSearchQuery()
         val viewMode = try { ViewMode.valueOf(settingsRepository.getViewMode()) } catch(e: Exception) { ViewMode.PERSONS }
         val isSyncSetup = settingsRepository.getOrganisationId().isNotEmpty()
+        val simSelection = settingsRepository.getSimSelection()
+        val trackStartDate = settingsRepository.getTrackStartDate()
         
         val typeFilter = try { 
             val saved = settingsRepository.getCallTypeFilter()
@@ -361,6 +359,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             searchQuery = searchQuery,
             viewMode = viewMode,
             isSyncSetup = isSyncSetup,
+            simSelection = simSelection,
+            trackStartDate = trackStartDate,
             callTypeFilter = typeFilter,
             personTabFilter = pTypeFilter,
             visibleCallFilters = loadVisibleCallFilters(),
