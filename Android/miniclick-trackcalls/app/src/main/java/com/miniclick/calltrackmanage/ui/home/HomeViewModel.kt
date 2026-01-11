@@ -12,74 +12,102 @@ import com.miniclick.calltrackmanage.data.SettingsRepository
 import java.util.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.withLock
 import com.miniclick.calltrackmanage.ui.home.viewmodel.*
 import android.util.Log
 
 
 
-class HomeViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val callDataRepository = CallDataRepository.getInstance(application)
-    private val recordingRepository = RecordingRepository.getInstance(application)
-    private val settingsRepository = SettingsRepository.getInstance(application)
+@dagger.hilt.android.lifecycle.HiltViewModel
+class HomeViewModel @javax.inject.Inject constructor(
+    application: Application,
+    private val settingsRepository: com.miniclick.calltrackmanage.data.SettingsRepository,
+    private val callDataRepository: com.miniclick.calltrackmanage.data.CallDataRepository,
+    private val recordingRepository: com.miniclick.calltrackmanage.data.RecordingRepository,
+) : AndroidViewModel(application) {
     
     // Performance: Cache for normalized numbers to avoid repeated heavy library calls
     private val normalizationCache = java.util.concurrent.ConcurrentHashMap<String, String>()
     private val networkObserver = com.miniclick.calltrackmanage.util.network.NetworkConnectivityObserver(application)
 
+    private val filterMutex = kotlinx.coroutines.sync.Mutex()
+    
     // Caching for expensive PersonGroup generation
     private var lastUsedCallLogs: List<CallDataEntity>? = null
     private var lastUsedPersons: List<PersonDataEntity>? = null
-    private var lastUsedTrackStart: Long? = null
-    private var lastUsedSimSelection: String? = null
+    private var lastUsedTrackStart: Long = 0L
+    private var lastUsedSimSelection: String = ""
     private var lastComputedGroups: Map<String, PersonGroup> = emptyMap()
     private var lastLogsForGroupsByPhone: Map<String, List<CallDataEntity>> = emptyMap()
     
-    private val viewModelStartTime = System.currentTimeMillis()
     private var isFirstLoadComplete = false
+    private val viewModelStartTime = System.currentTimeMillis()
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
+        Log.d("HomeViewModel", "HomeViewModel init")
+        _uiState.update { it.copy(isLoading = true) }
+        
         // STARTUP OPTIMIZATION: Load minimal settings synchronously for immediate UI
         loadSettingsSync()
         
-        // STARTUP OPTIMIZATION: Stagger heavy work to prevent recomposition storms
-        // This spreads state updates over time to keep UI responsive
-        
-        // Phase 1 (50ms): Start critical database observers
-        viewModelScope.launch {
-            kotlinx.coroutines.delay(50)
-            startCriticalObservers()
-        }
-        
-        // Phase 2 (200ms): Load recording path (triggerFilter is called by observers when data arrives)
-        viewModelScope.launch {
-            kotlinx.coroutines.delay(200)
-            withContext(Dispatchers.IO) {
-                loadRecordingPath()
+        // Phase 0 (Instant): Immediate DB Pre-seed read on IO thread
+        // This ensures that for warm starts or even fast fresh starts, data is ready ASAP.
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val minDate = settingsRepository.getTrackStartDate()
+                val initialLogs = callDataRepository.getCallsSince(minDate)
+                val initialPersons = callDataRepository.getAllPersonsIncludingExcluded(minDate)
+                
+                if (initialLogs.isNotEmpty() || initialPersons.isNotEmpty()) {
+                    Log.d("HomeViewModel", "Pre-seed: Found ${initialLogs.size} logs, ${initialPersons.size} persons")
+                    _uiState.update { it.copy(
+                        callLogs = initialLogs, 
+                        persons = initialPersons,
+                        trackStartDate = minDate
+                    ) }
+                    triggerFilter()
+                }
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Pre-seed failed", e)
             }
         }
         
-        // Phase 3 (400ms): Start secondary observers  
+        // STARTUP OPTIMIZATION: Start critical work IMMEDIATELY for fastest data display
+        // Only defer truly heavy operations (sync, secondary observers)
+        
+        // Phase 1 (0ms): Start critical database observers IMMEDIATELY
         viewModelScope.launch {
-            kotlinx.coroutines.delay(400)
+            startCriticalObservers()
+        }
+        
+        // Phase 2 (0ms): Load recording path in parallel on IO thread
+        viewModelScope.launch(Dispatchers.IO) {
+            loadRecordingPath()
+        }
+        
+        // Phase 3 (100ms): Start secondary observers (lighter delay)  
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(100)
             startSecondaryObservers()
         }
         
-        // Phase 4 (600ms): Sync from system (heavy operation)
+        // Phase 4 (300ms): Sync from system (heavy operation - can wait a bit)
         viewModelScope.launch {
-            kotlinx.coroutines.delay(600)
+            kotlinx.coroutines.delay(300)
             if (settingsRepository.isSetupGuideCompleted()) {
                 syncFromSystem()
             }
         }
         
-        // Final Loading Termination (3s): Ensure shimmers stop even if DB is empty
+        // Final Loading Termination (500ms): Ensure shimmers stop even if DB is empty
+        // Reduced from 3s to 500ms because local data should be instant.
         viewModelScope.launch {
-            kotlinx.coroutines.delay(3000)
+            kotlinx.coroutines.delay(500)
             if (_uiState.value.isLoading) {
+                Log.d("HomeViewModel", "Loading timeout reached, forcing filter check")
                 triggerFilter()
             }
         }
@@ -115,7 +143,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     val start = System.currentTimeMillis()
                     _uiState.update { it.copy(callLogs = calls) }
                     triggerFilter()
-                    Log.d("HomeViewModel", "Collected ${calls.size} calls in ${System.currentTimeMillis() - start}ms")
+                    
+                    if (!isFirstLoadComplete && calls.isNotEmpty()) {
+                        Log.i("HomeViewModel", "FIRST DATA LOAD: Collected ${calls.size} calls in ${System.currentTimeMillis() - start}ms. Startup to first data: ${System.currentTimeMillis() - viewModelStartTime}ms")
+                    } else {
+                        Log.d("HomeViewModel", "Collected ${calls.size} calls in ${System.currentTimeMillis() - start}ms")
+                    }
                 }
         }
         
@@ -135,6 +168,38 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     triggerFilter()
                     Log.d("HomeViewModel", "Collected ${persons.size} persons in ${System.currentTimeMillis() - start}ms")
                 }
+        }
+
+        // CRITICAL FOR FRESH START: Observe setup guide completion and SIM IDs
+        viewModelScope.launch {
+            settingsRepository.getSetupGuideCompletedFlow()
+                .distinctUntilChanged()
+                .collect { completed ->
+                    Log.d("HomeViewModel", "Setup Guide Completed Flow: $completed")
+                    refreshSettings()
+                    // syncFromSystem() is now handled inside refreshSettings() if needsSync is true.
+                    // If refreshSettings didn't trigger it (e.g. no SIM change), we trigger it manually
+                    // only if it's the specific moment the user finishes the guide.
+                    if (completed && !_uiState.value.isSyncing) {
+                        syncFromSystem()
+                    }
+                }
+        }
+
+        viewModelScope.launch {
+            combine(
+                settingsRepository.getSimSelectionFlow(),
+                settingsRepository.getSim1SubscriptionIdFlow(),
+                settingsRepository.getSim2SubscriptionIdFlow()
+            ) { selection, sim1, sim2 ->
+                Triple(selection, sim1, sim2)
+            }
+            .distinctUntilChanged()
+            .collect { result ->
+                val (selection, sim1, sim2) = Triple(result.first, result.second, result.third)
+                Log.d("HomeViewModel", "SIM Settings Changed: sel=$selection, sim1=$sim1, sim2=$sim2")
+                refreshSettings()
+            }
         }
     }
     
@@ -268,15 +333,26 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      * Sync new calls from system call log to Room (background operation)
      */
     fun syncFromSystem() {
+        // Prevent overlapping sync requests to avoid infinite loops and JobInfo warnings
+        if (_uiState.value.isSyncing) {
+            Log.d("HomeViewModel", "syncFromSystem skipped: sync already in progress")
+            return
+        }
+        
         viewModelScope.launch {
-            refreshSettings()
+            Log.d("HomeViewModel", "syncFromSystem starting")
             _uiState.update { it.copy(isSyncing = true) }
             try {
+                // Background operations handled by SyncManager (enqueues workers)
                 SyncManager.syncNow(getApplication())
+                // We add a small artificial delay to prevent rapid-fire rescheduling from UI loops
+                kotlinx.coroutines.delay(2000)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("HomeViewModel", "Sync failed", e)
+            } finally {
+                _uiState.update { it.copy(isSyncing = false) }
+                Log.d("HomeViewModel", "syncFromSystem finished")
             }
-            _uiState.update { it.copy(isSyncing = false) }
         }
     }
 
@@ -332,27 +408,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val simSelection = settingsRepository.getSimSelection()
         val trackStartDate = settingsRepository.getTrackStartDate()
         
-        val typeFilter = try { 
-            val saved = settingsRepository.getCallTypeFilter()
-            when (saved) {
-                "ATTENDED" -> CallTabFilter.ANSWERED
-                "RESPONDED" -> CallTabFilter.OUTGOING
-                "NOT_ATTENDED" -> CallTabFilter.NOT_ANSWERED
-                "NOT_RESPONDED" -> CallTabFilter.OUTGOING_NOT_CONNECTED
-                else -> CallTabFilter.valueOf(saved)
-            }
-        } catch(e: Exception) { CallTabFilter.ALL }
-        
-        val pTypeFilter = try { 
-            val saved = settingsRepository.getPersonTabFilter()
-            when (saved) {
-                "ATTENDED" -> PersonTabFilter.ANSWERED
-                "RESPONDED" -> PersonTabFilter.OUTGOING
-                "NOT_ATTENDED" -> PersonTabFilter.NOT_ANSWERED
-                "NOT_RESPONDED" -> PersonTabFilter.OUTGOING_NOT_CONNECTED
-                else -> PersonTabFilter.valueOf(saved)
-            }
-        } catch(e: Exception) { PersonTabFilter.ALL }
+        // Always start with ALL filter - no need to persist tab selection
+        val typeFilter = CallTabFilter.ALL
+        val pTypeFilter = PersonTabFilter.ALL
 
         _uiState.update { it.copy(
             isSearchVisible = searchVisible,
@@ -457,13 +515,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val oldMode = currentState.viewMode
         val newMode = if (oldMode == ViewMode.CALLS) ViewMode.PERSONS else ViewMode.CALLS
         
-        // Synchronize filters by name to maintain context across view modes
+        // Synchronize filters by name to maintain context across view modes (in-memory only)
         if (newMode == ViewMode.PERSONS) {
             try {
                 val matchingFilter = PersonTabFilter.valueOf(currentState.callTypeFilter.name)
                 if (currentState.personTabFilter != matchingFilter) {
                     _uiState.update { it.copy(personTabFilter = matchingFilter) }
-                    settingsRepository.setPersonTabFilter(matchingFilter.name)
                 }
             } catch (e: Exception) {
                 // Fallback to ALL if no match
@@ -474,7 +531,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 val matchingFilter = CallTabFilter.valueOf(currentState.personTabFilter.name)
                 if (currentState.callTypeFilter != matchingFilter) {
                     _uiState.update { it.copy(callTypeFilter = matchingFilter) }
-                    settingsRepository.setCallTypeFilter(matchingFilter.name)
                 }
             } catch (e: Exception) {
                 // Fallback to ALL if no match
@@ -487,16 +543,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     
     fun setCallTypeFilter(filter: CallTabFilter) {
         _uiState.update { it.copy(callTypeFilter = filter) }
-        settingsRepository.setCallTypeFilter(filter.name)
-        // We only update the active pointer to keep the UI snappy during swiping.
+        // Don't persist tab selection - always start fresh
         updateDateSummaries()
     }
 
     fun setPersonTabFilter(filter: PersonTabFilter) {
         _uiState.update { it.copy(personTabFilter = filter) }
-        settingsRepository.setPersonTabFilter(filter.name)
-        // Optimization: Do NOT call triggerFilter() here.
-        // tabFilteredPersons already contains data for all tabs.
+        // Don't persist tab selection - always start fresh
         updateDateSummaries()
     }
     
@@ -605,11 +658,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private fun triggerFilter() {
         filterJob?.cancel()
         filterJob = viewModelScope.launch(Dispatchers.Default) {
-            val filterStart = System.currentTimeMillis()
-            // Debounce to prevent UI lag during rapid updates - 50ms is ideal for responsiveness
-            kotlinx.coroutines.delay(50)
+            // Debounce to prevent UI lag - 8ms (half a frame) for extreme responsiveness
+            kotlinx.coroutines.delay(8)
             
-            val currentState = _uiState.value
+            // Ensure only one filter cycle runs the heavy logic at a time to prevent ANRs
+            filterMutex.withLock {
+                if (!isActive) return@withLock
+                
+                val filterStart = System.currentTimeMillis()
+                val currentState = _uiState.value
             
             // 1. Prepare shared lookup data
             val personsMap = currentState.persons.associateBy { it.phoneNumber }
@@ -724,15 +781,22 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             
             val hasData = tabPersons.values.any { it.isNotEmpty() } || tabLogs.values.any { it.isNotEmpty() }
             val timeSinceStart = System.currentTimeMillis() - viewModelStartTime
+            val dbHasData = currentState.callLogs.isNotEmpty() || currentState.persons.isNotEmpty()
             
+            // FAST STARTUP: If we have ANY data in the DB, stop shimmer immediately.
+            // Don't wait for complex filtering to be "not empty" across all tabs.
             val stillLoading = when {
                 hasData -> false 
+                dbHasData -> false // If DB has raw data, don't show shimmers
                 isFirstLoadComplete -> false 
-                timeSinceStart < 3000 -> true 
+                // Fresh start protection: If we are literally at zero data and actively syncing,
+                // hold the shimmer for up to 5 seconds to give the initial import a chance.
+                currentState.isSyncing && !dbHasData && timeSinceStart < 5000 -> true
+                timeSinceStart < 500 -> true  // Regular minimum shimmer duration
                 else -> false 
             }
             
-            if (hasData) isFirstLoadComplete = true
+            if (hasData || dbHasData) isFirstLoadComplete = true
 
             _uiState.update { it.copy(
                 tabFilteredLogs = tabLogs,
@@ -749,6 +813,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             updateDateSummaries()
             Log.d("HomeViewModel", "Filter cycle completed in ${System.currentTimeMillis() - filterStart}ms (Logic: ${System.currentTimeMillis() - filterPhaseStart}ms)")
         }
+    }
     }
 
     private fun updateDateSummaries() {
@@ -991,8 +1056,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val callerPhone1 = settingsRepository.getCallerPhoneSim1()
         val callerPhone2 = settingsRepository.getCallerPhoneSim2()
         
-        // Detect active SIMs
-        val sims = HomeUtils.detectActiveSims(getApplication())
+        // Detect active SIMs - Optimization: Use cached value if possible to avoid main thread block
+        // We will trigger a background refresh of this soon
+        val sims = _uiState.value.availableSims.ifEmpty { 
+             // On first run, we might have to do it, but let's try to keep it fast
+             HomeUtils.detectActiveSims(getApplication())
+        }
         
         // Check for critical changes that require re-syncing
         val needsSync = simSelection != _uiState.value.simSelection || 
@@ -1009,27 +1078,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val filtersVisible = settingsRepository.isFiltersVisible()
     val labelFilter = settingsRepository.getLabelFilter()
     
-    val typeFilter = try { 
-        val saved = settingsRepository.getCallTypeFilter()
-        when (saved) {
-            "ATTENDED" -> CallTabFilter.ANSWERED
-            "RESPONDED" -> CallTabFilter.OUTGOING
-            "NOT_ATTENDED" -> CallTabFilter.NOT_ANSWERED
-            "NOT_RESPONDED" -> CallTabFilter.OUTGOING_NOT_CONNECTED
-            else -> CallTabFilter.valueOf(saved)
-        }
-    } catch(e: Exception) { CallTabFilter.ALL }
-    
-    val pTypeFilter = try { 
-        val saved = settingsRepository.getPersonTabFilter()
-        when (saved) {
-            "ATTENDED" -> PersonTabFilter.ANSWERED
-            "RESPONDED" -> PersonTabFilter.OUTGOING
-            "NOT_ATTENDED" -> PersonTabFilter.NOT_ANSWERED
-            "NOT_RESPONDED" -> PersonTabFilter.OUTGOING_NOT_CONNECTED
-            else -> PersonTabFilter.valueOf(saved)
-        }
-    } catch(e: Exception) { PersonTabFilter.ALL }
+    // NOTE: Don't load callTypeFilter/personTabFilter here anymore
+    // They are transient (in-memory only) and should not be persisted or restored
 
     // Load other filters
     val connFilter = try { ConnectedFilter.valueOf(settingsRepository.getConnectedFilter()) } catch(e: Exception) { ConnectedFilter.ALL }
@@ -1053,10 +1103,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val newComputedVisiblePersonFilters = vPersonFilters
 
     // Optimization: Only update UI state if something meaningful changed
-    // This prevents the 'tabs jumping back' issue when returning from other screens
-    val hasMeaningfulChanges = currentState.callTypeFilter != typeFilter ||
-            currentState.personTabFilter != pTypeFilter ||
-            currentState.viewMode != currentState.viewMode || // Check if viewMode reset
+    // Note: Tab filter comparison removed since they're transient now
+    val hasMeaningfulChanges = 
             currentState.visibleCallFilters != newComputedVisibleCallFilters ||
             currentState.visiblePersonFilters != newComputedVisiblePersonFilters ||
             currentState.simSelection != simSelection ||
@@ -1065,47 +1113,71 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             currentState.labelFilter != labelFilter ||
             currentState.dateRange != dateRange
 
-    if (hasMeaningfulChanges) {
-        _uiState.update { it.copy(
-            simSelection = simSelection, 
-            trackStartDate = trackStartDate,
-            whatsappPreference = whatsappPreference,
-            isSyncSetup = isSyncSetup,
-            callRecordEnabled = callRecordEnabled,
-            sim1SubId = sim1SubId,
-            sim2SubId = sim2SubId,
-            callerPhoneSim1 = callerPhone1,
-            callerPhoneSim2 = callerPhone2,
-            availableSims = sims,
-            callActionBehavior = callActionBehavior,
-            availableWhatsappApps = HomeUtils.fetchWhatsAppApps(getApplication()),
-            allowPersonalExclusion = settingsRepository.isAllowPersonalExclusion(),
-            
-            // Extended Settings loaded in background
-            isFiltersVisible = filtersVisible,
-            labelFilter = labelFilter,
-            callTypeFilter = typeFilter,
-            personTabFilter = pTypeFilter,
-            connectedFilter = connFilter,
-            notesFilter = nFilter,
-            personNotesFilter = pnFilter,
-            contactsFilter = cFilter,
-            attendedFilter = aFilter,
-            reviewedFilter = rFilter,
-            customNameFilter = cnFilter,
-            dateRange = dateRange,
-            customStartDate = customStartDate,
-            customEndDate = customEndDate,
-            reportCategory = reportCategory,
-            visibleCallFilters = newComputedVisibleCallFilters,
-            visiblePersonFilters = newComputedVisiblePersonFilters
-        ) }
+        if (hasMeaningfulChanges) {
+            _uiState.update { it.copy(
+                simSelection = simSelection, 
+                trackStartDate = trackStartDate,
+                whatsappPreference = whatsappPreference,
+                isSyncSetup = isSyncSetup,
+                callRecordEnabled = callRecordEnabled,
+                sim1SubId = sim1SubId,
+                sim2SubId = sim2SubId,
+                callerPhoneSim1 = callerPhone1,
+                callerPhoneSim2 = callerPhone2,
+                availableSims = sims,
+                callActionBehavior = callActionBehavior,
+                // availableWhatsappApps = HomeUtils.fetchWhatsAppApps(getApplication()), // MOVED TO BACKGROUND
+                allowPersonalExclusion = settingsRepository.isAllowPersonalExclusion(),
+                
+                // Extended Settings loaded in background
+                isFiltersVisible = filtersVisible,
+                labelFilter = labelFilter,
+                // Note: callTypeFilter and personTabFilter are NOT updated here - they stay in-memory only
+                connectedFilter = connFilter,
+                notesFilter = nFilter,
+                personNotesFilter = pnFilter,
+                contactsFilter = cFilter,
+                attendedFilter = aFilter,
+                reviewedFilter = rFilter,
+                customNameFilter = cnFilter,
+                dateRange = dateRange,
+                customStartDate = customStartDate,
+                customEndDate = customEndDate,
+                reportCategory = reportCategory,
+                visibleCallFilters = newComputedVisibleCallFilters,
+                visiblePersonFilters = newComputedVisiblePersonFilters
+            ) }
+
+            // Only trigger sync if settings actually changed and we aren't already syncing
+            if (needsSync) {
+                Log.i("HomeViewModel", "Settings change detected, triggering syncFromSystem")
+                syncFromSystem()
+            } else {
+                triggerFilter()
+            }
+        } else {
+            // No settings changed, just ensure filters are up to date if called manually
+            triggerFilter()
+        }
+        
+        // BACKGROUND REFRESH: Heavy system info like WhatsApp apps and SIMs should be done on IO
+        refreshHeavySystemInfo()
     }
 
-        if (needsSync) {
-            syncFromSystem()
-        } else {
-            triggerFilter()
+    private var heavyInfoJob: kotlinx.coroutines.Job? = null
+    private fun refreshHeavySystemInfo() {
+        heavyInfoJob?.cancel()
+        heavyInfoJob = viewModelScope.launch(Dispatchers.IO) {
+            // Wait a bit to let the UI settle
+            delay(100)
+            
+            val sims = HomeUtils.detectActiveSims(getApplication())
+            val whatsappApps = HomeUtils.fetchWhatsAppApps(getApplication())
+            
+            _uiState.update { it.copy(
+                availableSims = sims,
+                availableWhatsappApps = whatsappApps
+            )}
         }
     }
 

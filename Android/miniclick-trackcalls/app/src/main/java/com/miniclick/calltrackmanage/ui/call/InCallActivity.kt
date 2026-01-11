@@ -48,6 +48,7 @@ import com.miniclick.calltrackmanage.ui.common.NoteDialog
 import com.miniclick.calltrackmanage.ui.common.LabelPickerDialog
 import androidx.compose.material.icons.filled.Search
 
+@dagger.hilt.android.AndroidEntryPoint
 class InCallActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,8 +71,8 @@ class InCallActivity : ComponentActivity() {
 
         setContent {
             CallCloudTheme {
-                val homeViewModel: HomeViewModel = viewModel()
-                val settingsViewModel: SettingsViewModel = viewModel()
+                val homeViewModel: HomeViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+                val settingsViewModel: SettingsViewModel = androidx.hilt.navigation.compose.hiltViewModel()
                 val audioPlayer = remember { AudioPlayer(applicationContext) }
                 
                 InCallScreen(

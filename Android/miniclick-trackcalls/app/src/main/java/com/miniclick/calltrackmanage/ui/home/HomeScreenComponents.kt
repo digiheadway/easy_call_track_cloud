@@ -763,6 +763,15 @@ fun QuickDateJumpBottomSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     
+    // Month filter state
+    var selectedMonth by remember { mutableStateOf<Pair<String, Int>?>(null) }
+    
+    // Filter dates by selected month
+    val filteredDates = remember(dateSummaries, selectedMonth) {
+        if (selectedMonth == null) dateSummaries
+        else dateSummaries.filter { it.month == selectedMonth!!.first && it.year == selectedMonth!!.second }
+    }
+    
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -775,63 +784,64 @@ fun QuickDateJumpBottomSheet(
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 32.dp)
         ) {
-            Text(
-                text = "Jump to Date",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            
-            Spacer(Modifier.height(16.dp))
-            
-            // Date Range Selector
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                shape = RoundedCornerShape(12.dp)
+            // Header Row: Title + Date Range Dropdown
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Text(
-                        text = "Date Range",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    
-                    var expanded by remember { mutableStateOf(false) }
-                    Box(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Jump to Date",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                // Compact Date Range Dropdown
+                var expanded by remember { mutableStateOf(false) }
+                Box {
+                    Surface(
+                        onClick = { expanded = true },
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
                         Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .clickable { expanded = true }
-                                .padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = currentDateRange.name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() },
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
-                            Icon(Icons.Default.ArrowDropDown, null)
+                            Spacer(Modifier.width(4.dp))
+                            Icon(
+                                Icons.Default.ArrowDropDown, 
+                                null, 
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
                         }
-                        
-                        DropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
-                        ) {
-                            DateRange.entries.filter { it != DateRange.CUSTOM }.forEach { range ->
-                                DropdownMenuItem(
-                                    text = { Text(range.name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }) },
-                                    onClick = {
-                                        onDateRangeSelect(range)
-                                        expanded = false
-                                    },
-                                    trailingIcon = {
-                                        if (range == currentDateRange) {
-                                            Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
-                                        }
+                    }
+                    
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        DateRange.entries.filter { it != DateRange.CUSTOM }.forEach { range ->
+                            DropdownMenuItem(
+                                text = { Text(range.name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }) },
+                                onClick = {
+                                    onDateRangeSelect(range)
+                                    selectedMonth = null // Reset month filter on range change
+                                    expanded = false
+                                },
+                                trailingIcon = {
+                                    if (range == currentDateRange) {
+                                        Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary)
                                     }
-                                )
-                            }
+                                }
+                            )
                         }
                     }
                 }
@@ -839,122 +849,128 @@ fun QuickDateJumpBottomSheet(
             
             Spacer(Modifier.height(16.dp))
             
-            // Month Chips (Navigation within the list below)
+            // Month Filter Chips
             val months = remember(dateSummaries) {
                 dateSummaries.map { it.month to it.year }.distinct()
             }
             
-            if (months.size > 1) {
+            if (months.isNotEmpty()) {
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
+                    // "All" chip
+                    FilterChip(
+                        selected = selectedMonth == null,
+                        onClick = { selectedMonth = null },
+                        label = { Text("All") }
+                    )
+                    
                     months.forEach { (month, year) ->
                         val isCurrentYear = Calendar.getInstance().get(Calendar.YEAR) == year
                         val label = if (isCurrentYear) month else "$month $year"
+                        val isSelected = selectedMonth?.first == month && selectedMonth?.second == year
                         FilterChip(
-                            selected = false,
+                            selected = isSelected,
                             onClick = { 
-                                // Scroll to first date of this month
-                                dateSummaries.find { it.month == month && it.year == year }?.let { onDateClick(it) }
+                                selectedMonth = if (isSelected) null else (month to year)
                             },
                             label = { Text(label) }
                         )
                     }
                 }
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(12.dp))
             }
             
             // Available Dates List
-            Text(
-                text = "Available Dates",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (selectedMonth != null) "${filteredDates.size} dates" else "${dateSummaries.size} dates",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            Spacer(Modifier.height(8.dp))
             
             LazyColumn(
                 modifier = Modifier
                     .weight(1f, fill = false)
-                    .heightIn(max = 400.dp)
+                    .heightIn(max = 350.dp)
             ) {
-                items(dateSummaries) { summary ->
+                items(filteredDates) { summary ->
                     Surface(
                         onClick = { onDateClick(summary) },
                         color = Color.Transparent,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
-                            modifier = Modifier
-                                .padding(vertical = 12.dp, horizontal = 4.dp),
+                            modifier = Modifier.padding(vertical = 10.dp, horizontal = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = "${summary.dateLabel}, ${summary.dayOfWeek}",
-                                    style = MaterialTheme.typography.bodyLarge,
+                                    style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium
                                 )
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.Call, null, Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Spacer(Modifier.width(4.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
                                     Text(
-                                        text = "${summary.totalCalls} Calls",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = "  |  ",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                                    )
-                                    Icon(Icons.Default.Person, null, Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        text = "${summary.uniqueCalls} Unique",
+                                        text = "${summary.totalCalls} calls • ${summary.uniqueCalls} unique",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
-                            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
+                            Icon(
+                                Icons.Default.ChevronRight, 
+                                null, 
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            )
                         }
                     }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
                 }
             }
             
-            Spacer(Modifier.height(24.dp))
-            
-            // Grouping Info and Toggle
+            // Grouping Info (Compact)
             if (viewMode == ViewMode.PERSONS) {
+                Spacer(Modifier.height(12.dp))
                 Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                    shape = RoundedCornerShape(12.dp)
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
                     Row(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             Icons.Default.Info,
                             null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(16.dp)
                         )
-                        Spacer(Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Calls are grouped by phone numbers. Each person is shown under the day they last called you.",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            TextButton(
-                                onClick = onToggleViewMode,
-                                contentPadding = PaddingValues(0.dp)
-                            ) {
-                                Text("Do not group (Show each call)", style = MaterialTheme.typography.labelSmall)
-                            }
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "Grouped by person",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(
+                            onClick = onToggleViewMode,
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                        ) {
+                            Text("Show calls", style = MaterialTheme.typography.labelSmall)
                         }
                     }
                 }

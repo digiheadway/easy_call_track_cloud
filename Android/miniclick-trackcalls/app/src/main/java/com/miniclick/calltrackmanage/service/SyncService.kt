@@ -290,13 +290,21 @@ class SyncService : Service() {
 
     private fun triggerSync() {
         if (!checkHasPermissions()) {
-            Log.d(TAG, "Sync skipped - missing permissions")
+            Log.d(TAG, "Sync skipped - missing permissions (READ_PHONE_STATE, READ_CALL_LOG)")
             return
         }
         
         val settingsRepository = com.miniclick.calltrackmanage.data.SettingsRepository.getInstance(this)
+        val orgId = settingsRepository.getOrganisationId()
+        val userId = settingsRepository.getUserId()
+
         if (!settingsRepository.isSetupGuideCompleted()) {
-            Log.d(TAG, "Sync skipped - setup guide not completed")
+            Log.d(TAG, "Sync skipped - setup guide not completed. (orgId: '$orgId', userId: '$userId')")
+            return
+        }
+
+        if (orgId.isEmpty() || userId.isEmpty()) {
+            Log.d(TAG, "Sync skipped - pairing missing. (orgId: '$orgId', userId: '$userId')")
             return
         }
 

@@ -9,6 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import kotlinx.coroutines.launch
 import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
@@ -339,11 +340,9 @@ fun CallsScreen(
                             }
                             
                             state?.let {
-                                if (index < it.layoutInfo.totalItemsCount) {
-                                    it.animateScrollToItem(index)
-                                } else {
-                                    it.scrollToItem(index)
-                                }
+                                // Always use animated scroll for smooth experience
+                                val targetIndex = index.coerceIn(0, maxOf(0, it.layoutInfo.totalItemsCount - 1))
+                                it.animateScrollToItem(targetIndex)
                             }
                         }
                     } catch (e: Exception) {
@@ -611,69 +610,85 @@ fun CallsScreen(
                         val tab = visibleCallFilters[page]
                         val tabLogs = uiState.tabFilteredLogs[tab] ?: emptyList()
                         
-                        Box(Modifier.fillMaxSize()) {
-                            when {
-                                uiState.isLoading -> {
-                                    Column(Modifier.fillMaxSize()) {
-                                        repeat(10) {
-                                            CallRowShimmer()
-                                        }
+                        // Determine if we should show shimmer:
+                        // Show shimmer if loading OR if no data yet and we haven't confirmed empty
+                        val hasAnyData = uiState.callLogs.isNotEmpty() || uiState.persons.isNotEmpty()
+                        val shouldShowShimmer = uiState.isLoading || (!hasAnyData && tabLogs.isEmpty())
+                        
+                        // Use simpler state key for faster transitions
+                        val contentState = when {
+                            shouldShowShimmer -> "shimmer"
+                            uiState.simSelection == "Off" -> "sim_off"
+                            tabLogs.isEmpty() -> "empty"
+                            else -> "content"
+                        }
+                        
+                        // Use Crossfade for much faster transitions than AnimatedContent
+                        androidx.compose.animation.Crossfade(
+                            targetState = contentState,
+                            animationSpec = tween(if (contentState == "shimmer" || contentState == "content") 150 else 200),
+                            label = "content_transition",
+                            modifier = Modifier.fillMaxSize()
+                        ) { state ->
+                            Box(Modifier.fillMaxSize()) {
+                                when (state) {
+                                    "shimmer" -> {
+                                        CallListShimmer()
                                     }
-                                }
-                                uiState.simSelection == "Off" -> {
-                                    EmptyState(
-                                        icon = Icons.Default.SimCard,
-                                        title = "SIM Tracking is Off",
-                                        description = "You must select at least one SIM card to Capture and track calls.",
-                                        action = {
-                                            Button(
-                                                onClick = { settingsViewModel.toggleTrackSimModal(true) },
-                                                shape = RoundedCornerShape(12.dp)
-                                            ) {
-                                                Icon(Icons.Default.Settings, null)
-                                                Spacer(Modifier.width(8.dp))
-                                                Text("Turn On Tracking")
+                                    "sim_off" -> {
+                                        EmptyState(
+                                            icon = Icons.Default.SimCard,
+                                            title = "SIM Tracking is Off",
+                                            description = "You must select at least one SIM card to Capture and track calls.",
+                                            action = {
+                                                Button(
+                                                    onClick = { settingsViewModel.toggleTrackSimModal(true) },
+                                                    shape = RoundedCornerShape(12.dp)
+                                                ) {
+                                                    Icon(Icons.Default.Settings, null)
+                                                    Spacer(Modifier.width(8.dp))
+                                                    Text("Turn On Tracking")
+                                                }
+                                            }
+                                        )
+                                    }
+                                    "empty" -> {
+                                        val isFiltered = uiState.activeFilterCount > 0 || uiState.searchQuery.isNotEmpty()
+                                        when {
+                                            isFiltered -> {
+                                                EmptyState(
+                                                    icon = Icons.Default.SearchOff,
+                                                    title = "No results found",
+                                                    description = "Try adjusting your filters or search query."
+                                                )
+                                            }
+                                            uiState.isSyncing -> {
+                                                EmptyState(
+                                                    icon = Icons.Default.Sync,
+                                                    title = "Scanning for calls...",
+                                                    description = "We are importing your call history from the device. Please wait a moment."
+                                                )
+                                            }
+                                            else -> {
+                                                EmptyState(
+                                                    icon = Icons.Default.History,
+                                                    title = "No calls yet",
+                                                    description = "Your call history will appear here once you make or receive calls.",
+                                                    action = {
+                                                        Button(
+                                                            onClick = { viewModel.syncFromSystem() },
+                                                            shape = RoundedCornerShape(12.dp)
+                                                        ) {
+                                                            Icon(Icons.Default.Refresh, null)
+                                                            Spacer(Modifier.width(8.dp))
+                                                            Text("Refresh Again")
+                                                        }
+                                                    }
+                                                )
                                             }
                                         }
-                                    )
-                                }
-                                tabLogs.isEmpty() -> {
-                                    val isFiltered = uiState.activeFilterCount > 0 || uiState.searchQuery.isNotEmpty()
-                                    when {
-                                        isFiltered -> {
-                                            EmptyState(
-                                                icon = Icons.Default.SearchOff,
-                                                title = "No results found",
-                                                description = "Try adjusting your filters or search query."
-                                            )
-                                        }
-                                        uiState.isSyncing -> {
-                                            EmptyState(
-                                                icon = Icons.Default.Sync,
-                                                title = "Scanning for calls...",
-                                                description = "We are importing your call history from the device. Please wait a moment."
-                                            )
-                                        }
-                                        else -> {
-                                            EmptyState(
-                                                icon = Icons.Default.History,
-                                                title = "No calls yet",
-                                                description = "Your call history will appear here once you make or receive calls.",
-                                                action = {
-                                                    Button(
-                                                        onClick = { viewModel.syncFromSystem() },
-                                                        shape = RoundedCornerShape(12.dp)
-                                                    ) {
-                                                        Icon(Icons.Default.Refresh, null)
-                                                        Spacer(Modifier.width(8.dp))
-                                                        Text("Refresh Again")
-                                                    }
-                                                }
-                                            )
-                                        }
                                     }
-                                }
-                                else -> {
+                                    else -> {
                                     CallLogList(
                                         logs = tabLogs,
                                         recordings = uiState.recordings,
@@ -696,6 +711,7 @@ fun CallsScreen(
                                         showDialButton = showDialButton,
                                         onJumpClick = { showDateJumpSheet = true }
                                     )
+                                    }
                                 }
                             }
                         }
@@ -717,64 +733,86 @@ fun CallsScreen(
                         val tab = visiblePersonFilters[page]
                         val tabPersons = uiState.tabFilteredPersons[tab]?.mapNotNull { allPersonGroupsMap[it.phoneNumber] } ?: emptyList()
 
-                        Box(Modifier.fillMaxSize()) {
-                            if (uiState.isLoading) {
-                                Column(Modifier.fillMaxSize()) {
-                                    repeat(8) {
-                                        PersonCardShimmer()
+                        // Determine if we should show shimmer:
+                        // Show shimmer if loading OR if no data yet and we haven't confirmed empty
+                        val hasAnyData = uiState.callLogs.isNotEmpty() || uiState.persons.isNotEmpty()
+                        val shouldShowShimmer = uiState.isLoading || (!hasAnyData && tabPersons.isEmpty())
+                        
+                        // Use simpler state key for faster transitions
+                        val contentState = when {
+                            shouldShowShimmer -> "shimmer"
+                            uiState.simSelection == "Off" -> "sim_off"
+                            tabPersons.isEmpty() -> "empty"
+                            else -> "content"
+                        }
+                        
+                        // Use Crossfade for much faster transitions than AnimatedContent
+                        androidx.compose.animation.Crossfade(
+                            targetState = contentState,
+                            animationSpec = tween(if (contentState == "shimmer" || contentState == "content") 150 else 200),
+                            label = "person_content_transition",
+                            modifier = Modifier.fillMaxSize()
+                        ) { state ->
+                            Box(Modifier.fillMaxSize()) {
+                                when (state) {
+                                    "shimmer" -> {
+                                        PersonListShimmer()
                                     }
-                                }
-                            } else if (uiState.simSelection == "Off") {
-                                EmptyState(
-                                    icon = Icons.Default.SimCard,
-                                    title = "SIM Tracking is Off",
-                                    description = "You must select at least one SIM card to Capture and track calls.",
-                                    action = {
-                                        Button(
-                                            onClick = { settingsViewModel.toggleTrackSimModal(true) },
-                                            shape = RoundedCornerShape(12.dp)
-                                        ) {
-                                            Icon(Icons.Default.Settings, null)
-                                            Spacer(Modifier.width(8.dp))
-                                            Text("Turn On Tracking")
+                                    "sim_off" -> {
+                                        EmptyState(
+                                            icon = Icons.Default.SimCard,
+                                            title = "SIM Tracking is Off",
+                                            description = "You must select at least one SIM card to Capture and track calls.",
+                                            action = {
+                                                Button(
+                                                    onClick = { settingsViewModel.toggleTrackSimModal(true) },
+                                                    shape = RoundedCornerShape(12.dp)
+                                                ) {
+                                                    Icon(Icons.Default.Settings, null)
+                                                    Spacer(Modifier.width(8.dp))
+                                                    Text("Turn On Tracking")
+                                                }
+                                            }
+                                        )
+                                    }
+                                    "empty" -> {
+                                        val isFiltered = uiState.activeFilterCount > 0 || uiState.searchQuery.isNotEmpty()
+                                        if (isFiltered) {
+                                            EmptyState(
+                                                icon = Icons.Default.SearchOff,
+                                                title = "No results found",
+                                                description = "Try adjusting your filters or search query."
+                                            )
+                                        } else {
+                                            EmptyState(
+                                                icon = Icons.Default.Group,
+                                                title = "No contacts yet",
+                                                description = "Identify your contacts from call activity."
+                                            )
                                         }
                                     }
-                                )
-                            } else if (tabPersons.isEmpty()) {
-                                val isFiltered = uiState.activeFilterCount > 0 || uiState.searchQuery.isNotEmpty()
-                                if (isFiltered) {
-                                    EmptyState(
-                                        icon = Icons.Default.SearchOff,
-                                        title = "No results found",
-                                        description = "Try adjusting your filters or search query."
-                                    )
-                                } else {
-                                    EmptyState(
-                                        icon = Icons.Default.Group,
-                                        title = "No contacts yet",
-                                        description = "Identify your contacts from call activity."
-                                    )
+                                    else -> {
+                                        PersonsList(
+                                            persons = tabPersons,
+                                            recordings = uiState.recordings,
+                                            audioPlayer = audioPlayer,
+                                            context = context,
+                                            viewModel = viewModel,
+                                            whatsappPreference = uiState.whatsappPreference,
+                                            onExclude = { viewModel.ignoreNumber(it) },
+                                            onNoTrack = { viewModel.noTrackNumber(it) },
+                                            onViewMoreClick = { selectedPersonForDetails = it },
+                                            onAttachRecording = { 
+                                                attachTarget = it
+                                                audioPickerLauncher.launch(arrayOf("audio/*"))
+                                            },
+                                            canExclude = uiState.allowPersonalExclusion || !uiState.isSyncSetup,
+                                            onCustomLookup = { settingsViewModel.showPhoneLookup(it) },
+                                            lazyListState = personScrollStates[page],
+                                            onJumpClick = { showDateJumpSheet = true }
+                                        )
+                                    }
                                 }
-                            } else {
-                                PersonsList(
-                                    persons = tabPersons,
-                                    recordings = uiState.recordings,
-                                    audioPlayer = audioPlayer,
-                                    context = context,
-                                    viewModel = viewModel,
-                                    whatsappPreference = uiState.whatsappPreference,
-                                    onExclude = { viewModel.ignoreNumber(it) },
-                                    onNoTrack = { viewModel.noTrackNumber(it) },
-                                    onViewMoreClick = { selectedPersonForDetails = it },
-                                    onAttachRecording = { 
-                                        attachTarget = it
-                                        audioPickerLauncher.launch(arrayOf("audio/*"))
-                                    },
-                                    canExclude = uiState.allowPersonalExclusion || !uiState.isSyncSetup,
-                                    onCustomLookup = { settingsViewModel.showPhoneLookup(it) },
-                                    lazyListState = personScrollStates[page],
-                                    onJumpClick = { showDateJumpSheet = true }
-                                )
                             }
                         }
                     }

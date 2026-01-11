@@ -118,6 +118,17 @@ class SettingsRepository private constructor(private val context: Context) {
         prefs.edit().putInt(KEY_SIM1_SUB_ID, id).apply()
     }
 
+    fun getSim1SubscriptionIdFlow(): Flow<Int?> = callbackFlow {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
+            if (key == KEY_SIM1_SUB_ID) {
+                trySend(getSim1SubscriptionId())
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(getSim1SubscriptionId())
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
     fun getSim2SubscriptionId(): Int? {
         val id = prefs.getInt(KEY_SIM2_SUB_ID, -1)
         return if (id != -1) id else null
@@ -125,6 +136,17 @@ class SettingsRepository private constructor(private val context: Context) {
 
     fun setSim2SubscriptionId(id: Int) {
         prefs.edit().putInt(KEY_SIM2_SUB_ID, id).apply()
+    }
+
+    fun getSim2SubscriptionIdFlow(): Flow<Int?> = callbackFlow {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
+            if (key == KEY_SIM2_SUB_ID) {
+                trySend(getSim2SubscriptionId())
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(getSim2SubscriptionId())
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }
 
     // WhatsApp Preference: Package Name or "Always Ask"
@@ -163,9 +185,9 @@ class SettingsRepository private constructor(private val context: Context) {
         val date = prefs.getLong(KEY_TRACK_START_DATE, 0L)
         if (date != 0L) return date
         
-        // Default to yesterday at start of day
+        // Default to 3 days ago at start of day for better fresh start experience
         val cal = Calendar.getInstance()
-        cal.add(Calendar.DAY_OF_YEAR, -1)
+        cal.add(Calendar.DAY_OF_YEAR, -3)
         cal.set(Calendar.HOUR_OF_DAY, 0)
         cal.set(Calendar.MINUTE, 0)
         cal.set(Calendar.SECOND, 0)

@@ -11,8 +11,11 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class MainViewModel(application: Application) : AndroidViewModel(application) {
-    private val settingsRepository = SettingsRepository.getInstance(application)
+@dagger.hilt.android.lifecycle.HiltViewModel
+class MainViewModel @javax.inject.Inject constructor(
+    application: Application,
+    private val settingsRepository: com.miniclick.calltrackmanage.data.SettingsRepository
+) : AndroidViewModel(application) {
 
     private val _themeMode = MutableStateFlow("System") // "System", "Light", "Dark"
     val themeMode: StateFlow<String> = _themeMode.asStateFlow()

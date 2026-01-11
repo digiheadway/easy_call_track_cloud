@@ -924,7 +924,7 @@ fun GlobalSyncStatusBar(
             callStatus != null -> Color(0xFF30D158) // Green for calls
             isAudioPlaying -> MaterialTheme.colorScheme.tertiaryContainer 
             isLocalProcess -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f)
-            !isIgnoringBatteryOptimizations -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.95f)
+            !isIgnoringBatteryOptimizations && isSyncSetup -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.95f)
             !isNetworkAvailable && isSyncSetup -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.95f)
             else -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f)
         }
@@ -933,7 +933,7 @@ fun GlobalSyncStatusBar(
             callStatus != null -> Color.White
             isAudioPlaying -> MaterialTheme.colorScheme.onTertiaryContainer
             isLocalProcess -> MaterialTheme.colorScheme.onSurfaceVariant
-            !isIgnoringBatteryOptimizations -> MaterialTheme.colorScheme.onErrorContainer
+            !isIgnoringBatteryOptimizations && isSyncSetup -> MaterialTheme.colorScheme.onErrorContainer
             !isNetworkAvailable && isSyncSetup -> MaterialTheme.colorScheme.onErrorContainer
             else -> MaterialTheme.colorScheme.onPrimaryContainer
         }
@@ -952,7 +952,7 @@ fun GlobalSyncStatusBar(
                         }
                         isAudioPlaying -> audioPlayer?.togglePlayPause()
                         process != null -> onShowQueue()
-                        !isIgnoringBatteryOptimizations -> onShowDeviceGuide()
+                        !isIgnoringBatteryOptimizations && isSyncSetup -> onShowDeviceGuide()
                         else -> onShowQueue()
                     }
                 },
@@ -995,7 +995,7 @@ fun GlobalSyncStatusBar(
                         "${process.title}$detailText"
                     }
                     // Battery optimization issue
-                    !isIgnoringBatteryOptimizations -> "Background sync restricted • Tap to fix"
+                    !isIgnoringBatteryOptimizations && isSyncSetup -> "Background sync restricted • Tap to fix"
                     // Network issue (only matters if sync is setup)
                     !isNetworkAvailable && isSyncSetup -> {
                         val pendingTotal = totalPending + pendingRecordings
@@ -1025,7 +1025,7 @@ fun GlobalSyncStatusBar(
                     process != null -> Icons.Default.Sync  // Local processing
                     !isNetworkAvailable && isSyncSetup -> Icons.Default.CloudOff
                     activeUploads > 0 -> Icons.Default.CloudUpload
-                    !isIgnoringBatteryOptimizations -> Icons.Default.BatteryAlert
+                    !isIgnoringBatteryOptimizations && isSyncSetup -> Icons.Default.BatteryAlert
                     pendingNewCalls > 0 -> Icons.Default.PhoneCallback
                     pendingMetadata > 0 -> Icons.Default.EditNote
                     pendingPersonUpdates > 0 -> Icons.Default.Person

@@ -74,6 +74,7 @@ class CallDataRepository private constructor(private val context: Context) {
      * Get all calls since a specific date as Flow
      */
     fun getCallsSinceFlow(minDate: Long): Flow<List<CallDataEntity>> = callDataDao.getCallsSinceFlow(minDate)
+    suspend fun getCallsSince(minDate: Long): List<CallDataEntity> = callDataDao.getCallsSince(minDate)
 
     /**
      * Get all calls as Flow for real-time updates (UI observes this)
@@ -520,6 +521,7 @@ class CallDataRepository private constructor(private val context: Context) {
      * Get ALL persons including excluded since a specific date as Flow
      */
     fun getAllPersonsIncludingExcludedFlow(minDate: Long): Flow<List<PersonDataEntity>> = personDataDao.getAllPersonsIncludingExcludedFlow(minDate)
+    suspend fun getAllPersonsIncludingExcluded(minDate: Long): List<PersonDataEntity> = personDataDao.getAllPersonsIncludingExcluded(minDate)
 
     /**
      * Get ALL persons including excluded (for ViewModel filtering with Ignored tab)
@@ -970,6 +972,7 @@ class CallDataRepository private constructor(private val context: Context) {
 
     /**
      * Finds and links local recording files to pending calls.
+     * Uses optimized batch processing for large call sets.
      */
     private suspend fun syncRecordingsOnly() = withContext(Dispatchers.IO) {
         val isRecordingEnabled = settingsRepository.isCallRecordEnabled()
@@ -982,77 +985,156 @@ class CallDataRepository private constructor(private val context: Context) {
                                    android.content.pm.PackageManager.PERMISSION_GRANTED
 
         val unsyncedWithNoPath = if (isRecordingEnabled && hasStoragePermission) {
-            callDataDao.getCallsMissingRecordings().filter { it.localRecordingPath == null }
+            callDataDao.getCallsMissingRecordings().filter { it.localRecordingPath == null && it.duration > 0 }
         } else {
             emptyList()
         }
         
-        if (unsyncedWithNoPath.isNotEmpty()) {
-            val total = unsyncedWithNoPath.size
-            
-            ProcessMonitor.startProcess(ProcessMonitor.ProcessIds.FIND_RECORDINGS, "Finding Recordings", isIndeterminate = false)
-            
-            val foundUpdates = mutableMapOf<String, String>()
-            val notFoundIds = mutableListOf<String>()
-            
-            var totalFound = 0
-            
-            unsyncedWithNoPath.forEachIndexed { index, call ->
-                if (!kotlinx.coroutines.currentCoroutineContext().isActive) throw kotlinx.coroutines.CancellationException()
-                
-                // Update progress
-                val updateFrequency = if (total < 20) 1 else 10
-                if (index % updateFrequency == 0 || index == total - 1) {
-                    val progress = (index + 1).toFloat() / total
-                    val currentFound = totalFound + foundUpdates.size
-                    ProcessMonitor.updateProgress(
-                        ProcessMonitor.ProcessIds.FIND_RECORDINGS, 
-                        progress, 
-                        "Scanning ${index + 1}/$total ($currentFound matched)"
-                    )
-                }
-
-                if (call.duration > 0) {
-                    val recordingPath = recordingRepository.findRecording(
-                        call.callDate,
-                        call.duration,
-                        call.phoneNumber,
-                        call.contactName
-                    )
-                    if (recordingPath != null) {
-                        foundUpdates[call.compositeId] = recordingPath
-                    } else {
-                        // Recording expected but not found in this pass
-                        notFoundIds.add(call.compositeId)
-                    }
-                }
-                
-                // INCREMENTAL SAVE: Save every 10 items to prevent losing progress on cancellation
-                if (foundUpdates.size >= 10) {
-                    callDataDao.updateRecordingPaths(foundUpdates)
-                    totalFound += foundUpdates.size
-                    foundUpdates.clear()
-                }
-                if (notFoundIds.size >= 10) {
-                    callDataDao.updateRecordingSyncStatusBatch(notFoundIds, RecordingSyncStatus.NOT_FOUND)
-                    notFoundIds.clear()
-                }
+        if (unsyncedWithNoPath.isEmpty()) return@withContext
+        
+        val total = unsyncedWithNoPath.size
+        Log.d(TAG, "Starting recording sync for $total calls")
+        
+        ProcessMonitor.startProcess(ProcessMonitor.ProcessIds.FIND_RECORDINGS, "Finding Recordings", isIndeterminate = false)
+        
+        try {
+            // Use batch processing for large sets (>10 calls), sequential for small sets
+            if (total > 10) {
+                syncRecordingsBatch(unsyncedWithNoPath)
+            } else {
+                syncRecordingsSequential(unsyncedWithNoPath)
             }
-
-            // Apply remaining updates
-            if (foundUpdates.isNotEmpty()) {
-                callDataDao.updateRecordingPaths(foundUpdates)
-            }
-            
-            // Mark remaining as NOT_FOUND
-            if (notFoundIds.isNotEmpty()) {
-                Log.d(TAG, "Marking ${notFoundIds.size} recordings as NOT_FOUND")
-                callDataDao.updateRecordingSyncStatusBatch(notFoundIds, RecordingSyncStatus.NOT_FOUND)
-            }
-
+        } finally {
             // Give a small delay for UI to show completion before hiding
             kotlinx.coroutines.delay(800)
             ProcessMonitor.endProcess(ProcessMonitor.ProcessIds.FIND_RECORDINGS)
+            
+            // Clear batch cache to free memory
+            recordingRepository.clearBatchCache()
+        }
+    }
+    
+    /**
+     * Batch processing mode for recording sync (optimized for 10+ calls)
+     * Uses parallel processing, phone index, and duration caching.
+     */
+    private suspend fun syncRecordingsBatch(calls: List<CallDataEntity>) {
+        val total = calls.size
+        Log.d(TAG, "Using BATCH mode for $total calls")
+        
+        // Convert to CallInfo for batch processing
+        val callInfos = calls.map { call ->
+            RecordingRepository.CallInfo(
+                compositeId = call.compositeId,
+                callDate = call.callDate,
+                durationSec = call.duration,
+                phoneNumber = call.phoneNumber,
+                contactName = call.contactName
+            )
+        }
+        
+        // Process in batch with progress callback
+        val results = recordingRepository.findRecordingsBatch(callInfos) { current, totalCount, found ->
+            val progress = current.toFloat() / totalCount
+            ProcessMonitor.updateProgress(
+                ProcessMonitor.ProcessIds.FIND_RECORDINGS,
+                progress,
+                "Scanning $current/$totalCount ($found matched)"
+            )
+        }
+        
+        // Apply results in batch
+        val foundUpdates = mutableMapOf<String, String>()
+        val notFoundIds = mutableListOf<String>()
+        
+        for (result in results) {
+            if (result.recordingPath != null) {
+                foundUpdates[result.compositeId] = result.recordingPath
+            } else {
+                notFoundIds.add(result.compositeId)
+            }
+            
+            // Incremental save every 50 items
+            if (foundUpdates.size >= 50) {
+                callDataDao.updateRecordingPaths(foundUpdates)
+                foundUpdates.clear()
+            }
+            if (notFoundIds.size >= 50) {
+                callDataDao.updateRecordingSyncStatusBatch(notFoundIds, RecordingSyncStatus.NOT_FOUND)
+                notFoundIds.clear()
+            }
+        }
+        
+        // Apply remaining
+        if (foundUpdates.isNotEmpty()) {
+            callDataDao.updateRecordingPaths(foundUpdates)
+        }
+        if (notFoundIds.isNotEmpty()) {
+            Log.d(TAG, "Marking ${notFoundIds.size} recordings as NOT_FOUND")
+            callDataDao.updateRecordingSyncStatusBatch(notFoundIds, RecordingSyncStatus.NOT_FOUND)
+        }
+        
+        val totalFound = results.count { it.recordingPath != null }
+        Log.d(TAG, "Batch sync complete: $totalFound/${results.size} recordings found")
+    }
+    
+    /**
+     * Sequential processing mode for recording sync (for small batches <10 calls)
+     */
+    private suspend fun syncRecordingsSequential(calls: List<CallDataEntity>) {
+        val total = calls.size
+        Log.d(TAG, "Using SEQUENTIAL mode for $total calls")
+        
+        val foundUpdates = mutableMapOf<String, String>()
+        val notFoundIds = mutableListOf<String>()
+        var totalFound = 0
+        
+        calls.forEachIndexed { index, call ->
+            if (!kotlinx.coroutines.currentCoroutineContext().isActive) throw kotlinx.coroutines.CancellationException()
+            
+            // Update progress
+            val updateFrequency = if (total < 20) 1 else 10
+            if (index % updateFrequency == 0 || index == total - 1) {
+                val progress = (index + 1).toFloat() / total
+                val currentFound = totalFound + foundUpdates.size
+                ProcessMonitor.updateProgress(
+                    ProcessMonitor.ProcessIds.FIND_RECORDINGS, 
+                    progress, 
+                    "Scanning ${index + 1}/$total ($currentFound matched)"
+                )
+            }
+
+            val recordingPath = recordingRepository.findRecording(
+                call.callDate,
+                call.duration,
+                call.phoneNumber,
+                call.contactName
+            )
+            if (recordingPath != null) {
+                foundUpdates[call.compositeId] = recordingPath
+            } else {
+                notFoundIds.add(call.compositeId)
+            }
+            
+            // INCREMENTAL SAVE
+            if (foundUpdates.size >= 10) {
+                callDataDao.updateRecordingPaths(foundUpdates)
+                totalFound += foundUpdates.size
+                foundUpdates.clear()
+            }
+            if (notFoundIds.size >= 10) {
+                callDataDao.updateRecordingSyncStatusBatch(notFoundIds, RecordingSyncStatus.NOT_FOUND)
+                notFoundIds.clear()
+            }
+        }
+
+        // Apply remaining updates
+        if (foundUpdates.isNotEmpty()) {
+            callDataDao.updateRecordingPaths(foundUpdates)
+        }
+        if (notFoundIds.isNotEmpty()) {
+            Log.d(TAG, "Marking ${notFoundIds.size} recordings as NOT_FOUND")
+            callDataDao.updateRecordingSyncStatusBatch(notFoundIds, RecordingSyncStatus.NOT_FOUND)
         }
     }
         
@@ -1132,16 +1214,36 @@ class CallDataRepository private constructor(private val context: Context) {
         val sim1SubId = settingsRepository.getSim1SubscriptionId()
         val sim2SubId = settingsRepository.getSim2SubscriptionId()
         
-        val projection = arrayOf(
+        val baseProjection = listOf(
             CallLog.Calls._ID,
             CallLog.Calls.NUMBER,
             CallLog.Calls.CACHED_NAME,
             CallLog.Calls.TYPE,
             CallLog.Calls.DATE,
             CallLog.Calls.DURATION,
-            CallLog.Calls.CACHED_PHOTO_URI,
-            "subscription_id"
+            CallLog.Calls.CACHED_PHOTO_URI
         )
+        
+        // Potential SIM identity columns across different manufacturers
+        val potentialSimColumns = listOf("subscription_id", "sim_id", "sim_slot", "phone_id", "sub_id")
+        
+        // DYNAMIC DETECTION: Find which SIM columns are actually supported by this device
+        // We query for 0 rows with null projection to get the column list safely
+        val supportedSimColumns = mutableListOf<String>()
+        try {
+            context.contentResolver.query(CallLog.Calls.CONTENT_URI, null, "${CallLog.Calls._ID} = -1", null, null)?.use {
+                val allColumnNames = it.columnNames.toSet()
+                potentialSimColumns.forEach { col ->
+                    if (allColumnNames.contains(col)) {
+                        supportedSimColumns.add(col)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("CallDataRepository", "Error detecting SIM columns", e)
+        }
+
+        val projection = (baseProjection + supportedSimColumns).toTypedArray()
         
         val selection = "${CallLog.Calls.DATE} >= ?"
         val selectionArgs = arrayOf(startDate.toString())
@@ -1164,7 +1266,9 @@ class CallDataRepository private constructor(private val context: Context) {
                 val dateIdx = it.getColumnIndex(CallLog.Calls.DATE)
                 val durationIdx = it.getColumnIndex(CallLog.Calls.DURATION)
                 val photoIdx = it.getColumnIndex(CallLog.Calls.CACHED_PHOTO_URI)
-                val subIdIdx = it.getColumnIndex("subscription_id")
+                
+                // Identify which SIM column is actually present in the device's call log
+                val subIdIdx = supportedSimColumns.map { col -> it.getColumnIndex(col) }.find { idx -> idx != -1 } ?: -1
                 
                 while (it.moveToNext()) {
                     val systemId = it.getString(idIdx) ?: continue
@@ -1178,9 +1282,11 @@ class CallDataRepository private constructor(private val context: Context) {
                     val subId = if (subIdIdx != -1) it.getInt(subIdIdx) else null
                     
                     // Filter by SIM selection
+                    // Fallback: If no subId column is found, we assume it's the intended SIM if 
+                    // only one SIM is configured or "Both" is selected.
                     val shouldInclude = when (simSelection) {
-                        "Sim1" -> subId == sim1SubId
-                        "Sim2" -> subId == sim2SubId
+                        "Sim1" -> subId == null || subId == sim1SubId || subId == -1
+                        "Sim2" -> subId == null || subId == sim2SubId || subId == -1
                         "Both" -> true  // Include all
                         else -> false  // "Off" - exclude all
                     }

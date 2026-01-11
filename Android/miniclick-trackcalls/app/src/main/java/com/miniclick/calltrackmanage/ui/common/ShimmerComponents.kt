@@ -22,10 +22,11 @@ fun ShimmerBrush(
     targetValue: Float = 1000f
 ): Brush {
     return if (showShimmer) {
+        // More subtle shimmer colors - less "shiny", more skeleton-like
         val shimmerColors = listOf(
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f),
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
         )
 
         val transition = rememberInfiniteTransition(label = "shimmer")
@@ -33,7 +34,7 @@ fun ShimmerBrush(
             initialValue = 0f,
             targetValue = targetValue,
             animationSpec = infiniteRepeatable(
-                animation = tween(800),
+                animation = tween(1200, easing = LinearEasing), // Slower, smoother animation
                 repeatMode = RepeatMode.Restart
             ),
             label = "shimmer"
@@ -50,6 +51,62 @@ fun ShimmerBrush(
             start = Offset.Zero,
             end = Offset.Zero
         )
+    }
+}
+
+/**
+ * Shimmer for Date Section Header - matches DateSectionHeader with padding(16.dp, 10.dp)
+ */
+@Composable
+fun DateHeaderShimmer() {
+    val brush = ShimmerBrush()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Left: Date label + calendar icon
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(70.dp)
+                    .height(16.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(brush)
+            )
+            Box(
+                modifier = Modifier
+                    .size(22.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(brush)
+            )
+        }
+        
+        // Right: Count badges
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(32.dp)
+                    .height(14.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(brush)
+            )
+            Box(
+                modifier = Modifier
+                    .width(32.dp)
+                    .height(14.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(brush)
+            )
+        }
     }
 }
 
@@ -131,6 +188,47 @@ fun CallRowShimmer() {
                 )
             }
         }
+    }
+}
+
+/**
+ * Complete shimmer list for Calls - includes date headers for realistic structure.
+ * Shows a header followed by items, mimicking actual content layout.
+ */
+@Composable
+fun CallListShimmer() {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(top = 8.dp)
+    ) {
+        // First group: "Today"
+        DateHeaderShimmer()
+        repeat(4) { CallRowShimmer() }
+        
+        // Second group: "Yesterday"
+        DateHeaderShimmer()
+        repeat(3) { CallRowShimmer() }
+    }
+}
+
+/**
+ * Complete shimmer list for Persons - includes date headers for realistic structure.
+ */
+@Composable
+fun PersonListShimmer() {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(top = 8.dp)
+    ) {
+        // First group
+        DateHeaderShimmer()
+        repeat(3) { PersonCardShimmer() }
+        
+        // Second group
+        DateHeaderShimmer()
+        repeat(2) { PersonCardShimmer() }
     }
 }
 
@@ -225,6 +323,10 @@ fun PersonCardShimmer() {
 /**
  * Shimmer for Report Cards - matches ElevatedCard structure with header + stat items.
  */
+/**
+ * Shimmer for Report Cards - mimics OverviewCard/StatsCard structure.
+ * Features a header, followed by a row of statistic items with proper spacing.
+ */
 @Composable
 fun ReportsCardShimmer() {
     val brush = ShimmerBrush()
@@ -233,7 +335,7 @@ fun ReportsCardShimmer() {
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header row (title + arrow)
+            // Header row (title + menu icon placeholder)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -241,7 +343,7 @@ fun ReportsCardShimmer() {
             ) {
                 Box(
                     modifier = Modifier
-                        .width(100.dp)
+                        .width(120.dp)
                         .height(20.dp)
                         .clip(RoundedCornerShape(4.dp))
                         .background(brush)
@@ -254,17 +356,17 @@ fun ReportsCardShimmer() {
                 )
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(24.dp))
 
-            // Stat items row (4 items)
+            // Stat items row (Scrolling row style match: spacedBy 24.dp)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 repeat(4) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         // Icon
                         Box(
@@ -276,7 +378,7 @@ fun ReportsCardShimmer() {
                         // Value
                         Box(
                             modifier = Modifier
-                                .width(40.dp)
+                                .width(48.dp)
                                 .height(16.dp)
                                 .clip(RoundedCornerShape(4.dp))
                                 .background(brush)
@@ -284,7 +386,7 @@ fun ReportsCardShimmer() {
                         // Label
                         Box(
                             modifier = Modifier
-                                .width(56.dp)
+                                .width(64.dp)
                                 .height(12.dp)
                                 .clip(RoundedCornerShape(4.dp))
                                 .background(brush)

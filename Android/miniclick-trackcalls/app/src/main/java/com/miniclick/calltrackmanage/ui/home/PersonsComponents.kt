@@ -635,18 +635,21 @@ fun PersonCard(
                 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 
-                // Calls List
+                // Calls List - entire section is clickable to view full history
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { onViewMoreClick() }
                         .padding(vertical = 8.dp)
                 ) {
+                    // Header row for Recent Interactions
                     Text(
                         text = "Recent Interactions",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                     )
                     
                     val recentCalls = remember(person.calls) { person.calls.take(5) }
@@ -661,30 +664,28 @@ fun PersonCard(
                         )
                     }
                     
+                    // Only show "View all" button when there are more calls than shown
                     if (person.calls.size > 5) {
-                        TextButton(
-                            onClick = onViewMoreClick,
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 8.dp),
-                            shape = RoundedCornerShape(8.dp)
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    text = "View all ${person.calls.size} interactions",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowForwardIos,
-                                    null,
-                                    modifier = Modifier.size(12.dp)
-                                )
-                            }
+                            Text(
+                                text = "View all ${person.calls.size} interactions",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowForwardIos,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 }

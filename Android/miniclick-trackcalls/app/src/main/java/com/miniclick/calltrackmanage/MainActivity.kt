@@ -297,11 +297,11 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = viewModel()) {
+fun MainScreen(audioPlayer: AudioPlayer, viewModel: MainViewModel = androidx.hilt.navigation.compose.hiltViewModel()) {
     val personDetailsPhone by viewModel.personDetailsPhone.collectAsState()
-    val settingsViewModel: SettingsViewModel = viewModel()
+    val settingsViewModel: SettingsViewModel = androidx.hilt.navigation.compose.hiltViewModel()
     val settingsState by settingsViewModel.uiState.collectAsState()
-    val homeViewModel: HomeViewModel = viewModel()
+    val homeViewModel: HomeViewModel = androidx.hilt.navigation.compose.hiltViewModel()
     val homeState by homeViewModel.uiState.collectAsState()
     
     // Use persisted tab from ViewModel

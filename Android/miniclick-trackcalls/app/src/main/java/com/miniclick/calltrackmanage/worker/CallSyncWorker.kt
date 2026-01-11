@@ -84,7 +84,7 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
             val simSelection = settingsRepository.getSimSelection()
 
             if (orgId.isEmpty() || userId.isEmpty()) {
-                Log.d(TAG, "Server sync not configured (no pairing). Local import done.")
+                Log.w(TAG, "Server sync not configured (no pairing). (orgId: '${orgId}', userId: '${userId}'). Local import done.")
                 return@withContext Result.success()
             }
 
@@ -133,7 +133,10 @@ class CallSyncWorker(context: Context, params: WorkerParameters) : CoroutineWork
                         }
                         
                         // 3a. Process Updates
-                        for (call in updateCalls) {
+                        for ((index, call) in updateCalls.withIndex()) {
+                            if (index % 10 == 0) {
+                                setForeground(createForegroundInfo("Pushing updates... (${index + 1}/${updateCalls.size})"))
+                            }
                             if (callDataRepository.isExcludedFromSync(call.phoneNumber)) {
                                 callDataRepository.markMetadataSynced(call.compositeId, System.currentTimeMillis())
                                 continue

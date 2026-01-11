@@ -45,7 +45,7 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val powerManager = applicationContext.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
         val wakeLock = powerManager.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "CallTrack:UploadWakeLock")
-        // Acquire lock for 30 minutes max (matches periodic interval + buffer)
+        // Acquire wake lock for up to 30 mins
         wakeLock.acquire(30 * 60 * 1000L)
         Log.d(TAG, "WakeLock acquired for upload pass")
         
@@ -56,7 +56,7 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
             val userId = settingsRepository.getUserId()
     
             if (orgId.isEmpty() || userId.isEmpty()) {
-                Log.w(TAG, "Required settings missing. Skipping recording upload.")
+                Log.w(TAG, "Required settings missing. Skipping recording upload. (orgId: '${orgId}', userId: '${userId}')")
                 return@withContext Result.success()
             }
 
@@ -114,9 +114,6 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
             }
 
             try {
-                // Cleanup stuck recordings (stuck in UPLOADING for more than 30 mins)
-                // This is now handled by the reset logic below if we find them in needingSync
-                
                 val lastEnabledTime = settingsRepository.getRecordingLastEnabledTimestamp()
                 val allNeedingSync = callDataRepository.getCallsNeedingRecordingSync()
                 
@@ -136,73 +133,96 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                     return@withContext Result.success()
                 }
     
-                // Group by status to log info
-                val stuckCount = needingSync.count { it.recordingSyncStatus == RecordingSyncStatus.UPLOADING }
+                // 1. Clean up stale UPLOADING statuses (reset to PENDING if stuck for > 30 mins)
+                val staleThreshold = System.currentTimeMillis() - (30 * 60 * 1000)
+                val stuckCount = needingSync.count { it.recordingSyncStatus == RecordingSyncStatus.UPLOADING && it.updatedAt < staleThreshold }
                 if (stuckCount > 0) {
                     Log.i(TAG, "Resetting $stuckCount stuck recording syncs to PENDING")
                     for (call in needingSync) {
-                        if (call.recordingSyncStatus == RecordingSyncStatus.UPLOADING) {
+                        if (call.recordingSyncStatus == RecordingSyncStatus.UPLOADING && call.updatedAt < staleThreshold) {
                             callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.PENDING)
                         }
                     }
                 }
+
+                // 2. Filter out calls that are too new (give system 5 seconds to write file)
+                // AND Filter out calls that have been NOT_FOUND for more than 24 hours (increased from 3h)
+                val now = System.currentTimeMillis()
+                val fiveSecondsAgo = now - 5000
+                val twentyFourHoursAgo = now - (24 * 60 * 60 * 1000)
                 
-                val pendingCalls = needingSync.sortedByDescending { it.callDate }
-                
-                // Show initial notification
+                val callsToProcess = needingSync.filter { call ->
+                    val isNotTooNew = call.callDate < fiveSecondsAgo
+                    val isNotStaleNotFound = !(call.recordingSyncStatus == RecordingSyncStatus.NOT_FOUND && call.updatedAt < twentyFourHoursAgo)
+                    isNotTooNew && isNotStaleNotFound
+                }.sortedByDescending { it.callDate }
+
+                if (callsToProcess.isEmpty()) {
+                    Log.d(TAG, "No recordings ready for processing. Total pending: ${needingSync.size}")
+                    return@withContext Result.success()
+                }
+
+                // 3. For those without path, attempt to find them
+                val (withPath, withoutPath) = callsToProcess.partition { it.localRecordingPath != null }
+                if (withoutPath.isNotEmpty()) {
+                    Log.d(TAG, "Attempting to find recording paths for ${withoutPath.size} calls")
+                    withoutPath.forEachIndexed { index, call ->
+                        if (index % 10 == 0) {
+                            setForeground(createForegroundInfo("Searching for recordings... (${index + 1}/${withoutPath.size})"))
+                        }
+                        val path = recordingRepository.findRecording(call.callDate, call.duration, call.phoneNumber, call.contactName)
+                        if (path != null) {
+                            callDataRepository.updateRecordingPath(call.compositeId, path)
+                        } else {
+                            callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.NOT_FOUND)
+                        }
+                    }
+                }
+
+                // 4. Final list of things to upload
+                val finalPending = callDataRepository.getCallsNeedingRecordingSync()
+                    .filter { it.localRecordingPath != null && it.callDate >= lastEnabledTime }
+                    .sortedByDescending { it.callDate }
+
+                if (finalPending.isEmpty()) {
+                    Log.d(TAG, "Process pass done. No recordings with paths ready for upload.")
+                    return@withContext Result.success()
+                }
+
                 setForeground(createForegroundInfo("Checking for updated data.."))
-                
                 val alreadyCompletedSet = mutableSetOf<String>()
                 
-                // Batch check status with server (with timeout to prevent hanging)
-                // We check more items now (up to 500) to clear large "already uploaded" queues
-                if (pendingCalls.isNotEmpty()) {
-                    try {
-                        withContext(Dispatchers.IO) {
-                            val maxToCheck = 200
-                            val idList = pendingCalls.take(maxToCheck).map { it.compositeId }
-                            val jsonIds = Gson().toJson(idList)
-                            
-                            Log.d(TAG, "Checking server status for top ${idList.size} recordings")
-                            
-                            val response = kotlinx.coroutines.withTimeoutOrNull(20000L) {
-                                try {
-                                    NetworkClient.api.checkRecordingsStatus("check_recordings_status", jsonIds)
-                                } catch (e: Exception) { 
-                                    Log.w(TAG, "Status check request failed: ${e.message}")
-                                    null 
-                                }
-                            }
-                            
-                            if (response != null && response.isSuccessful) {
-                                val apiResp = response.body()
-                                if (apiResp?.success == true) {
-                                    val completedIds = apiResp.data?.completedIds
-                                    
-                                    if (!completedIds.isNullOrEmpty()) {
-                                        Log.i(TAG, "Server identified ${completedIds.size} recordings as already completed.")
-                                        alreadyCompletedSet.addAll(completedIds)
-                                        
-                                        // Update in database to clear from queue
-                                        for (id in completedIds) {
-                                            callDataRepository.updateRecordingSyncStatus(id, RecordingSyncStatus.COMPLETED)
-                                            callDataRepository.updateSyncError(id, null)
-                                        }
-                                    }
+                // Batch check status with server
+                try {
+                    withContext(Dispatchers.IO) {
+                        val maxToCheck = 200
+                        val idList = finalPending.take(maxToCheck).map { it.compositeId }
+                        val jsonIds = Gson().toJson(idList)
+                        
+                        Log.d(TAG, "Checking server status for top ${idList.size} recordings")
+                        val response = kotlinx.coroutines.withTimeoutOrNull(20000L) {
+                            try { NetworkClient.api.checkRecordingsStatus("check_recordings_status", jsonIds) } 
+                            catch (e: Exception) { null }
+                        }
+                        
+                        if (response != null && response.isSuccessful) {
+                            response.body()?.data?.completedIds?.let { 
+                                alreadyCompletedSet.addAll(it)
+                                for (id in it) {
+                                    callDataRepository.updateRecordingSyncStatus(id, RecordingSyncStatus.COMPLETED)
+                                    callDataRepository.updateSyncError(id, null)
                                 }
                             }
                         }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to check batch recording status, continuing with upload anyway", e)
                     }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Status check failed, skipping...")
                 }
-    
+
                 var uploadedCount = 0
                 var failedCount = 0
                 var skippedCount = 0
-                
-                // Process all pending calls in a loop until done or stopped
-                val pendingList = pendingCalls.toMutableList()
+                val pendingList = finalPending.toMutableList()
                 val initialTotal = pendingList.size
                 var processedCount = 0
                 
@@ -211,13 +231,8 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
     
                 try {
                     while (pendingList.isNotEmpty()) {
-                        if (isStopped) {
-                            Log.d(TAG, "Worker stopped, pausing uploads")
-                            break
-                        }
+                        if (isStopped) break
                         
-                        // Process in micro-batches of 2 in parallel to utilize bandwidth
-                        // and keep system responsive.
                         val currentBatch = pendingList.take(2)
                         pendingList.removeAll(currentBatch)
                         
@@ -234,76 +249,54 @@ class RecordingUploadWorker(context: Context, params: WorkerParameters) : Corout
                                     val progress = currentLocalCount.toFloat() / initialTotal
                                     ProcessMonitor.updateProgress(ProcessMonitor.ProcessIds.UPLOAD_RECORDINGS, progress, "Uploading $currentLocalCount/$initialTotal")
 
-                                    // Throttle notification updates (every 2 recordings or if it's the last)
                                     if (currentLocalCount % 2 == 0 || currentLocalCount == initialTotal) {
                                         setForeground(createForegroundInfo("Uploading $currentLocalCount/$initialTotal Recordings.."))
                                     }
                                     
-                                    // Mark as processing
                                     callDataRepository.updateProcessingStatus(call.compositeId, "uploading")
                                     
-                                    if (call.recordingSyncStatus == RecordingSyncStatus.COMPLETED) {
+                                    if (call.recordingSyncStatus == RecordingSyncStatus.COMPLETED || alreadyCompletedSet.contains(call.compositeId)) {
                                         skippedCount++
-                                        return@async
-                                    }
-
-                                    if (alreadyCompletedSet.contains(call.compositeId)) {
-                                        skippedCount++
-                                        callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.COMPLETED)
+                                        if (alreadyCompletedSet.contains(call.compositeId)) {
+                                            callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.COMPLETED)
+                                        }
+                                        callDataRepository.updateProcessingStatus(call.compositeId, null)
                                         return@async
                                     }
 
                                     try {
                                         val startTime = System.currentTimeMillis()
                                         val recordingPath = call.localRecordingPath
-                                        val success = if (recordingPath.isNullOrEmpty()) {
-                                            val foundPath = recordingRepository.findRecording(call.callDate, call.duration, call.phoneNumber, call.contactName)
-                                            if (foundPath != null) {
-                                                callDataRepository.updateRecordingPath(call.compositeId, foundPath)
-                                                uploadRecording(foundPath, call.compositeId)
-                                            } else {
-                                                val hoursSinceCall = (System.currentTimeMillis() - call.callDate) / (1000 * 60 * 60)
-                                                if (hoursSinceCall > 3) {
-                                                    callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.NOT_FOUND)
-                                                }
-                                                false
-                                            }
-                                        } else {
-                                            uploadRecording(recordingPath, call.compositeId)
-                                        }
+                                        val success = if (recordingPath == null) false else uploadRecording(recordingPath, call.compositeId)
                                         
                                         if (success) {
                                             synchronized(this@RecordingUploadWorker) { uploadedCount++ }
-                                            val duration = System.currentTimeMillis() - startTime
-                                            Log.d(TAG, "Uploaded ${call.compositeId} in ${duration}ms")
+                                            Log.d(TAG, "Uploaded ${call.compositeId} in ${System.currentTimeMillis() - startTime}ms")
                                         } else {
                                             failedCount++
                                         }
-                                    } catch (e: kotlinx.coroutines.CancellationException) {
-                                        callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.PENDING)
-                                        throw e
                                     } catch (e: Exception) {
                                         Log.e(TAG, "Error uploading ${call.compositeId}", e)
+                                        if (e is kotlinx.coroutines.CancellationException) {
+                                            callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.PENDING)
+                                            throw e
+                                        }
                                         callDataRepository.updateRecordingSyncStatus(call.compositeId, RecordingSyncStatus.FAILED)
                                         failedCount++
-                                    }
-                                }.also {
-                                        // Clear processing status when done
+                                    } finally {
                                         callDataRepository.updateProcessingStatus(call.compositeId, null)
                                     }
-                                }.awaitAll()
+                                }
+                            }.awaitAll()
                         }
                     }
                 } finally {
                     ProcessMonitor.endProcess(ProcessMonitor.ProcessIds.UPLOAD_RECORDINGS)
                 }
     
-                Log.d(TAG, "Upload pass finished. Uploaded $uploadedCount this session.")
-    
                 Result.success(workDataOf(
                     "uploaded_count" to uploadedCount,
-                    "total_processed" to processedCount,
-                    "remaining" to (pendingCalls.size - uploadedCount)
+                    "total_processed" to processedCount
                 ))
             } catch (e: kotlinx.coroutines.CancellationException) {
                 Log.d(TAG, "Upload work cancelled", e)
