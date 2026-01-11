@@ -5,7 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Employee Setup Guide | MiniClick Calls</title>
-    <meta name="description" content="Step-by-step guide for employees to set up MiniClick Calls on their Android devices.">
+    <meta name="description"
+        content="Step-by-step guide for employees to set up MiniClick Calls on their Android devices.">
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="../../assets/favicon.png">
@@ -28,42 +29,27 @@
                 extend: {
                     fontFamily: { sans: ['Outfit', 'sans-serif'] },
                     colors: {
-                        brand: { 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7' },
-                         { bg: '#0B0F19', card: '#111827', border: '#1F2937' }
+                        brand: { 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7' }
                     }
                 }
             }
         }
     </script>
-    <style>
+    <style type="text/tailwindcss">
         body {
-            background-color: #0B0F19;
-            color: #ffffff;
+            @apply bg-white text-gray-900 transition-colors duration-300;
         }
 
         .glass {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            @apply bg-white/70 backdrop-blur-xl border-b border-gray-100;
         }
 
         .glass-card {
-            background: rgba(17, 24, 39, 0.6);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(31, 41, 55, 0.5);
+            @apply bg-gray-50/80 backdrop-blur-lg border border-gray-200 transition-all duration-300;
         }
 
         .step-number {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, #0ea5e9, #8b5cf6);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1.25rem;
-            flex-shrink: 0;
+            @apply w-12 h-12 bg-gradient-to-br from-brand-500 to-purple-600 rounded-xl flex items-center justify-center font-bold text-white text-xl flex-shrink-0;
         }
     </style>
     <link rel="manifest" href="/manifest.json">
@@ -73,7 +59,7 @@
 <body class="antialiased">
 
     <!-- Navbar -->
-    <nav class="fixed w-full z-50 top-0 glass border-b border-white/5">
+    <nav class="fixed w-full z-50 top-0 glass border-b border-gray-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
                 <a href="/" class="flex items-center gap-2">
@@ -81,11 +67,11 @@
                         class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center">
                         <i data-feather="phone-call" class="text-white w-4 h-4"></i>
                     </div>
-                    <span class="font-bold text-xl tracking-tight">MiniClick Calls<span
-                            class="text-brand-400">.</span></span>
+                    <span class="font-bold text-xl tracking-tight text-gray-900">MiniClick Calls<span
+                            class="text-brand-500">.</span></span>
                 </a>
                 <a href="/setup/"
-                    class="text-gray-300 hover:text-white transition-colors text-sm font-medium flex items-center gap-1">
+                    class="text-gray-600 hover:text-brand-600 transition-colors text-sm font-medium flex items-center gap-1">
                     <i data-feather="arrow-left" class="w-4 h-4"></i> Back to Setup
                 </a>
             </div>
@@ -94,17 +80,17 @@
 
     <!-- Hero -->
     <section class="pt-32 pb-16 relative overflow-hidden">
-        <div class="absolute top-0 left-1/4 w-96 h-96 bg-brand-500/20 rounded-full blur-[128px] pointer-events-none">
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-brand-500/5 rounded-full blur-[128px] pointer-events-none">
         </div>
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-6">
-                <i data-feather="user" class="w-4 h-4 text-brand-400"></i>
-                <span class="text-sm font-medium text-gray-300">Employee Guide</span>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 border border-gray-200 mb-6">
+                <i data-feather="user" class="w-4 h-4 text-brand-600"></i>
+                <span class="text-sm font-medium text-gray-600">Employee Guide</span>
             </div>
-            <h1 class="text-4xl sm:text-5xl font-bold mb-6">Employee <span
-                    class="bg-clip-text text-transparent bg-gradient-to-r from-brand-400 to-purple-400">Setup
+            <h1 class="text-4xl sm:text-5xl font-bold mb-6 text-gray-900">Employee <span
+                    class="bg-clip-text text-transparent bg-gradient-to-r from-brand-500 to-purple-500">Setup
                     Guide</span></h1>
-            <p class="text-xl text-gray-400 max-w-2xl mx-auto">Follow these steps to link your device and start tracking
+            <p class="text-xl text-gray-600 max-w-2xl mx-auto">Follow these steps to link your device and start tracking
                 your work calls.</p>
         </div>
     </section>
@@ -118,10 +104,10 @@
                 <div class="glass-card rounded-2xl p-6 flex gap-6">
                     <div class="step-number">1</div>
                     <div>
-                        <h3 class="text-xl font-semibold mb-2">Download the App</h3>
-                        <p class="text-gray-400 mb-4">Get "MiniClick Calls" from the Play Store.</p>
+                        <h3 class="text-xl font-semibold mb-2 text-gray-900">Download the App</h3>
+                        <p class="text-gray-600 mb-4">Get "MiniClick Calls" from the Play Store.</p>
                         <a href="/download/"
-                            class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-colors border border-white/10">
+                            class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg text-sm font-medium transition-colors text-gray-900">
                             <i data-feather="download" class="w-4 h-4"></i> Download for Android
                         </a>
                     </div>
@@ -131,11 +117,11 @@
                 <div class="glass-card rounded-2xl p-6 flex gap-6">
                     <div class="step-number">2</div>
                     <div>
-                        <h3 class="text-xl font-semibold mb-2">Enter Your Login Code</h3>
-                        <p class="text-gray-400 mb-4">Use the code or credentials provided by your manager.</p>
-                        <div class="bg-white/5 rounded-xl p-4 border border-white/10 inline-block">
-                            <p class="text-sm text-gray-400 mb-2">Example Code Format:</p>
-                            <p class="text-2xl font-mono font-bold tracking-widest text-brand-400">XC-9921</p>
+                        <h3 class="text-xl font-semibold mb-2 text-gray-900">Enter Your Login Code</h3>
+                        <p class="text-gray-600 mb-4">Use the code or credentials provided by your manager.</p>
+                        <div class="bg-gray-50 rounded-xl p-4 border border-gray-200 inline-block">
+                            <p class="text-sm text-gray-500 mb-2">Example Code Format:</p>
+                            <p class="text-2xl font-mono font-bold tracking-widest text-brand-600">XC-9921</p>
                         </div>
                     </div>
                 </div>
@@ -144,14 +130,14 @@
                 <div class="glass-card rounded-2xl p-6 flex gap-6">
                     <div class="step-number">3</div>
                     <div>
-                        <h3 class="text-xl font-semibold mb-2 flex items-center gap-2">
-                            <i data-feather="disc" class="w-5 h-5 text-blue-400"></i>
+                        <h3 class="text-xl font-semibold mb-2 flex items-center gap-2 text-gray-900">
+                            <i data-feather="disc" class="w-5 h-5 text-blue-600"></i>
                             Enable System Call Recording
                         </h3>
-                        <p class="text-gray-400 mb-4">The app syncs recordings from your phone's built-in recorder. You
+                        <p class="text-gray-600 mb-4">The app syncs recordings from your phone's built-in recorder. You
                             must enable it in your phone settings.</p>
-                        <div class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
-                            <p class="text-blue-200 text-sm">Open <strong>Phone App</strong> → <strong>Settings</strong>
+                        <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                            <p class="text-blue-800 text-sm">Open <strong>Phone App</strong> → <strong>Settings</strong>
                                 → <strong>Record Calls</strong> → Set to <strong>"Auto Record"</strong> or <strong>"All
                                     Calls"</strong>.</p>
                         </div>
@@ -162,24 +148,24 @@
                 <div class="glass-card rounded-2xl p-6 flex gap-6">
                     <div class="step-number">4</div>
                     <div>
-                        <h3 class="text-xl font-semibold mb-2">Grant Permissions</h3>
-                        <p class="text-gray-400 mb-4">Allow the app to access necessary features. This is required for
+                        <h3 class="text-xl font-semibold mb-2 text-gray-900">Grant Permissions</h3>
+                        <p class="text-gray-600 mb-4">Allow the app to access necessary features. This is required for
                             call tracking and recording sync.</p>
                         <div class="grid sm:grid-cols-2 gap-3 mt-4">
-                            <div class="flex items-center gap-3 text-gray-300">
-                                <i data-feather="phone" class="w-5 h-5 text-brand-400"></i>
+                            <div class="flex items-center gap-3 text-gray-700">
+                                <i data-feather="phone" class="w-5 h-5 text-brand-600"></i>
                                 <span>Phone Calls</span>
                             </div>
-                            <div class="flex items-center gap-3 text-gray-300">
-                                <i data-feather="list" class="w-5 h-5 text-brand-400"></i>
+                            <div class="flex items-center gap-3 text-gray-700">
+                                <i data-feather="list" class="w-5 h-5 text-brand-600"></i>
                                 <span>Call Logs</span>
                             </div>
-                            <div class="flex items-center gap-3 text-gray-300">
-                                <i data-feather="hard-drive" class="w-5 h-5 text-brand-400"></i>
+                            <div class="flex items-center gap-3 text-gray-700">
+                                <i data-feather="hard-drive" class="w-5 h-5 text-brand-600"></i>
                                 <span>Files & Media (Storage)</span>
                             </div>
-                            <div class="flex items-center gap-3 text-gray-300">
-                                <i data-feather="users" class="w-5 h-5 text-brand-400"></i>
+                            <div class="flex items-center gap-3 text-gray-700">
+                                <i data-feather="users" class="w-5 h-5 text-brand-600"></i>
                                 <span>Contacts</span>
                             </div>
                         </div>
@@ -190,11 +176,11 @@
                 <div class="glass-card rounded-2xl p-6 flex gap-6">
                     <div class="step-number">5</div>
                     <div>
-                        <h3 class="text-xl font-semibold mb-2">Disable Battery Optimization</h3>
-                        <p class="text-gray-400 mb-4">This is <strong>critical</strong> to ensure the app runs in the
+                        <h3 class="text-xl font-semibold mb-2 text-gray-900">Disable Battery Optimization</h3>
+                        <p class="text-gray-600 mb-4">This is <strong>critical</strong> to ensure the app runs in the
                             background.</p>
-                        <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
-                            <p class="text-yellow-200 text-sm"><strong>Important:</strong> Go to <em>Settings → Apps →
+                        <div class="bg-yellow-50 border border-yellow-100 rounded-xl p-4">
+                            <p class="text-yellow-800 text-sm"><strong>Important:</strong> Go to <em>Settings → Apps →
                                     MiniClick Calls → Battery → Set to "Unrestricted"</em>. This prevents Android from
                                 killing the app.</p>
                         </div>
@@ -205,10 +191,10 @@
                 <div class="glass-card rounded-2xl p-6 flex gap-6">
                     <div class="step-number">6</div>
                     <div>
-                        <h3 class="text-xl font-semibold mb-2">You're All Set!</h3>
-                        <p class="text-gray-400 mb-4">The app will now automatically track and sync your calls. Look for
+                        <h3 class="text-xl font-semibold mb-2 text-gray-900">You're All Set!</h3>
+                        <p class="text-gray-600 mb-4">The app will now automatically track and sync your calls. Look for
                             the "MiniClick Calls is active" notification.</p>
-                        <div class="flex items-center gap-3 text-green-400">
+                        <div class="flex items-center gap-3 text-green-600">
                             <i data-feather="check-circle" class="w-6 h-6"></i>
                             <span class="font-medium">Tracking is now active</span>
                         </div>
@@ -218,24 +204,24 @@
 
             <!-- Troubleshooting -->
             <div class="glass-card rounded-2xl p-8 mt-12">
-                <h2 class="text-xl font-bold mb-6 flex items-center gap-3">
-                    <i data-feather="help-circle" class="text-brand-400 w-6 h-6"></i>
+                <h2 class="text-xl font-bold mb-6 flex items-center gap-3 text-gray-900">
+                    <i data-feather="help-circle" class="text-brand-600 w-6 h-6"></i>
                     Troubleshooting
                 </h2>
                 <div class="space-y-4">
-                    <div class="border-b border-white/10 pb-4">
-                        <h4 class="font-medium mb-2">Recordings are not syncing</h4>
-                        <p class="text-gray-400 text-sm">Make sure the device's built-in call recorder is enabled and
+                    <div class="border-b border-gray-100 pb-4">
+                        <h4 class="font-medium mb-2 text-gray-900">Recordings are not syncing</h4>
+                        <p class="text-gray-600 text-sm">Make sure the device's built-in call recorder is enabled and
                             the app has Storage permission to access those files.</p>
                     </div>
-                    <div class="border-b border-white/10 pb-4">
-                        <h4 class="font-medium mb-2">Calls are not syncing to cloud</h4>
-                        <p class="text-gray-400 text-sm">Check your internet connection. If "Wi-Fi Only" mode is ON,
+                    <div class="border-b border-gray-100 pb-4">
+                        <h4 class="font-medium mb-2 text-gray-900">Calls are not syncing to cloud</h4>
+                        <p class="text-gray-600 text-sm">Check your internet connection. If "Wi-Fi Only" mode is ON,
                             connect to Wi-Fi to sync.</p>
                     </div>
                     <div>
-                        <h4 class="font-medium mb-2">App keeps stopping</h4>
-                        <p class="text-gray-400 text-sm">Xiaomi, Samsung, and Oppo phones have aggressive battery
+                        <h4 class="font-medium mb-2 text-gray-900">App keeps stopping</h4>
+                        <p class="text-gray-600 text-sm">Xiaomi, Samsung, and Oppo phones have aggressive battery
                             savers. Enable "Autostart" in phone settings.</p>
                     </div>
                 </div>
@@ -245,12 +231,12 @@
     </main>
 
     <!-- Footer -->
-    <footer class="border-t border-white/10 bg-[#0B0F19] py-8">
+    <footer class="border-t border-gray-100 bg-gray-50 py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <p class="text-gray-600 text-sm">© 2026 MiniClick. All rights reserved.</p>
-            <div class="mt-4 flex justify-center gap-6 text-sm text-gray-400">
-                <a href="/privacy/" class="hover:text-white transition-colors">Privacy Policy</a>
-                <a href="/terms/" class="hover:text-white transition-colors">Terms of Use</a>
+            <div class="mt-4 flex justify-center gap-6 text-sm text-gray-600">
+                <a href="/privacy/" class="hover:text-brand-600 transition-colors">Privacy Policy</a>
+                <a href="/terms/" class="hover:text-brand-600 transition-colors">Terms of Use</a>
             </div>
         </div>
     </footer>

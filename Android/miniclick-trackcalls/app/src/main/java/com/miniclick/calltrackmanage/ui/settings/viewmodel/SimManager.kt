@@ -52,13 +52,23 @@ class SimManager(
             val ctx = application
             if (ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_PHONE_STATE) 
                 != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                android.util.Log.d("SimManager", "fetchSimInfo: READ_PHONE_STATE not granted")
                 return@launch
             }
 
             try {
                 val subscriptionManager = ContextCompat.getSystemService(ctx, SubscriptionManager::class.java)
-                val infoList = subscriptionManager?.activeSubscriptionInfoList
+                var infoList = subscriptionManager?.activeSubscriptionInfoList
+                
+                // Retry once after 500ms if list is empty (sometimes system needs a moment after permission grant)
+                if (infoList.isNullOrEmpty()) {
+                    android.util.Log.d("SimManager", "fetchSimInfo: infoList empty, retrying in 500ms...")
+                    kotlinx.coroutines.delay(500)
+                    infoList = subscriptionManager?.activeSubscriptionInfoList
+                }
+
                 if (infoList != null) {
+                    android.util.Log.d("SimManager", "fetchSimInfo: found ${infoList.size} active sims")
                     val sims = infoList.map { 
                         SimInfo(
                             slotIndex = it.simSlotIndex, 
@@ -105,6 +115,7 @@ class SimManager(
                         if (settingsRepository.getCallerPhoneSim1().isBlank()) {
                             val number = getSimNumber(ctx, sim.subscriptionId)
                             if (!number.isNullOrBlank()) {
+                                android.util.Log.d("SimManager", "Auto-populated Sim1 number: $number")
                                 settingsRepository.setCallerPhoneSim1(number)
                             }
                         }
@@ -117,56 +128,88 @@ class SimManager(
                         if (settingsRepository.getCallerPhoneSim2().isBlank()) {
                             val number = getSimNumber(ctx, sim.subscriptionId)
                             if (!number.isNullOrBlank()) {
+                                android.util.Log.d("SimManager", "Auto-populated Sim2 number: $number")
                                 settingsRepository.setCallerPhoneSim2(number)
                             }
                         }
                     }
+                } else {
+                    android.util.Log.d("SimManager", "fetchSimInfo: activeSubscriptionInfoList is null")
                 }
             } catch (e: Exception) {
+                android.util.Log.e("SimManager", "Error in fetchSimInfo", e)
                 e.printStackTrace()
             }
         }
     }
 
     private fun getSimNumber(ctx: Context, subId: Int): String? {
-        val hasNumbersPerm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        val hasNumbersPerm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_PHONE_NUMBERS) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        } else true
+        } else {
+            ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_PHONE_STATE) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
         
+        // On API 30+, we also need READ_PHONE_STATE for some SubscriptionManager methods
         val hasStatePerm = ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_PHONE_STATE) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
-        if (!hasNumbersPerm && !hasStatePerm) return null
+        if (!hasNumbersPerm && !hasStatePerm) {
+            android.util.Log.d("SimManager", "Missing permissions to get number for subId $subId")
+            return null
+        }
 
         var number: String? = null
         
-        // Strategy 1: SubscriptionManager
-        try {
-            val subscriptionManager = ContextCompat.getSystemService(ctx, SubscriptionManager::class.java)
-            if (subscriptionManager != null) {
-                number = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    subscriptionManager.getPhoneNumber(subId)
-                } else {
-                    @Suppress("DEPRECATION")
-                    subscriptionManager.getActiveSubscriptionInfo(subId)?.number
+        // Strategy 1: SubscriptionManager (New API 33+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            try {
+                val subscriptionManager = ContextCompat.getSystemService(ctx, SubscriptionManager::class.java)
+                number = subscriptionManager?.getPhoneNumber(subId)
+                if (!number.isNullOrBlank()) {
+                    android.util.Log.d("SimManager", "Got number from SubscriptionManager.getPhoneNumber: $number")
                 }
+            } catch (e: Exception) {
+                android.util.Log.e("SimManager", "Error getting number from SubscriptionManager.getPhoneNumber", e)
             }
-        } catch (e: Exception) {
-            android.util.Log.e("SimManager", "Error getting number from SubscriptionManager", e)
         }
 
-        // Strategy 2: TelephonyManager fallback (very common for older devices or specific manufacturers)
+        // Strategy 2: SubscriptionManager (Old API / Deprecated)
+        if (number.isNullOrBlank()) {
+            try {
+                val subscriptionManager = ContextCompat.getSystemService(ctx, SubscriptionManager::class.java)
+                @Suppress("DEPRECATION")
+                number = subscriptionManager?.getActiveSubscriptionInfo(subId)?.number
+                if (!number.isNullOrBlank()) {
+                    android.util.Log.d("SimManager", "Got number from SubscriptionInfo.number: $number")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SimManager", "Error getting number from SubscriptionInfo", e)
+            }
+        }
+
+        // Strategy 3: TelephonyManager fallback (very common for older devices or specific manufacturers)
         if (number.isNullOrBlank()) {
             try {
                 val telephonyManager = (ctx.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager)
                     .createForSubscriptionId(subId)
                 number = telephonyManager.line1Number
+                if (!number.isNullOrBlank()) {
+                    android.util.Log.d("SimManager", "Got number from TelephonyManager.line1Number: $number")
+                }
             } catch (e: Exception) {
                 android.util.Log.e("SimManager", "Error getting number from TelephonyManager", e)
             }
         }
 
         // Clean number (remove spaces, dashes, etc.) but keep + for international
-        return number?.replace(Regex("[^0-9+]"), "")?.takeIf { it.length > 5 }
+        val cleaned = number?.replace(Regex("[^0-9+]"), "")
+        
+        // Some carriers return numbers like "0000000000" or "unknown"
+        if (cleaned.isNullOrBlank() || cleaned.length < 6 || cleaned.all { it == '0' }) {
+            return null
+        }
+        
+        return cleaned
     }
 
     fun setSimCalibration(simIndex: Int, subscriptionId: Int, hint: String) {

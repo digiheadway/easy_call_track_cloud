@@ -29,42 +29,27 @@
                 extend: {
                     fontFamily: { sans: ['Outfit', 'sans-serif'] },
                     colors: {
-                        brand: { 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7' },
-                         { bg: '#0B0F19', card: '#111827', border: '#1F2937' }
+                        brand: { 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7' }
                     }
                 }
             }
         }
     </script>
-    <style>
+    <style type="text/tailwindcss">
         body {
-            background-color: #0B0F19;
-            color: #ffffff;
+            @apply bg-white text-gray-900 transition-colors duration-300;
         }
 
         .glass {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            @apply bg-white/70 backdrop-blur-xl border-b border-gray-100;
         }
 
         .glass-card {
-            background: rgba(17, 24, 39, 0.6);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(31, 41, 55, 0.5);
+            @apply bg-gray-50/80 backdrop-blur-lg border border-gray-200 transition-all duration-300;
         }
 
         .step-number {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, #0ea5e9, #8b5cf6);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1.25rem;
-            flex-shrink: 0;
+            @apply w-12 h-12 bg-gradient-to-br from-brand-500 to-purple-600 rounded-xl flex items-center justify-center font-bold text-white text-xl flex-shrink-0;
         }
     </style>
     <link rel="manifest" href="/manifest.json">
@@ -74,7 +59,7 @@
 <body class="antialiased">
 
     <!-- Navbar -->
-    <nav class="fixed w-full z-50 top-0 glass border-b border-white/5">
+    <nav class="fixed w-full z-50 top-0 glass border-b border-gray-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
                 <a href="/" class="flex items-center gap-2">
@@ -82,11 +67,11 @@
                         class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center">
                         <i data-feather="phone-call" class="text-white w-4 h-4"></i>
                     </div>
-                    <span class="font-bold text-xl tracking-tight">MiniClick Calls<span
-                            class="text-brand-400">.</span></span>
+                    <span class="font-bold text-xl tracking-tight text-gray-900">MiniClick Calls<span
+                            class="text-brand-500">.</span></span>
                 </a>
                 <a href="/setup/"
-                    class="text-gray-300 hover:text-white transition-colors text-sm font-medium flex items-center gap-1">
+                    class="text-gray-600 hover:text-brand-600 transition-colors text-sm font-medium flex items-center gap-1">
                     <i data-feather="arrow-left" class="w-4 h-4"></i> Back to Setup
                 </a>
             </div>
@@ -95,17 +80,17 @@
 
     <!-- Hero -->
     <section class="pt-32 pb-16 relative overflow-hidden">
-        <div class="absolute top-0 left-1/4 w-96 h-96 bg-brand-500/20 rounded-full blur-[128px] pointer-events-none">
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-brand-500/5 rounded-full blur-[128px] pointer-events-none">
         </div>
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-6">
-                <i data-feather="briefcase" class="w-4 h-4 text-brand-400"></i>
-                <span class="text-sm font-medium text-gray-300">Manager Guide</span>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 border border-gray-200 mb-6">
+                <i data-feather="briefcase" class="w-4 h-4 text-brand-600"></i>
+                <span class="text-sm font-medium text-gray-600">Manager Guide</span>
             </div>
-            <h1 class="text-4xl sm:text-5xl font-bold mb-6">Set Up Your <span
-                    class="bg-clip-text text-transparent bg-gradient-to-r from-brand-400 to-purple-400">Organization</span>
+            <h1 class="text-4xl sm:text-5xl font-bold mb-6 text-gray-900">Set Up Your <span
+                    class="bg-clip-text text-transparent bg-gradient-to-r from-brand-500 to-purple-500">Organization</span>
             </h1>
-            <p class="text-xl text-gray-400 max-w-2xl mx-auto">Everything you need to manage your team and tracking logs
+            <p class="text-xl text-gray-600 max-w-2xl mx-auto">Everything you need to manage your team and tracking logs
                 effectively.</p>
         </div>
     </section>
@@ -119,17 +104,17 @@
                 <div class="glass-card rounded-2xl p-6 flex gap-6">
                     <div class="step-number">1</div>
                     <div>
-                        <h3 class="text-xl font-semibold mb-2">Create Your Account</h3>
-                        <p class="text-gray-400 mb-4">Visit our website and sign up with your business email.</p>
-                        <ol class="list-decimal list-inside text-gray-300 space-y-2">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-900">Create Your Account</h3>
+                        <p class="text-gray-600 mb-4">Visit our website and sign up with your business email.</p>
+                        <ol class="list-decimal list-inside text-gray-700 space-y-2">
                             <li>Go to <a href="/signup/"
-                                    class="text-brand-400 hover:underline">miniclickcrm.com/signup</a></li>
+                                    class="text-brand-600 hover:underline">miniclickcrm.com/signup</a></li>
                             <li>Enter your business name and email</li>
                             <li>Create a strong password</li>
                             <li>Verify your email address</li>
                         </ol>
                         <a href="/signup/"
-                            class="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-lg text-sm font-medium transition-colors">
+                            class="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-sm font-medium transition-colors">
                             Create Account <i data-feather="arrow-right" class="w-4 h-4"></i>
                         </a>
                     </div>
@@ -139,9 +124,9 @@
                 <div class="glass-card rounded-2xl p-6 flex gap-6">
                     <div class="step-number">2</div>
                     <div>
-                        <h3 class="text-xl font-semibold mb-2">Configure Your Organization</h3>
-                        <p class="text-gray-400 mb-4">Set up your business profile in the dashboard.</p>
-                        <ol class="list-decimal list-inside text-gray-300 space-y-2">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-900">Configure Your Organization</h3>
+                        <p class="text-gray-600 mb-4">Set up your business profile in the dashboard.</p>
+                        <ol class="list-decimal list-inside text-gray-700 space-y-2">
                             <li>Log in to your dashboard</li>
                             <li>Go to <strong>Settings → Organization</strong></li>
                             <li>Upload your company logo (optional)</li>
@@ -154,21 +139,21 @@
                 <div class="glass-card rounded-2xl p-6 flex gap-6">
                     <div class="step-number">3</div>
                     <div>
-                        <h3 class="text-xl font-semibold mb-2">Add Your Employees</h3>
-                        <p class="text-gray-400 mb-4">Invite team members to start tracking their calls.</p>
+                        <h3 class="text-xl font-semibold mb-2 text-gray-900">Add Your Employees</h3>
+                        <p class="text-gray-600 mb-4">Invite team members to start tracking their calls.</p>
                         <div class="grid md:grid-cols-2 gap-4 mt-4">
-                            <div class="bg-white/5 rounded-xl p-4 border border-white/10">
-                                <h4 class="font-medium mb-2 flex items-center gap-2">
-                                    <i data-feather="mail" class="w-4 h-4 text-brand-400"></i> Email Invite
+                            <div class="bg-white rounded-xl p-4 border border-gray-100">
+                                <h4 class="font-medium mb-2 flex items-center gap-2 text-gray-900">
+                                    <i data-feather="mail" class="text-brand-600 w-4 h-4"></i> Email Invite
                                 </h4>
-                                <p class="text-sm text-gray-400">Enter their email and they'll receive setup
+                                <p class="text-sm text-gray-600">Enter their email and they'll receive setup
                                     instructions automatically.</p>
                             </div>
-                            <div class="bg-white/5 rounded-xl p-4 border border-white/10">
-                                <h4 class="font-medium mb-2 flex items-center gap-2">
-                                    <i data-feather="hash" class="w-4 h-4 text-purple-400"></i> Manual Code
+                            <div class="bg-white rounded-xl p-4 border border-gray-100">
+                                <h4 class="font-medium mb-2 flex items-center gap-2 text-gray-900">
+                                    <i data-feather="hash" class="text-purple-600 w-4 h-4"></i> Manual Code
                                 </h4>
-                                <p class="text-sm text-gray-400">Generate a 6-digit code and share it with the
+                                <p class="text-sm text-gray-600">Generate a 6-digit code and share it with the
                                     employee verbally.</p>
                             </div>
                         </div>
@@ -179,21 +164,21 @@
                 <div class="glass-card rounded-2xl p-6 flex gap-6">
                     <div class="step-number">4</div>
                     <div>
-                        <h3 class="text-xl font-semibold mb-2">Choose Your Plan</h3>
-                        <p class="text-gray-400 mb-4">Select a subscription that fits your team size.</p>
-                        <ul class="text-gray-300 space-y-2">
+                        <h3 class="text-xl font-semibold mb-2 text-gray-900">Choose Your Plan</h3>
+                        <p class="text-gray-600 mb-4">Select a subscription that fits your team size.</p>
+                        <ul class="text-gray-700 space-y-2">
                             <li class="flex items-center gap-2"><i data-feather="check"
-                                    class="w-4 h-4 text-green-400"></i> <strong>Free Tier:</strong> Local-only
+                                    class="w-4 h-4 text-green-600"></i> <strong>Free Tier:</strong> Local-only
                                 tracking, no cloud sync</li>
                             <li class="flex items-center gap-2"><i data-feather="check"
-                                    class="w-4 h-4 text-green-400"></i> <strong>MiniClick Callsing:</strong>
+                                    class="w-4 h-4 text-green-600"></i> <strong>MiniClick Callsing:</strong>
                                 ₹149/user/month with cloud sync</li>
                             <li class="flex items-center gap-2"><i data-feather="check"
-                                    class="w-4 h-4 text-green-400"></i> <strong>Storage Add-on:</strong>
+                                    class="w-4 h-4 text-green-600"></i> <strong>Storage Add-on:</strong>
                                 ₹99/GB/month for recordings</li>
                         </ul>
                         <a href="/#pricing"
-                            class="inline-flex items-center gap-2 mt-4 text-brand-400 hover:underline text-sm">
+                            class="inline-flex items-center gap-2 mt-4 text-brand-600 hover:underline text-sm font-medium">
                             View Pricing <i data-feather="external-link" class="w-4 h-4"></i>
                         </a>
                     </div>
@@ -204,12 +189,12 @@
     </main>
 
     <!-- Footer -->
-    <footer class="border-t border-white/10 bg-[#0B0F19] py-8">
+    <footer class="border-t border-gray-100 bg-gray-50 py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <p class="text-gray-600 text-sm">© 2026 MiniClick. All rights reserved.</p>
-            <div class="mt-4 flex justify-center gap-6 text-sm text-gray-400">
-                <a href="/privacy/" class="hover:text-white transition-colors">Privacy Policy</a>
-                <a href="/terms/" class="hover:text-white transition-colors">Terms of Use</a>
+            <div class="mt-4 flex justify-center gap-6 text-sm text-gray-600">
+                <a href="/privacy/" class="hover:text-brand-600 transition-colors">Privacy Policy</a>
+                <a href="/terms/" class="hover:text-brand-600 transition-colors">Terms of Use</a>
             </div>
         </div>
     </footer>

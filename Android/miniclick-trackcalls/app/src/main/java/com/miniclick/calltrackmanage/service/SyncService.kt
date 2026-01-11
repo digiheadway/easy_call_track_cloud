@@ -50,8 +50,11 @@ class SyncService : Service() {
             Log.d(TAG, "Permissions missing, skipping monitor start")
         }
         
-        // Run initial sync
-        triggerSync()
+        // STARTUP OPTIMIZATION: Run initial sync with a delay to avoid startup congestion
+        serviceScope.launch {
+            delay(3000)
+            triggerSync()
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

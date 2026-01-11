@@ -51,13 +51,6 @@ export default {
         },
         crm: { 500: '#8b5cf6' },
         dialer: { 500: '#f97316' },
-        // Dark mode specific backgrounds
-         {
-          bg: '#0B0F19',
-          card: '#111827',
-          border: '#1F2937',
-          hover: '#1F2937'
-        },
         // Status colors
         success: {
           50: '#f0fdf4',

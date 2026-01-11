@@ -160,30 +160,49 @@ class SettingsViewModel @javax.inject.Inject constructor(
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
     init {
-        // STARTUP OPTIMIZATION: Load ONLY critical settings synchronously for immediate UI rendering
-        // This prevents onboarding flash and ensures UI consistency
         val initialOrgId = settingsRepository.getOrganisationId()
         _uiState.update { it.copy(
-            trackStartDate = settingsRepository.getTrackStartDate(),
-            isTrackStartDateSet = settingsRepository.isTrackStartDateSet(),
-            simSelection = settingsRepository.getSimSelection(),
-            skippedSteps = settingsRepository.getSkippedSteps(),
             isSyncSetup = initialOrgId.isNotEmpty(),
             isSetupGuideCompleted = settingsRepository.isSetupGuideCompleted(),
-            pairingCode = if (initialOrgId.isNotEmpty()) "$initialOrgId-${settingsRepository.getUserId()}" else "",
-            callerPhoneSim1 = settingsRepository.getCallerPhoneSim1(),
-            callerPhoneSim2 = settingsRepository.getCallerPhoneSim2(),
-            callRecordEnabled = settingsRepository.isCallRecordEnabled(),
-            userDeclinedRecording = settingsRepository.isUserDeclinedRecording(),
             agreementAccepted = settingsRepository.isAgreementAccepted()
         ) }
 
         // STARTUP OPTIMIZATION: Stagger heavy work into phases to prevent recomposition storms
         
-        // Phase 1 (100ms): Load full settings on IO thread
+        // Phase 0 (Immediate Background): Load basic tracking settings
+        viewModelScope.launch(Dispatchers.IO) {
+            val trackStartDate = settingsRepository.getTrackStartDate()
+            val isTrackStartDateSet = settingsRepository.isTrackStartDateSet()
+            val simSelection = settingsRepository.getSimSelection()
+            val skippedSteps = settingsRepository.getSkippedSteps()
+            
+            _uiState.update { it.copy(
+                trackStartDate = trackStartDate,
+                isTrackStartDateSet = isTrackStartDateSet,
+                simSelection = simSelection,
+                skippedSteps = skippedSteps
+            ) }
+        }
+
+        // Phase 1 (150ms): Load full settings and other details
         viewModelScope.launch {
-            kotlinx.coroutines.delay(100)
+            kotlinx.coroutines.delay(150)
             kotlinx.coroutines.withContext(Dispatchers.IO) {
+                val userId = settingsRepository.getUserId()
+                val pairingCode = if (initialOrgId.isNotEmpty()) "$initialOrgId-$userId" else ""
+                val sim1Phone = settingsRepository.getCallerPhoneSim1()
+                val sim2Phone = settingsRepository.getCallerPhoneSim2()
+                val recEnabled = settingsRepository.isCallRecordEnabled()
+                val declined = settingsRepository.isUserDeclinedRecording()
+
+                _uiState.update { it.copy(
+                    pairingCode = pairingCode,
+                    callerPhoneSim1 = sim1Phone,
+                    callerPhoneSim2 = sim2Phone,
+                    callRecordEnabled = recEnabled,
+                    userDeclinedRecording = declined
+                ) }
+
                 loadSettings()
                 permissionManager.checkPermissions()
             }

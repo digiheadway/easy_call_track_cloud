@@ -128,9 +128,13 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         viewModel.refreshTheme()
         
-        val settingsRepository = com.miniclick.calltrackmanage.data.SettingsRepository.getInstance(this)
-        if (settingsRepository.isAgreementAccepted() && settingsRepository.isSetupGuideCompleted()) {
-            com.miniclick.calltrackmanage.service.SyncService.start(this)
+        // STARTUP OPTIMIZATION: Defer background service start to prioritize UI rendering
+        lifecycleScope.launch {
+            delay(1000) // 1 second delay after resume
+            val settingsRepository = com.miniclick.calltrackmanage.data.SettingsRepository.getInstance(applicationContext)
+            if (settingsRepository.isAgreementAccepted() && settingsRepository.isSetupGuideCompleted()) {
+                com.miniclick.calltrackmanage.service.SyncService.start(applicationContext)
+            }
         }
     }
 
